@@ -15,6 +15,11 @@ Un seul fichier, `gangstamen.html`, qui tourne dans tout navigateur récent avec
 - **Écran partagé** de 2 à 4 joueurs sur un même PC, chacun au clavier ou à la manette (menu *Écran partagé* puis ◀ ▶ pour choisir les commandes de chaque joueur). Les joueurs se tirent aussi dessus.
 - **En ligne** jusqu'à 12 joueurs : *Créer une partie* (code de 4 lettres) ou rejoindre une partie de la liste.
 
+En écran partagé et en ligne, on choisit entre deux règles :
+
+- **Chacun pour soi** : tout le monde tire sur tout le monde, et les six voitures du quartier sont des Rapaces hostiles à tous.
+- **Par équipes** : *Rapaces de la Butte* contre *Chantenaysiens*. Il n'y a pas de tir ami et les chocs entre coéquipiers ne font pas de dégâts. Chaque bande a trois voitures du quartier avec elle et sa base de départ : les Rapaces en haut de la butte, les Chantenaysiens sur le boulevard de la Liberté. Le score d'une équipe est le total des KO de ses joueurs (barre en haut de l'écran, détail avec Tab). En ligne, le créateur choisit la règle ; chaque joueur choisit sa bande, ou *Auto* pour rejoindre la moins nombreuse.
+
 ## Commandes
 
 | | Gaz / frein | Tourner | Tir | Frein à main | Caméra | Remise en route |
