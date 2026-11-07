@@ -44,3 +44,19 @@ Sur claude.ai, les autres joueurs doivent être connectés et avoir accès à l'
 ```
 
 Le dossier `src/` contient la page (`template.html`) et les scripts de préparation des données (`convert.py` OSM → monde, `carve.py` profils de routes et ponts, `plan_facades.py` choix des photos Panoramax, `build_photos.py` assemblage). Données : voir `DATA-LICENSES.md`.
+
+## Héberger soi-même (branche `server`)
+
+```sh
+node server/server.js            # http://localhost:8080
+# ou
+docker build -t gangstamen . && docker run -p 8080:8080 gangstamen
+```
+
+Variables : `PORT` (8080), `MAX_PLAYERS` (12 par partie), `GAME_HTML` (chemin du jeu, `gangstamen.html` par défaut ; rechargé à chaud s'il change).
+
+Le serveur sert le jeu sur `/` en y ajoutant `window.GM_SERVER="auto"` : le jeu se connecte alors au WebSocket `/ws` du même hôte au lieu de la salle claude.ai. Il reprend exactement le modèle de la capacité `room` (lobby, parties nommées `gm-XXXX`, présence, événements), donc le même code client fonctionne des deux côtés. Derrière un proxy HTTPS (nginx, Caddy…), transmettez l'en-tête `Upgrade` sur `/ws`.
+
+Pour tester un serveur depuis n'importe quelle copie du jeu : `gangstamen.html?server=wss://mon-serveur.example/ws`.
+
+Santé : `GET /health` renvoie le nombre de connexions et de salles.
