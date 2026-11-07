@@ -20,6 +20,8 @@ En écran partagé et en ligne, on choisit entre deux règles :
 - **Chacun pour soi** : tout le monde tire sur tout le monde, et les six voitures du quartier sont des Rapaces hostiles à tous.
 - **Par équipes** : *Rapaces de la Butte* contre *Chantenaysiens*. Il n'y a pas de tir ami et les chocs entre coéquipiers ne font pas de dégâts. Chaque bande a trois voitures du quartier avec elle et sa base de départ : les Rapaces en haut de la butte, les Chantenaysiens sur le boulevard de la Liberté. Le score d'une équipe est le total des KO de ses joueurs (barre en haut de l'écran, détail avec Tab). En ligne, le créateur choisit la règle ; chaque joueur choisit sa bande, ou *Auto* pour rejoindre la moins nombreuse.
 
+**Fin de partie** : on règle un nombre de KO à atteindre (10, 20, 30 ou sans) et une durée (5, 10, 15 min ou sans). La partie s'arrête au premier des deux seuils atteint. Un écran de résultats affiche le vainqueur et le classement, avec un bouton *Revanche* qui remet les scores à zéro et tout le monde au départ. En ligne, ces réglages sont ceux du créateur, et seul l'hôte déclare la fin et lance la revanche, pour que tout le monde voie le même résultat. En solo, le réglage se trouve dans *Son et options*.
+
 ## Commandes
 
 | | Gaz / frein | Tourner | Tir | Frein à main | Caméra | Remise en route |
