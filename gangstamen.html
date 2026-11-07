@@ -109,6 +109,21 @@ body:not(.split).ingame #teambar { top: 64px; }
 .teambtn.t0 { background: #c8202f; color: #f3ead8; }
 .teambtn.t1 { background: #f2c81e; color: #000; }
 #board .tsum td { color: var(--sunset); padding-top: 8px; }
+#clock { left: 50%; top: 12px; transform: translateX(-50%); font-family: var(--data); font-size: 22px; background: rgba(13,10,20,.8); color: var(--chalk); border: 2px solid var(--chalk); padding: 1px 12px; z-index: 6; white-space: nowrap; font-variant-numeric: tabular-nums; }
+#clock.hurry { color: #ff5a4a; border-color: #ff5a4a; }
+body.teams:not(.split) #clock { top: 102px; }
+body.split #clock { top: calc(50% + 24px); }
+body.split.teams #clock { top: calc(50% + 40px); }
+body:not(.ingame) #clock { display: none; }
+#results { position: fixed; inset: 0; z-index: 25; display: grid; place-items: center; background: rgba(13,10,20,.72); }
+#results .card { min-width: min(460px, 92vw); max-height: 92vh; overflow: auto; background: rgba(13,10,20,.94); border: 3px solid var(--chalk); box-shadow: 6px 6px 0 var(--magenta); padding: 20px 24px; }
+#results h2 { margin: 0; font-family: var(--display); font-weight: normal; font-size: clamp(30px, 6vw, 48px); color: var(--chalk); text-shadow: 3px 3px 0 var(--magenta); }
+#results p { margin: 6px 0 12px; font-family: var(--data); font-size: 22px; color: var(--sunset); }
+#resTable table { border-collapse: collapse; width: 100%; font-family: var(--data); font-size: 20px; font-variant-numeric: tabular-nums; color: var(--chalk); }
+#resTable td, #resTable th { padding: 2px 10px; text-align: left; }
+#resTable th { color: var(--sunset); font-weight: normal; }
+#resTable .tsum td { padding-top: 8px; }
+#results .menu { margin-top: 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 #board table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
 #board td, #board th { padding: 2px 10px; text-align: left; }
 #board th { color: var(--sunset); font-weight: normal; }
@@ -192,6 +207,8 @@ body.touch #plate { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
       <h2>Écran partagé</h2>
       <div class="row"><span class="lab">Joueurs</span><div class="seg" id="nSeg"><button class="mbtn" data-n="2">2</button><button class="mbtn" data-n="3">3</button><button class="mbtn" data-n="4">4</button></div></div>
       <div class="row"><span class="lab">Mode</span><div class="seg" id="mSeg"><button class="mbtn" data-m="0">Chacun pour soi</button><button class="mbtn" data-m="1">Par équipes</button></div></div>
+      <div class="row"><span class="lab">Fin de partie</span><div class="seg goalSeg"><button class="mbtn" data-g="10">10 KO</button><button class="mbtn" data-g="20">20 KO</button><button class="mbtn" data-g="30">30 KO</button><button class="mbtn" data-g="0">Sans</button></div></div>
+      <div class="row"><span class="lab">Durée</span><div class="seg limitSeg"><button class="mbtn" data-l="5">5 min</button><button class="mbtn" data-l="10">10 min</button><button class="mbtn" data-l="15">15 min</button><button class="mbtn" data-l="0">Sans</button></div></div>
       <div id="slots" class="slots"></div>
       <p class="fine" id="splitHint"></p>
       <p class="fine">Branchez les manettes et appuyez sur un de leurs boutons pour qu'elles soient détectées.</p>
@@ -210,6 +227,8 @@ body.touch #plate { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
       <h2>Son et options</h2>
       <div class="row"><label class="lab" for="volMusic">Musique</label><input id="volMusic" type="range" min="0" max="100" step="5"><output id="volMusicV"></output></div>
       <div class="row"><label class="lab" for="volFx">Effets</label><input id="volFx" type="range" min="0" max="100" step="5"><output id="volFxV"></output></div>
+      <div class="row"><span class="lab">Fin (solo)</span><div class="seg goalSeg"><button class="mbtn" data-g="10">10 KO</button><button class="mbtn" data-g="20">20 KO</button><button class="mbtn" data-g="30">30 KO</button><button class="mbtn" data-g="0">Sans</button></div></div>
+      <div class="row"><span class="lab">Durée</span><div class="seg limitSeg"><button class="mbtn" data-l="5">5 min</button><button class="mbtn" data-l="10">10 min</button><button class="mbtn" data-l="15">15 min</button><button class="mbtn" data-l="0">Sans</button></div></div>
       <div class="row"><label class="lab" for="optRumble">Vibrations manette</label><input id="optRumble" type="checkbox"></div>
       <div class="row"><label class="lab" for="optRetro">Pixels rétro</label><input id="optRetro" type="checkbox"></div>
       <div class="menu"><button class="mbtn" data-go="vMain">Retour</button></div>
@@ -222,6 +241,8 @@ body.touch #plate { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
       <div id="netStatus" class="netstatus">Connexion…</div>
       <div id="games" class="games"></div>
       <div class="row"><span class="lab">Nouvelle partie</span><div class="seg" id="oSeg"><button class="mbtn" data-m="0">Chacun pour soi</button><button class="mbtn" data-m="1">Par équipes</button></div></div>
+      <div class="row"><span class="lab">Fin de partie</span><div class="seg goalSeg"><button class="mbtn" data-g="10">10 KO</button><button class="mbtn" data-g="20">20 KO</button><button class="mbtn" data-g="30">30 KO</button><button class="mbtn" data-g="0">Sans</button></div></div>
+      <div class="row"><span class="lab">Durée</span><div class="seg limitSeg"><button class="mbtn" data-l="5">5 min</button><button class="mbtn" data-l="10">10 min</button><button class="mbtn" data-l="15">15 min</button><button class="mbtn" data-l="0">Sans</button></div></div>
       <div class="menu"><button id="create" class="big">Créer une partie</button><button class="mbtn" data-go="vMain">Retour</button></div>
       <p class="fine">Version claude.ai : les autres joueurs doivent être connectés et avoir accès à cette page avec le droit de participer (Contributeur ou plus), sinon ils voient les voitures mais leurs tirs ne comptent pas. Chacun conduit sa voiture sans attendre l'hôte ; l'hôte fait rouler les voitures du quartier. L'équipe ne sert que dans les parties « Par équipes » (choisie par le créateur).</p>
     </section>
@@ -229,6 +250,8 @@ body.touch #plate { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
 </div>
 <div id="board" class="hud" hidden></div>
 <div id="teambar" class="hud" hidden></div>
+<div id="clock" class="hud" hidden></div>
+<div id="results" hidden><div class="card"><h2 id="resTitle"></h2><p id="resSub"></p><div id="resTable"></div><div class="menu"><button class="big" id="resAgain">Revanche</button><span id="resWait" class="fine" hidden>En attente de l’hôte pour la revanche…</span><button class="mbtn" id="resQuit">Quitter vers le menu</button></div></div></div>
 <div id="feed" class="hud"></div>
 <div id="phuds"></div>
 
@@ -1201,7 +1224,7 @@ const SETTINGS_KEY = 'gangstamen.settings.v1';
 const settings = Object.assign({
   ctl: ['kb1', 'kb2', 'kb3', 'kb4'], soloCtl: 'kb1+pad0', nPlayers: 2,
   music: 0.7, fx: 0.8, rumble: true, retro: true, nick: '',
-  teams: false, team: [0, 1, 0, 1], netTeams: false, netTeam: -1,
+  teams: false, team: [0, 1, 0, 1], netTeams: false, netTeam: -1, goal: 20, limit: 10,
 }, (() => { try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); } catch (e) { return {}; } })());
 function saveSettings() { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { } }
 sfx.setVolume('music', settings.music); sfx.setVolume('fx', settings.fx);
@@ -1627,6 +1650,11 @@ function updateTeamBar() {
 }
 function renderBoard() {
   const rows = boardRows();
+  const h = document.createElement('div'); h.textContent = mode === 'online' ? 'Partie ' + (Net.code || '').toUpperCase() + ' · ' + rows.length + '/12' : 'Classement';
+  h.style.cssText = 'color:var(--sunset);margin-bottom:6px';
+  $('board').replaceChildren(h, boardTable(rows));
+}
+function boardTable(rows) {
   rows.sort((a, b) => teamMode ? (a.t - b.t) || (b.r - a.r) : b.r - a.r);
   const t = document.createElement('table');
   t.innerHTML = '<tr><th></th><th>Joueur</th><th>Respect</th><th>KO</th></tr>';
@@ -1646,10 +1674,85 @@ function renderBoard() {
     const a = document.createElement('td'); a.textContent = r.r; const b = document.createElement('td'); b.textContent = r.k;
     tr.append(c, n, a, b); t.append(tr);
   }
-  const h = document.createElement('div'); h.textContent = mode === 'online' ? 'Partie ' + (Net.code || '').toUpperCase() + ' · ' + rows.length + '/12' : 'Classement';
-  h.style.cssText = 'color:var(--sunset);margin-bottom:6px';
-  $('board').replaceChildren(h, t);
+  return t;
 }
+
+// ---------- end of the match ----------
+// local games check the limits themselves; online, the host decides and publishes the match state in its presence
+const Match = { goal: 0, limit: 0, left: 0, over: false, n: 0, synced: false, title: '', sub: '' };
+const resEl = $('results');
+function fmtClock(t) { t = Math.max(0, Math.ceil(t)); return ((t / 60) | 0) + ':' + String(t % 60).padStart(2, '0'); }
+function setupMatch(goal, limit) {
+  Match.goal = goal; Match.limit = limit; Match.left = limit * 60; Match.over = false; Match.n = 0; Match.synced = false;
+  resEl.hidden = true; updateClock();
+}
+function updateClock() {
+  const el = $('clock'), parts = [];
+  if (Match.limit) parts.push('⏱ ' + fmtClock(Match.left));
+  if (Match.goal) parts.push(Match.goal + ' KO pour gagner');
+  el.hidden = !parts.length || Match.over;
+  const txt = parts.join(' · ');
+  if (el.textContent !== txt) el.textContent = txt;
+  el.classList.toggle('hurry', !!Match.limit && Match.left < 30);
+}
+function matchResult(timeUp) {
+  const rows = boardRows();
+  if (teamMode) {
+    const sc = teamScores(rows), line = 'Rapaces ' + sc[0] + ' – ' + sc[1] + ' Chantenaysiens';
+    if (sc[0] === sc[1]) return ['Match nul', line];
+    return ['Victoire des ' + TEAMS[sc[0] > sc[1] ? 0 : 1].name, line];
+  }
+  rows.sort((a, b) => b.k - a.k || b.r - a.r);
+  if (rows.length === 1) return [timeUp ? 'Temps écoulé' : 'Le quartier est à vous', rows[0].k + ' KO · ' + rows[0].r + ' respect'];
+  const top = rows[0], second = rows[1];
+  if (top.k === second.k && top.r === second.r) return ['Égalité', top.k + ' KO chacun'];
+  return [top.name.replace(' (vous)', '') + ' gagne', top.k + ' KO · ' + top.r + ' respect'];
+}
+function checkMatch(dt) {
+  if (Match.over || !started) return;
+  if (Match.limit) Match.left = Math.max(0, Match.left - dt);
+  if (mode === 'online' && !Net.isHost) return; // the host's presence decides
+  if (Match.grace > 0) { Match.grace -= dt; return; } // let everyone's scores reset after a rematch
+  let reached = false;
+  if (Match.goal) {
+    const rows = boardRows();
+    reached = teamMode ? Math.max(...teamScores(rows)) >= Match.goal : rows.some(r => r.k >= Match.goal);
+  }
+  const timeUp = !!Match.limit && Match.left <= 0;
+  if (reached || timeUp) endMatch(...matchResult(timeUp && !reached));
+}
+function endMatch(title, sub) {
+  Match.over = true; Match.title = String(title).slice(0, 60); Match.sub = String(sub).slice(0, 60);
+  $('resTitle').textContent = Match.title; $('resSub').textContent = Match.sub;
+  $('resTable').replaceChildren(boardTable(boardRows()));
+  const canRestart = mode !== 'online' || Net.isHost;
+  $('resAgain').hidden = !canRestart; $('resWait').hidden = canRestart;
+  paused = false; pauseEl.hidden = true; resEl.hidden = false; updateClock();
+  sfx.pick(); for (const L of locals) rumbleFor(L, 0.6, 0.8, 400);
+  if (canRestart) $('resAgain').focus(); else $('resQuit').focus();
+}
+function rematch() { // everyone back to the start, scores to zero
+  Match.over = false; Match.left = Match.limit * 60; Match.grace = 2; resEl.hidden = true;
+  for (const L of locals) {
+    const c = L.car; L.respect = 0; L.kills = 0; L.deadT = 0;
+    c.alive = true; c.hp = 100; c.vx = c.vz = 0;
+    c.mesh.userData.mBody.color.setHex(c.mesh.userData.base); c.mesh.userData.mPaint.color.setHex(c.mesh.userData.paint);
+    c.place(...(mode === 'online' ? (L.team >= 0 ? teamSpawn(L.team) : randomSpawn()) : L.spawn));
+  }
+  for (const r of rivals) if (!r.proxy) spawnRival(r);
+  updateClock(); updateTeamBar();
+  flashAll('Revanche !', Match.goal ? Match.goal + ' KO pour gagner' : 'C’est reparti');
+  try { renderer.domElement.focus(); } catch (e) { }
+}
+function applyMatch(m) { // non-host: follow the host's match state [n, seconds left, over, title, sub]
+  if (!Array.isArray(m) || typeof m[0] !== 'number') return;
+  if (!Match.synced) { Match.synced = true; Match.n = m[0]; }
+  else if (m[0] !== Match.n) { Match.n = m[0]; rematch(); }
+  if (Match.limit && typeof m[1] === 'number' && Math.abs(m[1] - Match.left) > 1.5) Match.left = m[1];
+  if (m[2] && !Match.over) endMatch(m[3] || 'Fin de partie', m[4] || '');
+}
+$('resAgain').addEventListener('click', () => { if (mode === 'online') { if (!Net.isHost) return; Match.n++; } rematch(); });
+$('resQuit').addEventListener('click', () => { try { if (Net.room) Net.room.leave(); } catch (e) { } location.reload(); });
 
 // ---------- day / night / pixels / pause ----------
 function setNight(on) {
@@ -1672,7 +1775,7 @@ pauseEl.style.cssText = 'position:fixed;inset:0;z-index:30;display:grid;place-it
 pauseEl.innerHTML = '<div class="card" style="display:flex;flex-direction:column;gap:12px;align-items:flex-start"><h2 style="margin:0;font-family:var(--display);font-weight:normal;font-size:40px;color:var(--chalk);text-shadow:3px 3px 0 var(--magenta)">Pause</h2><button class="big" id="pResume">Reprendre</button><button class="mbtn" id="pQuit">Quitter vers le menu</button></div>';
 document.body.append(pauseEl);
 function togglePause() {
-  if (!started) return;
+  if (!started || Match.over) return;
   if (mode === 'online') { // the world keeps running online: the menu only overlays
     paused = !paused; pauseEl.hidden = !paused; if (paused) $('pResume').focus(); return;
   }
@@ -1718,7 +1821,7 @@ function ghostShot(from, enemy) {
   const L0 = locals[0]; if (L0 && Math.hypot(L0.car.x - from.x, L0.car.z - from.z) < 70) sfx.gun(true);
 }
 function credit(by, points, text) {
-  if (!by) return;
+  if (!by || Match.over) return;
   if (by.local) { const L = by.owner; L.respect += points; L.kills++; flashFor(L, '+' + points + ' RESPECT', text); rumbleFor(L, 0.2, 0.5, 120); }
 }
 function damage(c, d, by) {
@@ -1882,7 +1985,7 @@ async function netInit() {
 function lobbyGames() {
   if (!Net.api) return [];
   const out = [];
-  for (const p of Net.api.peers()) { const g = p.presence && p.presence.gm; if (g && typeof g.code === 'string' && /^[a-z0-9]{4}$/.test(g.code) && !p.sameTab) out.push({ code: g.code, n: Math.max(1, Math.min(12, +g.n || 1)), host: String(g.host || '?').slice(0, 14), md: g.md === 1 ? 1 : 0 }); }
+  for (const p of Net.api.peers()) { const g = p.presence && p.presence.gm; if (g && typeof g.code === 'string' && /^[a-z0-9]{4}$/.test(g.code) && !p.sameTab) out.push({ code: g.code, n: Math.max(1, Math.min(12, +g.n || 1)), host: String(g.host || '?').slice(0, 14), md: g.md === 1 ? 1 : 0, gl: [10, 20, 30].includes(g.gl) ? g.gl : 0, tl: [5, 10, 15].includes(g.tl) ? g.tl : 0 }); }
   return out;
 }
 function renderGames() {
@@ -1898,9 +2001,9 @@ function renderGames() {
   if (!games.length) { const e = document.createElement('div'); e.className = 'empty'; e.textContent = 'Aucune partie pour l’instant : créez-en une.'; box.replaceChildren(e); return; }
   box.replaceChildren(...games.map(g => {
     const b = document.createElement('button'); b.className = 'mbtn';
-    b.textContent = 'Partie ' + g.code.toUpperCase() + ' · ' + g.host + ' · ' + (g.md ? 'Par équipes' : 'Chacun pour soi') + ' · ' + g.n + '/12';
+    b.textContent = 'Partie ' + g.code.toUpperCase() + ' · ' + g.host + ' · ' + (g.md ? 'Par équipes' : 'Chacun pour soi') + (g.gl ? ' · ' + g.gl + ' KO' : '') + (g.tl ? ' · ' + g.tl + ' min' : '') + ' · ' + g.n + '/12';
     b.disabled = g.n >= 12;
-    b.addEventListener('click', () => startOnline(g.code, false, g.md));
+    b.addEventListener('click', () => startOnline(g.code, false, g.md, g.gl, g.tl));
     return b;
   }));
 }
@@ -1941,10 +2044,11 @@ function electHost() {
   if (!Net.isHost && was) { for (const r of rivals) { r.proxy = true; } }
 }
 function becomeHost() {
+  if (resEl.hidden === false) { $('resAgain').hidden = false; $('resWait').hidden = true; }
   for (const r of rivals) { r.proxy = false; if (!r.ai) r.ai = { mode: 'cruise', target: nearestNode(r.x, r.z), prev: -1, stuck: 0, back: 0, lost: 0, burst: 0, firing: 0 }; }
   if (started) flashAll('Vous êtes l’hôte', 'Vous faites rouler les voitures du quartier');
 }
-async function startOnline(code, create, md) {
+async function startOnline(code, create, md, gl, tl) {
   if (!Net.api) return;
   settings.nick = ($('nick').value || '').trim().slice(0, 14) || 'Gangsta' + ((Math.random() * 90 + 10) | 0); saveSettings();
   if (create) code = Array.from({ length: 4 }, () => 'abcdefghjkmnpqrstuvwxyz23456789'[(Math.random() * 31) | 0]).join('');
@@ -1954,6 +2058,7 @@ async function startOnline(code, create, md) {
   if (!create && others >= 12) { room.leave(); $('netStatus').textContent = 'Partie pleine (12 joueurs).'; return; }
   Net.room = room; Net.code = code; mode = 'online';
   teamMode = create ? !!settings.netTeams : !!md;
+  setupMatch(create ? settings.goal : gl || 0, create ? settings.limit : tl || 0);
   Net.team = -1;
   if (teamMode) { // chosen team, or the smaller one
     if (settings.netTeam === 0 || settings.netTeam === 1) Net.team = settings.netTeam;
@@ -1971,6 +2076,7 @@ async function startOnline(code, create, md) {
       if (p.sameTab) { Net.me = p.peer; continue; }
       remoteFromPeer(p);
       if (!Net.isHost && p.peer === Net.hostPeer && Array.isArray(p.presence.b)) applyBots(p.presence.b);
+      if (!Net.isHost && p.peer === Net.hostPeer) applyMatch(p.presence.m);
     }
     electHost();
   });
@@ -2006,7 +2112,7 @@ function netTick(dt, now) {
   if (!Net.room) return;
   const L = locals[0]; if (!L) return;
   // lobby advert (host only), every 2 s
-  if (Net.isHost && (!Net.lastAdvert || now - Net.lastAdvert > 2000)) { Net.lastAdvert = now; Net.api.presence({ gm: { code: Net.code, n: Net.remotes.size + 1, host: settings.nick, md: teamMode ? 1 : 0 } }).catch(() => { }); }
+  if (Net.isHost && (!Net.lastAdvert || now - Net.lastAdvert > 2000)) { Net.lastAdvert = now; Net.api.presence({ gm: { code: Net.code, n: Net.remotes.size + 1, host: settings.nick, md: teamMode ? 1 : 0, gl: Match.goal, tl: Match.limit } }).catch(() => { }); }
   if (!Net.isHost && Net.lastAdvert) { Net.lastAdvert = 0; Net.api.presence({ gm: null }).catch(() => { }); }
   // own state ~30 Hz
   if (now - Net.lastSend > 33) {
@@ -2014,6 +2120,7 @@ function netTick(dt, now) {
     const c = L.car, r1 = v => Math.round(v * 10) / 10;
     const pres = { c: [r1(c.x), r1(c.z), Math.round(c.h * 1000) / 1000, r1(c.vx), r1(c.vz), Math.round(c.steer * 100) / 100, Math.round(c.hp), c.alive ? 1 : 0, L.firing ? 1 : 0],
       nick: settings.nick, col: Net.colIdx, tm: L.team, r: L.respect, k: L.kills, host: Net.isHost ? 1 : 0 };
+    if (Net.isHost) pres.m = [Match.n, Math.round(Match.left), Match.over ? 1 : 0, Match.over ? Match.title : '', Match.over ? Match.sub : ''];
     if (Net.isHost) pres.b = rivals.map(r => [r1(r.x), r1(r.z), Math.round(r.h * 1000) / 1000, r1(r.vx), r1(r.vz), Math.round(r.hp), r.alive ? 1 : 0, r.ai && r.ai.firing ? 1 : 0]);
     Net.room.presence(pres).catch(() => { });
   }
@@ -2089,6 +2196,13 @@ function renderOnlineSegs() {
 document.querySelectorAll('#oSeg button').forEach(b => b.addEventListener('click', () => { settings.netTeams = b.dataset.m === '1'; saveSettings(); renderOnlineSegs(); }));
 document.querySelectorAll('#tSeg button').forEach(b => b.addEventListener('click', () => { settings.netTeam = +b.dataset.t; saveSettings(); renderOnlineSegs(); }));
 renderOnlineSegs();
+function renderEndSegs() {
+  document.querySelectorAll('.goalSeg button').forEach(b => b.classList.toggle('on', +b.dataset.g === settings.goal));
+  document.querySelectorAll('.limitSeg button').forEach(b => b.classList.toggle('on', +b.dataset.l === settings.limit));
+}
+document.querySelectorAll('.goalSeg button').forEach(b => b.addEventListener('click', () => { settings.goal = +b.dataset.g; saveSettings(); renderEndSegs(); }));
+document.querySelectorAll('.limitSeg button').forEach(b => b.addEventListener('click', () => { settings.limit = +b.dataset.l; saveSettings(); renderEndSegs(); }));
+renderEndSegs();
 function renderCtlTable() {
   const t = $('ctable'); if (!t) return;
   const cells = Object.entries(SCHEMES).map(([k, s]) => {
@@ -2118,9 +2232,9 @@ let navCool = 0;
 function menuPadNav(dt) {
   navCool -= dt;
   const P = pads.find(p => p.gp); if (!P) return;
-  const visible = !$('title').hidden ? '#title .view:not([hidden])' : (!pauseEl.hidden ? '#pause' : null);
+  const visible = !$('title').hidden ? '#title .view:not([hidden])' : (!pauseEl.hidden ? '#pause' : !resEl.hidden ? '#results' : null);
   if (!visible) return;
-  const els = [...document.querySelectorAll(visible + ' button:not([disabled]), ' + visible + ' input')];
+  const els = [...document.querySelectorAll(visible + ' button:not([disabled]), ' + visible + ' input')].filter(e => !e.hidden);
   if (!els.length) return;
   let i = els.indexOf(document.activeElement);
   const up = P.press[12] || (P.ny < -0.6 && navCool <= 0), down = P.press[13] || (P.ny > 0.6 && navCool <= 0);
@@ -2143,6 +2257,8 @@ function startGame(kind) {
   locals = [];
   if (kind === 'split') teamMode = !!settings.teams;
   else if (kind === 'solo') teamMode = false;
+  if (kind !== 'online') setupMatch(settings.goal, settings.limit);
+  document.body.classList.toggle('teams', teamMode);
   setBotTeams();
   if (kind === 'split') {
     for (let i = 0; i < settings.nPlayers; i++) { const t = teamMode ? settings.team[i] : -1; locals.push(makeLocal(i, settings.ctl[i], playerPaint(i, t, false), t)); }
@@ -2193,8 +2309,9 @@ function render(dt) {
   }
 }
 function step(dt, now) {
-  const frozen = paused && mode !== 'online';
+  const frozen = (paused || Match.over) && mode !== 'online';
   if (frozen) return;
+  checkMatch(dt);
   for (const L of locals) {
     const c = L.car;
     if (c.alive) {
@@ -2256,7 +2373,7 @@ function step(dt, now) {
   }
   updateFx(dt); updateTracers(dt);
   updateHud(dt);
-  boardAcc += dt; if (boardAcc > 0.5) { boardAcc = 0; updateTeamBar(); if (!$('board').hidden) renderBoard(); }
+  boardAcc += dt; if (boardAcc > 0.25) { boardAcc = 0; updateTeamBar(); updateClock(); if (!$('board').hidden) renderBoard(); }
   const c0 = locals[0].car;
   sun.position.copy(c0.mesh.position).add(SUN_OFF); sun.target.position.copy(c0.mesh.position);
 }
@@ -2305,6 +2422,6 @@ startBtn.addEventListener('click', () => startGame('solo'));
 $('splitGo').addEventListener('click', () => startGame('split'));
 $('create').addEventListener('click', () => startOnline(null, true));
 netInit();
-window.__gm = { locals: () => locals, rivals: () => rivals, Net, step: s => step(s, performance.now()), start: k => startGame(k || 'solo'), codes };
+window.__gm = { locals: () => locals, rivals: () => rivals, Net, Match, step: s => step(s, performance.now()), start: k => startGame(k || 'solo'), codes };
 })();
 </script>
