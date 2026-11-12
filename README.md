@@ -12,6 +12,12 @@ Le même code source produit deux fichiers :
 - **`gangstamen.html`** : la version classique, au rendu rétro (pixels, modèles simples), légère.
 - **`gangstamen-hd.html`** : la version HD. Rendu HDR avec bloom et tone mapping filmique, anti-crénelage, ciel procédural avec nuages et reflets sur les carrosseries, ombres douces, voitures aux formes lissées avec peinture vernie, phares et feux lumineux, fumée de pneus et d'échappement, traces de freinage, flammes et fumée selon les dégâts, explosions avec débris, onde de choc et marque au sol, lampadaires au sodium la nuit (touche N). Le réglage *Qualité graphique* (Basse à Ultra) est dans *Son et options* ; la qualité baisse d'un cran toute seule si la machine ne suit pas.
 
+En HD, les façades sans photo exploitable sont dessinées en haute résolution (volets, balcons, appuis de fenêtre, relief, vitres qui reflètent le ciel) et le sol est refait (dallage, herbe, bitume avec relief).
+
+**Façades photo** : `src/curate_facades.py` trie les morceaux de photos Panoramax de `data/facades` et ne garde que ceux qui sont nets et vus de face (environ 300 sur 1 077). Les autres (arbre devant, ciel, images dédoublées) sont remplacés par une façade dessinée, teintée avec la couleur du mur mesurée dans la photo. Le résultat est dans `data/facades_curated`, utilisé par le build.
+
+**Arbres et lampadaires** : ils sont repoussés hors de la chaussée (les largeurs de rue sont estimées, donc certains arbres d'OpenStreetMap tombaient sur la route).
+
 Les règles, les commandes et le jeu en ligne sont identiques. Le moteur HD est dans `src/hd.js` ; il est activé par `const HD = true`, que `build.sh` positionne pour le second fichier.
 
 ## Branches
