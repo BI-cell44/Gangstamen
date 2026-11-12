@@ -4,6 +4,16 @@ Combat de voitures façon fin des années 90, dans les **vraies rues de Chantena
 
 Un seul fichier, `gangstamen.html`, qui tourne dans tout navigateur récent avec WebGL (three.js est chargé depuis cdnjs).
 
+
+## Deux versions
+
+Le même code source produit deux fichiers :
+
+- **`gangstamen.html`** : la version classique, au rendu rétro (pixels, modèles simples), légère.
+- **`gangstamen-hd.html`** : la version HD. Rendu HDR avec bloom et tone mapping filmique, anti-crénelage, ciel procédural avec nuages et reflets sur les carrosseries, ombres douces, voitures aux formes lissées avec peinture vernie, phares et feux lumineux, fumée de pneus et d'échappement, traces de freinage, flammes et fumée selon les dégâts, explosions avec débris, onde de choc et marque au sol, lampadaires au sodium la nuit (touche N). Le réglage *Qualité graphique* (Basse à Ultra) est dans *Son et options* ; la qualité baisse d'un cran toute seule si la machine ne suit pas.
+
+Les règles, les commandes et le jeu en ligne sont identiques. Le moteur HD est dans `src/hd.js` ; il est activé par `const HD = true`, que `build.sh` positionne pour le second fichier.
+
 ## Branches
 
 - **`main`** : la version publiée comme artifact sur claude.ai. Le jeu en ligne passe par la capacité `room` de claude.ai (aucun serveur à héberger).
