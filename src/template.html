@@ -351,6 +351,8 @@ function noise(g, w, h, a) {
     g.fillRect(Math.random() * w | 0, Math.random() * h | 0, 1 + (Math.random() * 2 | 0), 1);
   }
 }
+/*@HD_MODULE@*/
+
 const FACADES = ['house', 'block', 'industrial', 'plain', 'brick', 'church'];
 // one tile = 4 bays x 4 floors = 16 m x 12.8 m
 function facade(style) {
@@ -481,11 +483,13 @@ const WALL_TINTS = [
   ['#d4cab4', '#cbbfa6'],
 ];
 const ROOF_TINTS = ['#4a5263', '#6c6964', '#7b8187', '#6b5b4b', '#58484a', '#6c6964', '#3f4655'];
-const facadeTex = FACADES.map(facade);
-const wallMats = facadeTex.map(([t, te]) => new THREE.MeshLambertMaterial({ map: t, vertexColors: true, emissive: 0xffffff, emissiveMap: te, emissiveIntensity: 0 }));
+const facadeTex = HD ? [] : FACADES.map(facade);
+const wallMats = HD ? FACADES.map(s => hd.wallMat(s)) : facadeTex.map(([t, te]) => new THREE.MeshLambertMaterial({ map: t, vertexColors: true, emissive: 0xffffff, emissiveMap: te, emissiveIntensity: 0 }));
 const roofMat = new THREE.MeshLambertMaterial({ vertexColors: true });
 // Real facades: Panoramax 360° photos reprojected onto the building faces (Bd de la Liberté, rue de la Marseillaise)
 const PHOTO = new Map();
+const PHOTO_TINT = new Map(); // wall colour measured in the street photos, for buildings drawn without their photo
+if (W.photos && W.photos.bt) for (const [bi, r, g, b] of W.photos.bt) PHOTO_TINT.set(bi, [r, g, b]);
 const photoMats = [];
 if (W.photos && window.PHOTO_ATLAS) {
   const loader = new THREE.TextureLoader();
@@ -511,7 +515,8 @@ function buildCity() {
     const p = b.p, n = p.length / 2, kind = b.k;
     const style = KIND_STYLE[kind] ?? 0;
     const tints = WALL_TINTS[kind] || WALL_TINTS[0];
-    const tint = shade(col(tints[(hash(bi) * tints.length) | 0]), 0.92 + hash(bi + 7) * 0.12);
+    const pt = PHOTO_TINT.get(bi);
+    const tint = pt ? pt.map(v => Math.max(0.3, Math.min(1, v * 1.08))) : shade(col(tints[(hash(bi) * tints.length) | 0]), 0.92 + hash(bi + 7) * 0.12);
     const sa = signedArea(p);
     // sit the building on the IGN terrain: walls start below the lowest ground point
     let gmin = 1e9, cxx = 0, czz = 0;
@@ -675,6 +680,27 @@ function roadSegAdd(ax, az, bx, bz, w, n) {
   }
 }
 
+// distance from a point to the nearest carriageway edge (negative: on the road) and the direction away from it
+function roadEdge(x, z) {
+  const segs = roadSegs.get(key(Math.floor(x / RCELL), Math.floor(z / RCELL)));
+  let bd = 1e9, nx = 0, nz = 0;
+  if (segs) for (const [ax, az, bx, bz, w] of segs) {
+    const dx = bx - ax, dz = bz - az, L2 = dx * dx + dz * dz || 1e-6;
+    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / L2));
+    const px = x - ax - dx * t, pz = z - az - dz * t, l = Math.hypot(px, pz), d = l - w / 2;
+    if (d < bd) { bd = d; const L = Math.sqrt(L2); nx = l > 0.01 ? px / l : -dz / L; nz = l > 0.01 ? pz / l : dx / L; }
+  }
+  return [bd, nx, nz];
+}
+// move a point off the carriageway, onto the pavement; null when it cannot be (middle of a junction)
+function offRoad(x, z, margin) {
+  for (let it = 0; it < 5; it++) {
+    const [d, nx, nz] = roadEdge(x, z); if (d >= margin) return [x, z];
+    x += nx * (margin - d + 0.05); z += nz * (margin - d + 0.05);
+  }
+  return null;
+}
+
 // road graph for AI
 const G = { x: [], z: [], adj: [], idx: new Map() };
 function gnode(x, z) {
@@ -696,7 +722,7 @@ function buildGround() {
     return { ...g, bb: [a, b, c, d] };
   });
   const tpos = new Float32Array(tnx * tnz * 3), tcol = new Float32Array(tnx * tnz * 3), tuv = new Float32Array(tnx * tnz * 2);
-  const cGround = col('#8d847c'), cPark = col('#557f3c'), cPitch = col('#64994a'), cCem = col('#5c6e50'), cBank = col('#5c5046');
+  const cGround = col(HD ? '#a39f98' : '#8d847c'), cPark = col('#557f3c'), cPitch = col('#64994a'), cCem = col('#5c6e50'), cBank = col('#5c5046');
   for (let j = 0; j < tnz; j++) for (let i = 0; i < tnx; i++) {
     const k = j * tnx + i, x = TX0 + i * ST, z = TZ0 + j * ST, y = groundH(x, z);
     tpos.set([x, y, z], k * 3); tuv.set([x / 8, z / 8], k * 2);
@@ -715,7 +741,7 @@ function buildGround() {
   tgeo.setAttribute('color', new THREE.BufferAttribute(tcol, 3));
   tgeo.setAttribute('uv', new THREE.BufferAttribute(tuv, 2));
   tgeo.setIndex(tidx); tgeo.computeVertexNormals();
-  const ground = new THREE.Mesh(tgeo, new THREE.MeshLambertMaterial({ map: gt, vertexColors: true }));
+  const ground = new THREE.Mesh(tgeo, HD ? hd.groundMat() : new THREE.MeshLambertMaterial({ map: gt, vertexColors: true }));
   ground.receiveShadow = true; scene.add(ground);
 
   const at = asphaltTex();
@@ -796,7 +822,7 @@ function buildGround() {
     const dm = new THREE.Mesh(deck.geo(), roadMat); dm.receiveShadow = true; scene.add(dm);
     const sm = new THREE.Mesh(side.geo(), new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })); sm.castShadow = sm.receiveShadow = true; scene.add(sm);
   }
-  for (const [bf, mat] of [[drive, roadMat], [foot, roadMat]]) {
+  for (const [bf, mat] of [[drive, roadMat], [foot, HD ? hd.footMat() : roadMat]]) {
     const m = new THREE.Mesh(bf.geo(), mat); m.receiveShadow = true; scene.add(m);
   }
   scene.add(new THREE.Mesh(marks.geo(), new THREE.MeshBasicMaterial({ vertexColors: true, fog: true })));
@@ -830,7 +856,11 @@ function buildGround() {
   const gmesh = new THREE.Mesh(greens.geo(), new THREE.MeshLambertMaterial({ vertexColors: true })); gmesh.receiveShadow = true; scene.add(gmesh);
 
   // trees (instanced)
-  const T = W.trees.concat(parkTrees);
+  const T = [];
+  for (const src of [W.trees, parkTrees]) for (let i = 0; i < src.length; i += 2) { // keep trunks out of the traffic
+    const q = offRoad(src[i], src[i + 1], 0.9);
+    if (q && !buildingPolys.some(b => pointInPoly(q[0], q[1], b.p))) T.push(q[0], q[1]);
+  }
   const nt = T.length / 2;
   const crownG = HD ? hd.crownGeo() : new THREE.IcosahedronGeometry(2.6, 0), trunkG = new THREE.CylinderGeometry(0.22, 0.3, 3, 5);
   const crowns = new THREE.InstancedMesh(crownG, new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: !HD, vertexColors: HD }), nt);
@@ -852,8 +882,6 @@ function buildGround() {
   const water = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), HD ? hd.waterMat() : new THREE.MeshPhongMaterial({ color: 0x2f4f66, specular: 0xffb27a, shininess: 70 }));
   water.rotation.x = -Math.PI / 2; water.position.set(0, WATER_Y, 0); scene.add(water);
 }
-
-/*@HD_MODULE@*/
 
 // ---------- cars: low-poly 90s saloons and hatchbacks built from extruded side profiles ----------
 const CAR_STYLES = {

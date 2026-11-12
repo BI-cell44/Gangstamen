@@ -12,7 +12,8 @@ assert '/*@HD_MODULE@*/' in t
 open('template.html', 'w', encoding='utf-8').write(t.replace('/*@HD_MODULE@*/', open('../src/hd.js', encoding='utf-8').read()))
 PY
 python3 ../src/carve.py                                   # smooth road profiles, bridges, finer terrain -> world.json
-python3 ../src/build_photos.py ../data/facades gangstamen_facades2   # embed data + Panoramax facades -> gangstamen.html
+# data/facades_curated is made from data/facades by src/curate_facades.py (needs Pillow + numpy); it is committed
+python3 ../src/build_photos.py ../data/facades_curated gangstamen_facades2   # embed data + Panoramax facades -> gangstamen.html
 python3 - <<'PY'
 t = open('gangstamen.html', encoding='utf-8').read()
 assert t.count('const HD = false;') == 1 and t.count('<title>Gangstamen</title>') == 1
