@@ -247,6 +247,7 @@ const hd = !HD ? null : (() => {
   const fire = (x, y, z, vx, vy, vz, size, life, heat) => emit(1, x, y, z, vx, vy, vz, size, 1.4, life, 4.2 * heat, 1.5 * heat, 0.3 * heat, 0.8, 1.5, -3.5);
   const spark = (x, y, z, vx, vy, vz, life) => emit(1, x, y, z, vx, vy, vz, 0.16, -0.6, life, 9, 5, 1.6, 1, 0.4, 16);
   function updateParticles(dt) {
+    if (window.__trHold) dt = 0;
     const sp = ptsSmoke.geometry.attributes, gp = ptsGlow.geometry.attributes;
     let ns = 0, ng = 0, w = 0;
     for (let i = 0; i < P.n; i++) {
@@ -351,10 +352,13 @@ const hd = !HD ? null : (() => {
       for (let i = 0; i < 4; i++) smoke(x + rs(), y, z + rs(), rs() * 3, 3 + Math.random() * 4, rs() * 3, 0.9, 2, 0.8, 0.85, 0.6);
     }
   }
-  function muzzle(x1, z1, x2, z2, enemy) {
-    const y = surfaceH(x1, z1) + 1.36;
-    emit(1, x1, y, z1, 0, 0, 0, 1.5, 0.6, 0.05, enemy ? 12 : 12, enemy ? 3 : 8, enemy ? 3 : 2.5, 1, 0, 0);
-    if (Math.random() < 0.5) flashAt(x1, y + 0.3, z1, 1, enemy ? 0.4 : 0.75, 0.35, 2.6, 0.06);
+  function muzzle(x, y, z, enemy, dx, dz) { // flash at the barrel tip, stretched along the shot, and a wisp of gun smoke
+    const g = enemy ? 3 : 8, b = enemy ? 3 : 2.5;
+    emit(1, x, y, z, 0, 0, 0, 0.55, 0.5, 0.05, 10, g * 0.9, b, 1, 0, 0);
+    emit(1, x + dx * 0.3, y, z + dz * 0.3, dx * 4, 0, dz * 4, 0.4, 0.2, 0.04, 9, g * 0.8, b, 0.9, 0, 0);
+    emit(1, x + dx * 0.6, y, z + dz * 0.6, dx * 6, 0, dz * 6, 0.25, 0, 0.03, 8, g * 0.6, b, 0.7, 0, 0);
+    if (Math.random() < 0.35) smoke(x + dx * 0.3, y, z + dz * 0.3, dx * 2 + rs(), 0.4, dz * 2 + rs(), 0.25, 3, 0.45, 0.7, 0.18);
+    if (Math.random() < 0.5) flashAt(x, y + 0.2, z, 1, enemy ? 0.4 : 0.75, 0.35, 2.6, 0.06);
   }
 
   // ---------- per-car effects ----------
@@ -964,11 +968,12 @@ const hd = !HD ? null : (() => {
     add(new THREE.CylinderGeometry(0.006, 0.006, 0.75, 4), M.under, -W_ / 2 + 0.24, 1.38, -(s0 + 0.75));
     if (st.spoiler) { const o = at(C.ramps[0][1] - 0.05); const sp = new THREE.Mesh(new THREE.BoxGeometry(o.wb * 1.5, 0.035, 0.26), mPaint); sp.geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(72).map((_, i) => [paintC.r, paintC.g, paintC.b][i % 3]), 3)); sp.position.set(0, o.yb + o.hc + 0.05, -(C.ramps[0][1] - 0.2)); body.add(sp); }
     // twin machine guns on the bonnet
-    const go = at(C.ramps[1][1] + 0.5);
+    const go = at(C.ramps[1][1] + 0.5), muzzles = [];
     for (const sx of [-0.4, 0.4]) {
       box(0.15, 0.11, 0.44, M.gun, sx, go.yb + 0.085, -(go.s));
       add(new THREE.CylinderGeometry(0.03, 0.03, 0.8, 10).rotateX(Math.PI / 2), M.gun, sx, go.yb + 0.1, -(go.s + 0.55), true);
       add(new THREE.CylinderGeometry(0.042, 0.042, 0.1, 10).rotateX(Math.PI / 2), M.gun, sx, go.yb + 0.1, -(go.s + 0.92));
+      const mz = new THREE.Object3D(); mz.position.set(sx, go.yb + 0.1, -(go.s + 0.99)); body.add(mz); muzzles.push(mz); // follows the body roll and pitch
     }
     // wheels
     const WG = wheelCache[st.wr] || (wheelCache[st.wr] = wheelGeos(st.wr));
@@ -992,7 +997,7 @@ const hd = !HD ? null : (() => {
     }
     const noop = { emissive: { setHex() { } } };
     Object.assign(g.userData, { wheels, steer, mBody: mPaint, mPaint: { color: { setHex() { } } }, base: 0xffffff, paint, tail: noop, head: noop,
-      tailM, headM, bodyG: body, wb: st.wb, hw: W_ / 2 - 0.13, hl, hdLinear: true });
+      tailM, headM, bodyG: body, muzzles, wb: st.wb, hw: W_ / 2 - 0.13, hl, hdLinear: true });
     g.traverse(o => { o.userData.hdLinear = true; });
     scene.add(g);
     return g;
