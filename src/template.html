@@ -230,7 +230,8 @@ body.touch #plate { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
       <div class="row"><span class="lab">Fin (solo)</span><div class="seg goalSeg"><button class="mbtn" data-g="10">10 KO</button><button class="mbtn" data-g="20">20 KO</button><button class="mbtn" data-g="30">30 KO</button><button class="mbtn" data-g="0">Sans</button></div></div>
       <div class="row"><span class="lab">Durée</span><div class="seg limitSeg"><button class="mbtn" data-l="5">5 min</button><button class="mbtn" data-l="10">10 min</button><button class="mbtn" data-l="15">15 min</button><button class="mbtn" data-l="0">Sans</button></div></div>
       <div class="row"><label class="lab" for="optRumble">Vibrations manette</label><input id="optRumble" type="checkbox"></div>
-      <div class="row"><label class="lab" for="optRetro">Pixels rétro</label><input id="optRetro" type="checkbox"></div>
+      <div class="row" id="retroRow"><label class="lab" for="optRetro">Pixels rétro</label><input id="optRetro" type="checkbox"></div>
+      <div class="row" id="hdRow" hidden><span class="lab">Qualité graphique</span><div class="seg" id="hdSeg"><button class="mbtn" data-q="0">Basse</button><button class="mbtn" data-q="1">Moyenne</button><button class="mbtn" data-q="2">Haute</button><button class="mbtn" data-q="3">Ultra</button></div></div>
       <div class="menu"><button class="mbtn" data-go="vMain">Retour</button></div>
     </section>
 
@@ -303,14 +304,15 @@ const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147
 const hash = n => { let x = Math.sin(n * 12.9898) * 43758.5453; return x - Math.floor(x); };
 
 // ---------- renderer / scene ----------
+const HD = false; // build flag: build.sh writes gangstamen-hd.html with this set to true
 const view = $('view');
 const renderer = new THREE.WebGLRenderer({ antialias: false, logarithmicDepthBuffer: true, powerPreference: 'high-performance' });
-let retro = true;
-const setRatio = () => renderer.setPixelRatio(retro ? 0.5 : Math.min(devicePixelRatio, 1.5));
+let retro = !HD;
+const setRatio = () => HD || renderer.setPixelRatio(retro ? 0.5 : Math.min(devicePixelRatio, 1.5));
 setRatio();
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = !isTouch;
-renderer.shadowMap.type = THREE.PCFShadowMap;
+renderer.shadowMap.type = HD ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
 view.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
@@ -717,9 +719,9 @@ function buildGround() {
   ground.receiveShadow = true; scene.add(ground);
 
   const at = asphaltTex();
-  const roadMat = new THREE.MeshLambertMaterial({ map: at, vertexColors: true });
+  const roadMat = HD ? hd.roadMat() : new THREE.MeshLambertMaterial({ map: at, vertexColors: true });
   const drive = new Buf(), foot = new Buf(), marks = new Buf();
-  const cDrive = col('#46404c'), cPrim = col('#3d3843'), cFoot = col('#a69d92'), cMark = col('#efe6cf');
+  const cDrive = col(HD ? '#414144' : '#46404c'), cPrim = col(HD ? '#39393c' : '#3d3843'), cFoot = col('#a69d92'), cMark = col('#efe6cf');
   W.roads.forEach(r => {
     const p = r.p;
     if (r.b) { // bridge: deck built below; still part of the road network
@@ -830,8 +832,8 @@ function buildGround() {
   // trees (instanced)
   const T = W.trees.concat(parkTrees);
   const nt = T.length / 2;
-  const crownG = new THREE.IcosahedronGeometry(2.6, 0), trunkG = new THREE.CylinderGeometry(0.22, 0.3, 3, 5);
-  const crowns = new THREE.InstancedMesh(crownG, new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }), nt);
+  const crownG = HD ? hd.crownGeo() : new THREE.IcosahedronGeometry(2.6, 0), trunkG = new THREE.CylinderGeometry(0.22, 0.3, 3, 5);
+  const crowns = new THREE.InstancedMesh(crownG, new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: !HD, vertexColors: HD }), nt);
   const trunks = new THREE.InstancedMesh(trunkG, new THREE.MeshLambertMaterial({ color: 0x5a4636 }), nt);
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), v = new THREE.Vector3(), cc = new THREE.Color();
   for (let i = 0; i < nt; i++) {
@@ -847,9 +849,11 @@ function buildGround() {
   scene.add(crowns, trunks);
 
   // The Loire: a water plane; the ground model dips under it where the river is
-  const water = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), new THREE.MeshPhongMaterial({ color: 0x2f4f66, specular: 0xffb27a, shininess: 70 }));
+  const water = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), HD ? hd.waterMat() : new THREE.MeshPhongMaterial({ color: 0x2f4f66, specular: 0xffb27a, shininess: 70 }));
   water.rotation.x = -Math.PI / 2; water.position.set(0, WATER_Y, 0); scene.add(water);
 }
+
+/*@HD_MODULE@*/
 
 // ---------- cars: low-poly 90s saloons and hatchbacks built from extruded side profiles ----------
 const CAR_STYLES = {
@@ -921,6 +925,7 @@ function extrudeSide(shape, width, bevel) {
 }
 let plateNo = 0;
 function makeCar(paint, stripe, isPlayer, styleName) {
+  if (HD) return hd.makeCar(paint, stripe, isPlayer, styleName);
   const st = CAR_STYLES[styleName || (isPlayer ? 'saloon' : 'hatch')];
   const g = new THREE.Group();
   const hex = '#' + new THREE.Color(paint).getHexString();
@@ -1108,6 +1113,7 @@ function segHit(ox, oz, dx, dz, maxT) { // ray vs walls, returns distance
 const fxPool = [];
 const fxGeo = new THREE.IcosahedronGeometry(1, 0);
 function spawnFx(x, y, z, size, color, life, vy, grow) {
+  if (HD) return hd.fx(x, y, z, size, color);
   let f = fxPool.find(o => !o.alive);
   if (!f) {
     if (fxPool.length > 160) return;
@@ -1128,6 +1134,7 @@ function updateFx(dt) {
   }
 }
 function explode(x, z) {
+  if (HD) return hd.explode(x, z);
   for (let i = 0; i < 10; i++) spawnFx(x + (Math.random() - .5) * 3, 1 + Math.random() * 2, z + (Math.random() - .5) * 3, 1.2 + Math.random(), i % 2 ? 0xffb03a : 0xff5a1f, 0.7, 3, 2.5);
   for (let i = 0; i < 8; i++) spawnFx(x, 2, z, 1.5, 0x2a2228, 2.2, 4, 3);
   sfx.boom();
@@ -1143,8 +1150,10 @@ tracers.frustumCulled = false; scene.add(tracers);
 const trLife = new Float32Array(TR_MAX); let trNext = 0;
 function tracer(x1, z1, x2, z2, enemy) {
   const i = trNext++ % TR_MAX, o = i * 6;
-  trPos.set([x1, surfaceH(x1, z1) + 1.0, z1, x2, surfaceH(x2, z2) + 1.0, z2], o);
-  const c = enemy ? [1, 0.25, 0.3] : [1, 0.9, 0.4];
+  const ty = HD ? 1.36 : 1.0;
+  trPos.set([x1, surfaceH(x1, z1) + ty, z1, x2, surfaceH(x2, z2) + ty, z2], o);
+  const c = HD ? (enemy ? [9, 1.6, 2] : [9, 6.5, 2]) : enemy ? [1, 0.25, 0.3] : [1, 0.9, 0.4];
+  if (HD) hd.muzzle(x1, z1, x2, z2, enemy);
   trCol.set([...c, ...c], o); trLife[i] = 0.07;
 }
 function updateTracers(dt) {
@@ -1223,11 +1232,12 @@ const SETTINGS_KEY = 'gangstamen.settings.v1';
 const settings = Object.assign({
   ctl: ['kb1', 'kb2', 'kb3', 'kb4'], soloCtl: 'kb1+pad0', nPlayers: 2,
   music: 0.7, fx: 0.8, rumble: true, retro: true, nick: '',
-  teams: false, team: [0, 1, 0, 1], netTeams: false, netTeam: -1, goal: 20, limit: 10,
+  hdq: 2, teams: false, team: [0, 1, 0, 1], netTeams: false, netTeam: -1, goal: 20, limit: 10,
 }, (() => { try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); } catch (e) { return {}; } })());
 function saveSettings() { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { } }
 sfx.setVolume('music', settings.music); sfx.setVolume('fx', settings.fx);
-if (!settings.retro) { retro = false; setRatio(); view.classList.remove('retro'); $('scan').classList.add('off'); }
+if (HD) { view.classList.remove('retro'); $('scan').classList.add('off'); hd.setQuality(settings.hdq); }
+else if (!settings.retro) { retro = false; setRatio(); view.classList.remove('retro'); $('scan').classList.add('off'); }
 
 // ---------- input: keyboards (physical keys), gamepads, touch ----------
 const SCHEMES = {
@@ -1756,6 +1766,7 @@ $('resQuit').addEventListener('click', () => { try { if (Net.room) Net.room.leav
 // ---------- day / night / pixels / pause ----------
 function setNight(on) {
   night = on;
+  if (HD) return hd.setTime(on);
   scene.background = on ? SKY.night : SKY.day;
   scene.fog = new THREE.Fog(on ? 0x140c24 : 0xc96a74, on ? 50 : 140, on ? 430 : 720);
   hemi.intensity = on ? 0.2 : 0.62; hemi.color.set(on ? 0x8090ff : 0xffd2a8);
@@ -1764,6 +1775,7 @@ function setNight(on) {
   for (const c of allPlayerCars()) { if (c.mesh.userData.spot) c.mesh.userData.spot.intensity = on ? 2.4 : 0; c.mesh.userData.head.emissive.setHex(on ? 0xfff2c0 : 0x8a8060); }
 }
 function toggleRetro() {
+  if (HD) return;
   retro = !retro; settings.retro = retro; saveSettings();
   setRatio(); renderer.setSize(innerWidth, innerHeight); view.classList.toggle('retro', retro); $('scan').classList.toggle('off', !retro);
   const o = $('optRetro'); if (o) o.checked = retro;
@@ -2224,6 +2236,13 @@ function initOptions() {
   vf.addEventListener('input', () => { settings.fx = vf.value / 100; sfx.setVolume('fx', settings.fx); saveSettings(); show(); sfx.init(); sfx.gun(false); });
   $('optRumble').checked = settings.rumble; $('optRumble').addEventListener('change', e => { settings.rumble = e.target.checked; saveSettings(); });
   $('optRetro').checked = retro; $('optRetro').addEventListener('change', () => toggleRetro());
+  if (HD) {
+    $('retroRow').hidden = true; $('hdRow').hidden = false;
+    const seg = document.querySelectorAll('#hdSeg button'), show = () => seg.forEach(b => b.classList.toggle('on', +b.dataset.q === hd.quality));
+    seg.forEach(b => b.addEventListener('click', () => { hd.setQuality(+b.dataset.q); settings.hdq = hd.quality; saveSettings(); show(); }));
+    show();
+    document.querySelector('#title h1').insertAdjacentHTML('beforeend', ' <span style="font-family:var(--data);font-size:.3em;vertical-align:top;color:var(--sunset);text-shadow:2px 2px 0 #000">HD</span>');
+  }
   show();
 }
 // gamepad navigation in menus: D-pad / stick to move, A to choose, B back, left/right on sliders
@@ -2288,11 +2307,17 @@ function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   pollPads();
   menuPadNav(dt);
+  if (HD) hd.perf(now);
   if (started && (!paused || mode === 'online')) step(dt, now);
   if (started && mode === 'online') netTick(dt, now);
   render(dt);
 }
 function render(dt) {
+  if (HD) {
+    if (!started || !locals.length) { updateTitleCamera(dt); return hd.render([{ x: 0, y: 0, w: innerWidth, h: innerHeight, cam: camera }]); }
+    for (const L of locals) updateCamera(L, dt);
+    return hd.render(locals.map(L => ({ x: L.vp.x, y: L.vp.y, w: L.vp.w, h: L.vp.h, cam: L.cam, car: L.car })));
+  }
   if (!started || !locals.length) {
     updateTitleCamera(dt);
     renderer.setScissorTest(false); renderer.setViewport(0, 0, innerWidth, innerHeight);
@@ -2371,6 +2396,7 @@ function step(dt, now) {
     }
   }
   updateFx(dt); updateTracers(dt);
+  if (HD) hd.frame(dt);
   updateHud(dt);
   boardAcc += dt; if (boardAcc > 0.25) { boardAcc = 0; updateTeamBar(); updateClock(); if (!$('board').hidden) renderBoard(); }
   const c0 = locals[0].car;
@@ -2403,6 +2429,11 @@ function updateCamera(L, dt) {
   cam.position.lerp(camPos, k);
   L.look = L.look || camLook.clone();
   L.look.lerp(camLook, k);
+  if (HD) { // speed widens the view; explosions shake it
+    const f = 56 + Math.min(13, c.speed * 0.28); if (Math.abs(cam.fov - f) > 0.05) { cam.fov += (f - cam.fov) * Math.min(1, dt * 3); cam.updateProjectionMatrix(); }
+    if (L.shake > 0.01) { cam.position.x += (Math.random() - 0.5) * L.shake; cam.position.y += (Math.random() - 0.5) * L.shake * 0.7; cam.position.z += (Math.random() - 0.5) * L.shake; L.shake *= Math.exp(-dt * 5); }
+    if (window.__cam) { cam.position.set(c.x + window.__cam[0], c.mesh.position.y + window.__cam[1], c.z + window.__cam[2]); L.look.set(c.x, c.mesh.position.y + 0.7, c.z); }
+  }
   cam.lookAt(L.look);
 }
 
@@ -2411,6 +2442,7 @@ buildCity();
 buildGround();
 buildMinimap();
 setupWorldActors();
+if (HD) hd.world();
 setNight(false);
 renderSlots(); renderCtlTable(); initOptions();
 requestAnimationFrame(frame);
@@ -2421,6 +2453,6 @@ startBtn.addEventListener('click', () => startGame('solo'));
 $('splitGo').addEventListener('click', () => startGame('split'));
 $('create').addEventListener('click', () => startOnline(null, true));
 netInit();
-window.__gm = { locals: () => locals, rivals: () => rivals, Net, Match, step: s => step(s, performance.now()), start: k => startGame(k || 'solo'), codes };
+window.__gm = { hd, locals: () => locals, rivals: () => rivals, Net, Match, step: s => step(s, performance.now()), start: k => startGame(k || 'solo'), codes };
 })();
 </script>
