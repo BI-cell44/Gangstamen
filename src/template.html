@@ -485,13 +485,47 @@ const WALL_TINTS = [
 const ROOF_TINTS = ['#4a5263', '#6c6964', '#7b8187', '#6b5b4b', '#58484a', '#6c6964', '#3f4655'];
 const facadeTex = HD ? [] : FACADES.map(facade);
 const wallMats = HD ? FACADES.map(s => hd.wallMat(s)) : facadeTex.map(([t, te]) => new THREE.MeshLambertMaterial({ map: t, vertexColors: true, emissive: 0xffffff, emissiveMap: te, emissiveIntensity: 0 }));
-const roofMat = new THREE.MeshLambertMaterial({ vertexColors: true });
+const roofMat = HD ? hd.roofMat() : new THREE.MeshLambertMaterial({ vertexColors: true });
+const gfMats = HD ? hd.GROUND_STYLES.map(s => hd.wallMat(s, true)) : []; // HD: street-level strips (doors, garages, shop fronts)
+if (HD) wallMats.push(...gfMats); // lit windows follow day and night like the others
+const SHOP_STYLE = 6;
+// inward offset of a footprint, for mansard-style roofs; null when the shape does not allow it
+function insetPoly(p, d, sa) {
+  const n = p.length / 2, q = [], sg = sa > 0 ? 1 : -1;
+  for (let i = 0; i < n; i++) {
+    const a = (i + n - 1) % n, b = (i + 1) % n;
+    let e1x = p[2 * i] - p[2 * a], e1z = p[2 * i + 1] - p[2 * a + 1], e2x = p[2 * b] - p[2 * i], e2z = p[2 * b + 1] - p[2 * i + 1];
+    const l1 = Math.hypot(e1x, e1z), l2 = Math.hypot(e2x, e2z); if (l1 < 0.05 || l2 < 0.05) return null;
+    e1x /= l1; e1z /= l1; e2x /= l2; e2z /= l2;
+    const n1x = -e1z * sg, n1z = e1x * sg, n2x = -e2z * sg, n2z = e2x * sg; // inward normals
+    let mx = n1x + n2x, mz = n1z + n2z; const ml = Math.hypot(mx, mz); if (ml < 0.2) return null;
+    mx /= ml; mz /= ml;
+    const k = d / Math.max(0.35, mx * n1x + mz * n1z); if (k > d * 2.6) return null;
+    const x = p[2 * i] + mx * k, z = p[2 * i + 1] + mz * k;
+    if (!pointInPoly(x, z, p)) return null;
+    q.push(x, z);
+  }
+  const a0 = signedArea(p), a1 = signedArea(q);
+  if (a0 * a1 <= 0 || Math.abs(a1) < Math.abs(a0) * 0.18) return null;
+  for (let i = 0; i < n; i++) { // edges must keep their direction
+    const j = (i + 1) % n;
+    if ((p[2 * j] - p[2 * i]) * (q[2 * j] - q[2 * i]) + (p[2 * j + 1] - p[2 * i + 1]) * (q[2 * j + 1] - q[2 * i + 1]) <= 0) return null;
+  }
+  return q;
+}
+function boxBuf(bf, cx, cz, w, d, y0, y1, c) {
+  const x0 = cx - w / 2, x1 = cx + w / 2, z0 = cz - d / 2, z1 = cz + d / 2;
+  const q = (A, B, C, D, nn) => { bf.tri(A, B, C, nn, null, null, null, c); bf.tri(A, C, D, nn, null, null, null, c); };
+  q([x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1], [0, 0, 1]); q([x1, y0, z0], [x0, y0, z0], [x0, y1, z0], [x1, y1, z0], [0, 0, -1]);
+  q([x1, y0, z1], [x1, y0, z0], [x1, y1, z0], [x1, y1, z1], [1, 0, 0]); q([x0, y0, z0], [x0, y0, z1], [x0, y1, z1], [x0, y1, z0], [-1, 0, 0]);
+  q([x0, y1, z1], [x1, y1, z1], [x1, y1, z0], [x0, y1, z0], [0, 1, 0]);
+}
 // Real facades: Panoramax 360° photos reprojected onto the building faces (Bd de la Liberté, rue de la Marseillaise)
 const PHOTO = new Map();
 const PHOTO_TINT = new Map(); // wall colour measured in the street photos, for buildings drawn without their photo
 if (W.photos && W.photos.bt) for (const [bi, r, g, b] of W.photos.bt) PHOTO_TINT.set(bi, [r, g, b]);
 const photoMats = [];
-if (W.photos && window.PHOTO_ATLAS) {
+if (!HD && W.photos && window.PHOTO_ATLAS) {
   const loader = new THREE.TextureLoader();
   W.photos.atlas.forEach((sz, k) => {
     const tx = loader.load(window.PHOTO_ATLAS[k]);
@@ -511,6 +545,7 @@ const landmarks = [];
 
 function buildCity() {
   const walls = FACADES.map(() => new Buf()), roofs = new Buf(), photoBufs = photoMats.map(() => new Buf());
+  const gwalls = gfMats.map(() => new Buf()), extras = new Buf(), cBrick = col('#8a4a38'), cStone = col('#b9b1a3');
   W.buildings.forEach((b, bi) => {
     const p = b.p, n = p.length / 2, kind = b.k;
     const style = KIND_STYLE[kind] ?? 0;
@@ -525,7 +560,11 @@ function buildCity() {
     const y0 = Math.min(gmin, base) - 0.6;
     const riseIn = b.r != null ? b.r : (kind === 0 ? 2.4 : 0);
     const pitched = n === 4 && Math.abs(sa) < 600 && riseIn > 0.8 && kind !== 2;
-    const h = Math.max(y0 + 2.5, base + b.h + (pitched ? 0 : riseIn * 0.45));
+    // HD: other houses get a mansard-style roof (footprint offset inwards) when the shape allows it
+    const insD = Math.max(1.2, Math.min(3.4, Math.sqrt(Math.abs(sa)) * 0.2));
+    const inner = HD && !pitched && riseIn > 0.8 && kind !== 2 && n <= 14 && Math.abs(sa) < 1800 ? insetPoly(p, insD, sa) : null;
+    const h = Math.max(y0 + 2.5, base + b.h + (pitched || inner ? 0 : riseIn * 0.45));
+    const shop = HD && (style === 0 || style === 4) && b.h >= 6 && hash(bi + 21) < 0.2;
     let acc = hash(bi + 3) * 16;
     const eaveC = shade(col(ROOF_TINTS[kind] || ROOF_TINTS[0]), 0.62);
     for (let i = 0; i < n; i++) {
@@ -553,6 +592,18 @@ function buildCity() {
           bf.tri([x0, yb, z0], [x1, yb, z1], [x1, h, z1], nrm, [U0, vOf(yb)], [U1, vOf(yb)], [U1, vOf(h)]);
           bf.tri([x0, yb, z0], [x1, h, z1], [x0, h, z0], nrm, [U0, vOf(yb)], [U1, vOf(h)], [U0, vOf(h)]);
         }
+      } else if (HD) {
+        // three strips: foundation below street level, the ground floor (doors, garages, shops), then whole floors up to the eaves
+        const quad = (bf, ya, yb, ua, ub, va, vb, c) => {
+          const a0 = [ax, ya, az], b0 = [bx, ya, bz], b1 = [bx, yb, bz], a1 = [ax, yb, az];
+          bf.tri(a0, b0, b1, nrm, [ua, va], [ub, va], [ub, vb], c); bf.tri(a0, b1, a1, nrm, [ua, va], [ub, vb], [ua, vb], c);
+        };
+        const gy = Math.min(h - 0.5, Math.max(groundH(ax, az), groundH(bx, bz)) + 0.3), fy = Math.min(h, gy + 3.2);
+        if (gy > y0 + 0.02) quad(walls[3], y0, gy, u0, u1, 0, (gy - y0) / 12.8, [tint[0] * 0.72, tint[1] * 0.72, tint[2] * 0.72]);
+        const gs = shop ? SHOP_STYLE : style, ud = gs === SHOP_STYLE ? 32 : 16;
+        if (L > 2.2 || gs === 3) quad(gwalls[gs], gy, fy, acc / ud, (acc + L) / ud, 0, (fy - gy) / 3.2, tint);
+        else quad(walls[3], gy, fy, u0, u1, 0, (fy - gy) / 12.8, tint); // slivers of wall stay plain
+        if (h > fy + 0.05) { const nf = Math.round((h - fy) / 3.2); quad(walls[style], fy, h, u0, u1, 0, nf > 0 ? nf / 4 : (h - fy) / 12.8, tint); }
       } else {
         walls[style].tri(A0, B0, B1, nrm, [u0, v0], [u1, v0], [u1, v1], tint);
         walls[style].tri(A0, B1, A1, nrm, [u0, v0], [u1, v1], [u0, v1], tint);
@@ -594,8 +645,24 @@ function buildCity() {
       for (const [u, v, r] of [[a1, a2, rb], [a3, a0, ra]]) {
         const gx = r[0] - cx, gz = r[1] - cz, gl = Math.hypot(gx, gz) || 1;
         const L = len(u, v), v0 = (h - y0) / 12.8, v1 = (h + rise - y0) / 12.8;
-        walls[style].tri(V(u, h), V(v, h), V(r, h + rise), [gx / gl, 0, gz / gl], [0, v0], [L / 16, v0], [L / 32, v1], tint);
+        walls[HD ? 3 : style].tri(V(u, h), V(v, h), V(r, h + rise), [gx / gl, 0, gz / gl], [0, v0], [L / 16, v0], [L / 32, v1], tint);
       }
+      if (HD) for (const t of hash(bi + 31) < 0.5 ? [0.22] : [0.2, 0.8]) boxBuf(extras, ra[0] + (rb[0] - ra[0]) * t, ra[1] + (rb[1] - ra[1]) * t, 0.6, 0.6, h + rise - 0.6, h + rise + 0.9, hash(bi + 5) < 0.6 ? cBrick : cStone);
+    } else if (inner) {
+      const rise = Math.max(1.4, Math.min(4.5, riseIn, insD * 1.15)), nq = inner.length / 2;
+      for (let i = 0; i < nq; i++) {
+        const j = (i + 1) % nq;
+        const A = [p[2 * i], h, p[2 * i + 1]], B = [p[2 * j], h, p[2 * j + 1]], C = [inner[2 * j], h + rise, inner[2 * j + 1]], D = [inner[2 * i], h + rise, inner[2 * i + 1]];
+        const e1 = [B[0] - A[0], 0, B[2] - A[2]], e2 = [D[0] - A[0], rise, D[2] - A[2]];
+        let nx = e1[1] * e2[2] - e1[2] * e2[1], ny = e1[2] * e2[0] - e1[0] * e2[2], nz = e1[0] * e2[1] - e1[1] * e2[0];
+        const l = Math.hypot(nx, ny, nz) || 1; if (ny < 0) { nx = -nx; ny = -ny; nz = -nz; }
+        const nn = [nx / l, ny / l, nz / l];
+        roofs.tri(A, B, C, nn, null, null, null, rc); roofs.tri(A, C, D, nn, null, null, null, rc);
+      }
+      const [, tr] = triangulate(inner);
+      for (const [a, bb, c] of tr) roofs.tri([inner[2 * a], h + rise, inner[2 * a + 1]], [inner[2 * bb], h + rise, inner[2 * bb + 1]], [inner[2 * c], h + rise, inner[2 * c + 1]], [0, 1, 0], null, null, null, rc);
+      const k = (hash(bi + 41) * nq) | 0, cxi = inner.reduce((s2, v, i) => i % 2 ? s2 : s2 + v, 0) / nq, czi = inner.reduce((s2, v, i) => i % 2 ? s2 + v : s2, 0) / nq;
+      boxBuf(extras, inner[2 * k] + (cxi - inner[2 * k]) * 0.3, inner[2 * k + 1] + (czi - inner[2 * k + 1]) * 0.3, 0.65, 0.65, h + rise - 0.3, h + rise + 1.2, hash(bi + 5) < 0.6 ? cBrick : cStone);
     } else {
     const [, tris] = triangulate(p);
     for (const [a, bb, c] of tris) {
@@ -617,6 +684,11 @@ function buildCity() {
     const m = new THREE.Mesh(bf.geo(), wallMats[i]);
     m.castShadow = m.receiveShadow = true; scene.add(m);
   });
+  gwalls.forEach((bf, i) => {
+    if (!bf.p.length) return;
+    const m = new THREE.Mesh(bf.geo(), gfMats[i]); m.castShadow = m.receiveShadow = true; scene.add(m);
+  });
+  if (extras.p.length) { const m = new THREE.Mesh(extras.geo(), new THREE.MeshLambertMaterial({ vertexColors: true })); m.castShadow = m.receiveShadow = true; scene.add(m); }
   const rm = new THREE.Mesh(roofs.geo(), roofMat); rm.castShadow = rm.receiveShadow = true; scene.add(rm);
 }
 
@@ -856,6 +928,11 @@ function buildGround() {
   const gmesh = new THREE.Mesh(greens.geo(), new THREE.MeshLambertMaterial({ vertexColors: true })); gmesh.receiveShadow = true; scene.add(gmesh);
 
   // trees (instanced)
+  if (HD) { // tell the terrain shader where the streets are: pavements stay paved even under tree crowns
+    const ar = new Float32Array(tnx * tnz);
+    for (let k = 0; k < ar.length; k++) { const d = roadEdge(tpos[k * 3], tpos[k * 3 + 2])[0]; ar[k] = d < 3 ? 1 : d < 9 ? (9 - d) / 6 : 0; }
+    tgeo.setAttribute('aRoad', new THREE.BufferAttribute(ar, 1));
+  }
   const T = [];
   for (const src of [W.trees, parkTrees]) for (let i = 0; i < src.length; i += 2) { // keep trunks out of the traffic
     const q = offRoad(src[i], src[i + 1], 0.9);

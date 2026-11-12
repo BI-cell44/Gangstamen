@@ -458,9 +458,9 @@ const hd = !HD ? null : (() => {
 
   // ---------- world upgrades ----------
   function noiseCanvas(n, f) { const [c, g] = canvas(n, n); const im = g.createImageData(n, n); for (let i = 0; i < n * n; i++) f(im.data, i * 4, i % n, (i / n) | 0); g.putImageData(im, 0, 0); return c; }
-  function heightToNormal(hf, n, strength) {
-    const [c, g] = canvas(n, n), im = g.createImageData(n, n), H = (x, y) => hf[((y + n) % n) * n + ((x + n) % n)];
-    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+  function heightToNormal(hf, n, strength, nh = n) {
+    const [c, g] = canvas(n, nh), im = g.createImageData(n, nh), H = (x, y) => hf[((y + nh) % nh) * n + ((x + n) % n)];
+    for (let y = 0; y < nh; y++) for (let x = 0; x < n; x++) {
       const dx = (H(x + 1, y) - H(x - 1, y)) * strength, dy = (H(x, y + 1) - H(x, y - 1)) * strength, l = Math.hypot(dx, dy, 1), o = (y * n + x) * 4;
       im.data[o] = (-dx / l * 0.5 + 0.5) * 255; im.data[o + 1] = (-dy / l * 0.5 + 0.5) * 255; im.data[o + 2] = (1 / l * 0.5 + 0.5) * 255; im.data[o + 3] = 255;
     }
@@ -487,30 +487,31 @@ const hd = !HD ? null : (() => {
   }
   // ---------- high-resolution drawn facades: colour, lit windows, relief and glossy glass ----------
   // one tile = 4 bays x 4 floors = 16 m x 12.8 m, at 64 px per metre
-  function facadeTextures(style) {
-    const S = 1024, M = 64, bw = S / 4, fh = S / 4;
-    const [c, g] = canvas(S, S), [ce, ge] = canvas(S, S), [ch, gh] = canvas(S, S), [cr, gr] = canvas(S, S);
+  // ground = true paints the street-level strip instead (one floor): doors, garages, shop fronts
+  function facadeTextures(style, ground) {
+    const shop = style === 'shop', S = shop ? 2048 : 1024, M = 64, bw = 256, fh = 256, rows = ground ? 1 : 4, SH = rows * fh, bays = S / bw;
+    const [c, g] = canvas(S, SH), [ce, ge] = canvas(S, SH), [ch, gh] = canvas(S, SH), [cr, gr] = canvas(S, SH);
     const R = Math.random;
-    g.fillStyle = '#f3f0ea'; g.fillRect(0, 0, S, S); ge.fillStyle = '#000'; ge.fillRect(0, 0, S, S);
-    gh.fillStyle = 'rgb(128,128,128)'; gh.fillRect(0, 0, S, S); gr.fillStyle = 'rgb(0,240,0)'; gr.fillRect(0, 0, S, S);
+    g.fillStyle = '#f3f0ea'; g.fillRect(0, 0, S, SH); ge.fillStyle = '#000'; ge.fillRect(0, 0, S, SH);
+    gh.fillStyle = 'rgb(128,128,128)'; gh.fillRect(0, 0, S, SH); gr.fillStyle = 'rgb(0,240,0)'; gr.fillRect(0, 0, S, SH);
     const H = (v, x, y, w, h) => { gh.fillStyle = `rgb(${v},${v},${v})`; gh.fillRect(x, y, w, h); };
     // weathered plaster: soft blotches and streaks
-    for (let i = 0; i < 260; i++) {
-      const x = R() * S, y = R() * S, r = 30 + R() * 130, d = R() < 0.6;
-      for (const ox of [0, S, -S]) for (const oy of [0, S, -S]) {
+    for (let i = 0; i < 65 * rows * bays / 4 * (ground ? 2 : 1); i++) {
+      const x = R() * S, y = R() * SH, r = 30 + R() * 130, d = R() < 0.6;
+      for (const ox of [0, S, -S]) for (const oy of [0, SH, -SH]) {
         const rg = g.createRadialGradient(x + ox, y + oy, 0, x + ox, y + oy, r);
         rg.addColorStop(0, d ? `rgba(60,50,40,${0.02 + R() * 0.035})` : `rgba(255,255,255,${0.03 + R() * 0.05})`); rg.addColorStop(1, 'rgba(0,0,0,0)');
-        g.fillStyle = rg; g.fillRect(0, 0, S, S);
+        g.fillStyle = rg; g.fillRect(0, 0, S, SH);
       }
     }
     if (style === 'brick') {
-      for (let y = 0, row = 0; y < S; y += 5, row++) {
+      for (let y = 0, row = 0; y < SH; y += 5, row++) {
         for (let x = (row % 2) * -8; x < S; x += 16) { const v = 200 + R() * 55 | 0; g.fillStyle = `rgb(${v},${v - 14 - R() * 16 | 0},${v - 22 - R() * 18 | 0})`; g.fillRect(x, y, 15, 4); H(138, x, y, 15, 4); }
         g.fillStyle = 'rgba(235,228,214,1)'; g.fillRect(0, y + 4, S, 1); H(112, 0, y + 4, S, 1);
       }
     } else if (style === 'industrial') {
-      for (let x = 0; x < S; x += 16) { const lg = g.createLinearGradient(x, 0, x + 16, 0); lg.addColorStop(0, 'rgba(0,0,0,.16)'); lg.addColorStop(0.5, 'rgba(255,255,255,.1)'); lg.addColorStop(1, 'rgba(0,0,0,.16)'); g.fillStyle = lg; g.fillRect(x, 0, 16, S); H(104, x, 0, 3, S); H(150, x + 6, 0, 5, S); }
-      for (let f = 0; f < 4; f += 2) { // a band of workshop windows every other floor
+      for (let x = 0; x < S; x += 16) { const lg = g.createLinearGradient(x, 0, x + 16, 0); lg.addColorStop(0, 'rgba(0,0,0,.16)'); lg.addColorStop(0.5, 'rgba(255,255,255,.1)'); lg.addColorStop(1, 'rgba(0,0,0,.16)'); g.fillStyle = lg; g.fillRect(x, 0, 16, SH); H(104, x, 0, 3, SH); H(150, x + 6, 0, 5, SH); }
+      for (let f = 0; f < (ground ? 0 : 4); f += 2) { // a band of workshop windows every other floor
         const y = f * fh + 26;
         g.fillStyle = '#d9d6cf'; g.fillRect(0, y - 5, S, 76); H(160, 0, y - 5, S, 76);
         for (let x = 6; x < S; x += 64) {
@@ -520,16 +521,85 @@ const hd = !HD ? null : (() => {
           if (R() < 0.3) { ge.fillStyle = '#bfd8ff'; ge.fillRect(x, y, 56, 66); }
         }
       }
-      for (let i = 0; i < 40; i++) { const x = R() * S, y = R() * S; const lg = g.createLinearGradient(0, y, 0, y + 120); lg.addColorStop(0, 'rgba(110,60,30,.22)'); lg.addColorStop(1, 'rgba(110,60,30,0)'); g.fillStyle = lg; g.fillRect(x, y, 2 + R() * 5, 120); } // rust runs
+      for (let i = 0; i < 10 * rows; i++) { const x = R() * S, y = R() * SH; const lg = g.createLinearGradient(0, y, 0, y + 120); lg.addColorStop(0, 'rgba(110,60,30,.22)'); lg.addColorStop(1, 'rgba(110,60,30,0)'); g.fillStyle = lg; g.fillRect(x, y, 2 + R() * 5, 120); } // rust runs
     } else if (style === 'plain' || style === 'block') {
       g.fillStyle = 'rgba(0,0,0,.2)';
-      for (let f = 0; f < 4; f++) { g.fillRect(0, f * fh, S, 2); H(96, 0, f * fh, S, 3); }
-      for (let b = 0; b < 4; b++) { g.fillRect(b * bw, 0, 2, S); H(96, b * bw, 0, 3, S); }
+      for (let f = 0; f < rows; f++) { g.fillRect(0, f * fh, S, 2); H(96, 0, f * fh, S, 3); }
+      for (let b = 0; b < bays; b++) { g.fillRect(b * bw, 0, 2, SH); H(96, b * bw, 0, 3, SH); }
     }
     const SHUT = ['#5d7488', '#6f8a7c', '#8a6a5a', '#7a7f8c', '#4f6a5c'];
-    for (let f = 0; f < 4; f++) for (let b = 0; b < 4; b++) {
-      if (style === 'industrial' || style === 'plain') continue;
+    // street-level features
+    const WOOD = ['#5a2e1e', '#1f3d2e', '#27364a', '#6b1f1f', '#2d2d30', '#7a5a34'];
+    const RG = (v, x, y, w, h) => { gr.fillStyle = `rgb(0,${v},0)`; gr.fillRect(x, y, w, h); };
+    const door = (x0, wide) => {
+      const dw = wide ? 150 : 66, dh = 176, x = Math.round(x0 + (bw * (wide ? 2 : 1) - dw) / 2), y = SH - dh - 6, col = WOOD[R() * WOOD.length | 0];
+      g.fillStyle = '#ece7dc'; g.fillRect(x - 12, y - 46, dw + 24, dh + 52); H(152, x - 12, y - 46, dw + 24, dh + 52);          // stone surround
+      const lg = g.createLinearGradient(0, y - 36, 0, y - 6); lg.addColorStop(0, '#586878'); lg.addColorStop(1, '#232c35'); g.fillStyle = lg; g.fillRect(x, y - 36, dw, 30); // fanlight
+      RG(26, x, y - 36, dw, 30); gr.fillStyle = 'rgb(0,26,160)'; gr.fillRect(x, y - 36, dw, 30); H(70, x, y - 36, dw, 30);
+      if (R() < 0.5) { ge.fillStyle = '#ffcf80'; ge.fillRect(x, y - 36, dw, 30); }
+      g.fillStyle = col; g.fillRect(x, y, dw, dh); H(96, x, y, dw, dh); RG(120, x, y, dw, dh);
+      const leaves = wide ? 2 : 1, lw = dw / leaves;
+      for (let k = 0; k < leaves; k++) for (const [py, ph] of [[10, 62], [84, 80]]) {
+        g.fillStyle = 'rgba(0,0,0,.28)'; g.fillRect(x + k * lw + 9, y + py, lw - 18, ph); g.fillStyle = 'rgba(255,255,255,.1)'; g.fillRect(x + k * lw + 12, y + py + 3, lw - 24, ph - 6); H(84, x + k * lw + 9, y + py, lw - 18, ph);
+      }
+      if (wide) { g.fillStyle = 'rgba(0,0,0,.5)'; g.fillRect(x + dw / 2 - 1, y, 2, dh); }
+      g.fillStyle = '#d9c070'; g.fillRect(x + (wide ? dw / 2 + 8 : dw - 14), y + 84, 6, 6);
+      g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(x, y, dw, 6); g.fillRect(x, y, 4, dh);
+      g.fillStyle = '#cfcabd'; g.fillRect(x - 16, SH - 7, dw + 32, 7); H(210, x - 16, SH - 7, dw + 32, 7);                        // step
+    };
+    const garage = (x0, tall) => {
+      const dw = tall ? 440 : 170, dh = tall ? 236 : 170, x = Math.round(x0 + ((tall ? 2 : 1) * bw - dw) / 2), y = SH - dh, col = tall ? ['#8d959c', '#4e6a58', '#6f7f95'][R() * 3 | 0] : ['#e6e2d8', '#4f6a5c', '#7a5a34', '#9aa0a6'][R() * 4 | 0];
+      g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(x - 5, y - 5, dw + 10, dh + 5); H(150, x - 8, y - 8, dw + 16, dh + 8);
+      g.fillStyle = col; g.fillRect(x, y, dw, dh); H(100, x, y, dw, dh); RG(110, x, y, dw, dh);
+      for (let yy = y + 4; yy < SH; yy += tall ? 9 : 28) { g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x, yy, dw, tall ? 3 : 3); g.fillStyle = 'rgba(255,255,255,.14)'; g.fillRect(x, yy + 3, dw, 2); H(86, x, yy, dw, 3); }
+      g.fillStyle = 'rgba(0,0,0,.4)'; g.fillRect(x, y, dw, 8);
+      if (tall) for (const sx of [x - 26, x + dw + 8]) for (let yy = SH - 90; yy < SH; yy += 18) { g.fillStyle = (yy / 18 | 0) % 2 ? '#e2b21f' : '#1b1b1b'; g.fillRect(sx, yy, 18, 18); }
+    };
+    const hall = x0 => { // glazed entrance of a block of flats, under a canopy
+      const dw = 190, dh = 186, x = x0 + (bw - dw) / 2, y = SH - dh;
+      g.fillStyle = '#b9b5ab'; g.fillRect(x - 26, y - 22, dw + 52, 16); H(225, x - 26, y - 22, dw + 52, 16); g.fillStyle = 'rgba(0,0,0,.4)'; g.fillRect(x - 26, y - 6, dw + 52, 9);
+      const lg = g.createLinearGradient(0, y, 0, SH); lg.addColorStop(0, '#5b6c7b'); lg.addColorStop(1, '#1d262e'); g.fillStyle = lg; g.fillRect(x, y, dw, dh); H(72, x, y, dw, dh);
+      gr.fillStyle = 'rgb(0,26,160)'; gr.fillRect(x, y, dw, dh); ge.fillStyle = '#d9c38a'; ge.fillRect(x, y, dw, dh);
+      g.fillStyle = '#30343a'; for (const fx of [0, dw / 3, dw * 2 / 3, dw - 5]) { g.fillRect(x + fx, y, 5, dh); ge.fillStyle = '#000'; ge.fillRect(x + fx, y, 5, dh); } g.fillRect(x, y, dw, 6); g.fillRect(x, y + 50, dw, 4);
+      g.fillStyle = '#c9c9c9'; g.fillRect(x - 16, y + 70, 9, 22);
+    };
+    const SHOPS = [['BOULANGERIE', '#7a1f2b', '#f1e3c0'], ['BAR  TABAC', '#1d2f52', '#f2efe6'], ['PHARMACIE', '#1f6a3a', '#ffffff'], ['COIFFURE', '#5a2a5e', '#f6e9f2'], ['BOUCHERIE', '#8a1a1a', '#fff4e0'], ['PRESSE  LOTO', '#c9a21a', '#1b1b1b'], ['ALIMENTATION', '#2a5a2a', '#f4f0d8'], ['CAFÉ DE LA BUTTE', '#3a2a1e', '#e8c98a']];
+    const shopFront = (x0, k) => {
+      const [name, col, ink] = SHOPS[k % SHOPS.length], w = 2 * bw, x = x0 + 14, sw = w - 28, top = 20, sy = 70, base = SH - 30;
+      g.fillStyle = col; g.fillRect(x, top, sw, 46); H(170, x, top, sw, 46); RG(120, x, top, sw, 46);
+      g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(x, top + 46, sw, 5);
+      g.fillStyle = ink; g.font = 'bold 30px Arial, Helvetica, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(name, x + sw / 2, top + 24, sw - 30);
+      ge.fillStyle = 'rgba(255,240,210,.35)'; ge.fillRect(x, top, sw, 46);
+      g.fillStyle = col; g.fillRect(x, sy, sw, SH - sy); H(140, x, sy, sw, SH - sy);                                             // painted shop surround
+      const lg = g.createLinearGradient(0, sy, 0, base); lg.addColorStop(0, '#6c7a86'); lg.addColorStop(1, '#2a333c');
+      const panes = [[x + 12, (sw - 110) / 2 - 18], [x + (sw - 86) / 2, 86], [x + (sw + 110) / 2 + 6, (sw - 110) / 2 - 18]];
+      panes.forEach(([px, pw], i) => {
+        const pb = i === 1 ? SH - 6 : base;
+        g.fillStyle = lg; g.fillRect(px, sy + 10, pw, pb - sy - 10); H(74, px, sy + 10, pw, pb - sy - 10); gr.fillStyle = 'rgb(0,26,160)'; gr.fillRect(px, sy + 10, pw, pb - sy - 10);
+        const le = ge.createLinearGradient(0, sy, 0, pb); le.addColorStop(0, '#ffe2a8'); le.addColorStop(1, '#c08a3c'); ge.fillStyle = le; ge.fillRect(px, sy + 10, pw, pb - sy - 10);
+        if (i !== 1) for (let s2 = 0; s2 < 3; s2++) { g.fillStyle = 'rgba(230,220,200,.22)'; g.fillRect(px + 8, sy + 46 + s2 * 34, pw - 16, 3); for (let q = px + 12; q < px + pw - 16; q += 14 + R() * 10) { g.fillStyle = `hsla(${R() * 360 | 0},45%,60%,.5)`; g.fillRect(q, sy + 28 + s2 * 34, 8 + R() * 6, 18); ge.fillStyle = 'rgba(0,0,0,.3)'; ge.fillRect(q, sy + 28 + s2 * 34, 10, 18); } }
+        g.fillStyle = 'rgba(0,0,0,.4)'; g.fillRect(px, sy + 10, pw, 6);
+      });
+      if (k % 3 === 0) { // striped awning
+        for (let q = 0; q < sw; q += 24) { g.fillStyle = (q / 24 | 0) % 2 ? ink : col; g.beginPath(); g.moveTo(x + q, sy - 2); g.lineTo(x + q + 24, sy - 2); g.lineTo(x + q + 24, sy + 34); g.lineTo(x + q, sy + 34); g.fill(); }
+        g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(x, sy + 34, sw, 7); H(215, x, sy - 2, sw, 36); RG(200, x, sy - 2, sw, 36); ge.fillStyle = '#000'; ge.fillRect(x, sy - 2, sw, 43);
+      }
+    };
+    const LAYOUT = { house: ['door', 'win', 'win', 'garage'], brick: ['win', 'door', 'win', 'win'], block: ['win', 'hall', 'win', 'win'], plain: ['', 'door', '', ''], industrial: ['', 'roller', '-', 'door'], church: ['', 'bigdoor', '-', ''] };
+    if (shop) for (let k = 0; k < bays / 2; k++) shopFront(k * 2 * bw, (k * 3 + (R() * 8 | 0)) % 8);
+    for (let f = 0; f < rows; f++) for (let b = 0; b < bays; b++) {
+      if (shop) continue;
       const x0 = b * bw, y0 = f * fh;
+      if (ground) {
+        const what = LAYOUT[style][b];
+        if (what === 'door') { door(x0, false); continue; }
+        if (what === 'bigdoor') { door(x0, true); continue; }
+        if (what === 'garage') { garage(x0, false); continue; }
+        if (what === 'roller') { garage(x0, true); continue; }
+        if (what === 'hall') { hall(x0); continue; }
+        if (what !== 'win') continue;
+      }
+      if (style === 'industrial' || style === 'plain') continue;
       let ww = 1.0 * M, wh = 1.7 * M;
       if (style === 'block') { ww = 2.3 * M; wh = 1.45 * M; }
       if (style === 'church') { if (b % 2) continue; ww = 1.15 * M; wh = 2.5 * M; }
@@ -581,19 +651,23 @@ const hd = !HD ? null : (() => {
       }
       if (style === 'brick') { g.fillStyle = '#efe9dc'; g.fillRect(wx - 16, wy - 26, ww + 32, 16); H(170, wx - 16, wy - 26, ww + 32, 16); } // lintel
     }
-    if (style === 'house' || style === 'brick' || style === 'church') for (let f = 0; f < 4; f++) { // string course between floors
+    if (style === 'house' || style === 'brick' || style === 'church' || shop) for (let f = 0; f < rows; f++) { // string course between floors
       g.fillStyle = 'rgba(255,255,255,.5)'; g.fillRect(0, f * fh, S, 7); g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(0, f * fh + 7, S, 4); H(190, 0, f * fh, S, 7);
     }
     // fine grain
-    const im = g.getImageData(0, 0, S, S), d = im.data; for (let i = 0; i < d.length; i += 4) { const n = (R() - 0.5) * 14; d[i] += n; d[i + 1] += n; d[i + 2] += n; } g.putImageData(im, 0, 0);
+    if (ground) { // darker plinth along the pavement
+      const lg = g.createLinearGradient(0, SH - 40, 0, SH); lg.addColorStop(0, 'rgba(60,50,45,0)'); lg.addColorStop(1, 'rgba(60,50,45,.3)'); g.fillStyle = lg; g.fillRect(0, SH - 40, S, 40);
+    }
+    const im = g.getImageData(0, 0, S, SH), d = im.data; for (let i = 0; i < d.length; i += 4) { const n = (R() - 0.5) * 14; d[i] += n; d[i + 1] += n; d[i + 2] += n; } g.putImageData(im, 0, 0);
     // relief from a softened height map
-    const [cb, gb] = canvas(S, S); try { gb.filter = 'blur(1.4px)'; } catch (e) { } gb.drawImage(ch, 0, 0);
-    const hd_ = gb.getImageData(0, 0, S, S).data, hf = new Float32Array(S * S); for (let i = 0; i < S * S; i++) hf[i] = hd_[i * 4] / 255 * 7;
+    const [cb, gb] = canvas(S, SH); try { gb.filter = 'blur(1.4px)'; } catch (e) { } gb.drawImage(ch, 0, 0);
+    const hd_ = gb.getImageData(0, 0, S, SH).data, hf = new Float32Array(S * SH); for (let i = 0; i < S * SH; i++) hf[i] = hd_[i * 4] / 255 * 7;
     const mk = cv => { const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; return t; };
-    return { map: mk(c), emissive: mk(ce), normal: heightToNormal(hf, S, 1), rough: mk(cr) };
+    return { map: mk(c), emissive: mk(ce), normal: heightToNormal(hf, S, 1, SH), rough: mk(cr) };
   }
-  function wallMat(style) {
-    const t = facadeTextures(style);
+  const GROUND_STYLES = ['house', 'block', 'industrial', 'plain', 'brick', 'church', 'shop'];
+  function wallMat(style, ground) {
+    const t = facadeTextures(style, ground);
     return new THREE.MeshStandardMaterial({ map: t.map, vertexColors: true, emissive: 0xffffff, emissiveMap: t.emissive, emissiveIntensity: 0, normalMap: t.normal, normalScale: new THREE.Vector2(0.9, 0.9),
       roughness: 1, metalness: 1, roughnessMap: t.rough, metalnessMap: t.rough, envMapIntensity: 0.9 });
   }
@@ -619,19 +693,56 @@ const hd = !HD ? null : (() => {
     });
     return { map, normal: heightToNormal(hf, n, 0.35) };
   }
-  function groundMat() { // terrain between the streets: paving, or grass where the map says green
-    const n = 512, b1 = blotch(n, 8), b2 = blotch(n, 32), b3 = blotch(n, 4);
+  // ---------- aerial photo (IGN BD ORTHO) on the ground and the roofs ----------
+  let orthoTex = null; const orthoBox = new THREE.Vector4(0, 0, 1, 1);
+  function ortho() {
+    if (orthoTex || !window.ORTHO) return orthoTex;
+    const o = window.ORTHO; orthoTex = new THREE.TextureLoader().load(o.src); orthoTex.anisotropy = 8; done.add(orthoTex);
+    orthoBox.set(o.x0, o.z0, o.x1, o.z1);
+    return orthoTex;
+  }
+  // meshes in world coordinates sample the photo straight down
+  function orthoPatch(sh, extraDecl, colourCode) {
+    const t = ortho();
+    sh.uniforms.orthoMap = { value: t }; sh.uniforms.oBox = { value: orthoBox }; sh.uniforms.oOn = { value: t ? 1 : 0 };
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform vec4 oBox; varying vec2 vOrtho; varying vec3 vW; attribute float aRoad; varying float vRoad;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvW = position; vRoad = aRoad; vOrtho = vec2((position.x - oBox.x) / (oBox.z - oBox.x), 1.0 - (position.z - oBox.y) / (oBox.w - oBox.y));');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D orthoMap; uniform float oOn; varying vec2 vOrtho; varying vec3 vW; varying float vRoad;\n' + extraDecl)
+      .replace('#include <color_fragment>', `float inO = oOn * step(0.0, vOrtho.x) * step(vOrtho.x, 1.0) * step(0.0, vOrtho.y) * step(vOrtho.y, 1.0);
+        vec2 ouv = clamp(vOrtho, 0.0, 1.0);` + colourCode);
+  }
+  // Terrain between the streets. The aerial photo is not shown as such (roofs and tree crowns lean over the pavements
+  // in it); it decides where gardens are and how light or dark the ground is, and drawn textures do the rest.
+  function groundMat() {
+    const n = 512, b1 = blotch(n, 8), b2 = blotch(n, 32);
     const sl = slabTextures(n, 64, true); sl.map.repeat.set(2, 2); sl.normal.repeat.set(2, 2);
-    const grass = tileTex(n, (d, o, x, y) => { const i = y * n + x, v = 0.62 + b1[i] * 0.3 + b2[i] * 0.22 + (Math.random() - 0.5) * 0.3, dry = b3[i] > 0.62 ? (b3[i] - 0.62) * 1.6 : 0; d[o] = 255 * Math.min(1, v * (0.78 + dry)); d[o + 1] = 255 * Math.min(1, v); d[o + 2] = 255 * Math.min(1, v * (0.62 + dry * 0.3)); d[o + 3] = 255; });
+    const grass = tileTex(n, (d, o, x, y) => { const i = y * n + x, v = 0.62 + b1[i] * 0.3 + b2[i] * 0.22 + (Math.random() - 0.5) * 0.3; d[o] = d[o + 1] = d[o + 2] = 255 * Math.min(1, v); d[o + 3] = 255; });
     done.add(grass);
-    const m = new THREE.MeshStandardMaterial({ map: sl.map, vertexColors: true, roughness: 0.92, metalness: 0, normalMap: sl.normal, normalScale: new THREE.Vector2(0.5, 0.5), envMapIntensity: 0.35 });
+    const m = new THREE.MeshStandardMaterial({ map: sl.map, vertexColors: true, roughness: 0.93, metalness: 0, normalMap: sl.normal, normalScale: new THREE.Vector2(0.3, 0.3), envMapIntensity: 0.3 });
     m.onBeforeCompile = sh => {
       sh.uniforms.grassMap = { value: grass };
-      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D grassMap;')
-        .replace('#include <color_fragment>', `float isGrass = smoothstep(0.0, 0.03, vColor.g - max(vColor.r, vColor.b));
-          vec3 grassC = sRGBToLinear(texture2D(grassMap, vUv * 0.85)).rgb * sRGBToLinear(texture2D(grassMap, vUv * 0.11)).g * 2.1;
-          diffuseColor.rgb = mix(diffuseColor.rgb * vColor, vColor * grassC * 1.5, isGrass);`);
+      orthoPatch(sh, 'uniform sampler2D grassMap;', `
+        vec3 oc = sRGBToLinear(texture2D(orthoMap, ouv, 1.6)).rgb, ol = sRGBToLinear(texture2D(orthoMap, ouv, 5.0)).rgb;
+        float veg = smoothstep(1.1, 1.32, oc.g / (max(oc.r, oc.b) + 0.004)) * inO * (1.0 - smoothstep(0.25, 0.8, vRoad));
+        float park = smoothstep(0.0, 0.02, vColor.g - max(vColor.r, vColor.b));
+        float isGrass = max(veg, park);
+        float lum = mix(1.0, clamp(dot(ol, vec3(0.3333)) * 3.4, 0.7, 1.25), inO);
+        float gd = sRGBToLinear(texture2D(grassMap, vUv * 0.85)).g * sRGBToLinear(texture2D(grassMap, vUv * 0.11)).g * 4.2;
+        vec3 paving = mix(vColor, vec3(0.36, 0.35, 0.33), inO * (1.0 - park)) * (dot(diffuseColor.rgb, vec3(0.3333)) / 0.62) * lum;
+        vec3 lawn = mix(vec3(0.05, 0.13, 0.03), vec3(0.13, 0.22, 0.06), clamp(dot(ol, vec3(0.3333)) * 4.0 - 0.3, 0.0, 1.0)) * mix(gd, 1.0, 0.2) * 1.25;
+        diffuseColor.rgb = mix(paving, lawn, isGrass);`);
     };
+    return m;
+  }
+  // Roofs take their colour from the aerial photo (slate, tiles, flat roofs), softened, under drawn rows of slates.
+  function roofMat() {
+    const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7, metalness: 0, envMapIntensity: 0.55 });
+    m.onBeforeCompile = sh => orthoPatch(sh, '', `
+        float steep = 1.0 - abs(normalize(cross(dFdx(vW), dFdy(vW))).y); // sharp on flat roofs, softened on slopes where the photo would streak
+        vec3 oc = sRGBToLinear(texture2D(orthoMap, ouv, mix(0.2, 3.2, smoothstep(0.05, 0.5, steep)))).rgb;
+        float row = fract(vW.y * 3.6), col2 = fract((vW.x + vW.z) * 2.2 + floor(vW.y * 3.6) * 0.5);
+        float slate = 1.0 - 0.16 * step(row, 0.1) - 0.07 * step(col2, 0.07) + 0.05 * sin(vW.x * 7.0 + vW.z * 5.0) * sin(vW.z * 9.0 - vW.x * 3.0);
+        diffuseColor.rgb = mix(vColor, oc * 0.92, inO) * mix(1.0, slate, smoothstep(0.02, 0.2, steep));`);
     return m;
   }
   function footMat() {
@@ -897,6 +1008,6 @@ const hd = !HD ? null : (() => {
     if (pfT > 5000) { const fps = pfN * 1000 / pfT; pfN = 0; pfT = 0; if (fps < 25 && qi > 0 && started && !paused) { setQuality(qi - 1); feed('Qualité graphique réduite : ' + q.name); const b = document.querySelectorAll('#hdSeg button'); b.forEach(x => x.classList.toggle('on', +x.dataset.q === qi)); } }
   }
   addEventListener('resize', resize);
-  return { QUAL, setQuality, perf, get quality() { return qi; }, render, frame, setTime, world, linearize, makeCar, fx, explode: explodeAt, muzzle, roadMat, waterMat, crownGeo, wallMat, groundMat, footMat, shake, lin, linHex, get floatRT() { return floatRT; } };
+  return { QUAL, setQuality, perf, get quality() { return qi; }, render, frame, setTime, world, linearize, makeCar, fx, explode: explodeAt, muzzle, roadMat, waterMat, crownGeo, wallMat, groundMat, footMat, roofMat, GROUND_STYLES, shake, lin, linHex, get floatRT() { return floatRT; } };
 })();
 // <<< HD MODULE
