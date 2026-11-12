@@ -14,10 +14,16 @@ PY
 python3 ../src/carve.py                                   # smooth road profiles, bridges, finer terrain -> world.json
 # data/facades_curated is made from data/facades by src/curate_facades.py (needs Pillow + numpy); it is committed
 python3 ../src/build_photos.py ../data/facades_curated gangstamen_facades2   # embed data + Panoramax facades -> gangstamen.html
+# HD variant: same code with the HD flag, drawn facades only (no photo atlas) and the IGN aerial photo for ground and roofs
 python3 - <<'PY'
+import base64, re
 t = open('gangstamen.html', encoding='utf-8').read()
 assert t.count('const HD = false;') == 1 and t.count('<title>Gangstamen</title>') == 1
 t = t.replace('const HD = false;', 'const HD = true;').replace('<title>Gangstamen</title>', '<title>Gangstamen HD</title>')
+ortho = base64.b64encode(open('../data/ortho/ortho.jpg', 'rb').read()).decode()
+pre = '<script>window.PHOTO_ATLAS=[];window.ORTHO={src:"data:image/jpeg;base64,' + ortho + '",x0:-440,z0:-760,x1:440,z1:760};</script>'
+t, n = re.subn(r'<script>window\.PHOTO_ATLAS=\[.*?\];</script>', lambda m: pre, t, count=1, flags=re.S)
+assert n == 1
 open('gangstamen-hd.html', 'w', encoding='utf-8').write(t)
 PY
 cp gangstamen.html gangstamen-hd.html ..
