@@ -70,6 +70,8 @@ node server/server.js            # http://localhost:8080
 docker build -t gangstamen . && docker run -p 8080:8080 gangstamen
 ```
 
+La version HD est servie à l'adresse `/hd` (http://localhost:8080/hd). Les joueurs des deux versions partagent les mêmes parties.
+
 Variables : `PORT` (8080), `MAX_PLAYERS` (12 par partie), `GAME_HTML` (chemin du jeu, `gangstamen.html` par défaut ; rechargé à chaud s'il change).
 
 Le serveur sert le jeu sur `/` en y ajoutant `window.GM_SERVER="auto"` : le jeu se connecte alors au WebSocket `/ws` du même hôte au lieu de la salle claude.ai. Il reprend exactement le modèle de la capacité `room` (lobby, parties nommées `gm-XXXX`, présence, événements), donc le même code client fonctionne des deux côtés. Derrière un proxy HTTPS (nginx, Caddy…), transmettez l'en-tête `Upgrade` sur `/ws`.

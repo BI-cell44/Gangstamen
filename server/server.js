@@ -27,6 +27,18 @@ function loadPage() {
 }
 loadPage();
 fs.watchFile(GAME, { interval: 2000 }, loadPage);
+// the HD build is served at /hd when the file is present
+const GAME_HD = process.env.GAME_HD_HTML || path.join(path.dirname(GAME), 'gangstamen-hd.html');
+let pageHd = null;
+function loadPageHd() {
+  try {
+    const html = fs.readFileSync(GAME_HD, 'utf8');
+    const inject = '<script>window.GM_SERVER="auto";</script>';
+    pageHd = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">' + inject + '</head><body>' + html + '</body></html>';
+  } catch (e) { pageHd = null; }
+}
+loadPageHd();
+fs.watchFile(GAME_HD, { interval: 2000 }, loadPageHd);
 
 const server = http.createServer((req, res) => {
   const url = req.url.split('?')[0];
@@ -35,6 +47,11 @@ const server = http.createServer((req, res) => {
     if (!page) { res.writeHead(500); return res.end('gangstamen.html missing'); }
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' });
     return res.end(page);
+  }
+  if (url === '/hd' || url === '/hd/') {
+    if (!pageHd) { res.writeHead(404); return res.end('gangstamen-hd.html missing'); }
+    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' });
+    return res.end(pageHd);
   }
   res.writeHead(404); res.end('not found');
 });
