@@ -2,7 +2,7 @@
 
 Dossier écrit le 13 novembre 2026 pour reprendre le développement dans une nouvelle conversation, sans rien perdre. Il complète `LEDGER.md` (journal, à faire, pièges) et `README.md` (description pour joueurs). En cas de doute, le code et `git log` font foi.
 
-**Version figée de référence : tag git `passation-2026-11-13`** (sur `main` et sur `server`), et deux artifacts « référence » sur claude.ai (voir section 9).
+**Version figée de référence : branches git `passation-2026-11-13` (copie de `main`) et `passation-2026-11-13-server` (copie de `server`)**, à ne jamais modifier, et deux artifacts « référence » sur claude.ai (voir section 9). Ce sont des branches et non des tags, car le dépôt refuse l'envoi de tags depuis le bac à sable.
 
 ---
 
@@ -132,7 +132,7 @@ générateur aléatoire à graine · rendu et scène · textures · grille de co
 ## 4. Code source complet et dernière version fonctionnelle
 
 - **Dépôt** : https://github.com/BI-cell44/Gangstamen, branches `main` (artifacts) et `server` (`main` + serveur).
-- **Dernière version fonctionnelle** : tag `passation-2026-11-13`, commit de la fusion de `hd-ambiance-campagne` dans `main` puis ajout de ce dossier et des outils de test. `main` et `server` ont le même jeu ; `server` ajoute seulement `server/`, `Dockerfile` et `.gitignore`.
+- **Dernière version fonctionnelle** : branche `passation-2026-11-13`, commit de la fusion de `hd-ambiance-campagne` dans `main` puis ajout de ce dossier et des outils de test. `main` et `server` ont le même jeu ; `server` ajoute seulement `server/`, `Dockerfile` et `.gitignore`.
 - **Archive** : `gangstamen-passation-2026-11-13.zip` livrée avec ce dossier (arbre de travail de `main` : sources, données, scripts, outils, les deux HTML construits). Elle ne contient pas l'historique git.
 - **Fichiers prêts à jouer** : `gangstamen.html` (2,7 Mo) et `gangstamen-hd.html` (4 Mo) à la racine du dépôt.
 
@@ -204,7 +204,7 @@ Par ordre proposé :
 **Méthode**
 - **Source de vérité** : `src/template.html`, `src/hd.js`, `src/gx.js` et `data/`. **Ne jamais modifier à la main `gangstamen*.html`** : ce sont des sorties de `build.sh`.
 - Après chaque changement : `sh build.sh`, contrôle de syntaxe, test, puis commit des sources **et** des deux HTML construits.
-- Avant un gros changement, copier le fichier à modifier (`*.before-xxx`). Les anciennes versions sont aussi dans `git log` ; le tag `passation-2026-11-13` permet de tout restaurer.
+- Avant un gros changement, copier le fichier à modifier (`*.before-xxx`). Les anciennes versions sont aussi dans `git log` ; la branche `passation-2026-11-13` permet de tout restaurer.
 - Faire les changements avec de petits scripts de remplacement qui vérifient que le texte à remplacer existe **une seule fois** ; c'est ce qui a évité les remplacements silencieux.
 - Ne pas déclarer « marche » sans test. Pour ce qui dépend du temps, utiliser les crochets de test ; pour ce qu'on ne peut pas vérifier (son, manette, performances, multi-joueur), le **dire** à l'utilisateur.
 
@@ -242,7 +242,7 @@ Par ordre proposé :
 
 ## 9. Artifacts de référence
 
-Les deux artifacts de travail resteront ceux sur lesquels on republie. Pour ne rien perdre, deux **copies figées** ont été publiées le 13 novembre 2026 comme artifacts séparés, avec le même code que le tag `passation-2026-11-13` :
+Les deux artifacts de travail resteront ceux sur lesquels on republie. Pour ne rien perdre, deux **copies figées** ont été publiées le 13 novembre 2026 comme artifacts séparés, avec le même code que la branche `passation-2026-11-13` :
 
 - « Gangstamen HD (référence 2026-11-13) »
 - « Gangstamen classique (référence 2026-11-13) »
