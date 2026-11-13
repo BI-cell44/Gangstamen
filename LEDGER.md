@@ -89,7 +89,7 @@ Tout est dans la HD seulement (`const gx = !HD ? null : …`), sauf le dérapage
 | 13 nov. 2026 | HD : colline et course en ligne, armes en ligne, mémoire | 224e8f2, f2ca8eb |
 | 13 nov. 2026 | Mines du Vautour, bout de pont, collision entre bâtiments, piétons animés et terrasses, clé à molette, touche spéciale visible | voir `git log` |
 
-| 13 nov. 2026 | Fusion dans `main` et `server`, artifacts republiés ; dossier de passation `HANDOFF.md`, scripts de test dans `tools/`, tag `passation-2026-11-13` | voir `git log` |
+| 13 nov. 2026 | Fusion dans `main` et `server`, artifacts republiés ; dossier de passation `HANDOFF.md`, scripts de test dans `tools/`, branches figées `passation-2026-11-13` et `passation-2026-11-13-server` | voir `git log` |
 
 Les étapes antérieures sont dans `git log`.
 
