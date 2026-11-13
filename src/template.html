@@ -35,6 +35,9 @@ body { background: var(--ink); color: var(--chalk); font-family: var(--body); ov
 #minimap { width: 168px; height: 168px; border-radius: 50%; border: 3px solid var(--chalk); box-shadow: 0 0 0 3px #000, 6px 6px 0 rgba(0,0,0,.5); background: #151020; }
 .chip { font-family: var(--data); font-size: 22px; line-height: 1; padding: 4px 10px; background: var(--panel); border: 2px solid var(--chalk); letter-spacing: .06em; font-variant-numeric: tabular-nums; }
 .chip b { color: var(--sunset); font-weight: normal; }
+.chip.wanted { border-color: #3a6aff; animation: blueflash .5s steps(2, jump-none) infinite; }
+.chip.wanted b { color: #9fb8ff; letter-spacing: .1em; }
+@keyframes blueflash { from { box-shadow: 0 0 0 3px #3a6aff; } to { box-shadow: 0 0 0 3px #ff3b3b; } }
 
 #plate { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); left: max(16px, env(safe-area-inset-left, 0px)); max-width: min(62vw, 420px); }
 #plate .sign { background: var(--enamel); border: 3px solid #fff; outline: 3px solid var(--enamel); border-radius: 6px; padding: 6px 14px 8px; box-shadow: 5px 5px 0 rgba(0,0,0,.55); }
@@ -85,6 +88,10 @@ body { background: var(--ink); color: var(--chalk); font-family: var(--body); ov
 .slot .lab { min-width: 5.2em; }
 .chipc { width: 18px; height: 18px; border: 2px solid #000; box-shadow: 2px 2px 0 rgba(0,0,0,.5); }
 .cycle { display: flex; align-items: center; gap: 6px; }
+.seg.wrap { flex-wrap: wrap; }
+.mbtn.swatch { width: 44px; height: 34px; padding: 0; border-width: 3px; }
+.mbtn.swatch.on { outline: 3px solid var(--sunset); outline-offset: 2px; }
+#feed .qc { border-left-color: var(--ok); font-size: 20px; }
 .cycle output { min-width: 11em; text-align: center; font-family: var(--data); font-size: 20px; padding: 4px 8px; border: 2px solid var(--chalk); background: rgba(0,0,0,.4); }
 .cycle output.ok { border-color: var(--ok); }
 .ctable { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; font-family: var(--data); font-size: 18px; }
@@ -152,6 +159,9 @@ body.touch #plate { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
 #touch .grp { display: flex; gap: 10px; pointer-events: auto; }
 #touch button { width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--chalk); background: var(--panel); color: var(--chalk); font-family: var(--data); font-size: 20px; touch-action: none; }
 #touch button.on { background: var(--magenta); }
+#joy { pointer-events: auto; position: relative; width: 150px; height: 150px; border-radius: 50%; border: 3px solid rgba(243,234,216,.7); background: radial-gradient(circle, rgba(13,10,20,.35), rgba(13,10,20,.65)); touch-action: none; margin-bottom: -40px; }
+#joyKnob { position: absolute; left: 50%; top: 50%; width: 62px; height: 62px; margin: -31px 0 0 -31px; border-radius: 50%; background: var(--magenta); border: 3px solid var(--chalk); box-shadow: 0 0 12px rgba(226,51,122,.6); }
+body.touch.joy #tBrake, body.touch.joy #tGas, body.touch.joy #tPadL { display: none; }
 @media (max-width: 560px) {
   #minimap { width: 112px; height: 112px; }
   #speed { font-size: 46px; }
@@ -160,6 +170,37 @@ body.touch #plate { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
 }
 @media (max-width: 1100px) { #help { display: none; } }
 @media (prefers-reduced-motion: reduce) { #ticker { transition: none; } }
+/* Campaign: dialogue box, objective, garage, mission result */
+#dlg { position: fixed; left: 0; right: 0; bottom: 0; z-index: 28; padding: 0 max(16px, env(safe-area-inset-left, 0px)) calc(18px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(to top, rgba(13,10,20,.92), rgba(13,10,20,.0)); padding-top: 60px; cursor: pointer; }
+#dlg .dlgBox { max-width: 860px; margin: 0 auto; display: flex; gap: 16px; align-items: flex-start; background: rgba(13,10,20,.9); border: 3px solid var(--chalk); box-shadow: 6px 6px 0 var(--magenta); padding: 14px 18px; }
+#dlg .dlgFace { flex: none; width: 64px; height: 64px; display: grid; place-items: center; font-family: var(--display); font-size: 28px; color: #000; border: 3px solid #000; box-shadow: 3px 3px 0 rgba(0,0,0,.6); transform: rotate(-3deg); }
+#dlg .dlgWho b { font-family: var(--display); font-weight: normal; font-size: 24px; color: var(--sunset); margin-right: 10px; }
+#dlg .dlgWho span { font-family: var(--data); font-size: 18px; color: rgba(243,234,216,.7); }
+#dlg .dlgTxt { margin-top: 4px; font-size: clamp(16px, 2.2vw, 20px); line-height: 1.45; min-height: 2.9em; }
+#dlg .dlgHint { max-width: 860px; margin: 6px auto 0; text-align: right; font-family: var(--data); font-size: 16px; color: rgba(243,234,216,.6); }
+#objective { top: calc(12px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); min-width: min(440px, 70vw); max-width: 92vw; text-align: center; background: rgba(13,10,20,.78); border: 2px solid var(--chalk); padding: 6px 14px 8px; }
+#objective .oTitle { font-family: var(--display); font-size: 20px; color: var(--sunset); }
+#objective .oText { font-family: var(--data); font-size: 21px; line-height: 1.1; }
+#objective .oBar { margin: 6px auto 0; height: 8px; border: 2px solid var(--chalk); position: relative; } #objective .oBar i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, var(--magenta), var(--sunset)); }
+#objective .oDir { font-family: var(--data); font-size: 20px; color: var(--ok); } #objective .oArrow { display: inline-block; transition: transform .1s linear; }
+body.ingame #objective:not([hidden]) ~ #clock { display: none; }
+body.split #objective { top: calc(50% - 30px); transform: translate(-50%, -100%) scale(.82); transform-origin: 50% 100%; min-width: 0; }
+body.split #objective .oDir { display: none; }
+body:not(.ingame) #objective { display: none; }
+#garage, #mres { position: fixed; inset: 0; z-index: 27; display: grid; place-items: center; background: rgba(13,10,20,.7); padding: 16px; }
+#garage .card, #mres .card { width: min(560px, 100%); max-height: 92vh; overflow: auto; background: rgba(13,10,20,.95); border: 3px solid var(--chalk); box-shadow: 6px 6px 0 #1f3f91; padding: 18px 22px; display: flex; flex-direction: column; gap: 10px; }
+#garage h2, #mres h2 { margin: 0; font-family: var(--display); font-weight: normal; font-size: clamp(28px, 5vw, 40px); color: var(--chalk); text-shadow: 3px 3px 0 #1f3f91; }
+#mres h2 { text-shadow: 3px 3px 0 var(--magenta); }
+#garage .gWallet, #mres p { margin: 0; font-family: var(--data); font-size: 21px; color: var(--sunset); }
+#garage .gList { display: flex; flex-direction: column; gap: 6px; }
+.gItem { display: grid; grid-template-columns: 1fr auto; gap: 0 12px; width: 100%; }
+.gItem b { font-weight: 700; } .gItem span { grid-column: 1; font-weight: 400; font-size: 14px; opacity: .8; } .gItem em { grid-row: 1 / span 2; grid-column: 2; align-self: center; font-style: normal; font-family: var(--data); font-size: 20px; color: var(--sunset); }
+.gItem[disabled] { opacity: .45; cursor: not-allowed; }
+.camp { display: flex; flex-direction: column; gap: 8px; }
+.campBtn { display: flex; flex-direction: column; gap: 2px; min-width: min(420px, 100%); } .campBtn span { font-weight: 400; font-size: 14px; opacity: .8; } .campBtn[disabled] { opacity: .45; }
+#ammo { font-size: 20px; }
+@media (max-width: 560px) { #dlg .dlgFace { width: 44px; height: 44px; font-size: 20px; } #objective { top: 56px; } }
+
 /* Intro cinematic: letterbox bars, captions, gang cards, title */
 #intro { position: fixed; inset: 0; z-index: 30; overflow: hidden; cursor: pointer; }
 #intro > * { position: absolute; pointer-events: none; }
@@ -208,6 +249,8 @@ body.cine #logo, body.cine #credit { display: none; }
   <canvas id="minimap" width="336" height="336" aria-label="Plan du quartier"></canvas>
   <div class="chip">RESPECT <b id="respect">0</b></div>
   <div class="chip"><span id="killsLab">RAPACES</span> <b id="kills">0</b></div>
+  <div class="chip wanted" hidden>POLICE <b id="wanted"></b></div>
+  <div class="chip" id="ammo" hidden></div>
 </div>
 <div id="plate" class="hud"><div class="sign"><div class="quarter">Nantes · Chantenay</div><div class="street" id="street">…</div></div></div>
 <div id="dash" class="hud">
@@ -216,12 +259,13 @@ body.cine #logo, body.cine #credit { display: none; }
   <div class="bar"><i id="hp" style="width:100%"></i></div>
 </div>
 <div id="ticker" class="hud"></div>
-<div id="help" class="hud">ZQSD conduire · Espace tir · Maj frein à main · C caméra · Tab scores · Échap menu</div>
+<div id="help" class="hud">ZQSD conduire · Espace tir · E arme spéciale · Maj frein à main · C caméra · N moment · B météo · Échap menu</div>
 <div id="credit">Carte © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">contributeurs OpenStreetMap</a> · Hauteurs et relief © IGN · Façades © contributeurs Panoramax</div>
 
 <div id="touch">
-  <div class="grp"><button id="tLeft" aria-label="Gauche">◀</button><button id="tRight" aria-label="Droite">▶</button></div>
-  <div class="grp"><button id="tFire" aria-label="Tirer">FEU</button><button id="tBrake" aria-label="Frein">FREIN</button><button id="tGas" aria-label="Accélérer">GAZ</button></div>
+  <div class="grp" id="tPadL"><button id="tLeft" aria-label="Gauche">◀</button><button id="tRight" aria-label="Droite">▶</button></div>
+  <div id="joy" hidden aria-label="Joystick : direction, gaz et frein"><div id="joyKnob"></div></div>
+  <div class="grp"><button id="tSpec" aria-label="Arme spéciale" hidden>SPÉ</button><button id="tHb" aria-label="Frein à main" hidden>F.M.</button><button id="tFire" aria-label="Tirer">FEU</button><button id="tBrake" aria-label="Frein">FREIN</button><button id="tGas" aria-label="Accélérer">GAZ</button></div>
 </div>
 
 <div id="title">
@@ -233,8 +277,10 @@ body.cine #logo, body.cine #credit { display: none; }
       <p>Les Rapaces de la Butte ont pris le quartier. Six caisses noires tournent entre la place Jean-Macé et les quais de Loire. Reprends les rues de Chantenay : rentre-leur dedans, arrose-les, et ramasse les clés à molette pour réparer ta caisse.</p>
       <div class="menu">
         <button id="start" class="big" disabled>Chargement du quartier…</button>
+        <button class="mbtn hdOnly" data-go="vCamp" hidden>Campagne · 7 missions</button>
         <button class="mbtn" data-go="vSplit">Écran partagé · 2 à 4 joueurs</button>
         <button class="mbtn" data-go="vOnline">En ligne · jusqu'à 12 joueurs</button>
+        <button class="mbtn hdOnly" data-go="vCar" hidden>Ta voiture</button>
         <button class="mbtn" data-go="vCtrl">Commandes</button>
         <button class="mbtn" data-go="vOpt">Son et options</button>
       </div>
@@ -244,7 +290,7 @@ body.cine #logo, body.cine #credit { display: none; }
     <section id="vSplit" class="view" hidden>
       <h2>Écran partagé</h2>
       <div class="row"><span class="lab">Joueurs</span><div class="seg" id="nSeg"><button class="mbtn" data-n="2">2</button><button class="mbtn" data-n="3">3</button><button class="mbtn" data-n="4">4</button></div></div>
-      <div class="row"><span class="lab">Mode</span><div class="seg" id="mSeg"><button class="mbtn" data-m="0">Chacun pour soi</button><button class="mbtn" data-m="1">Par équipes</button></div></div>
+      <div class="row"><span class="lab">Mode</span><div class="seg wrap" id="mSeg"><button class="mbtn" data-m="0">Chacun pour soi</button><button class="mbtn" data-m="1">Par équipes</button><button class="mbtn hdOnly" data-m="2" hidden>Drapeau</button><button class="mbtn hdOnly" data-m="3" hidden>Roi de la colline</button><button class="mbtn hdOnly" data-m="4" hidden>Course</button></div></div>
       <div class="row"><span class="lab">Fin de partie</span><div class="seg goalSeg"><button class="mbtn" data-g="10">10 KO</button><button class="mbtn" data-g="20">20 KO</button><button class="mbtn" data-g="30">30 KO</button><button class="mbtn" data-g="0">Sans</button></div></div>
       <div class="row"><span class="lab">Durée</span><div class="seg limitSeg"><button class="mbtn" data-l="5">5 min</button><button class="mbtn" data-l="10">10 min</button><button class="mbtn" data-l="15">15 min</button><button class="mbtn" data-l="0">Sans</button></div></div>
       <div id="slots" class="slots"></div>
@@ -253,11 +299,29 @@ body.cine #logo, body.cine #credit { display: none; }
       <div class="menu"><button id="splitGo" class="big">Démarrer</button><button class="mbtn" data-go="vMain">Retour</button></div>
     </section>
 
+    <section id="vCamp" class="view" hidden>
+      <h2>Campagne · Chantenay 1996</h2>
+      <p>Un an après ton départ, les Rapaces de la Butte tiennent le quartier. Dédé le garagiste et Nadia, la cheffe des Chantenaysiens, comptent sur toi pour reprendre les rues, mission après mission.</p>
+      <div id="campList" class="camp"></div>
+      <p class="fine" id="campProg"></p>
+      <div class="menu"><button class="mbtn" data-go="vMain">Retour</button></div>
+    </section>
+
+    <section id="vCar" class="view" hidden>
+      <h2>Ta voiture</h2>
+      <div class="row"><span class="lab">Joueur</span><div class="seg" id="carSlot"><button class="mbtn" data-i="0">J1</button><button class="mbtn" data-i="1">J2</button><button class="mbtn" data-i="2">J3</button><button class="mbtn" data-i="3">J4</button></div></div>
+      <div class="row"><span class="lab">Modèle</span><div class="seg wrap" id="carStyle"></div></div>
+      <p class="fine" id="carDesc"></p>
+      <div class="row"><span class="lab">Couleurs</span><div class="seg wrap" id="carPaint"></div></div>
+      <p class="fine">J1 conduit aussi en solo et en ligne. En partie par équipes, la carrosserie prend la couleur de la bande.</p>
+      <div class="menu"><button class="mbtn" data-go="vMain">Retour</button></div>
+    </section>
+
     <section id="vCtrl" class="view" hidden>
       <h2>Commandes</h2>
       <div class="row"><span class="lab">Joueur 1 (solo / en ligne)</span><div class="cycle" id="soloCtl"></div></div>
       <div class="ctable" id="ctable"></div>
-      <p class="fine">Les touches correspondent à des positions du clavier : sur un clavier AZERTY, le joueur 1 joue avec Z Q S D. Touches communes : N jour/nuit · M musique · P pixels · Tab classement en ligne · Échap menu.</p>
+      <p class="fine">Les touches correspondent à des positions du clavier : sur un clavier AZERTY, le joueur 1 joue avec Z Q S D. En HD, la touche spéciale (E pour le joueur 1, B à la manette) lance les roquettes, pose les mines ou déclenche la nitro ramassées sur la carte. Touches communes : N jour/nuit (HD : moment de la journée) · B météo (HD) · M musique · P pixels · Tab classement en ligne · Échap menu.</p>
       <div class="menu"><button class="mbtn" data-go="vMain">Retour</button></div>
     </section>
 
@@ -269,6 +333,12 @@ body.cine #logo, body.cine #credit { display: none; }
       <div class="row"><span class="lab">Durée</span><div class="seg limitSeg"><button class="mbtn" data-l="5">5 min</button><button class="mbtn" data-l="10">10 min</button><button class="mbtn" data-l="15">15 min</button><button class="mbtn" data-l="0">Sans</button></div></div>
       <div class="row"><label class="lab" for="optRumble">Vibrations manette</label><input id="optRumble" type="checkbox"></div>
       <div class="row" id="retroRow"><label class="lab" for="optRetro">Pixels rétro</label><input id="optRetro" type="checkbox"></div>
+      <div class="row hdOnly" hidden><span class="lab">Moment</span><div class="seg" id="todSeg"><button class="mbtn" data-v="day">Jour</button><button class="mbtn" data-v="sunset">Coucher</button><button class="mbtn" data-v="night">Nuit</button><button class="mbtn" data-v="cycle">Cycle</button></div></div>
+      <div class="row hdOnly" hidden><span class="lab">Météo</span><div class="seg" id="rainSeg"><button class="mbtn" data-v="0">Sec</button><button class="mbtn" data-v="0.6">Pluie</button><button class="mbtn" data-v="1">Orage</button><button class="mbtn" data-v="auto">Variable</button></div></div>
+      <div class="row hdOnly" hidden><span class="lab">Ombres</span><div class="seg" id="shSeg"><button class="mbtn" data-v="0">Non</button><button class="mbtn" data-v="1">Auto</button><button class="mbtn" data-v="2">Toujours</button></div></div>
+      <div class="row hdOnly" hidden><span class="lab">Distance de vue</span><div class="seg" id="distSeg"><button class="mbtn" data-v="0">Courte</button><button class="mbtn" data-v="1">Moyenne</button><button class="mbtn" data-v="2">Longue</button></div></div>
+      <div class="row hdOnly" hidden><span class="lab">Circulation</span><div class="seg" id="trafSeg"><button class="mbtn" data-v="0">Aucune</button><button class="mbtn" data-v="1">Calme</button><button class="mbtn" data-v="2">Normale</button></div></div>
+      <div class="row hdOnly" hidden><label class="lab" for="optVoices">Voix (radio, dialogues)</label><input id="optVoices" type="checkbox"></div>
       <div class="row" id="hdRow" hidden><span class="lab">Qualité graphique</span><div class="seg" id="hdSeg"><button class="mbtn" data-q="0">Basse</button><button class="mbtn" data-q="1">Moyenne</button><button class="mbtn" data-q="2">Haute</button><button class="mbtn" data-q="3">Ultra</button></div></div>
       <div class="row"><label class="lab" for="optIntro">Intro au lancement</label><input id="optIntro" type="checkbox"><button class="mbtn" id="introPlay">Revoir l'intro</button></div>
       <div class="menu"><button class="mbtn" data-go="vMain">Retour</button></div>
@@ -280,7 +350,7 @@ body.cine #logo, body.cine #credit { display: none; }
       <div class="row"><span class="lab">Équipe</span><div class="seg" id="tSeg"><button class="mbtn" data-t="-1">Auto</button><button class="mbtn" data-t="0">Rapaces</button><button class="mbtn" data-t="1">Chantenaysiens</button></div></div>
       <div id="netStatus" class="netstatus">Connexion…</div>
       <div id="games" class="games"></div>
-      <div class="row"><span class="lab">Nouvelle partie</span><div class="seg" id="oSeg"><button class="mbtn" data-m="0">Chacun pour soi</button><button class="mbtn" data-m="1">Par équipes</button></div></div>
+      <div class="row"><span class="lab">Nouvelle partie</span><div class="seg wrap" id="oSeg"><button class="mbtn" data-m="0">Chacun pour soi</button><button class="mbtn" data-m="1">Par équipes</button><button class="mbtn hdOnly" data-m="3" hidden>Roi de la colline</button><button class="mbtn hdOnly" data-m="4" hidden>Course</button></div></div>
       <div class="row"><span class="lab">Fin de partie</span><div class="seg goalSeg"><button class="mbtn" data-g="10">10 KO</button><button class="mbtn" data-g="20">20 KO</button><button class="mbtn" data-g="30">30 KO</button><button class="mbtn" data-g="0">Sans</button></div></div>
       <div class="row"><span class="lab">Durée</span><div class="seg limitSeg"><button class="mbtn" data-l="5">5 min</button><button class="mbtn" data-l="10">10 min</button><button class="mbtn" data-l="15">15 min</button><button class="mbtn" data-l="0">Sans</button></div></div>
       <div class="menu"><button id="create" class="big">Créer une partie</button><button class="mbtn" data-go="vMain">Retour</button></div>
@@ -324,6 +394,19 @@ function groundH(x, z) {
   return (u + v <= 1 ? a + (b - a) * u + (c - a) * v : d + (c - d) * (1 - u) + (b - d) * (1 - v)) / 10;
 }
 // Bridges (deck heights computed offline): the drivable surface is the deck where there is one
+// the deck ends meet the ground: the bridge profiles were computed on a coarser grid, so the last metres are
+// eased onto the terrain (otherwise one end of the boulevard bridge stood half a metre above the street)
+(W.bridges || []).forEach(b => {
+  const p = b.p, n = p.length / 3; if (n < 2) return;
+  for (const [i0, dir] of [[0, 1], [n - 1, -1]]) {
+    const d0 = groundH(p[3 * i0], p[3 * i0 + 1]) - p[3 * i0 + 2]; let s = 0;
+    for (let i = i0; i >= 0 && i < n; i += dir) {
+      if (i !== i0) s += Math.hypot(p[3 * i] - p[3 * (i - dir)], p[3 * i + 1] - p[3 * (i - dir) + 1]);
+      if (s > 12) break;
+      const k = 1 - s / 12; p[3 * i + 2] += d0 * k * k * (3 - 2 * k);
+    }
+  }
+});
 const BR_SEGS = [];
 (W.bridges || []).forEach(b => { const p = b.p; for (let i = 0; i < p.length - 3; i += 3) BR_SEGS.push([p[i], p[i + 1], p[i + 2], p[i + 3], p[i + 4], p[i + 5], b.w / 2 + 0.4]); });
 function deckH(x, z) {
@@ -1091,6 +1174,13 @@ const CAR_STYLES = {
     cabin: [[-1.88, 1.0], [-1.62, 1.46], [0.12, 1.48], [0.74, 0.99]],
     spoiler: true,
   },
+  // street traffic of 1996 (HD bodies in hd.js; the classic build reuses the hatch silhouette)
+  r5: { L: 3.52, W: 1.53, wb: 1.2, wr: 0.29, body: [[1.74, 0.34], ['arcF'], ['arcR'], [-1.7, 0.34], [-1.76, 0.6], [-1.74, 0.99], [-1.5, 1.0], [0.6, 0.97], [1.55, 0.84], [1.76, 0.7]],
+    cabin: [[-1.68, 0.99], [-1.5, 1.44], [0.05, 1.47], [0.62, 0.97]], spoiler: false },
+  p205: { L: 3.7, W: 1.57, wb: 1.21, wr: 0.3, body: [[1.83, 0.34], ['arcF'], ['arcR'], [-1.8, 0.34], [-1.85, 0.6], [-1.8, 0.97], [-1.55, 1.0], [0.65, 0.96], [1.62, 0.82], [1.85, 0.68]],
+    cabin: [[-1.74, 0.97], [-1.35, 1.42], [0.1, 1.45], [0.72, 0.96]], spoiler: false },
+  twingo: { L: 3.43, W: 1.63, wb: 1.17, wr: 0.3, body: [[1.69, 0.34], ['arcF'], ['arcR'], [-1.66, 0.34], [-1.71, 0.6], [-1.68, 1.0], [-1.4, 1.02], [0.9, 0.98], [1.5, 0.86], [1.71, 0.72]],
+    cabin: [[-1.62, 1.0], [-1.45, 1.62], [-0.2, 1.68], [0.3, 1.62], [1.2, 1.0]], spoiler: false },
 };
 function plateTexture(text, rear) {
   const [c, g] = canvas(128, 32);
@@ -1145,8 +1235,8 @@ function extrudeSide(shape, width, bevel) {
   return geo;
 }
 let plateNo = 0;
-function makeCar(paint, stripe, isPlayer, styleName) {
-  if (HD) return hd.makeCar(paint, stripe, isPlayer, styleName);
+function makeCar(paint, stripe, isPlayer, styleName, opts) {
+  if (HD) return hd.makeCar(paint, stripe, isPlayer, styleName, opts);
   const st = CAR_STYLES[styleName || (isPlayer ? 'saloon' : 'hatch')];
   const g = new THREE.Group();
   const hex = '#' + new THREE.Color(paint).getHexString();
@@ -1261,31 +1351,39 @@ class Car {
   }
   get speed() { return Math.hypot(this.vx, this.vz); }
   get fwd() { return [-Math.sin(this.h), -Math.cos(this.h)]; }
-  place(x, z, h) { this.x = x; this.z = z; this.h = h; this.vx = this.vz = 0; this.sync(); }
+  place(x, z, h) { this.x = x; this.z = z; this.h = h; this.vx = this.vz = 0; this.yb = undefined; this.yv = 0; this.air = 0; this.nitro = 0; this.sync(); }
   sync() {
     const [fx, fz] = this.fwd, rx = -fz, rz = fx;
     const hf = surfaceH(this.x + fx * 1.7, this.z + fz * 1.7), hb = surfaceH(this.x - fx * 1.7, this.z - fz * 1.7);
     const hr = surfaceH(this.x + rx * 0.9, this.z + rz * 0.9), hl = surfaceH(this.x - rx * 0.9, this.z - rz * 0.9);
-    this.mesh.position.set(this.x, Math.max(surfaceH(this.x, this.z), (hf + hb) / 2) + 0.34, this.z);
+    this.mesh.position.set(this.x, Math.max(surfaceH(this.x, this.z), (hf + hb) / 2) + 0.34 + (this.air || 0), this.z);
+    if (this.air > 0.2) { this._ap = (this._ap ?? Math.atan2(hf - hb, 3.4)) - 0.35 * (1 / 60); this.mesh.rotation.set(Math.max(-0.5, this._ap), this.h, this.mesh.rotation.z * 0.98, 'YXZ'); return; }
+    this._ap = undefined;
     this.mesh.rotation.set(Math.atan2(hf - hb, 3.4), this.h, Math.atan2(hr - hl, 1.8), 'YXZ');
   }
 }
 
 function drive(c, inp, dt) {
-  const MAX = c.player ? 44 : (c.ai && c.ai.mode === 'hunt' ? 36 : 15);
+  let MAX = c.maxV || (c.player ? 44 : (c.ai && c.ai.mode === 'hunt' ? 36 : 15));
+  const boost = c.nitro > 0 ? 1.6 : 1; MAX *= c.nitro > 0 ? 1.3 : 1;
+  const grip = c.air > 0.25 ? 0.08 : 1; // airborne: no traction
   const [fx, fz] = c.fwd, rx = -fz, rz = fx; // right vector
   let vf = c.vx * fx + c.vz * fz, vr = c.vx * rx + c.vz * rz;
-  if (inp.t > 0) { if (vf < MAX) vf += inp.t * (vf < 0 ? 26 : 15 - vf * 0.12) * dt; }
-  else if (inp.t < 0) { if (vf > 0.5) vf -= 30 * dt; else if (vf > -13) vf += inp.t * 11 * dt; }
-  else vf -= vf * 0.45 * dt;
-  vf -= vf * Math.abs(vf) * 0.0011 * dt * 10;
-  if (inp.hb) vf -= vf * 1.2 * dt;
-  vr *= Math.exp(-(inp.hb ? 1.4 : 9) * dt);
+  const acc = (c.accK || 1) * boost * grip;
+  if (inp.t > 0) { if (vf < MAX) vf += inp.t * (vf < 0 ? 26 : Math.max(2, 15 - vf * 0.12 * 44 / MAX)) * acc * dt; }
+  else if (inp.t < 0) { if (vf > 0.5) vf -= 30 * grip * dt; else if (vf > -13) vf += inp.t * 11 * grip * dt; }
+  else vf -= vf * 0.45 * grip * dt;
+  if (c.nitro > 0 && vf < MAX) vf += 9 * dt;
+  vf -= vf * Math.abs(vf) * 0.0011 * dt * 10 * (44 / Math.max(44, MAX));
+  // handbrake: the rear lets go; keep the slide going a moment after release if the throttle is held (drift)
+  if (inp.hb && Math.abs(vf) > 7) c.drift = 0.8; else c.drift = Math.max(0, (c.drift || 0) - dt * (inp.t > 0 ? 0.7 : 2.5));
+  if (inp.hb) vf -= vf * 0.55 * dt;
+  vr *= Math.exp(-(inp.hb ? 1.0 : c.drift > 0 ? 2.4 : 9) * grip * dt);
   // gravity along the slope of the Chantenay hills
   const slope = (surfaceH(c.x + fx * 1.7, c.z + fz * 1.7) - surfaceH(c.x - fx * 1.7, c.z - fz * 1.7)) / 3.4;
   vf -= 9.81 * slope * 0.75 * dt;
   c.steer += (inp.s - c.steer) * Math.min(1, dt * 8);
-  const yaw = c.steer * Math.max(-1, Math.min(1, vf / 6)) * (2.1 / (1 + Math.abs(vf) / 30)) * (inp.hb ? 1.6 : 1);
+  const yaw = c.steer * Math.max(-1, Math.min(1, vf / 6)) * (2.1 / (1 + Math.abs(vf) / 30)) * (inp.hb ? 1.9 : c.drift > 0 ? 1.35 : 1) * (grip < 1 ? 0.25 : 1);
   c.h += yaw * dt;
   const [nfx, nfz] = c.fwd, nrx = -nfz, nrz = nfx;
   c.vx = nfx * vf + nrx * vr; c.vz = nfz * vf + nrz * vr;
@@ -1295,6 +1393,16 @@ function drive(c, inp, dt) {
     c.x = ox; c.z = oz; c.vx *= -0.3; c.vz *= -0.3;
     if (c.player && Math.random() < 0.3) spawnFx(c.x, 0.5, c.z, 0.6, 0x9fc4d8, 0.4, 3, 2);
   }
+  if (HD) { // vertical motion: crests and bridge ramps throw the car in the air at speed
+    const g = surfaceH(c.x, c.z);
+    if (c.yb === undefined || Math.abs(c.yb - g) > 8) { c.yb = g; c.yv = 0; c.air = 0; }
+    const ny = c.yb + (c.yv || 0) * dt - 11 * dt * dt;
+    if (ny > g + 0.14) { c.yv -= 22 * dt; c.yb = ny; c.air = c.yb - g; }
+    else {
+      if (c.air > 0.4 && c.yv < -6) { spawnFx(c.x, 0.3, c.z, 0.5, 0xffe28a, 0.2, 2, 2); if (c.local) { sfx.hit(); rumbleFor(c.owner, 0.5, 0.5, 150); } if (c.yv < -12) damage(c, (-c.yv - 12) * 1.5); }
+      c.yv = Math.max(-14, Math.min(14, (g - c.yb) / Math.max(dt, 1e-3))); c.yb = g; c.air = 0;
+    }
+  }
   let impact = 0;
   for (let it = 0; it < 2; it++) impact = Math.max(impact, collideWalls(c));
   c.x = Math.max(-HX - 30, Math.min(HX + 30, c.x));
@@ -1302,18 +1410,24 @@ function drive(c, inp, dt) {
   return impact;
 }
 function collideWalls(c) {
+  // the car is about 4.4 m by 1.8 m: three circles along its length (front, middle, rear) rather than one big
+  // circle, so it fits through any gap a little wider than itself
   const segs = cellOf(c.x, c.z); if (!segs) return 0;
+  const [fx, fz] = c.fwd, half = c.mesh && c.mesh.userData.hl ? Math.max(1, c.mesh.userData.hl - 1.0) : 1.25;
   let impact = 0;
-  for (const [ax, az, bx, bz] of segs) {
-    const dx = bx - ax, dz = bz - az, L2 = dx * dx + dz * dz || 1e-6;
-    let t = ((c.x - ax) * dx + (c.z - az) * dz) / L2; t = Math.max(0, Math.min(1, t));
-    const px = ax + dx * t, pz = az + dz * t;
-    let nx = c.x - px, nz = c.z - pz; const d = Math.hypot(nx, nz);
-    if (d >= R_CAR) continue;
-    if (d < 1e-4) { nx = -dz; nz = dx; } const l = Math.hypot(nx, nz) || 1; nx /= l; nz /= l;
-    c.x += nx * (R_CAR - d); c.z += nz * (R_CAR - d);
-    const vn = c.vx * nx + c.vz * nz;
-    if (vn < 0) { impact = Math.max(impact, -vn); c.vx -= 1.25 * vn * nx; c.vz -= 1.25 * vn * nz; c.vx *= 0.9; c.vz *= 0.9; }
+  for (const [k, r] of [[half, 1.0], [0, 1.0], [-half, 1.0]]) {
+    for (const [ax, az, bx, bz] of segs) {
+      const cx = c.x + fx * k, cz = c.z + fz * k;
+      const dx = bx - ax, dz = bz - az, L2 = dx * dx + dz * dz || 1e-6;
+      let t = ((cx - ax) * dx + (cz - az) * dz) / L2; t = Math.max(0, Math.min(1, t));
+      const px = ax + dx * t, pz = az + dz * t;
+      let nx = cx - px, nz = cz - pz; const d = Math.hypot(nx, nz);
+      if (d >= r) continue;
+      if (d < 1e-4) { nx = -dz; nz = dx; } const l = Math.hypot(nx, nz) || 1; nx /= l; nz /= l;
+      c.x += nx * (r - d); c.z += nz * (r - d);
+      const vn = c.vx * nx + c.vz * nz;
+      if (vn < 0) { impact = Math.max(impact, -vn); c.vx -= 1.25 * vn * nx; c.vz -= 1.25 * vn * nz; c.vx *= 0.9; c.vz *= 0.9; }
+    }
   }
   return impact;
 }
@@ -1398,7 +1512,7 @@ function updateTracers(dt) {
 
 // ---------- sound (WebAudio, generated) ----------
 const sfx = (() => {
-  let ac = null, master, fxG, engO, engF, engG, musicG, noiseBuf, musicOn = true, step = 0, nextT = 0, timer = null, arr = 4; // arr: how much of the loop plays (the intro builds it up; 4 = all of it)
+  let ac = null, rainG = null, sirenO = null, sirenG = null, master, fxG, engO, engF, engG, musicG, noiseBuf, musicOn = true, step = 0, nextT = 0, timer = null, arr = 4; // arr: how much of the loop plays (the intro builds it up; 4 = all of it)
   const vol = { music: 0.7, fx: 0.8 };
   function init() {
     if (ac) return; try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
@@ -1420,9 +1534,64 @@ const sfx = (() => {
   const BASS = [40, 0, 0, 40, 0, 0, 43, 0, 45, 0, 0, 45, 47, 0, 45, 43, 40, 0, 0, 40, 0, 0, 43, 0, 38, 0, 0, 38, 40, 0, 0, 0];
   const LEAD = { 0: 76, 6: 79, 8: 81, 14: 79, 16: 76, 22: 74, 24: 71 };
   const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+  // the other stations of the car radio (HD): French boom-bap, Loire techno, Chantenay funk. Same scheduler, own tempo.
+  let station = 0;
+  const STATIONS = [
+    { name: 'Chantenay FM 92.4', style: 'G-funk', bpm: 92 },
+    { name: 'Rap Nantes 44', style: 'rap français', bpm: 90 },
+    { name: 'Techno Loire 103.1', style: 'techno', bpm: 132 },
+    { name: 'Radio Funk Sainte-Anne', style: 'funk', bpm: 104 },
+  ];
+  const s16 = () => 60 / STATIONS[station].bpm / 4;
+  function tone(t, f, dur, type, vol, dest, opt = {}) {
+    const o = ac.createOscillator(), g = ac.createGain(); o.type = type; o.frequency.setValueAtTime(f, t);
+    if (opt.slide) o.frequency.exponentialRampToValueAtTime(opt.slide, t + dur);
+    let node = o;
+    if (opt.lp) { const bf = ac.createBiquadFilter(); bf.type = opt.bp ? 'bandpass' : 'lowpass'; bf.frequency.setValueAtTime(opt.lp, t); if (opt.lpTo) bf.frequency.exponentialRampToValueAtTime(opt.lpTo, t + dur); bf.Q.value = opt.q || 1; o.connect(bf); node = bf; }
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + (opt.att || 0.005)); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    node.connect(g).connect(dest || musicG); o.start(t); o.stop(t + dur + 0.05);
+  }
+  const kick = (t, v = 0.9, f0 = 130) => { const o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.15); g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.3); o.connect(g).connect(musicG); o.start(t); o.stop(t + 0.32); };
+  // rap: dusty minor piano chords, deep bass, swung hats, a bit of vinyl
+  const RAP_CH = [[57, 60, 64], [53, 57, 60], [55, 59, 62], [52, 55, 59]];
+  const RAP_B = [45, 0, 0, 0, 0, 0, 45, 0, 0, 0, 41, 0, 0, 0, 0, 0];
+  function rapStep(s, t, bar) {
+    const sw = s % 2 ? s16() * 0.18 : 0; t += sw;
+    if (s === 0 || s === 7 || s === 10) kick(t, 0.95, 110);
+    if (s === 4 || s === 12) { noise(t, 0.2, 1500, 0.7, 0.55, musicG); noise(t, 0.08, 4000, 0.5, 0.2, musicG); }
+    if (s % 2 === 0) noise(t, 0.035, 9000, 1.6, s % 4 ? 0.07 : 0.11, musicG, 'highpass');
+    if (RAP_B[s]) tone(t, mtof(RAP_B[s] - (bar % 4 === 3 ? 2 : 0) - 12), 0.5, 'sine', 0.42);
+    if (s === 0 || s === 6 || (s === 11 && bar % 2)) for (const n of RAP_CH[bar % 4]) tone(t, mtof(n), 0.55, 'triangle', 0.06, null, { lp: 1600 });
+    if (Math.random() < 0.3) noise(t, 0.01, 3000, 0.4, 0.03, musicG, 'highpass');
+  }
+  // techno: four on the floor, off-beat open hats, a 303-ish acid line
+  const ACID = [33, 33, 45, 33, 36, 33, 43, 33, 33, 45, 33, 38, 33, 40, 33, 31];
+  function technoStep(s, t, bar) {
+    if (s % 4 === 0) kick(t, 1, 150);
+    if (s % 4 === 2) noise(t, 0.09, 8500, 1, 0.13, musicG, 'highpass');
+    if (s === 4 || s === 12) noise(t, 0.12, 1200, 1.4, 0.32, musicG);
+    if (bar % 8 >= 2) { const sweep = 400 + 1600 * (0.5 + 0.5 * Math.sin(bar * 0.7 + s * 0.05)); tone(t, mtof(ACID[s]), s16() * 0.9, 'sawtooth', 0.11, null, { lp: sweep * 2.2, lpTo: sweep * 0.5, q: 12 }); }
+    if (bar % 4 === 3 && s === 14) noise(t, 0.4, 2000, 0.4, 0.15, musicG, 'highpass');
+  }
+  // funk: slap bass, clavinet chops, brass stabs
+  const FB = [40, 0, 52, 40, 0, 40, 50, 0, 43, 0, 55, 43, 45, 47, 0, 50];
+  function funkStep(s, t, bar) {
+    if (s === 0 || s === 3 || s === 10) kick(t, 0.85, 120);
+    if (s === 4 || s === 12) noise(t, 0.16, 2000, 0.8, 0.45, musicG);
+    if (s === 7 || s === 15) noise(t, 0.05, 2500, 1, 0.12, musicG);
+    noise(t, 0.03, 9000, 1.6, s % 2 ? 0.05 : 0.09, musicG, 'highpass');
+    if (FB[s]) tone(t, mtof(FB[s] - 12), 0.18, 'square', 0.16, null, { lp: 900, lpTo: 200 });
+    if (s % 4 === 2 || s === 7) for (const n of [64, 67, 71]) tone(t, mtof(n), 0.09, 'square', 0.025, null, { lp: 1800, bp: true, q: 3 });
+    if (bar % 2 === 1 && (s === 14 || s === 15)) for (const n of [74, 79]) tone(t, mtof(n), 0.18, 'sawtooth', 0.05, null, { lp: 2400, att: 0.02 });
+  }
   function schedule() {
     if (!ac) return;
     while (nextT < ac.currentTime + 0.15) {
+      if (musicOn && station > 0) {
+        const s = step % 16, bar = (step / 16) | 0;
+        if (station === 1) rapStep(s, nextT, bar); else if (station === 2) technoStep(s, nextT, bar); else funkStep(s, nextT, bar);
+        nextT += s16(); step++; continue;
+      }
       if (musicOn) {
         const s = step % 32, t = nextT;
         if (BASS[s] && arr >= 0) {
@@ -1455,14 +1624,43 @@ const sfx = (() => {
     boom() { if (ac) noise(ac.currentTime, 1.1, 300, 0.6, 1.0, null, 'lowpass'); },
     pick() { if (!ac) return; const o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(660, ac.currentTime); o.frequency.setValueAtTime(990, ac.currentTime + 0.08); g.gain.setValueAtTime(0.25, ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.3); o.connect(g).connect(fxG); o.start(); o.stop(ac.currentTime + 0.32); },
     arr(n) { arr = n; },
-    restart() { if (ac) { if (ac.state === 'suspended') ac.resume().catch(() => { }); step = 0; nextT = ac.currentTime + 0.06; } },
+    restart() { station = 0; if (ac) { if (ac.state === 'suspended') ac.resume().catch(() => { }); step = 0; nextT = ac.currentTime + 0.06; } },
     whoosh() { if (ac) noise(ac.currentTime, 0.35, 700, 0.6, 0.22); },
     slam() { // the hit under the title
       if (!ac) return; const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
       o.frequency.setValueAtTime(95, t); o.frequency.exponentialRampToValueAtTime(28, t + 0.9); g.gain.setValueAtTime(1, t); g.gain.exponentialRampToValueAtTime(0.001, t + 1.4);
       o.connect(g).connect(fxG); o.start(t); o.stop(t + 1.5); noise(t, 1.8, 180, 0.5, 0.9, null, 'lowpass');
     },
+    rain(level) { // continuous hiss of the rain, louder on the roof of the car
+      if (!ac) return;
+      if (!rainG) {
+        const s = ac.createBufferSource(); s.buffer = noiseBuf; s.loop = true;
+        const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 900;
+        const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 7000;
+        rainG = ac.createGain(); rainG.gain.value = 0; s.connect(hp).connect(lp).connect(rainG).connect(fxG); s.start();
+      }
+      if (Math.abs(level - (rainG._l || 0)) > 0.01) { rainG._l = level; rainG.gain.setTargetAtTime(level * 0.16, ac.currentTime, 0.3); }
+    },
+    horn() { // a little 90s hatchback horn
+      if (!ac) return; const t = ac.currentTime;
+      for (const f of [415, 523]) { const o = ac.createOscillator(), g = ac.createGain(), bf = ac.createBiquadFilter(); o.type = 'square'; o.frequency.value = f; bf.type = 'lowpass'; bf.frequency.value = 1800;
+        g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.07, t + 0.02); g.gain.setValueAtTime(0.07, t + 0.3); g.gain.exponentialRampToValueAtTime(0.001, t + 0.4); o.connect(bf).connect(g).connect(fxG); o.start(t); o.stop(t + 0.45); }
+    },
+    siren(level) { // French two-tone "pin-pon"
+      if (!ac) return;
+      if (!sirenO) { sirenO = ac.createOscillator(); sirenO.type = 'triangle'; sirenG = ac.createGain(); sirenG.gain.value = 0; sirenO.connect(sirenG).connect(fxG); sirenO.start(); }
+      const t = ac.currentTime; sirenO.frequency.setTargetAtTime((t % 1.2) < 0.6 ? 435 : 580, t, 0.01);
+      if (Math.abs(level - (sirenG._l || 0)) > 0.02) { sirenG._l = level; sirenG.gain.setTargetAtTime(level * 0.09, t, 0.15); }
+    },
+    thunder() {
+      if (!ac) return; const t = ac.currentTime;
+      noise(t, 0.35, 900, 0.4, 0.5, null, 'lowpass'); noise(t + 0.05, 3.2, 110, 0.4, 1.2, null, 'lowpass'); noise(t + 0.6, 2.4, 70, 0.3, 0.8, null, 'lowpass');
+    },
     toggle() { if (!ac) return; musicOn = !musicOn; return musicOn; },
+    // next station; after the last one the radio goes off, then back to the first
+    nextStation() { if (!ac) return null; if (!musicOn) { musicOn = true; station = 0; } else if (station < STATIONS.length - 1) station++; else { musicOn = false; } step = 0; nextT = ac.currentTime + 0.08; return musicOn ? STATIONS[station] : null; },
+    setStation(i) { station = i; step = 0; if (ac) nextT = ac.currentTime + 0.06; },
+    get station() { return musicOn ? STATIONS[station] : null; },
     get music() { return musicOn; },
     // separate music / effects volumes, 0..1
     setVolume(kind, v) { vol[kind] = v; if (!ac) return; if (kind === 'music') musicG.gain.setTargetAtTime(0.46 * v, ac.currentTime, 0.05); else fxG.gain.setTargetAtTime(v, ac.currentTime, 0.05); },
@@ -1475,7 +1673,7 @@ const SETTINGS_KEY = 'gangstamen.settings.v1';
 const settings = Object.assign({
   ctl: ['kb1', 'kb2', 'kb3', 'kb4'], soloCtl: 'kb1+pad0', nPlayers: 2,
   music: 0.7, fx: 0.8, rumble: true, retro: true, nick: '',
-  hdq: 2, intro: true, teams: false, team: [0, 1, 0, 1], netTeams: false, netTeam: -1, goal: 20, limit: 10,
+  hdq: 2, tod: 'sunset', rain: '0', traffic: 2, voices: true, shadows: 1, dist: 2, intro: true, teams: false, team: [0, 1, 0, 1], netTeams: false, netTeam: -1, goal: 20, limit: 10,
 }, (() => { try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); } catch (e) { return {}; } })());
 function saveSettings() { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { } }
 sfx.setVolume('music', settings.music); sfx.setVolume('fx', settings.fx);
@@ -1484,16 +1682,16 @@ else if (!settings.retro) { retro = false; setRatio(); view.classList.remove('re
 
 // ---------- input: keyboards (physical keys), gamepads, touch ----------
 const SCHEMES = {
-  kb1: { name: 'Clavier 1', up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD', fire: ['Space'], hb: ['ShiftLeft'], cam: 'KeyC', fix: 'KeyR' },
-  kb2: { name: 'Clavier 2', up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight', fire: ['ControlRight', 'Enter'], hb: ['ShiftRight'], cam: 'End', fix: 'PageDown' },
-  kb3: { name: 'Clavier 3', up: 'KeyI', down: 'KeyK', left: 'KeyJ', right: 'KeyL', fire: ['KeyU'], hb: ['KeyO'], cam: 'Digit9', fix: 'Digit8' },
-  kb4: { name: 'Clavier 4', up: 'Numpad8', down: 'Numpad5', left: 'Numpad4', right: 'Numpad6', fire: ['Numpad0'], hb: ['NumpadDecimal'], cam: 'NumpadAdd', fix: 'NumpadSubtract' },
+  kb1: { name: 'Clavier 1', up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD', fire: ['Space'], hb: ['ShiftLeft'], cam: 'KeyC', fix: 'KeyR', sp: ['KeyE'] },
+  kb2: { name: 'Clavier 2', up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight', fire: ['ControlRight', 'Enter'], hb: ['ShiftRight'], cam: 'End', fix: 'PageDown', sp: ['Delete', 'Slash'] },
+  kb3: { name: 'Clavier 3', up: 'KeyI', down: 'KeyK', left: 'KeyJ', right: 'KeyL', fire: ['KeyU'], hb: ['KeyO'], cam: 'Digit9', fix: 'Digit8', sp: ['Digit7'] },
+  kb4: { name: 'Clavier 4', up: 'Numpad8', down: 'Numpad5', left: 'Numpad4', right: 'Numpad6', fire: ['Numpad0'], hb: ['NumpadDecimal'], cam: 'NumpadAdd', fix: 'NumpadSubtract', sp: ['NumpadEnter'] },
 };
 const CTL_OPTIONS = ['kb1+pad0', 'kb1', 'kb2', 'kb3', 'kb4', 'pad0', 'pad1', 'pad2', 'pad3'];
 let layoutMap = null;
 try { navigator.keyboard && navigator.keyboard.getLayoutMap && navigator.keyboard.getLayoutMap().then(m => { layoutMap = m; renderCtlTable(); }).catch(() => { }); } catch (e) { }
 const KEY_NAMES = { Space: 'Espace', ShiftLeft: 'Maj g.', ShiftRight: 'Maj d.', ControlRight: 'Ctrl d.', Enter: 'Entrée', End: 'Fin', PageDown: 'Pg suiv.',
-  ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→', NumpadDecimal: 'Num .', NumpadAdd: 'Num +', NumpadSubtract: 'Num −' };
+  Delete: 'Suppr', Slash: ':', NumpadEnter: 'Entrée num.', ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→', NumpadDecimal: 'Num .', NumpadAdd: 'Num +', NumpadSubtract: 'Num −' };
 function keyName(code) {
   if (layoutMap && layoutMap.get(code)) return layoutMap.get(code).toUpperCase();
   if (KEY_NAMES[code]) return KEY_NAMES[code];
@@ -1518,10 +1716,15 @@ addEventListener('keydown', e => {
   if (!started) return;
   if (e.code === 'Escape') togglePause();
   if (paused) return;
-  if (e.code === 'KeyN') setNight(!night);
-  if (e.code === 'Semicolon' || (e.key && e.key.toLowerCase() === 'm' && !e.repeat)) { const on = sfx.toggle(); flashAll(on ? 'Radio ON' : 'Radio OFF', on ? 'Chantenay FM 92.4' : ''); }
+  if (e.code === 'KeyN') { if (HD) cycleTod(); else setNight(!night); }
+  if (e.code === 'KeyB' && HD && !e.repeat) cycleRain();
+  if (e.code === 'Semicolon' || (e.key && e.key.toLowerCase() === 'm' && !e.repeat)) {
+    if (HD) { const st = sfx.nextStation(); flashAll(st ? st.name : 'Radio OFF', st ? st.style + ' · M : station suivante' : 'M : rallumer'); if (st && gx) gx.dj('station', st); }
+    else { const on = sfx.toggle(); flashAll(on ? 'Radio ON' : 'Radio OFF', on ? 'Chantenay FM 92.4' : ''); }
+  }
   if (e.key && e.key.toLowerCase() === 'p' && !e.repeat) toggleRetro();
   if (e.code === 'Tab') $('board').hidden = false;
+  if (gx && !e.repeat && /^Digit[1-6]$/.test(e.code) && (mode === 'online' || locals.length > 1)) gx.quickChat(locals.find(L => schemeOf(L.ctl) && schemeOf(L.ctl).name === 'Clavier 1') || locals[0], +e.code[5] - 1);
   for (const L of locals) {
     const s = schemeOf(L.ctl); if (!s) continue;
     if (e.code === s.cam && !e.repeat) L.camMode = (L.camMode + 1) % 3;
@@ -1538,6 +1741,16 @@ const bindTouch = (id, f) => {
   el.addEventListener('pointerdown', on); el.addEventListener('pointerup', off); el.addEventListener('pointercancel', off); el.addEventListener('pointerleave', off);
 };
 bindTouch('tLeft', 'l'); bindTouch('tRight', 'r'); bindTouch('tGas', 'g'); bindTouch('tBrake', 'b'); bindTouch('tFire', 'f');
+if (HD) { // virtual joystick: left/right steer, up accelerates, down brakes; extra buttons for the handbrake and the special weapon
+  bindTouch('tSpec', 'sp'); bindTouch('tHb', 'hb'); $('tSpec').hidden = $('tHb').hidden = false; $('joy').hidden = false; document.body.classList.add('joy');
+  const J = $('joy'), K = $('joyKnob'); let id = null;
+  const move = e => { const r = J.getBoundingClientRect(), R = r.width / 2; let dx = e.clientX - r.left - R, dy = e.clientY - r.top - R; const l = Math.hypot(dx, dy); if (l > R) { dx *= R / l; dy *= R / l; }
+    K.style.transform = 'translate(' + dx + 'px,' + dy + 'px)'; touch.jx = dx / R; touch.jy = dy / R; };
+  J.addEventListener('pointerdown', e => { e.preventDefault(); id = e.pointerId; J.setPointerCapture(id); move(e); });
+  J.addEventListener('pointermove', e => { if (e.pointerId === id) { e.preventDefault(); move(e); } });
+  const up = e => { if (e.pointerId !== id) return; id = null; touch.jx = touch.jy = 0; K.style.transform = ''; };
+  J.addEventListener('pointerup', up); J.addEventListener('pointercancel', up);
+}
 
 // Gamepads (standard mapping: Xbox / PlayStation / most USB pads)
 // RT gas · LT brake/reverse · left stick or D-pad steer · A or RB fire · X handbrake · Y camera · LB back on the road · Back night · Start pause
@@ -1571,8 +1784,9 @@ addEventListener('gamepaddisconnected', e => { renderSlots(); if (started) flash
 
 function readInput(L) {
   const ctl = L.ctl, s = schemeOf(ctl), idx = padIndexOf(ctl);
-  let t = 0, st = 0, hb = false, fire = false;
+  let t = 0, st = 0, hb = false, fire = false, special = false;
   if (s) {
+    special = (s.sp || []).some(c => codes[c]);
     t = (codes[s.up] ? 1 : 0) - (codes[s.down] ? 1 : 0);
     st = (codes[s.left] ? 1 : 0) - (codes[s.right] ? 1 : 0);
     hb = s.hb.some(c => codes[c]); fire = s.fire.some(c => codes[c]);
@@ -1580,17 +1794,22 @@ function readInput(L) {
   if (L.slot === 0) { // touch controls drive player 1
     if (touch.g || touch.b) t = (touch.g ? 1 : 0) - (touch.b ? 1 : 0);
     if (touch.l || touch.r) st = (touch.l ? 1 : 0) - (touch.r ? 1 : 0);
-    fire = fire || !!touch.f;
+    fire = fire || !!touch.f; special = special || !!touch.sp; hb = hb || !!touch.hb;
+    if (touch.jx || touch.jy) { // joystick: dead zone, then progressive
+      const dz = v => Math.abs(v) < 0.15 ? 0 : (v - Math.sign(v) * 0.15) / 0.85;
+      st = -dz(touch.jx); const y = dz(touch.jy); t = y < 0 ? Math.min(1, -y * 1.3) : y > 0.25 ? -1 : 0;
+    }
   }
   if (idx >= 0 && pads[idx].gp) {
     const P = pads[idx];
-    t = t || P.t; st = st || P.s; hb = hb || P.hb; fire = fire || P.fire;
+    t = t || P.t; st = st || P.s; hb = hb || P.hb; fire = fire || P.fire; special = special || !!(P.gp && P.gp.buttons[1] && P.gp.buttons[1].pressed);
     if (P.press[3]) L.camMode = (L.camMode + 1) % 3;
     if (P.press[4] && L.car.alive) unstick(L);
-    if (P.press[8]) setNight(!night);
+    if (P.press[8]) { if (HD) cycleTod(); else setNight(!night); }
+    if (gx && (mode === 'online' || locals.length > 1)) { if (P.press[12]) gx.quickChat(L, 0); if (P.press[13]) gx.quickChat(L, 2); if (P.press[10]) gx.quickChat(L, 1); if (P.press[11]) gx.quickChat(L, 3); }
     if (P.press[9]) togglePause();
   }
-  return { t, s: st, hb, fire };
+  return { t, s: st, hb, fire, special };
 }
 
 // ---------- game state ----------
@@ -1604,7 +1823,7 @@ const TEAMS = [
   { name: 'Chantenaysiens', short: 'Chantenaysiens', one: 'Chantenaysien', css: '#f2c81e', body: 0xf2c81e, stripe: 0x1e7a3a, botBody: 0x1e5e34, botStripe: 0xf2c81e },
 ];
 let teamMode = false;
-function enemies(a, b) { return a !== b && (a.team < 0 || b.team < 0 || a.team !== b.team); }
+function enemies(a, b) { if ((a.friendly && b.local) || (b.friendly && a.local)) return false; return a !== b && (a.team < 0 || b.team < 0 || a.team !== b.team); }
 // bases: the Chantenaysiens start on the boulevard de la Liberté, the Rapaces on the top of the butte
 let BASES = null;
 function roadFrame(road, m) {
@@ -1714,9 +1933,22 @@ function randomSpawn() { // Math.random, not the seeded generator: every client 
   const nb = G.adj[n][0] ?? n;
   return [G.x[n], G.z[n], Math.atan2(-(G.x[nb] - G.x[n]), -(G.z[nb] - G.z[n]))];
 }
+// HD: each player picks a car (look and a touch of handling) and its colours before the game
+const CAR_CHOICES = [
+  { k: 'saloon', name: 'Berline', v: 1, a: 1, d: 'Équilibrée, la plus rapide' },
+  { k: 'p205', name: '205', v: 0.98, a: 1.1, d: 'Nerveuse' },
+  { k: 'hatch', name: 'Compacte', v: 0.96, a: 1.06, d: 'Avec aileron' },
+  { k: 'r5', name: 'R5', v: 0.93, a: 1.14, d: 'Petite et vive' },
+  { k: 'twingo', name: 'Twingo', v: 0.91, a: 1.1, d: 'Bouille de 1993' },
+];
+const CAR_PAINTS = [[0x5b2ba6, 0xf2c14e], [0xb3121f, 0xf3ead8], [0x0f5d8c, 0xf2c14e], [0x1d1d22, 0xd8a43c], [0xf2f2ee, 0x1b2f8a], [0x2b6b3a, 0xf3ead8], [0xe86a1a, 0x161616], [0xd8b23a, 0x161616], [0x1f8a8a, 0xf3ead8], [0xc23b6e, 0xf3ead8]];
+function carChoice(slot) { const c = (settings.cars || [])[slot] || {}; return { style: CAR_CHOICES.find(o => o.k === c.s) || CAR_CHOICES[0], paint: CAR_PAINTS[c.p ?? [0, 8, 6, 5][slot]] || CAR_PAINTS[0] }; }
 function makeLocal(slot, ctl, paint, team = -1) {
+  const ch = HD ? carChoice(slot) : null;
+  if (ch && team < 0) paint = ch.paint;
   const [c1, c2] = paint;
-  const car = new Car(makeCar(c1, c2, true, 'saloon'), true);
+  const car = new Car(makeCar(c1, c2, true, ch ? ch.style.k : 'saloon'), true);
+  if (ch) { car.style = ch.style.k; car.baseV = 44 * ch.style.v; car.baseA = ch.style.a; car.maxV = car.baseV; car.accK = car.baseA; }
   car.local = true;
   const L = { slot, ctl, car, cam: new THREE.PerspectiveCamera(56, 1, 0.5, 2200), camMode: 0, look: null, respect: 0, kills: 0, deadT: 0, fireCd: 0,
     hud: null, vp: { x: 0, y: 0, w: 1, h: 1 }, tickT: 0, street: '', streetAcc: 0, colour: '#' + new THREE.Color(c1).getHexString() };
@@ -1801,6 +2033,7 @@ function drawMinimapOn(cv, me) {
   mg.drawImage(mapC, 0, 0);
   for (const pk of pickups) if (pk.on) { mg.fillStyle = '#7be07b'; mg.fillRect(pk.x + mapC.ox - 4, pk.z + mapC.oz - 4, 8, 8); }
   for (const r of rivals) { mg.fillStyle = !r.alive ? '#555' : teamMode ? TEAMS[r.team].css : '#ff3b3b'; mg.beginPath(); mg.arc(r.x + mapC.ox, r.z + mapC.oz, 6, 0, Math.PI * 2); mg.fill(); }
+  if (gx) gx.minimap(me, (c, colr) => { mg.fillStyle = colr; mg.beginPath(); mg.arc(c.x + mapC.ox, c.z + mapC.oz, 6, 0, Math.PI * 2); mg.fill(); });
   for (const c of allPlayerCars()) {
     if (c === me) continue;
     mg.fillStyle = c.owner && c.owner.colour ? c.owner.colour : '#fff'; mg.strokeStyle = '#000'; mg.lineWidth = 2;
@@ -1889,7 +2122,7 @@ function updateHud(dt) {
       const c = L.car, h = L.hud; if (!h) continue;
       h.ps.firstChild.nodeValue = Math.round(c.speed * 3.6);
       h.pb.style.width = c.hp + '%';
-      h.pr.textContent = 'RESPECT ' + L.respect + ' · KO ' + L.kills;
+      h.pr.textContent = 'RESPECT ' + L.respect + (gx && gx.gmode ? ' · POINTS ' : ' · KO ') + L.kills;
       L.streetAcc += dt; if (L.streetAcc > 0.3) { L.streetAcc = 0; const s = streetAt(c.x, c.z); if (s !== L.street) { L.street = s; h.pst.textContent = s; } drawMinimapOn(h.cv, c); }
       if (L.tickT > 0) { L.tickT -= dt; if (L.tickT <= 0) h.pt.hidden = true; }
     }
@@ -1901,7 +2134,7 @@ function boardRows() {
   for (const R of Net.remotes.values()) rows.push({ name: R.nick + (R.peer === Net.hostPeer ? ' ★' : ''), r: R.respect, k: R.kills, col: R.colour, t: R.car.team });
   return rows;
 }
-function teamScores(rows) { const s = [0, 0]; for (const r of rows) if (r.t >= 0) s[r.t] += r.k; return s; }
+function teamScores(rows) { if (gx && gx.teamScores) { const t = gx.teamScores(); if (t) return t; } const s = [0, 0]; for (const r of rows) if (r.t >= 0) s[r.t] += r.k; return s; }
 function updateTeamBar() {
   const bar = $('teambar'); bar.hidden = !teamMode; if (!teamMode) return;
   const s = teamScores(boardRows()), txt = s[0] + '  –  ' + s[1];
@@ -1920,7 +2153,7 @@ function renderBoard() {
 function boardTable(rows) {
   rows.sort((a, b) => teamMode ? (a.t - b.t) || (b.r - a.r) : b.r - a.r);
   const t = document.createElement('table');
-  t.innerHTML = '<tr><th></th><th>Joueur</th><th>Respect</th><th>KO</th></tr>';
+  t.innerHTML = '<tr><th></th><th>Joueur</th><th>Respect</th><th>' + (gx && gx.gmode ? 'Points' : 'KO') + '</th></tr>';
   const sc = teamScores(rows);
   let lastT = null;
   for (const r of rows) {
@@ -1952,7 +2185,7 @@ function setupMatch(goal, limit) {
 function updateClock() {
   const el = $('clock'), parts = [];
   if (Match.limit) parts.push('⏱ ' + fmtClock(Match.left));
-  if (Match.goal) parts.push(Match.goal + ' KO pour gagner');
+  if (Match.goal) parts.push(gx && gx.gmode ? gx.goalText() : Match.goal + ' KO pour gagner');
   el.hidden = !parts.length || Match.over;
   const txt = parts.join(' · ');
   if (el.textContent !== txt) el.textContent = txt;
@@ -2003,6 +2236,7 @@ function rematch() { // everyone back to the start, scores to zero
     c.place(...(mode === 'online' ? (L.team >= 0 ? teamSpawn(L.team) : randomSpawn()) : L.spawn));
   }
   for (const r of rivals) if (!r.proxy) spawnRival(r);
+  if (gx) gx.rematch();
   updateClock(); updateTeamBar();
   flashAll('Revanche !', Match.goal ? Match.goal + ' KO pour gagner' : 'C’est reparti');
   try { renderer.domElement.focus(); } catch (e) { }
@@ -2028,6 +2262,25 @@ function setNight(on) {
   wallMats.forEach(m => { m.emissiveIntensity = on ? 1 : 0; });
   for (const c of allPlayerCars()) { if (c.mesh.userData.spot) c.mesh.userData.spot.intensity = on ? 2.4 : 0; c.mesh.userData.head.emissive.setHex(on ? 0xfff2c0 : 0x8a8060); }
 }
+// performance: shadows and view distance (lower automatically with 3-4 screens)
+function applyPerf() {
+  const n = Math.max(1, locals.length);
+  sun.castShadow = HD ? (settings.shadows === 2 || (settings.shadows === 1 && n === 1)) : n === 1;
+  if (!HD) return;
+  const k = [0.5, 0.75, 1][settings.dist ?? 2] * (n >= 3 ? 0.7 : n === 2 ? 0.85 : 1);
+  hd.setDistance(k);
+  for (const L of locals) { L.cam.far = 2200 * k; L.cam.updateProjectionMatrix(); }
+}
+// HD: time of day and weather, kept in the settings; N and B cycle them in game
+const TOD_NAMES = { day: 'Plein jour', sunset: 'Coucher de soleil', night: 'Nuit', cycle: 'Cycle jour/nuit' };
+const RAIN_NAMES = { '0': 'Temps sec', '0.6': 'Pluie', '1': 'Orage', auto: 'Météo variable' };
+function applyAmbience() { if (!HD) return; hd.setTod(settings.tod); hd.setRain(settings.rain === 'auto' ? 'auto' : +settings.rain); night = settings.tod === 'night'; showAmbienceSegs(); }
+function showAmbienceSegs() {
+  document.querySelectorAll('#todSeg button').forEach(b => b.classList.toggle('on', b.dataset.v === settings.tod));
+  document.querySelectorAll('#rainSeg button').forEach(b => b.classList.toggle('on', b.dataset.v === String(settings.rain)));
+}
+function cycleTod() { const o = ['day', 'sunset', 'night', 'cycle']; settings.tod = o[(o.indexOf(settings.tod) + 1) % o.length]; saveSettings(); applyAmbience(); flashAll(TOD_NAMES[settings.tod], 'N : changer le moment'); }
+function cycleRain() { const o = ['0', '0.6', '1', 'auto']; settings.rain = o[(o.indexOf(String(settings.rain)) + 1) % o.length]; saveSettings(); applyAmbience(); flashAll(RAIN_NAMES[settings.rain], 'B : changer la météo'); }
 function toggleRetro() {
   if (HD) return;
   retro = !retro; settings.retro = retro; saveSettings();
@@ -2053,6 +2306,7 @@ $('pQuit').addEventListener('click', () => { try { if (Net.room) Net.room.leave(
 // hit routing: local cars take damage here; bots are simulated by the host; remote players by their own client
 function applyHit(shooter, target, dmg, ex, ez) {
   spawnFx(ex, 1.2, ez, 0.35, 0xffe28a, 0.15, 0, 1);
+  if (target.npc) return gx.damage(target, dmg, shooter);
   if (target.local) return damage(target, dmg, shooter);
   if (target.remote) { if (shooter && shooter.local) Net.queue('hit', target.remote.peer, dmg); else if (shooter && shooter.botIndex !== undefined && Net.isHost) Net.queue('hit', target.remote.peer, dmg); return; }
   if (target.botIndex !== undefined) {
@@ -2102,11 +2356,12 @@ function ghostShot(from, enemy) {
 }
 function credit(by, points, text) {
   if (!by || Match.over) return;
-  if (by.local) { const L = by.owner; L.respect += points; L.kills++; flashFor(L, '+' + points + ' RESPECT', text); rumbleFor(L, 0.2, 0.5, 120); }
+  if (by.local) { const L = by.owner; L.respect += points; if (!(gx && gx.gmode)) L.kills++; flashFor(L, '+' + points + ' RESPECT', text); rumbleFor(L, 0.2, 0.5, 120); if (gx) { gx.dj('ko', L); gx.saveBank(L); } }
 }
 function damage(c, d, by) {
-  if (!c.alive) return;
-  c.hp -= d;
+  if (c.npc) return gx.damage(c, d, by);
+  if (!c.alive || c.shield > 0) return;
+  c.hp -= d * (c.armor || 1);
   if (c.local) { sfx.hit(); rumbleFor(c.owner, 0.35, 0.6, 90); }
   if (c.hp > 0) return;
   c.alive = false; c.hp = 0; explode(c.x, c.z);
@@ -2130,7 +2385,7 @@ function damage(c, d, by) {
 function rivalInput(r, dt) {
   const ai = r.ai;
   let target = null, dp = 1e9;
-  const foes = [...allPlayerCars(), ...(teamMode ? rivals : [])].filter(c => c.alive && enemies(r, c));
+  const foes = [...allPlayerCars(), ...(teamMode ? rivals : []), ...(gx ? gx.foes() : [])].filter(c => c.alive && enemies(r, c));
   for (const c of foes) { const d = Math.hypot(c.x - r.x, c.z - r.z); if (d < dp) { dp = d; target = c; } }
   let los = false;
   if (target && dp < 110) los = segHit(r.x, r.z, (target.x - r.x) / dp, (target.z - r.z) / dp, dp) >= dp - 0.5;
@@ -2148,7 +2403,8 @@ function rivalInput(r, dt) {
     tx = G.x[ai.target]; tz = G.z[ai.target]; thr = 0.75;
     if (Math.hypot(tx - r.x, tz - r.z) < 7) {
       const opts = G.adj[ai.target].filter(n => n !== ai.prev);
-      const nx = opts.length ? opts[(rnd() * opts.length) | 0] : (ai.prev >= 0 ? ai.prev : ai.target);
+      let nx = opts.length ? opts[(rnd() * opts.length) | 0] : (ai.prev >= 0 ? ai.prev : ai.target);
+      if (ai.goal && opts.length && rnd() < 0.75) nx = opts.reduce((b, n) => Math.hypot(G.x[n] - ai.goal.x, G.z[n] - ai.goal.z) < Math.hypot(G.x[b] - ai.goal.x, G.z[b] - ai.goal.z) ? n : b, opts[0]);
       ai.prev = ai.target; ai.target = nx;
     }
   }
@@ -2265,7 +2521,7 @@ async function netInit() {
 function lobbyGames() {
   if (!Net.api) return [];
   const out = [];
-  for (const p of Net.api.peers()) { const g = p.presence && p.presence.gm; if (g && typeof g.code === 'string' && /^[a-z0-9]{4}$/.test(g.code) && !p.sameTab) out.push({ code: g.code, n: Math.max(1, Math.min(12, +g.n || 1)), host: String(g.host || '?').slice(0, 14), md: g.md === 1 ? 1 : 0, gl: [10, 20, 30].includes(g.gl) ? g.gl : 0, tl: [5, 10, 15].includes(g.tl) ? g.tl : 0 }); }
+  for (const p of Net.api.peers()) { const g = p.presence && p.presence.gm; if (g && typeof g.code === 'string' && /^[a-z0-9]{4}$/.test(g.code) && !p.sameTab) out.push({ code: g.code, n: Math.max(1, Math.min(12, +g.n || 1)), host: String(g.host || '?').slice(0, 14), md: g.md === 1 ? 1 : 0, gx: [3, 4].includes(g.gx) ? g.gx : 0, gl: [10, 20, 30].includes(g.gl) ? g.gl : 0, tl: [5, 10, 15].includes(g.tl) ? g.tl : 0 }); }
   return out;
 }
 function renderGames() {
@@ -2281,9 +2537,9 @@ function renderGames() {
   if (!games.length) { const e = document.createElement('div'); e.className = 'empty'; e.textContent = 'Aucune partie pour l’instant : créez-en une.'; box.replaceChildren(e); return; }
   box.replaceChildren(...games.map(g => {
     const b = document.createElement('button'); b.className = 'mbtn';
-    b.textContent = 'Partie ' + g.code.toUpperCase() + ' · ' + g.host + ' · ' + (g.md ? 'Par équipes' : 'Chacun pour soi') + (g.gl ? ' · ' + g.gl + ' KO' : '') + (g.tl ? ' · ' + g.tl + ' min' : '') + ' · ' + g.n + '/12';
+    b.textContent = 'Partie ' + g.code.toUpperCase() + ' · ' + g.host + ' · ' + (g.gx === 3 ? 'Roi de la colline' : g.gx === 4 ? 'Course' : g.md ? 'Par équipes' : 'Chacun pour soi') + (g.gl ? ' · ' + g.gl + ' KO' : '') + (g.tl ? ' · ' + g.tl + ' min' : '') + ' · ' + g.n + '/12';
     b.disabled = g.n >= 12;
-    b.addEventListener('click', () => startOnline(g.code, false, g.md, g.gl, g.tl));
+    b.addEventListener('click', () => startOnline(g.code, false, g.md, g.gl, g.tl, g.gx));
     return b;
   }));
 }
@@ -2293,10 +2549,12 @@ function remoteFromPeer(p) {
   let R = Net.remotes.get(p.peer);
   if (!R) {
     const tm = teamMode && (pres.tm === 0 || pres.tm === 1) ? pres.tm : -1;
-    const col = tm >= 0 ? TEAMS[tm].body : NET_PAINT[Math.abs(+pres.col || 0) % NET_PAINT.length];
-    const car = new Car(makeCar(col, tm >= 0 ? NET_PAINT[Math.abs(+pres.col || 0) % NET_PAINT.length] : 0xf3ead8, true, 'saloon'), true);
+    const pc = Number.isInteger(pres.pc) && pres.pc >= 0 && pres.pc <= 0xffffff ? pres.pc : null;
+    const col = tm >= 0 ? TEAMS[tm].body : pc ?? NET_PAINT[Math.abs(+pres.col || 0) % NET_PAINT.length];
+    const cs = CAR_STYLES[pres.cs] && typeof pres.cs === 'string' ? pres.cs : 'saloon';
+    const car = new Car(makeCar(col, tm >= 0 ? NET_PAINT[Math.abs(+pres.col || 0) % NET_PAINT.length] : 0xf3ead8, true, cs), true);
     car.team = tm;
-    car.mesh.userData.spot.intensity = night ? 2.4 : 0;
+    if (car.mesh.userData.spot) car.mesh.userData.spot.intensity = night ? 2.4 : 0;
     R = { peer: p.peer, car, nick: 'Joueur', respect: 0, kills: 0, colour: tm >= 0 ? TEAMS[tm].css : '#' + new THREE.Color(col).getHexString(), tx: c[0], tz: c[1], th: c[2], tvx: 0, tvz: 0, tt: performance.now(), fireAcc: 0 };
     car.remote = R; car.owner = R; car.place(c[0], c[1], c[2]);
     Net.remotes.set(p.peer, R);
@@ -2328,7 +2586,7 @@ function becomeHost() {
   for (const r of rivals) { r.proxy = false; if (!r.ai) r.ai = { mode: 'cruise', target: nearestNode(r.x, r.z), prev: -1, stuck: 0, back: 0, lost: 0, burst: 0, firing: 0 }; }
   if (started) flashAll('Vous êtes l’hôte', 'Vous faites rouler les voitures du quartier');
 }
-async function startOnline(code, create, md, gl, tl) {
+async function startOnline(code, create, md, gl, tl, gxm) {
   if (!Net.api) return;
   settings.nick = ($('nick').value || '').trim().slice(0, 14) || 'Gangsta' + ((Math.random() * 90 + 10) | 0); saveSettings();
   if (create) code = Array.from({ length: 4 }, () => 'abcdefghjkmnpqrstuvwxyz23456789'[(Math.random() * 31) | 0]).join('');
@@ -2337,7 +2595,8 @@ async function startOnline(code, create, md, gl, tl) {
   const others = room.peers().filter(p => !p.sameTab && p.presence && Array.isArray(p.presence.c)).length;
   if (!create && others >= 12) { room.leave(); $('netStatus').textContent = 'Partie pleine (12 joueurs).'; return; }
   Net.room = room; Net.code = code; mode = 'online';
-  teamMode = create ? !!settings.netTeams : !!md;
+  Net.gxm = HD ? (create ? (settings.netGmode || 0) : (gxm || 0)) : 0;
+  teamMode = Net.gxm ? false : create ? !!settings.netTeams : !!md;
   setupMatch(create ? settings.goal : gl || 0, create ? settings.limit : tl || 0);
   Net.team = -1;
   if (teamMode) { // chosen team, or the smaller one
@@ -2363,6 +2622,9 @@ async function startOnline(code, create, md, gl, tl) {
   room.on('hit', m => { const d = m.data || {}; if (d.to !== Net.me || typeof d.d !== 'number') return; const L = locals[0]; if (L && L.car.alive) damage(L.car, Math.min(40, Math.max(0, d.d)), { remotePeer: m.peer }); });
   room.on('hb', m => { const d = m.data || {}; if (!Net.isHost) return; const r = rivals[+d.i | 0]; if (r && typeof d.d === 'number') damage(r, Math.min(40, Math.max(0, d.d)), { remotePeer: m.peer }); });
   room.on('ko', m => { const d = m.data || {}; const L = locals[0]; const victim = String(d.nick || 'un joueur').slice(0, 14); if (d.by === Net.me && L) credit(L.car, 150, victim + ' au tapis'); else { const R = Net.remotes.get(d.by); feed(victim + ' démoli par ' + (R ? R.nick : 'un joueur')); } });
+  room.on('qc', m => { if (gx) gx.chatIn(m.peer, m.data); });
+  room.on('rk', m => { if (gx) gx.netIn('rk', m.peer, m.data); });
+  room.on('bl', m => { if (gx) gx.netIn('bl', m.peer, m.data); });
   room.on('bko', m => { const d = m.data || {}; const L = locals[0]; if (d.by === Net.me && L) credit(L.car, 100, botLabel(rivals[+d.i | 0]) + ' au tapis'); });
   startGame('online');
 }
@@ -2392,14 +2654,14 @@ function netTick(dt, now) {
   if (!Net.room) return;
   const L = locals[0]; if (!L) return;
   // lobby advert (host only), every 2 s
-  if (Net.isHost && (!Net.lastAdvert || now - Net.lastAdvert > 2000)) { Net.lastAdvert = now; Net.api.presence({ gm: { code: Net.code, n: Net.remotes.size + 1, host: settings.nick, md: teamMode ? 1 : 0, gl: Match.goal, tl: Match.limit } }).catch(() => { }); }
+  if (Net.isHost && (!Net.lastAdvert || now - Net.lastAdvert > 2000)) { Net.lastAdvert = now; Net.api.presence({ gm: { code: Net.code, n: Net.remotes.size + 1, host: settings.nick, md: teamMode ? 1 : 0, gx: Net.gxm || 0, gl: Match.goal, tl: Match.limit } }).catch(() => { }); }
   if (!Net.isHost && Net.lastAdvert) { Net.lastAdvert = 0; Net.api.presence({ gm: null }).catch(() => { }); }
   // own state ~30 Hz
   if (now - Net.lastSend > 33) {
     Net.lastSend = now;
     const c = L.car, r1 = v => Math.round(v * 10) / 10;
     const pres = { c: [r1(c.x), r1(c.z), Math.round(c.h * 1000) / 1000, r1(c.vx), r1(c.vz), Math.round(c.steer * 100) / 100, Math.round(c.hp), c.alive ? 1 : 0, L.firing ? 1 : 0],
-      nick: settings.nick, col: Net.colIdx, tm: L.team, r: L.respect, k: L.kills, host: Net.isHost ? 1 : 0 };
+      nick: settings.nick, col: Net.colIdx, cs: L.car.style || 'saloon', pc: HD && L.team < 0 ? carChoice(0).paint[0] : undefined, tm: L.team, r: L.respect, k: L.kills, host: Net.isHost ? 1 : 0 };
     if (Net.isHost) pres.m = [Match.n, Math.round(Match.left), Match.over ? 1 : 0, Match.over ? Match.title : '', Match.over ? Match.sub : ''];
     if (Net.isHost) pres.b = rivals.map(r => [r1(r.x), r1(r.z), Math.round(r.h * 1000) / 1000, r1(r.vx), r1(r.vz), Math.round(r.hp), r.alive ? 1 : 0, r.ai && r.ai.firing ? 1 : 0]);
     Net.room.presence(pres).catch(() => { });
@@ -2427,6 +2689,9 @@ function showView(id) {
   document.querySelectorAll('#title .view').forEach(v => { v.hidden = v.id !== id; });
   const f = document.querySelector('#' + id + ' .big, #' + id + ' .mbtn, #' + id + ' input'); if (f) f.focus();
   if (id === 'vOnline') { $('nick').value = settings.nick || ''; renderGames(); }
+  if (id === 'vCamp' && gx) gx.renderCampaign();
+  if (id === 'vCar') renderCarView();
+  if (HD) showroom(id === 'vCar');
 }
 document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => showView(b.dataset.go)));
 function cycleControl(container, get, set) {
@@ -2460,20 +2725,24 @@ function renderSlots() {
     row.append(cyc); box.append(row);
     cycleControl(cyc, () => settings.ctl[i], v => { settings.ctl[i] = v; });
   }
-  document.querySelectorAll('#mSeg button').forEach(b => b.classList.toggle('on', +b.dataset.m === (settings.teams ? 1 : 0)));
+  const gmode = HD ? (settings.gmode ?? (settings.teams ? 1 : 0)) : (settings.teams ? 1 : 0);
+  document.querySelectorAll('#mSeg button').forEach(b => b.classList.toggle('on', +b.dataset.m === gmode));
   const used = new Set(settings.team.slice(0, settings.nPlayers).map(t => t ? 1 : 0));
-  $('splitHint').textContent = !settings.teams ? 'Chaque joueur tire sur les Rapaces… et sur les autres joueurs.'
+  $('splitHint').textContent = gmode === 2 ? 'Capture du drapeau : prends le drapeau adverse et ramène-le à ta base, entre la Butte et le boulevard. 3 captures pour gagner.'
+    : gmode === 3 ? 'Roi de la colline : reste seul sur la place Jean-Macé pour marquer des points. 60 points pour gagner.'
+    : gmode === 4 ? 'Course de checkpoints à travers Chantenay : passe-les dans l’ordre, la circulation ne s’arrête pas pour toi.'
+    : !settings.teams ? 'Chaque joueur tire sur les Rapaces… et sur les autres joueurs.'
     : used.size === 1 ? 'Tous dans la même bande : vous faites équipe avec trois voitures alliées contre les trois de l’autre bande.'
       : 'Rapaces de la Butte contre Chantenaysiens : pas de tir ami. Chaque bande a aussi trois voitures du quartier avec elle.';
   const sc = $('soloCtl'); if (sc) cycleControl(sc, () => settings.soloCtl, v => { settings.soloCtl = v; });
 }
 document.querySelectorAll('#nSeg button').forEach(b => b.addEventListener('click', () => { settings.nPlayers = +b.dataset.n; saveSettings(); renderSlots(); }));
-document.querySelectorAll('#mSeg button').forEach(b => b.addEventListener('click', () => { settings.teams = b.dataset.m === '1'; saveSettings(); renderSlots(); b.focus(); }));
+document.querySelectorAll('#mSeg button').forEach(b => b.addEventListener('click', () => { settings.gmode = +b.dataset.m; settings.teams = b.dataset.m === '1' || b.dataset.m === '2'; saveSettings(); renderSlots(); b.focus(); }));
 function renderOnlineSegs() {
-  document.querySelectorAll('#oSeg button').forEach(b => b.classList.toggle('on', +b.dataset.m === (settings.netTeams ? 1 : 0)));
+  document.querySelectorAll('#oSeg button').forEach(b => b.classList.toggle('on', +b.dataset.m === (HD && settings.netGmode ? settings.netGmode : settings.netTeams ? 1 : 0)));
   document.querySelectorAll('#tSeg button').forEach(b => b.classList.toggle('on', +b.dataset.t === settings.netTeam));
 }
-document.querySelectorAll('#oSeg button').forEach(b => b.addEventListener('click', () => { settings.netTeams = b.dataset.m === '1'; saveSettings(); renderOnlineSegs(); }));
+document.querySelectorAll('#oSeg button').forEach(b => b.addEventListener('click', () => { settings.netTeams = b.dataset.m === '1'; settings.netGmode = +b.dataset.m >= 3 ? +b.dataset.m : 0; saveSettings(); renderOnlineSegs(); }));
 document.querySelectorAll('#tSeg button').forEach(b => b.addEventListener('click', () => { settings.netTeam = +b.dataset.t; saveSettings(); renderOnlineSegs(); }));
 renderOnlineSegs();
 function renderEndSegs() {
@@ -2489,11 +2758,11 @@ function renderCtlTable() {
     const d = document.createElement('div');
     const b = document.createElement('b'); b.textContent = s.name;
     const txt = document.createElement('span');
-    txt.textContent = 'Gaz ' + keyName(s.up) + ' · Frein ' + keyName(s.down) + ' · Tourner ' + keyName(s.left) + ' ' + keyName(s.right) + ' · Tir ' + s.fire.map(keyName).join('/') + ' · Frein à main ' + s.hb.map(keyName).join('/') + ' · Caméra ' + keyName(s.cam) + ' · Remise en route ' + keyName(s.fix);
+    txt.textContent = 'Gaz ' + keyName(s.up) + ' · Frein ' + keyName(s.down) + ' · Tourner ' + keyName(s.left) + ' ' + keyName(s.right) + ' · Tir ' + s.fire.map(keyName).join('/') + ' · Frein à main ' + s.hb.map(keyName).join('/') + (HD ? ' · Arme spéciale ' + s.sp.map(keyName).join('/') : '') + ' · Caméra ' + keyName(s.cam) + ' · Remise en route ' + keyName(s.fix);
     d.append(b, txt); return d;
   });
   const p = document.createElement('div'); const pb = document.createElement('b'); pb.textContent = 'Manette';
-  const pt = document.createElement('span'); pt.textContent = 'RT gaz · LT frein · stick gauche ou croix : tourner · A ou RB : tir · X : frein à main · Y : caméra · LB : remise en route · Back : nuit · Start : pause. Les manettes vibrent aux chocs, tirs et explosions.';
+  const pt = document.createElement('span'); pt.textContent = 'RT gaz · LT frein · stick gauche ou croix : tourner · A ou RB : tir · B : arme spéciale · X : frein à main · Y : caméra · LB : remise en route · Back : nuit · Start : pause. Les manettes vibrent aux chocs, tirs et explosions.';
   p.append(pb, pt); cells.push(p);
   t.replaceChildren(...cells);
 }
@@ -2509,12 +2778,42 @@ function initOptions() {
   $('optRetro').checked = retro; $('optRetro').addEventListener('change', () => toggleRetro());
   if (HD) {
     $('retroRow').hidden = true; $('hdRow').hidden = false;
+    document.querySelectorAll('.hdOnly').forEach(r => { r.hidden = false; });
+    document.querySelectorAll('#todSeg button').forEach(b => b.addEventListener('click', () => { settings.tod = b.dataset.v; saveSettings(); applyAmbience(); }));
+    document.querySelectorAll('#rainSeg button').forEach(b => b.addEventListener('click', () => { settings.rain = b.dataset.v; saveSettings(); applyAmbience(); }));
+    const segOpt = (id, key, after) => { const bs = document.querySelectorAll('#' + id + ' button'), show = () => bs.forEach(b => b.classList.toggle('on', +b.dataset.v === +settings[key]));
+      bs.forEach(b => b.addEventListener('click', () => { settings[key] = +b.dataset.v; saveSettings(); show(); if (after) after(); })); show(); };
+    segOpt('shSeg', 'shadows', applyPerf); segOpt('distSeg', 'dist', applyPerf); segOpt('trafSeg', 'traffic');
+    $('optVoices').checked = settings.voices !== false; $('optVoices').addEventListener('change', e => { settings.voices = e.target.checked; saveSettings(); try { if (!e.target.checked) speechSynthesis.cancel(); } catch (x) { } });
     const seg = document.querySelectorAll('#hdSeg button'), show = () => seg.forEach(b => b.classList.toggle('on', +b.dataset.q === hd.quality));
     seg.forEach(b => b.addEventListener('click', () => { hd.setQuality(+b.dataset.q); settings.hdq = hd.quality; saveSettings(); show(); }));
     show();
     document.querySelector('#title h1').insertAdjacentHTML('beforeend', ' <span style="font-family:var(--data);font-size:.3em;vertical-align:top;color:var(--sunset);text-shadow:2px 2px 0 #000">HD</span>');
   }
   show();
+}
+let carSlot = 0;
+function renderCarView() {
+  settings.cars = settings.cars || [];
+  const cur = () => settings.cars[carSlot] || (settings.cars[carSlot] = { s: 'saloon', p: [0, 8, 6, 5][carSlot] });
+  document.querySelectorAll('#carSlot button').forEach(b => { b.classList.toggle('on', +b.dataset.i === carSlot); b.onclick = () => { carSlot = +b.dataset.i; renderCarView(); }; });
+  const st = $('carStyle'); st.innerHTML = '';
+  for (const o of CAR_CHOICES) { const b = document.createElement('button'); b.className = 'mbtn' + (cur().s === o.k ? ' on' : ''); b.textContent = o.name; b.onclick = () => { cur().s = o.k; saveSettings(); renderCarView(); }; st.append(b); }
+  const o = CAR_CHOICES.find(x => x.k === cur().s) || CAR_CHOICES[0];
+  $('carDesc').textContent = o.d + ' · vitesse ' + Math.round(o.v * 100) + ' % · reprise ' + Math.round(o.a * 100) + ' %';
+  const pt = $('carPaint'); pt.innerHTML = '';
+  CAR_PAINTS.forEach(([a, b2], i) => { const b = document.createElement('button'); b.className = 'mbtn swatch' + (cur().p === i ? ' on' : ''); b.setAttribute('aria-label', 'Couleur ' + (i + 1));
+    b.style.background = 'linear-gradient(135deg, #' + new THREE.Color(a).getHexString() + ' 62%, #' + new THREE.Color(b2).getHexString() + ' 62%)'; b.onclick = () => { cur().p = i; saveSettings(); renderCarView(); }; pt.append(b); });
+  showroom(true);
+}
+// showroom: while choosing a car, the title camera circles the chosen one parked on the boulevard
+let showCar = null, showKey = '';
+function showroom(on) {
+  if (!HD) return;
+  if (!on) { if (showCar) showCar.mesh.visible = false; return; }
+  const ch = carChoice(carSlot), key = ch.style.k + ch.paint[0];
+  if (key !== showKey) { if (showCar) scene.remove(showCar.mesh); showCar = new Car(makeCar(ch.paint[0], ch.paint[1], true, ch.style.k), true); showKey = key; const b = bases()[1]; showCar.place(b.x, b.z, Math.atan2(-b.ux, -b.uz)); }
+  showCar.mesh.visible = true;
 }
 // gamepad navigation in menus: D-pad / stick to move, A to choose, B back, left/right on sliders
 let navCool = 0;
@@ -2761,10 +3060,13 @@ const Intro = (() => {
   return { update, splash, play, finish, stop, key, focusCar, get state() { return state; }, get playing() { return state === 'play'; }, T_END, BAR };
 })();
 
+/*@GX_MODULE@*/
+
 // ---------- game start ----------
 function startGame(kind) {
   Intro.stop();
   sfx.init();
+  if (HD) showroom(false);
   mode = kind;
   for (const L of locals) scene.remove(L.car.mesh);
   locals = [];
@@ -2783,14 +3085,15 @@ function startGame(kind) {
   if (teamMode) for (const r of rivals) if (!r.proxy) spawnRival(r);
   updateTeamBar(); $('killsLab').textContent = teamMode ? 'KO' : 'RAPACES';
   player = locals[0].car;
-  sun.castShadow = locals.length === 1;
-  setNight(night);
+  applyPerf();
+  if (!HD) setNight(night);
   buildPlayerHuds(); layoutViews();
   $('title').hidden = true; started = true; paused = false; document.body.classList.add('ingame');
   for (const L of locals) { L.cam.position.set(L.car.x, 20, L.car.z + 30); }
   if (teamMode) for (const L of locals) { if (locals.length > 1) flashFor(L, TEAMS[L.team].short, baseName(L.team)); else flash(TEAMS[L.team].name, 'Base : ' + baseName(L.team) + ' · pas de tir ami'); }
   else if (kind === 'online') flash('Partie ' + Net.code.toUpperCase(), Net.isHost ? 'Code à donner aux amis · vous êtes l’hôte' : 'Bienvenue à Chantenay');
   else flashAll('Gangstamen', locals.length > 1 ? 'Chacun pour soi · les Rapaces rôdent' : 'Boulevard de la Liberté · les Rapaces rôdent');
+  if (gx) gx.start(kind);
   try { renderer.domElement.focus(); } catch (e) { }
 }
 
@@ -2801,9 +3104,11 @@ function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   pollPads();
-  if (Intro.state !== 'off') { if (pads.some(P => P.press && (P.press[0] || P.press[9]))) Intro.key(null); } else menuPadNav(dt);
+  if (Intro.state !== 'off') { if (pads.some(P => P.press && (P.press[0] || P.press[9]))) Intro.key(null); } else if (!(gx && gx.blocking)) menuPadNav(dt);
+  if (gx) gx.tick(dt);
   Intro.update(dt);
   if (HD) hd.perf(now);
+  if (gx) gx.landmarkTick();
   if (started && (!paused || mode === 'online')) step(dt, now);
   if (started && mode === 'online') netTick(dt, now);
   render(dt);
@@ -2831,6 +3136,7 @@ function render(dt) {
 function step(dt, now) {
   const frozen = (paused || Match.over) && mode !== 'online';
   if (frozen) return;
+  if (gx && gx.blocking && mode !== 'online') return;
   checkMatch(dt);
   for (const L of locals) {
     const c = L.car;
@@ -2843,10 +3149,12 @@ function step(dt, now) {
       if (imp > 9) { rumbleFor(L, Math.min(1, imp / 25), 0.4, 160); damage(c, (imp - 8) * 1.2); spawnFx(c.x, 1, c.z, 0.6, 0xffe28a, 0.2, 2, 2); }
       L.fireCd -= dt;
       if (inp.fire && L.fireCd <= 0) {
-        L.fireCd = 0.09;
-        const targets = [...rivals, ...allPlayerCars()];
-        shoot(c, targets, 6, 95, 0.05, false); rumbleFor(L, 0.0, 0.25, 40);
+        const gk = L.gunK || 0; L.fireCd = 0.09 / (1 + gk * 0.2);
+        const targets = [...rivals, ...allPlayerCars(), ...(gx ? gx.cars() : [])];
+        shoot(c, targets, 6 * (1 + gk * 0.15), 95, 0.05, false); rumbleFor(L, 0.0, 0.25, 40);
       }
+      if (gx && inp.special && !L.specHeld) gx.special(L);
+      L.specHeld = inp.special;
       if (L.slot === 0) sfx.engine(c.speed, true);
     } else {
       L.firing = false;
@@ -2861,6 +3169,7 @@ function step(dt, now) {
   }
   // Rapaces: simulated here (solo, split, online host) or followed from the host's presence
   for (const r of rivals) {
+    if (r.gone) continue;
     if (r.proxy) {
       if (r.alive) followState(r, r, dt);
       if (r.alive && r.firing) { r.fireAcc = (r.fireAcc || 0) + dt; if (r.fireAcc > 0.16) { r.fireAcc = 0; ghostShot(r, true); } }
@@ -2870,10 +3179,11 @@ function step(dt, now) {
     else {
       r.vx *= 0.95; r.vz *= 0.95; r.x += r.vx * dt; r.z += r.vz * dt;
       r.wreck -= dt; if (Math.random() < dt * 8) spawnFx(r.x, 2, r.z, 0.8, 0x2a2228, 1.8, 3, 2.5);
-      if (r.wreck <= 0) spawnRival(r);
+      if (r.wreck <= 0) { if (r.once) { r.gone = true; r.mesh.visible = false; r.x = r.z = 5000; } else spawnRival(r); }
     }
   }
-  const all = [...allPlayerCars(), ...rivals];
+  if (gx) gx.step(dt);
+  const all = [...allPlayerCars(), ...rivals, ...(gx ? gx.cars() : [])];
   for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) if (all[i].alive && all[j].alive) carVsCar(all[i], all[j]);
   for (const c of all) {
     c.sync();
@@ -2892,7 +3202,7 @@ function step(dt, now) {
     }
   }
   updateFx(dt); updateTracers(dt);
-  if (HD) hd.frame(dt);
+  if (HD) hd.frame(dt, gx ? gx.cars() : []);
   updateHud(dt);
   boardAcc += dt; if (boardAcc > 0.25) { boardAcc = 0; updateTeamBar(); updateClock(); if (!$('board').hidden) renderBoard(); }
   const c0 = locals[0].car;
@@ -2900,6 +3210,11 @@ function step(dt, now) {
 }
 let orbit = 0;
 function updateTitleCamera(dt) {
+  if (HD && showCar && showCar.mesh.visible && !$('title').hidden) { // showroom
+    orbit += dt * 0.35; const p = showCar.mesh.position;
+    camera.position.set(p.x + Math.sin(orbit) * 7.5, p.y + 2.4, p.z + Math.cos(orbit) * 7.5); camera.lookAt(p.x, p.y + 0.6, p.z);
+    sun.position.copy(p).add(SUN_OFF); sun.target.position.copy(p); return;
+  }
   orbit += dt * 0.05;
   camera.position.set(Math.sin(orbit) * 260, 175, Math.cos(orbit) * 260);
   camera.lookAt(0, 25, 0);
@@ -2928,7 +3243,8 @@ function updateCamera(L, dt) {
   if (HD) { // speed widens the view; explosions shake it
     const f = 56 + Math.min(13, c.speed * 0.28); if (Math.abs(cam.fov - f) > 0.05) { cam.fov += (f - cam.fov) * Math.min(1, dt * 3); cam.updateProjectionMatrix(); }
     if (L.shake > 0.01) { cam.position.x += (Math.random() - 0.5) * L.shake; cam.position.y += (Math.random() - 0.5) * L.shake * 0.7; cam.position.z += (Math.random() - 0.5) * L.shake; L.shake *= Math.exp(-dt * 5); }
-    if (window.__cam) { cam.position.set(c.x + window.__cam[0], c.mesh.position.y + window.__cam[1], c.z + window.__cam[2]); L.look.set(c.x, c.mesh.position.y + 0.7, c.z); }
+    if (window.__camAt) { const [px, py, pz, lx, ly, lz] = window.__camAt; cam.position.set(px, py, pz); L.look.set(lx, ly, lz); } // test hook: free camera
+    else if (window.__cam) { cam.position.set(c.x + window.__cam[0], c.mesh.position.y + window.__cam[1], c.z + window.__cam[2]); L.look.set(c.x, c.mesh.position.y + 0.7, c.z); }
   }
   cam.lookAt(L.look);
 }
@@ -2939,7 +3255,8 @@ buildGround();
 buildMinimap();
 setupWorldActors();
 if (HD) hd.world();
-setNight(false);
+if (gx) gx.world();
+if (HD) applyAmbience(); else setNight(false);
 renderSlots(); renderCtlTable(); initOptions();
 requestAnimationFrame(frame);
 const startBtn = $('start');
@@ -2950,6 +3267,6 @@ $('splitGo').addEventListener('click', () => startGame('split'));
 $('create').addEventListener('click', () => startOnline(null, true));
 netInit();
 if (settings.intro !== false && !window.__noIntro) Intro.splash();
-window.__gm = { Intro, hd, muzzleOf, shoot, locals: () => locals, rivals: () => rivals, Net, Match, step: s => step(s, performance.now()), start: k => startGame(k || 'solo'), codes };
+window.__gm = { Intro, hd, gx, settings, muzzleOf, shoot, locals: () => locals, rivals: () => rivals, Net, Match, step: s => step(s, performance.now()), start: k => startGame(k || 'solo'), codes };
 })();
 </script>

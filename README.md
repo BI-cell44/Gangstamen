@@ -28,6 +28,36 @@ En HD, les façades sans photo exploitable sont dessinées en haute résolution 
 
 **Arbres et lampadaires** : ils sont repoussés hors de la chaussée (les largeurs de rue sont estimées, donc certains arbres d'OpenStreetMap tombaient sur la route).
 
+### Nouveautés de la version HD
+
+**Ambiance années 90**
+- **Moment de la journée** (touche N ou *Son et options*) : plein jour, coucher de soleil, nuit, ou *Cycle* (une journée de 12 minutes avec heure bleue et aube). Les lampadaires, les fenêtres, l'horloge de Saint-Martin et les feux de la grue Titan s'allument avec la nuit.
+- **Météo** (touche B) : sec, pluie, orage, ou variable. Gouttes autour de la caméra, routes qui s'assombrissent et brillent, flaques, reflets étirés des lampadaires, gerbes d'eau derrière les roues, éclairs et tonnerre, bruit de pluie.
+- **Circulation civile** : R5, 205 et Twingo qui roulent à droite, s'arrêtent derrière les autres et klaxonnent ; des piétons animés sur les trottoirs (marche, pauses, fuite) qui s'écartent ou se font renverser et se relèvent, et des clients aux terrasses des cafés et restaurants du quartier, qui se lèvent quand une voiture monte sur le trottoir.
+- **Police** : abîmer les voitures des gens, renverser des piétons ou s'en prendre aux policiers fait monter le niveau de recherche (étoiles bleues). Les patrouilles prennent en chasse, sirène deux tons, gyrophares ; à 3 étoiles elles tirent. On les sème en restant hors de vue, ou en passant au garage pour une peinture neuve.
+- **Radio de bord** (touche M) : quatre stations en musique procédurale libre de droits (G-funk, rap français, techno, funk) et un animateur, en synthèse vocale, qui annonce les stations et commente les KO. Les voix se coupent dans *Son et options*.
+
+**Solo**
+- **Campagne** de 7 missions avec dialogues entre les missions (Dédé le garagiste, Nadia, le Grand Duc, le Vautour, l'animateur de Chantenay FM) : retour au quartier, tenir la place Jean-Macé, escorter la 205 de Nadia jusqu'à la gare de Chantenay, poursuivre le Vautour depuis l'église Saint-Martin jusqu'au quai, semer la police, une nuit d'orage sur la Loire, l'assaut final sur la Butte. Progression et respect gagné sont gardés dans le navigateur. Le solo libre (bac à sable) reste disponible.
+- **Garage de Chantenay**, sur le boulevard près de la place Jean-Macé : on s'arrête sur le cercle bleu pour réparer, recharger les armes, gonfler le moteur, blinder la caisse, améliorer les mitrailleuses ou la repeindre. Ça se paie en respect.
+- **Bonus** posés sur la carte, qui réapparaissent : clé à molette (nouveau modèle, réparation), nitro, mines (lancées sur l'ennemi qui est devant, sinon posées derrière), lance-roquettes au tir lent, bouclier. Touche *arme spéciale* : E (clavier 1), Suppr (clavier 2), 7 (clavier 3), Entrée du pavé (clavier 4), B à la manette, SPÉ en tactile.
+- **Conduite** : dérapage au frein à main qui se prolonge si on garde les gaz, sauts sur les bosses et les rampes des ponts (réception brutale = dégâts), dégâts visibles (tôle froissée, capot qui se soulève, pneu crevé qui fait pencher la voiture, fumée puis flammes).
+
+**Multijoueur**
+- Nouveaux modes en **écran partagé** : *Capture du drapeau* entre la Butte et le boulevard, *Roi de la colline* sur la place Jean-Macé, *Course de checkpoints* à travers Chantenay.
+- **Choix de la voiture et des couleurs** (*Ta voiture*) pour chaque joueur, avec une vitrine sur le boulevard. La voiture et la couleur sont aussi transmises en ligne.
+- **Discussion rapide** : six messages tout prêts avec les touches 1 à 6 ou la croix directionnelle (haut, bas) et les clics de sticks.
+
+**Décor**
+- **Mobilier urbain cassable** : abribus, poubelles et bancs aux positions OpenStreetMap (`src/make_furniture.py` → `data/furniture.json`), plus des bancs et poubelles le long des grands axes. Remis en place un peu plus tard.
+- **Lieux modélisés à la main** : le clocher et la flèche de l'église Saint-Martin sur la place du Bourg, les quais de Loire (mur de pierre suivant la berge, bittes d'amarrage, une péniche), la falaise de la carrière Misery à l'est, la grue Titan jaune au loin vers l'île de Nantes (rapprochée pour être visible depuis le quartier).
+
+**Technique**
+- *Son et options* : ombres (non, auto, toujours), distance de vue, densité de circulation. La distance de vue baisse d'elle-même à 3 ou 4 écrans.
+- **Mobile** : joystick virtuel (direction, gaz, frein) et boutons tir, frein à main et arme spéciale.
+
+Le code de ces nouveautés est dans `src/gx.js` (inséré par `build.sh` comme `src/hd.js`), l'ambiance et les dégâts visibles dans `src/hd.js`. La version classique n'est pas modifiée, à part le dérapage au frein à main.
+
 Les règles, les commandes et le jeu en ligne sont identiques. Le moteur HD est dans `src/hd.js` ; il est activé par `const HD = true`, que `build.sh` positionne pour le second fichier.
 
 ## Branches
@@ -52,15 +82,15 @@ En écran partagé et en ligne, on choisit entre deux règles :
 
 ## Commandes
 
-| | Gaz / frein | Tourner | Tir | Frein à main | Caméra | Remise en route |
-|---|---|---|---|---|---|---|
-| Clavier 1 | Z / S (W / S en QWERTY) | Q / D | Espace | Maj gauche | C | R |
-| Clavier 2 | ↑ / ↓ | ← / → | Ctrl droit ou Entrée | Maj droite | Fin | Page suiv. |
-| Clavier 3 | I / K | J / L | U | O | 9 | 8 |
-| Clavier 4 | Pavé 8 / 5 | Pavé 4 / 6 | Pavé 0 | Pavé . | Pavé + | Pavé − |
-| Manette | RT / LT | stick gauche ou croix | A ou RB | X | Y | LB |
+| | Gaz / frein | Tourner | Tir | Arme spéciale (HD) | Frein à main | Caméra | Remise en route |
+|---|---|---|---|---|---|---|---|
+| Clavier 1 | Z / S (W / S en QWERTY) | Q / D | Espace | E | Maj gauche | C | R |
+| Clavier 2 | ↑ / ↓ | ← / → | Ctrl droit ou Entrée | Suppr ou : (/ en QWERTY) | Maj droite | Fin | Page suiv. |
+| Clavier 3 | I / K | J / L | U | 7 | O | 9 | 8 |
+| Clavier 4 | Pavé 8 / 5 | Pavé 4 / 6 | Pavé 0 | Entrée du pavé | Pavé . | Pavé + | Pavé − |
+| Manette | RT / LT | stick gauche ou croix | A ou RB | B | X | Y | LB |
 
-Touches communes : N jour/nuit · M musique · P pixels rétro · Tab classement · Échap (ou Start) pause.
+Touches communes : N jour/nuit (HD : moment de la journée) · B météo (HD) · M musique (HD : station suivante) · P pixels rétro · Tab classement · 1 à 6 discussion rapide · Échap (ou Start) pause.
 Les manettes vibrent aux chocs, aux tirs reçus et aux explosions (désactivable dans *Son et options*, où se règlent aussi les volumes musique et effets séparément).
 
 ## Jeu en ligne : comment ça marche
