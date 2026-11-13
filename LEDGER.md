@@ -2,7 +2,7 @@
 
 Ce fichier garde la mémoire du projet : ce qui a été fait et pourquoi, comment reprendre le travail, ce qui reste à faire. À mettre à jour à chaque session (une ligne dans le journal, et cocher ou ajouter dans le reste à faire).
 
-Dernière mise à jour : 13 novembre 2026 (soir) : branche `hd-ambiance-campagne`.
+Dernière mise à jour : 13 novembre 2026 (nuit) : passation. Voir `HANDOFF.md` pour le dossier complet de reprise.
 
 ## En un coup d'œil
 
@@ -18,7 +18,7 @@ Gangstamen est un jeu de combat de voitures des années 90, inspiré d'Interstat
 | Données (carte, photos, commerces, ortho) | `data/` |
 | Branche `main` | version publiée comme artifact sur claude.ai (jeu en ligne via la capacité `room`) |
 | Branche `server` | `main` + serveur Node sans dépendance (`server/`), sert aussi la HD sur `/hd` |
-| Branche `hd-ambiance-campagne` | `main` + tout le travail HD de la section 7 ; pas encore fusionnée dans `main` ni dans `server` |
+| Branche `hd-ambiance-campagne` | fusionnée dans `main` et `server` le 13 novembre 2026 (conservée pour mémoire) |
 
 La branche `server` se tient à jour en y fusionnant `main` après chaque changement.
 
@@ -89,6 +89,8 @@ Tout est dans la HD seulement (`const gx = !HD ? null : …`), sauf le dérapage
 | 13 nov. 2026 | HD : colline et course en ligne, armes en ligne, mémoire | 224e8f2, f2ca8eb |
 | 13 nov. 2026 | Mines du Vautour, bout de pont, collision entre bâtiments, piétons animés et terrasses, clé à molette, touche spéciale visible | voir `git log` |
 
+| 13 nov. 2026 | Fusion dans `main` et `server`, artifacts republiés ; dossier de passation `HANDOFF.md`, scripts de test dans `tools/`, tag `passation-2026-11-13` | voir `git log` |
+
 Les étapes antérieures sont dans `git log`.
 
 ## Comment reprendre
@@ -123,7 +125,7 @@ Les étapes antérieures sont dans `git log`.
 
 ### Suite de la branche HD
 - [ ] Jouer la campagne en vrai et régler la difficulté (dégâts des mines, vitesse du Vautour, roquettes du Grand Duc, chrono de l'orage).
-- [ ] Fusionner `hd-ambiance-campagne` dans `main`, puis `main` dans `server`.
+- [x] Fusionner `hd-ambiance-campagne` dans `main`, puis `main` dans `server` (fait).
 - [ ] Agrandir la carte vers la butte Sainte-Anne et les bords de Loire (données OSM, IGN et photo aérienne à télécharger : bloqué ici).
 - [ ] Capture du drapeau en ligne (l'état des drapeaux doit être tenu par l'hôte).
 - [ ] Bonus, circulation et piétons sont propres à chaque joueur en ligne (pas synchronisés).

@@ -1,0 +1,34 @@
+const { chromium } = require('playwright');
+const fs = require('fs');
+(async () => {
+  const three = fs.readFileSync(process.argv[2]);
+  const html = fs.readFileSync(process.argv[3], 'utf8'); const out = process.argv[4];
+  const browser = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist'] });
+  const page = await browser.newPage({ viewport: { width: 1100, height: 700 } });
+  const errs = [];
+  page.on('pageerror', e => errs.push('pageerror: ' + e.message));
+  page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+  await page.route('https://cdnjs.cloudflare.com/**', r => r.fulfill({ body: three, contentType: 'application/javascript' }));
+  await page.route('https://fonts.googleapis.com/**', r => r.fulfill({ body: '', contentType: 'text/css' }));
+  await page.setContent('<!doctype html><html><head><meta charset=utf-8></head><body>' + html + '</body></html>', { waitUntil: 'load', timeout: 120000 });
+  try { await page.waitForFunction(() => !document.getElementById('start').disabled, null, { timeout: 90000 }); } catch (e) { console.log('BOOT', errs.join('\n')); return browser.close(); }
+  await page.click('[data-go="vSplit"]'); await page.click('#nSeg [data-n="2"]'); await page.click('#mSeg [data-m="1"]');
+  await page.click('#vSplit .goalSeg [data-g="10"]'); await page.click('#vSplit .limitSeg [data-l="5"]');
+  await page.screenshot({ path: out + '_menu.png' });
+  await page.click('#splitGo'); await page.waitForTimeout(1500);
+  await page.screenshot({ path: out + '_clock.png' });
+  console.log('match', JSON.stringify(await page.evaluate(() => ({ g: __gm.Match.goal, l: __gm.Match.limit, left: __gm.Match.left | 0 }))));
+  await page.evaluate(() => { __gm.locals()[1].kills = 10; __gm.locals()[0].kills = 4; });
+  await page.waitForTimeout(800);
+  console.log('over', await page.evaluate(() => __gm.Match.over), await page.textContent('#resTitle'), '|', await page.textContent('#resSub'));
+  await page.screenshot({ path: out + '_res.png' });
+  await page.click('#resAgain'); await page.waitForTimeout(500);
+  console.log('after rematch', JSON.stringify(await page.evaluate(() => ({ over: __gm.Match.over, k: __gm.locals().map(L => L.kills), left: __gm.Match.left | 0 }))));
+  await page.waitForTimeout(2200);
+  await page.waitForFunction(() => !(__gm.Match.grace > 0), null, { timeout: 30000 }); await page.evaluate(() => { __gm.Match.left = 0.5; }); await page.waitForFunction(() => __gm.Match.over, null, { timeout: 30000 }).catch(() => {}); await page.screenshot({ path: out + '_time.png' });
+  await page.waitForTimeout(1000);
+  console.log('dbg', JSON.stringify(await page.evaluate(() => __gm.Match)), await page.evaluate(() => document.getElementById('pause').hidden));
+  console.log('time', await page.evaluate(() => __gm.Match.over), await page.textContent('#resTitle'), '|', await page.textContent('#resSub'));
+  console.log(errs.join('\n'));
+  await browser.close();
+})();
