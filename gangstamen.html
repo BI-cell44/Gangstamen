@@ -529,6 +529,7 @@ const hd = !HD ? null : (() => {
     const old = envRT; envRT = pmrem.fromScene(envScene, 0, 1, 500); scene.environment = envRT.texture; if (old) old.dispose();
     skyU.disc.value = on ? 6 : 40;
     wallMats.forEach(m => { m.emissiveIntensity = on ? 2.4 : 0; });
+    if (clockMat) clockMat.emissiveIntensity = on ? 1.5 : 0;
     photoMats.forEach(m => { m.emissive.setScalar(on ? 0.035 : 0.12); });
     if (lampGlow) { lampGlow.visible = on; lampPools.visible = on; lampBulbs.material.color.setRGB(on ? 14 : 0.25, on ? 8 : 0.25, on ? 3 : 0.25); }
     if (roadMatRef) { roadMatRef.roughness = on ? 0.5 : 0.82; }
@@ -1178,6 +1179,158 @@ const hd = !HD ? null : (() => {
     const sl = slabTextures(512, 128, true);
     return new THREE.MeshStandardMaterial({ map: sl.map, vertexColors: true, roughness: 0.9, metalness: 0, normalMap: sl.normal, normalScale: new THREE.Vector2(0.6, 0.6), envMapIntensity: 0.4 });
   }
+  // ---------- the town hall of Chantenay (1903): brick and stone, tall first-floor windows with balustrades,
+  // a columned porch under a balcony, a clock gable, a steep slate roof with dormers and tall chimneys ----------
+  let clockMat = null;
+  function mairieTextures(bays) {
+    const S = bays * 256, SH = 1024, [c, g] = canvas(S, SH), [ce, ge] = canvas(S, SH), [ch, gh] = canvas(S, SH), [cr, gr] = canvas(S, SH), R = Math.random;
+    ge.fillStyle = '#000'; ge.fillRect(0, 0, S, SH); gr.fillStyle = 'rgb(0,235,0)'; gr.fillRect(0, 0, S, SH);
+    const H = (v, x, y, w, h) => { gh.fillStyle = `rgb(${v},${v},${v})`; gh.fillRect(x, y, w, h); };
+    const stone = (x, y, w, h, hv, tone = 0) => { const v = 214 + tone + (R() * 10 | 0); g.fillStyle = `rgb(${v},${v - 10},${v - 30})`; g.fillRect(x, y, w, h); H(hv, x, y, w, h); };
+    // brickwork
+    H(120, 0, 0, S, SH);
+    for (let y = 0, row = 0; y < SH; y += 6, row++) {
+      for (let x = (row % 2) * -11; x < S; x += 22) { const v = R(); g.fillStyle = `rgb(${112 + v * 30 | 0},${62 + v * 18 | 0},${52 + v * 14 | 0})`; g.fillRect(x, y, 21, 5); }
+      g.fillStyle = '#b8a48e'; g.fillRect(0, y + 5, S, 1); H(108, 0, y + 5, S, 1);
+    }
+    for (let b = 0; b < bays; b++) {
+      const x0 = b * 256, win = bays > 1;
+      // rusticated stone pilasters on both sides of the bay
+      for (const px of [x0, x0 + 234]) for (let y = 0; y < SH; y += 34) { const wide = (y / 34 | 0) % 2; stone(px + (px === x0 ? 0 : wide ? -10 : 0), y, 22 + (wide ? 10 : 0), 32, 168, wide ? 6 : -4); g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(px - 10, y + 32, 42, 2); }
+      // granite plinth, string course between the floors, entablature with dentils under the eaves
+      for (let x = x0; x < x0 + 256; x += 64) { g.fillStyle = `rgb(${140 + R() * 14 | 0},${136 + R() * 12 | 0},${130 + R() * 12 | 0})`; g.fillRect(x, SH - 84, 63, 84); } H(182, x0, SH - 84, 256, 84);
+      g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(x0, SH - 86, 256, 3);
+      stone(x0, 500, 256, 26, 215, 8); g.fillStyle = 'rgba(0,0,0,.32)'; g.fillRect(x0, 526, 256, 5);
+      stone(x0, 0, 256, 46, 205, 8); for (let x = x0 + 4; x < x0 + 256; x += 16) { g.fillStyle = 'rgba(0,0,0,.28)'; g.fillRect(x, 30, 8, 12); } g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(x0, 46, 256, 5);
+      if (!win) continue;
+      // first floor: tall small-paned window in a stone frame with a cornice, above a balustrade
+      const wx = x0 + 78, wy = 122, ww = 100, wh = 292;
+      stone(wx - 18, wy - 16, ww + 36, wh + 30, 172, 4); stone(wx - 30, wy - 40, ww + 60, 24, 205, 10); g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(wx - 30, wy - 16, ww + 60, 4);
+      stone(wx + ww / 2 - 11, wy - 30, 22, 30, 215, 14); // keystone
+      let lg = g.createLinearGradient(0, wy, 0, wy + wh); lg.addColorStop(0, '#8fa5bd'); lg.addColorStop(0.45, '#4a5d73'); lg.addColorStop(1, '#232f3c'); g.fillStyle = lg; g.fillRect(wx, wy, ww, wh);
+      H(70, wx, wy, ww, wh); gr.fillStyle = 'rgb(0,24,165)'; gr.fillRect(wx, wy, ww, wh);
+      if (R() < 0.6) { const le = ge.createLinearGradient(0, wy, 0, wy + wh); le.addColorStop(0, '#ffdc98'); le.addColorStop(1, '#c58c3c'); ge.fillStyle = le; ge.fillRect(wx, wy, ww, wh); }
+      g.fillStyle = 'rgba(0,0,0,.4)'; g.fillRect(wx, wy, ww, 8); g.fillRect(wx, wy, 5, wh);
+      g.fillStyle = '#f1efe8'; g.fillRect(wx + ww / 2 - 3, wy, 6, wh); for (let k = 1; k < 5; k++) g.fillRect(wx, wy + wh * k / 5 - 1, ww, 3); g.strokeStyle = '#f1efe8'; g.lineWidth = 5; g.strokeRect(wx + 2, wy + 2, ww - 4, wh - 4);
+      ge.fillStyle = '#000'; ge.fillRect(wx + ww / 2 - 3, wy, 6, wh); for (let k = 1; k < 5; k++) ge.fillRect(wx, wy + wh * k / 5 - 1, ww, 3);
+      const by = wy + wh + 14; // balustrade
+      stone(wx - 34, by, ww + 68, 12, 222, 10); stone(wx - 34, by + 58, ww + 68, 14, 222, 6);
+      g.fillStyle = '#3a2f2a'; g.fillRect(wx - 28, by + 12, ww + 56, 46); H(96, wx - 28, by + 12, ww + 56, 46);
+      for (let x = wx - 24; x < wx + ww + 24; x += 15) { stone(x, by + 12, 9, 46, 205, 6); g.fillStyle = 'rgba(0,0,0,.2)'; g.fillRect(x + 7, by + 12, 2, 46); }
+      g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(wx - 34, by + 72, ww + 68, 5);
+      // ground floor: window in a stone frame, most with the white blinds down
+      const gx = x0 + 80, gyy = 628, gw = 96, ghh = 236;
+      stone(gx - 16, gyy - 14, gw + 32, ghh + 28, 172, 2); stone(gx + gw / 2 - 10, gyy - 26, 20, 26, 212, 12);
+      if (R() < 0.7) { g.fillStyle = '#e6e3db'; g.fillRect(gx, gyy, gw, ghh); H(118, gx, gyy, gw, ghh); g.fillStyle = 'rgba(0,0,0,.1)'; for (let y = gyy + 4; y < gyy + ghh; y += 7) g.fillRect(gx, y, gw, 2); gr.fillStyle = 'rgb(0,150,0)'; gr.fillRect(gx, gyy, gw, ghh); }
+      else { lg = g.createLinearGradient(0, gyy, 0, gyy + ghh); lg.addColorStop(0, '#5c6c7c'); lg.addColorStop(1, '#1c252e'); g.fillStyle = lg; g.fillRect(gx, gyy, gw, ghh); H(70, gx, gyy, gw, ghh); gr.fillStyle = 'rgb(0,24,165)'; gr.fillRect(gx, gyy, gw, ghh); g.fillStyle = '#f1efe8'; g.fillRect(gx + gw / 2 - 3, gyy, 6, ghh); g.fillRect(gx, gyy + ghh * 0.3, gw, 4); }
+      g.fillStyle = 'rgba(0,0,0,.38)'; g.fillRect(gx, gyy, gw, 7);
+      stone(gx - 22, gyy + ghh + 14, gw + 44, 12, 215, 10); g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(gx - 22, gyy + ghh + 26, gw + 44, 5);
+    }
+    const im = g.getImageData(0, 0, S, SH), d = im.data; for (let i = 0; i < d.length; i += 4) { const n = (R() - 0.5) * 12; d[i] += n; d[i + 1] += n; d[i + 2] += n; } g.putImageData(im, 0, 0);
+    const S2 = S / 2, SH2 = SH / 2, half = cv => { const [c2, g2] = canvas(S2, SH2); g2.drawImage(cv, 0, 0, S2, SH2); return c2; };
+    const hb = half(ch).getContext('2d').getImageData(0, 0, S2, SH2).data, hf = new Float32Array(S2 * SH2); for (let i = 0; i < S2 * SH2; i++) hf[i] = hb[i * 4] / 255 * 6;
+    const mk = cv => { const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; return t; }, rm = mk(half(cr));
+    return new THREE.MeshStandardMaterial({ map: mk(c), emissive: 0xffffff, emissiveMap: mk(half(ce)), emissiveIntensity: 0, normalMap: heightToNormal(hf, S2, 1, SH2), normalScale: new THREE.Vector2(1, 1), roughness: 1, metalness: 1, roughnessMap: rm, metalnessMap: rm, envMapIntensity: 0.9 });
+  }
+  function townHall(b, base, y0, sa) {
+    const p = b.p, n = p.length / 2, gy = base + 0.3, top = gy + 9.6, WH = 9.6;
+    const main = new Buf(), plain = new Buf(), st = new Buf(), roof = new Buf();
+    const cStone = col('#cdbfa6'), cGran = col('#8f8a84'), cBrick = col('#8a4a38'), cDark = col('#141a22'), cWood = col('#3a2416'), cPink = col('#b08a7c');
+    // oriented box: along t (centre cx,cz, half length hl), from depth d0 to d1 along nrm, between ya and yb
+    const obox = (bf, cx, cz, tx, tz, hl, nx, nz, d0, d1, ya, yb, c) => {
+      const P = (a, d, y) => [cx + tx * a + nx * d, y, cz + tz * a + nz * d];
+      const q = (A, B, C, D, nn) => { bf.tri(A, B, C, nn, null, null, null, c); bf.tri(A, C, D, nn, null, null, null, c); };
+      q(P(-hl, d1, ya), P(hl, d1, ya), P(hl, d1, yb), P(-hl, d1, yb), [nx, 0, nz]); q(P(-hl, d0, ya), P(hl, d0, ya), P(hl, d0, yb), P(-hl, d0, yb), [-nx, 0, -nz]);
+      q(P(hl, d0, ya), P(hl, d1, ya), P(hl, d1, yb), P(hl, d0, yb), [tx, 0, tz]); q(P(-hl, d0, ya), P(-hl, d1, ya), P(-hl, d1, yb), P(-hl, d0, yb), [-tx, 0, -tz]);
+      q(P(-hl, d0, yb), P(hl, d0, yb), P(hl, d1, yb), P(-hl, d1, yb), [0, 1, 0]); q(P(-hl, d0, ya), P(hl, d0, ya), P(hl, d1, ya), P(-hl, d1, ya), [0, -1, 0]);
+    };
+    const prism = (cx, cz, r, ya, yb, c, sides = 12) => { for (let k = 0; k < sides; k++) { const a0 = k / sides * 6.2832, a1 = (k + 1) / sides * 6.2832, am = (a0 + a1) / 2; const A = [cx + Math.cos(a0) * r, ya, cz + Math.sin(a0) * r], B = [cx + Math.cos(a1) * r, ya, cz + Math.sin(a1) * r], C = [B[0], yb, B[2]], D = [A[0], yb, A[2]], nn = [Math.cos(am), 0, Math.sin(am)]; st.tri(A, B, C, nn, null, null, null, c); st.tri(A, C, D, nn, null, null, null, c); } };
+    const wq = (bf, ax, az, bx, bz, ya, yb, ua, ub, va, vb, nn) => { const a0 = [ax, ya, az], b0 = [bx, ya, bz], b1 = [bx, yb, bz], a1 = [ax, yb, az]; bf.tri(a0, b0, b1, nn, [ua, va], [ub, va], [ub, vb]); bf.tri(a0, b1, a1, nn, [ua, va], [ub, vb], [ua, vb]); };
+    // gable roof on a little stone house: used for the dormers and the clock gable
+    const pediment = (cx, cz, tx, tz, hl, nx, nz, d0, d1, ya, rise, c) => {
+      const P = (a, d, y) => [cx + tx * a + nx * d, y, cz + tz * a + nz * d];
+      st.tri(P(-hl, d1, ya), P(hl, d1, ya), P(0, d1, ya + rise), [nx, 0, nz], null, null, null, c); st.tri(P(-hl, d0, ya), P(hl, d0, ya), P(0, d0, ya + rise), [-nx, 0, -nz], null, null, null, c);
+      for (const sg of [-1, 1]) { const l = Math.hypot(rise, hl), nn = [tx * sg * rise / l, hl / l, tz * sg * rise / l]; st.tri(P(sg * hl, d0, ya), P(sg * hl, d1, ya), P(0, d1, ya + rise), nn, null, null, null, cDarkSlate); st.tri(P(sg * hl, d0, ya), P(0, d1, ya + rise), P(0, d0, ya + rise), nn, null, null, null, cDarkSlate); }
+    };
+    const cDarkSlate = col('#39424e');
+    // the main front is the longest straight run of wall: its middle carries the porch and the clock
+    let fc = null, fl = 0;
+    const E = [];
+    for (let i = 0; i < n; i++) { const j = (i + 1) % n, ax = p[2 * i], az = p[2 * i + 1], bx = p[2 * j], bz = p[2 * j + 1], dx = bx - ax, dz = bz - az, L = Math.hypot(dx, dz); E.push({ ax, az, bx, bz, L, tx: dx / L, tz: dz / L, nx: (sa > 0 ? dz : -dz) / L, nz: (sa > 0 ? -dx : dx) / L }); }
+    for (let i = 0; i < n; i++) { // merge collinear neighbours
+      const a = E[i], c2 = E[(i + 1) % n], straight = a.tx * c2.tx + a.tz * c2.tz > 0.995, len = a.L + (straight ? c2.L : 0);
+      if (len > fl) { fl = len; const mid = len / 2; fc = { x: a.ax + a.tx * mid, z: a.az + a.tz * mid, tx: a.tx, tz: a.tz, nx: a.nx, nz: a.nz, len }; }
+    }
+    const nearCentre = (x, z, r) => Math.hypot(x - fc.x, z - fc.z) < r && (fc.nx * (x - fc.x) + fc.nz * (z - fc.z)) > -1;
+    for (const e of E) {
+      const nn = [e.nx, 0, e.nz], mx = (e.ax + e.bx) / 2, mz = (e.az + e.bz) / 2;
+      if (gy > y0) wq(plain, e.ax, e.az, e.bx, e.bz, y0, gy, 0, e.L / 3.9, 0, 0.08, nn);
+      const nb = Math.round(e.L / 3.9);
+      if (e.L >= 3 && nb >= 1) wq(main, e.ax, e.az, e.bx, e.bz, gy, top, 0, nb / 4, 0, 1, nn); else wq(plain, e.ax, e.az, e.bx, e.bz, gy, top, 0, Math.max(0.5, e.L / 3.9), 0, 1, nn);
+      obox(st, mx, mz, e.tx, e.tz, e.L / 2 + 0.1, e.nx, e.nz, -0.05, 0.12, gy - 0.4, gy + 0.85, cGran);   // plinth
+      obox(st, mx, mz, e.tx, e.tz, e.L / 2 + 0.16, e.nx, e.nz, -0.05, 0.18, gy + 4.62, gy + 4.9, cStone);  // string course
+      obox(st, mx, mz, e.tx, e.tz, e.L / 2 + 0.4, e.nx, e.nz, -0.05, 0.42, top - 0.28, top + 0.15, cStone); // eaves cornice
+      if (e.L > 8) for (let k = 0; k < nb; k++) { // stone dormers in the slate roof, one above each bay
+        const a = (k + 0.5) * e.L / nb, x = e.ax + e.tx * a, z = e.az + e.tz * a; if (nearCentre(x, z, 3.4)) continue;
+        obox(st, x, z, e.tx, e.tz, 0.78, e.nx, e.nz, -1.5, -0.3, top + 0.15, top + 2.05, cStone);
+        obox(st, x, z, e.tx, e.tz, 0.46, e.nx, e.nz, -0.31, -0.27, top + 0.45, top + 1.8, cDark);
+        pediment(x, z, e.tx, e.tz, 0.92, e.nx, e.nz, -1.6, -0.2, top + 2.05, 0.6, cStone);
+      }
+    }
+    // slate mansard roof
+    const eave = top + 0.15, rise = 4.2;
+    const inner = insetPoly(p, 2.4, sa) || insetPoly(p, 1.5, sa);
+    if (inner) {
+      const nq = inner.length / 2, rc = col('#46505e');
+      for (let i = 0; i < nq; i++) {
+        const j = (i + 1) % nq, A = [p[2 * i], eave, p[2 * i + 1]], B = [p[2 * j], eave, p[2 * j + 1]], C = [inner[2 * j], eave + rise, inner[2 * j + 1]], D = [inner[2 * i], eave + rise, inner[2 * i + 1]];
+        const e1 = [B[0] - A[0], 0, B[2] - A[2]], e2 = [D[0] - A[0], rise, D[2] - A[2]]; let nx = e1[1] * e2[2] - e1[2] * e2[1], ny = e1[2] * e2[0] - e1[0] * e2[2], nz = e1[0] * e2[1] - e1[1] * e2[0];
+        const l = Math.hypot(nx, ny, nz) || 1; if (ny < 0) { nx = -nx; ny = -ny; nz = -nz; }
+        roof.tri(A, B, C, [nx / l, ny / l, nz / l], null, null, null, rc); roof.tri(A, C, D, [nx / l, ny / l, nz / l], null, null, null, rc);
+      }
+      const [, tr] = triangulate(inner);
+      for (const [a, b2, c2] of tr) roof.tri([inner[2 * a], eave + rise, inner[2 * a + 1]], [inner[2 * b2], eave + rise, inner[2 * b2 + 1]], [inner[2 * c2], eave + rise, inner[2 * c2 + 1]], [0, 1, 0], null, null, null, rc);
+    } else { const [, tr] = triangulate(p); for (const [a, b2, c2] of tr) roof.tri([p[2 * a], eave, p[2 * a + 1]], [p[2 * b2], eave, p[2 * b2 + 1]], [p[2 * c2], eave, p[2 * c2 + 1]], [0, 1, 0], null, null, null, col('#46505e')); }
+    // ---- centre of the main front
+    const { x: cx, z: cz, tx, tz, nx, nz } = fc, F = (a, d) => [cx + tx * a + nx * d, cz + tz * a + nz * d];
+    {
+      // projecting bay: plain brick and stone below, one tall window above
+      const [lx, lz] = F(-2.6, 0.5), [rx, rz] = F(2.6, 0.5), nn = [nx, 0, nz];
+      wq(plain, lx, lz, rx, rz, gy, gy + 4.8, 0, 1, 0, 0.5, nn); wq(main, lx, lz, rx, rz, gy + 4.8, top, 0, 0.25, 0.5, 1, nn);
+      for (const sg of [-1, 1]) { const [qx, qz] = F(sg * 2.6, 0), [fx2, fz2] = F(sg * 2.6, 0.5); wq(plain, qx, qz, fx2, fz2, gy, top, 0, 0.12, 0, 1, [tx * sg, 0, tz * sg]); }
+      obox(st, cx, cz, tx, tz, 3.0, nx, nz, 0.4, 0.95, top - 0.28, top + 0.15, cStone);
+      // doorway
+      obox(st, cx, cz, tx, tz, 1.5, nx, nz, 0.5, 0.56, gy, gy + 3.75, cStone); obox(st, cx, cz, tx, tz, 1.15, nx, nz, 0.56, 0.6, gy + 0.25, gy + 3.4, cWood);
+      obox(st, cx, cz, tx, tz, 0.03, nx, nz, 0.6, 0.62, gy + 0.25, gy + 3.4, cDark);
+      // porch: steps, four pink granite columns, entablature, balcony parapet
+      obox(st, cx, cz, tx, tz, 3.6, nx, nz, 0.5, 3.7, gy - 0.5, gy + 0.08, cGran); obox(st, cx, cz, tx, tz, 3.2, nx, nz, 0.5, 3.3, gy - 0.5, gy + 0.25, cStone);
+      for (const a of [-2.6, -1.0, 1.0, 2.6]) { const [x, z] = F(a, 2.85); prism(x, z, 0.26, gy + 0.45, gy + 3.7, cPink); obox(st, x, z, tx, tz, 0.3, nx, nz, -0.3, 0.3, gy + 0.25, gy + 0.45, cStone); obox(st, x, z, tx, tz, 0.3, nx, nz, -0.3, 0.3, gy + 3.7, gy + 3.9, cStone); }
+      obox(st, cx, cz, tx, tz, 3.1, nx, nz, 0.5, 3.25, gy + 3.9, gy + 4.5, cStone);
+      obox(st, cx, cz, tx, tz, 3.2, nx, nz, 3.2, 3.35, gy + 4.5, gy + 5.4, cStone);
+      for (const sg of [-1, 1]) { const [x, z] = F(sg * 3.12, 1.9); obox(st, x, z, nx, nz, 1.4, tx * sg, tz * sg, -0.08, 0.08, gy + 4.5, gy + 5.4, cStone); }
+      // clock gable above the cornice, flag on top
+      obox(st, cx, cz, tx, tz, 2.1, nx, nz, -1.0, 0.7, top + 0.15, top + 3.2, cStone);
+      obox(st, cx, cz, tx, tz, 2.35, nx, nz, -1.05, 0.82, top + 3.2, top + 3.45, cStone);
+      pediment(cx, cz, tx, tz, 2.35, nx, nz, -1.05, 0.82, top + 3.45, 1.25, cStone);
+      const [px, pz] = F(0, -0.1); prism(px, pz, 0.045, top + 4.7, top + 8.2, cGran, 6);
+      const fl2 = (a0, a1, c) => { const A = [px + tx * a0, top + 7.1, pz + tz * a0], B = [px + tx * a1, top + 7.1, pz + tz * a1], C = [B[0], top + 8.1, B[2]], D = [A[0], top + 8.1, A[2]]; for (const nn of [[nx, 0, nz], [-nx, 0, -nz]]) { st.tri(A, B, C, nn, null, null, null, c); st.tri(A, C, D, nn, null, null, null, c); } };
+      fl2(0.05, 0.55, col('#1f3a93')); fl2(0.55, 1.05, col('#f2f2f2')); fl2(1.05, 1.55, col('#d02a2a'));
+      // clock face and carved name
+      const [cc, cg] = canvas(256, 256); cg.fillStyle = '#cdbfa6'; cg.fillRect(0, 0, 256, 256); cg.fillStyle = '#f4efe2'; cg.beginPath(); cg.arc(128, 128, 112, 0, 6.2832); cg.fill(); cg.strokeStyle = '#2a2622'; cg.lineWidth = 9; cg.stroke();
+      for (let k = 0; k < 12; k++) { const a = k / 12 * 6.2832; cg.lineWidth = k % 3 ? 4 : 9; cg.beginPath(); cg.moveTo(128 + Math.sin(a) * 84, 128 - Math.cos(a) * 84); cg.lineTo(128 + Math.sin(a) * 102, 128 - Math.cos(a) * 102); cg.stroke(); }
+      cg.lineCap = 'round'; cg.lineWidth = 10; cg.beginPath(); cg.moveTo(128, 128); cg.lineTo(128 - 50, 128 - 34); cg.stroke(); cg.lineWidth = 6; cg.beginPath(); cg.moveTo(128, 128); cg.lineTo(128 + 62, 128 - 60); cg.stroke();
+      const ct = new THREE.CanvasTexture(cc); clockMat = new THREE.MeshStandardMaterial({ map: ct, emissive: 0xffe9b8, emissiveMap: ct, emissiveIntensity: 0, roughness: 0.6 });
+      const ck = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 2.3), clockMat); const [kx, kz] = F(0, 0.72); ck.position.set(kx, top + 1.75, kz); ck.rotation.y = Math.atan2(nx, nz); scene.add(ck);
+      const [sc, sg2] = canvas(512, 64); sg2.fillStyle = '#cdbfa6'; sg2.fillRect(0, 0, 512, 64); sg2.fillStyle = '#4a3f33'; sg2.font = 'bold 44px Georgia, "Times New Roman", serif'; sg2.textAlign = 'center'; sg2.textBaseline = 'middle'; sg2.fillText('M A I R I E', 256, 34);
+      const sm = new THREE.Mesh(new THREE.PlaneGeometry(4.4, 0.5), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(sc) })); const [sx, sz] = F(0, 3.27); sm.position.set(sx, gy + 4.2, sz); sm.rotation.y = Math.atan2(nx, nz); scene.add(sm);
+    }
+    // tall brick chimneys with stone caps
+    for (const [a, d] of [[-fc.len * 0.3, -3.4], [fc.len * 0.3, -3.4], [-fc.len * 0.3, -9.5], [fc.len * 0.3, -9.5]]) { const [x, z] = F(a, d); obox(st, x, z, tx, tz, 0.6, nx, nz, -0.4, 0.4, top + 2, top + 6.4, cBrick); obox(st, x, z, tx, tz, 0.7, nx, nz, -0.5, 0.5, top + 6.4, top + 6.65, cStone); }
+    const add = (bf, m) => { if (!bf.p.length) return; const o = new THREE.Mesh(bf.geo(), m); o.castShadow = o.receiveShadow = true; scene.add(o); };
+    const mm = mairieTextures(4), pm = mairieTextures(1);
+    add(main, mm); add(plain, pm); add(st, new THREE.MeshLambertMaterial({ vertexColors: true })); add(roof, roofMat());
+    wallMats.push(mm, pm);
+  }
   function crownGeo() { // a fuller, lumpy tree crown with darker undersides
     const g = new THREE.IcosahedronGeometry(2.6, 2), p = g.attributes.position, col = new Float32Array(p.count * 3), v = new THREE.Vector3();
     for (let i = 0; i < p.count; i++) {
@@ -1438,7 +1591,7 @@ const hd = !HD ? null : (() => {
     if (pfT > 5000) { const fps = pfN * 1000 / pfT; pfN = 0; pfT = 0; if (fps < 25 && qi > 0 && started && !paused) { setQuality(qi - 1); feed('Qualité graphique réduite : ' + q.name); const b = document.querySelectorAll('#hdSeg button'); b.forEach(x => x.classList.toggle('on', +x.dataset.q === qi)); } }
   }
   addEventListener('resize', resize);
-  return { QUAL, setQuality, perf, get quality() { return qi; }, render, frame, setTime, world, linearize, makeCar, fx, explode: explodeAt, muzzle, roadMat, waterMat, crownGeo, wallMat, wallSet, shopSet, groundMat, footMat, roofMat, shake, lin, linHex, get floatRT() { return floatRT; } };
+  return { QUAL, setQuality, perf, get quality() { return qi; }, render, frame, setTime, world, linearize, makeCar, fx, explode: explodeAt, muzzle, roadMat, waterMat, crownGeo, wallMat, wallSet, shopSet, townHall, groundMat, footMat, roofMat, shake, lin, linHex, get floatRT() { return floatRT; } };
 })();
 // <<< HD MODULE
 
@@ -1663,9 +1816,16 @@ function buildCity() {
   const walls = FACADES.map(() => new Buf()), roofs = new Buf(), photoBufs = photoMats.map(() => new Buf());
   const UB = HD ? HDW.upper.map(a => a.map(() => new Buf())) : [], GB = HD ? HDW.ground.map(a => a.map(() => new Buf())) : [];
   const shopBuf = new Buf(), shopsAt = HD ? assignShops() : new Map(), extras = new Buf(), cBrick = col('#8a4a38'), cStone = col('#b9b1a3');
+  // HD: wings attached to the town hall are brick like it, not sheds
+  const civicWing = new Set();
+  if (HD) for (const m of W.buildings) if (/^Mairie/.test(m.n || '')) W.buildings.forEach((o, oi) => {
+    if (o === m) return; let sharedPts = 0;
+    for (let i = 0; i < o.p.length; i += 2) for (let j = 0; j < m.p.length; j += 2) if (Math.hypot(o.p[i] - m.p[j], o.p[i + 1] - m.p[j + 1]) < 0.3) sharedPts++;
+    if (sharedPts >= 2) civicWing.add(oi);
+  });
   W.buildings.forEach((b, bi) => {
-    const p = b.p, n = p.length / 2, kind = b.k;
-    const style = KIND_STYLE[kind] ?? 0;
+    const p = b.p, n = p.length / 2, kind = civicWing.has(bi) ? 4 : b.k;
+    const style = civicWing.has(bi) ? 4 : KIND_STYLE[kind] ?? 0;
     const tints = WALL_TINTS[kind] || WALL_TINTS[0];
     const pt = PHOTO_TINT.get(bi);
     const tint = pt ? pt.map(v => Math.max(0.3, Math.min(1, v * 1.08))) : shade(col(tints[(hash(bi) * tints.length) | 0]), 0.92 + hash(bi + 7) * 0.12);
@@ -1675,6 +1835,11 @@ function buildCity() {
     for (let i = 0; i < n; i++) { gmin = Math.min(gmin, groundH(p[2 * i], p[2 * i + 1])); cxx += p[2 * i]; czz += p[2 * i + 1]; }
     const base = b.b != null ? b.b : groundH(cxx / n, czz / n);
     const y0 = Math.min(gmin, base) - 0.6;
+    if (HD && /^Mairie/.test(b.n || '')) { // the town hall has its own model
+      for (let i = 0; i < n; i++) { const j = (i + 1) % n; gridAdd([p[2 * i], p[2 * i + 1], p[2 * j], p[2 * j + 1]], 3.5); }
+      buildingPolys.push(b); hd.townHall(b, base, y0, sa);
+      return;
+    }
     const riseIn = b.r != null ? b.r : (kind === 0 ? 2.4 : 0);
     const pitched = n === 4 && Math.abs(sa) < 600 && riseIn > 0.8 && kind !== 2;
     // HD: other houses get a mansard-style roof (footprint offset inwards) when the shape allows it

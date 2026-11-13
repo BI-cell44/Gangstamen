@@ -20,6 +20,8 @@ En HD, les façades sans photo exploitable sont dessinées en haute résolution 
 
 **Façades adaptées à chaque bâtiment (HD)** : chaque pan de mur montre un nombre entier de travées de fenêtres, à la largeur propre au bâtiment (mesurée dans les photos Panoramax quand une façade large et dégagée le permet : `data/facade_hints.json`, 27 bâtiments ; tirée au sort dans une plage réaliste sinon). Chaque style existe en plusieurs variantes (volets d'une couleur par maison, portes-fenêtres, maisons sans volets, immeubles à balcons ou à allèges colorées). Les portes et les garages ne sont dessinés que côté rue.
 
+**Mairie de Chantenay (HD)** : la mairie de 1903 a son propre modèle (`townHall` dans `src/hd.js`), d'après ses photos Panoramax : brique et chaînages de pierre, hautes fenêtres à balustres à l'étage, porche à quatre colonnes sous un balcon, fronton à horloge éclairée la nuit, toit d'ardoise à lucarnes, grandes cheminées, drapeau. Les ailes accolées passent en brique.
+
 **Photo aérienne (HD)** : `data/ortho/ortho_raw.jpg` est la BD ORTHO de l'IGN (25 cm par pixel, service WMS de la Géoplateforme) ; `src/make_ortho.py` en tire `data/ortho/ortho.jpg`. Elle donne aux toits leurs vraies couleurs (ardoise, tuile, toits plats) et indique où sont les jardins. Elle n'est pas plaquée telle quelle au sol, car les toits et les arbres y débordent sur les trottoirs.
 
 **Façades photo** : `src/curate_facades.py` trie les morceaux de photos Panoramax de `data/facades` et ne garde que ceux qui sont nets et vus de face (environ 300 sur 1 077). Les autres (arbre devant, ciel, images dédoublées) sont remplacés par une façade dessinée, teintée avec la couleur du mur mesurée dans la photo. Le résultat est dans `data/facades_curated`, utilisé par le build.
