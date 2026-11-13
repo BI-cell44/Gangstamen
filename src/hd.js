@@ -492,7 +492,7 @@ const hd = !HD ? null : (() => {
   // ---------- high-resolution drawn facades: colour, lit windows, relief and glossy glass ----------
   // one tile = 4 bays x 4 floors = 16 m x 12.8 m, at 64 px per metre
   // ground = true paints the street-level strip instead (one floor): doors, garages, shop fronts
-  function facadeTextures(style, ground) {
+  function facadeTextures(style, ground, variant = 0) {
     const shop = style === 'shop', S = shop ? 2048 : 1024, M = 64, bw = 256, fh = 256, rows = ground ? 1 : 4, SH = rows * fh, bays = S / bw;
     const [c, g] = canvas(S, SH), [ce, ge] = canvas(S, SH), [ch, gh] = canvas(S, SH), [cr, gr] = canvas(S, SH);
     const R = Math.random;
@@ -589,7 +589,9 @@ const hd = !HD ? null : (() => {
         g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(x, sy + 34, sw, 7); H(215, x, sy - 2, sw, 36); RG(200, x, sy - 2, sw, 36); ge.fillStyle = '#000'; ge.fillRect(x, sy - 2, sw, 43);
       }
     };
-    const LAYOUT = { house: ['door', 'win', 'win', 'garage'], brick: ['win', 'door', 'win', 'win'], block: ['win', 'hall', 'win', 'win'], plain: ['', 'door', '', ''], industrial: ['', 'roller', '-', 'door'], church: ['', 'bigdoor', '-', ''] };
+    const rot = a => a.map((_, i) => a[(i + variant) % a.length]);
+    const LAYOUT0 = { house: ['door', 'win', 'win', 'garage'], brick: ['win', 'door', 'win', 'win'], block: ['win', 'hall', 'win', 'win'], plain: ['', 'door', '', ''], industrial: ['', 'roller', '-', 'door'], church: ['', 'bigdoor', '-', ''] };
+    const LAYOUT = {}; for (const k in LAYOUT0) LAYOUT[k] = k === 'industrial' || k === 'church' ? LAYOUT0[k] : rot(LAYOUT0[k]);
     if (shop) for (let k = 0; k < bays / 2; k++) shopFront(k * 2 * bw, (k * 3 + (R() * 8 | 0)) % 8);
     for (let f = 0; f < rows; f++) for (let b = 0; b < bays; b++) {
       if (shop) continue;
@@ -605,7 +607,10 @@ const hd = !HD ? null : (() => {
       }
       if (style === 'industrial' || style === 'plain') continue;
       let ww = 1.0 * M, wh = 1.7 * M;
-      if (style === 'block') { ww = 2.3 * M; wh = 1.45 * M; }
+      if (style === 'house' && variant === 1) wh = 2.05 * M;                 // tall French windows
+      if (style === 'house' && variant === 2) { ww = 0.92 * M; wh = 1.4 * M; } // plainer house, no shutters
+      if (style === 'brick' && variant === 1) { ww = 1.15 * M; wh = 1.5 * M; }
+      if (style === 'block') { ww = (variant ? 1.7 : 2.3) * M; wh = 1.45 * M; }
       if (style === 'church') { if (b % 2) continue; ww = 1.15 * M; wh = 2.5 * M; }
       const wx = Math.round(x0 + (bw - ww) / 2), wy = Math.round(y0 + (fh - wh) * (style === 'church' ? 0.35 : 0.42));
       const lit = R() < 0.3, warm = R() < 0.85;
@@ -634,20 +639,23 @@ const hd = !HD ? null : (() => {
       // sill
       g.fillStyle = '#e9e5db'; g.fillRect(wx - 12, wy + wh, ww + 24, 7); H(200, wx - 12, wy + wh, ww + 24, 7);
       g.fillStyle = 'rgba(0,0,0,.28)'; g.fillRect(wx - 12, wy + wh + 7, ww + 24, 5);
-      if (style === 'house') { // louvred shutters, open against the wall
-        const sc = SHUT[(f * 2 + b * 3 + (R() * 2 | 0)) % SHUT.length], sw = 0.48 * M;
+      if (style === 'house' && variant !== 2) { // louvred shutters, open against the wall; one colour per house type
+        const sc = SHUT[variant ? 1 + (variant * 2) % 4 : 0], sw = 0.48 * M;
         for (const sx of [wx - sw - 3, wx + ww + 3]) {
           g.fillStyle = sc; g.fillRect(sx, wy - 2, sw, wh + 4); H(176, sx, wy - 2, sw, wh + 4);
           g.fillStyle = 'rgba(0,0,0,.2)'; for (let y = wy + 2; y < wy + wh; y += 6) g.fillRect(sx + 3, y, sw - 6, 2);
           g.fillStyle = 'rgba(255,255,255,.14)'; for (let y = wy + 4; y < wy + wh; y += 6) g.fillRect(sx + 3, y, sw - 6, 1);
           g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(sx + sw, wy, 3, wh + 4);
         }
-        if (R() < 0.4) { g.strokeStyle = '#1c1c20'; g.lineWidth = 2; g.strokeRect(wx + 1, wy + wh - 30, ww - 2, 28); for (let x = wx + 8; x < wx + ww; x += 9) g.strokeRect(x, wy + wh - 30, 0.5, 28); } // window guard
+        if (variant === 1 || R() < 0.3) { g.strokeStyle = '#1c1c20'; g.lineWidth = 2; g.strokeRect(wx + 1, wy + wh - 30, ww - 2, 28); for (let x = wx + 8; x < wx + ww; x += 9) g.strokeRect(x, wy + wh - 30, 0.5, 28); } // window guard
       }
       if (style === 'block') {
         const dn = R() < 0.6 ? (0.15 + R() * 0.7) * wh : 0; // roller blind
         if (dn) { g.fillStyle = '#cfccc4'; g.fillRect(wx + 3, wy + 3, ww - 6, dn); g.fillStyle = 'rgba(0,0,0,.12)'; for (let y = wy + 5; y < wy + dn; y += 5) g.fillRect(wx + 3, y, ww - 6, 1); ge.fillStyle = '#000'; ge.fillRect(wx + 3, wy + 3, ww - 6, dn); gr.fillStyle = 'rgb(0,220,0)'; gr.fillRect(wx + 3, wy + 3, ww - 6, dn); H(120, wx + 3, wy + 3, ww - 6, dn); }
-        if (b % 2 === f % 2) { // balcony
+        if (variant === 1) { // coloured panel under the window, 1960s style
+          g.fillStyle = ['#7d98a8', '#b5694a', '#8a9a6a'][f % 3]; g.fillRect(wx, wy + wh + 12, ww, 44); H(140, wx, wy + wh + 12, ww, 44);
+        }
+        if (variant === 0 && b % 2 === f % 2) { // balcony
           const by = wy + wh + 10; g.fillStyle = '#c9c5bb'; g.fillRect(x0 + 10, by, bw - 20, 10); H(215, x0 + 10, by, bw - 20, 10);
           g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(x0 + 10, by + 10, bw - 20, 8);
           g.fillStyle = '#3a3d42'; g.fillRect(x0 + 10, by - 50, bw - 20, 3); for (let x = x0 + 12; x < x0 + bw - 10; x += 8) g.fillRect(x, by - 50, 2, 50);
@@ -664,14 +672,77 @@ const hd = !HD ? null : (() => {
     }
     const im = g.getImageData(0, 0, S, SH), d = im.data; for (let i = 0; i < d.length; i += 4) { const n = (R() - 0.5) * 14; d[i] += n; d[i + 1] += n; d[i + 2] += n; } g.putImageData(im, 0, 0);
     // relief from a softened height map
-    const [cb, gb] = canvas(S, SH); try { gb.filter = 'blur(1.4px)'; } catch (e) { } gb.drawImage(ch, 0, 0);
-    const hd_ = gb.getImageData(0, 0, S, SH).data, hf = new Float32Array(S * SH); for (let i = 0; i < S * SH; i++) hf[i] = hd_[i * 4] / 255 * 7;
+    // lights, gloss and relief at half resolution: they hold far less detail than the colour
+    const S2 = S / 2, SH2 = SH / 2, half = cv => { const [c2, g2] = canvas(S2, SH2); g2.drawImage(cv, 0, 0, S2, SH2); return c2; };
+    const [cb, gb] = canvas(S2, SH2); try { gb.filter = 'blur(0.8px)'; } catch (e) { } gb.drawImage(ch, 0, 0, S2, SH2);
+    const hd_ = gb.getImageData(0, 0, S2, SH2).data, hf = new Float32Array(S2 * SH2); for (let i = 0; i < S2 * SH2; i++) hf[i] = hd_[i * 4] / 255 * 5;
     const mk = cv => { const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; return t; };
-    return { map: mk(c), emissive: mk(ce), normal: heightToNormal(hf, S, 1, SH), rough: mk(cr) };
+    return { map: mk(c), emissive: mk(half(ce)), normal: heightToNormal(hf, S2, 1, SH2), rough: mk(half(cr)) };
   }
-  const GROUND_STYLES = ['house', 'block', 'industrial', 'plain', 'brick', 'church', 'shop'];
-  function wallMat(style, ground) {
-    const t = facadeTextures(style, ground);
+  const VARIANTS = { house: 3, block: 2, industrial: 1, plain: 1, brick: 2, church: 1 };
+  // every style in a few variants, for the upper floors and for the street level
+  function wallSet(styles) {
+    const upper = [], ground = [];
+    for (const st of styles) { const n = VARIANTS[st] || 1, u = [], g = []; for (let v = 0; v < n; v++) { u.push(wallMat(st, false, v)); g.push(wallMat(st, true, v)); } upper.push(u); ground.push(g); }
+    return { upper, ground };
+  }
+  // ---------- real shop fronts (OpenStreetMap): one painted front per shop, in one atlas ----------
+  const CHAINS = /cr[ée]dit|^cic$|caisse d|banque|lidl|intermarch|superdry|^pfg$|vival|poste/i; // national brands get a generic sign
+  const FAMILY = {
+    bakery: ['BOULANGERIE', '#7a1f2b', '#f1e3c0', 1], pharmacy: ['PHARMACIE', '#eef2ee', '#1f7a3a', 0], cafe: ['CAFÉ', '#3a2a1e', '#e8c98a', 1], restaurant: ['RESTAURANT', '#1f2d2a', '#f0e6d0', 1],
+    bank: ['BANQUE', '#dfe3e8', '#1d2f52', 0], hair: ['COIFFURE', '#4a2a52', '#f6e9f2', 0], tabac: ['TABAC PRESSE', '#8a1a1a', '#fff4e0', 0], market: ['ALIMENTATION', '#2a5a2a', '#f4f0d8', 1],
+    garage: ['GARAGE', '#c9b21a', '#1b1b1b', 0], post: ['POSTE', '#f2c81e', '#1d2f52', 0], florist: ['FLEURISTE', '#2f5d3a', '#f3f0dc', 1], shop: ['', '#27364a', '#f2efe6', 0],
+  };
+  const SHOP_COLS = ['#27364a', '#5a2e1e', '#1f4a36', '#6b1f1f', '#3b3b3b', '#7a5a34'];
+  function shopSet(shops) {
+    const TW = 512, TH = 256, COLS = 8, AW = 4096, AH = 2048;
+    const [c, g] = canvas(AW, AH), [ce, ge] = canvas(AW, AH), [cr, gr] = canvas(AW, AH), R = Math.random;
+    g.fillStyle = '#888'; g.fillRect(0, 0, AW, AH); ge.fillStyle = '#000'; ge.fillRect(0, 0, AW, AH); gr.fillStyle = 'rgb(0,230,0)'; gr.fillRect(0, 0, AW, AH);
+    const info = [];
+    shops.slice(0, 64).forEach((sh, i) => {
+      const f = FAMILY[sh.k] || FAMILY.shop, x = (i % COLS) * TW, y = ((i / COLS) | 0) * TH, top = 14, sy = 66, base = TH - 28;
+      const col = sh.k === 'shop' ? SHOP_COLS[i % SHOP_COLS.length] : f[1], ink = f[2];
+      const name = (!sh.n || CHAINS.test(sh.n) ? f[0] || 'BOUTIQUE' : sh.n).toUpperCase();
+      g.fillStyle = col; g.fillRect(x, y, TW, TH);                                                  // painted shop surround
+      g.fillStyle = 'rgba(255,255,255,.08)'; g.fillRect(x, y + top, TW, 44); g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(x, y + top + 44, TW, 5);
+      g.fillStyle = ink; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = 'bold 32px Georgia, "Times New Roman", serif';
+      g.fillText(name, x + TW / 2, y + top + 23, TW - 60);
+      ge.fillStyle = 'rgba(255,235,200,.3)'; ge.fillRect(x, y + top, TW, 44);
+      if (sh.k === 'pharmacy') { g.fillStyle = '#19a34a'; g.fillRect(x + 20, y + top + 14, 30, 12); g.fillRect(x + 29, y + top + 5, 12, 30); ge.fillStyle = '#3dff7a'; ge.fillRect(x + 20, y + top + 14, 30, 12); ge.fillRect(x + 29, y + top + 5, 12, 30); }
+      if (sh.k === 'tabac') { g.fillStyle = '#d21f1f'; g.beginPath(); g.moveTo(x + 36, y + top + 2); g.lineTo(x + 52, y + top + 22); g.lineTo(x + 36, y + top + 42); g.lineTo(x + 20, y + top + 22); g.fill(); ge.fillStyle = '#ff4030'; ge.fillRect(x + 26, y + top + 12, 20, 20); }
+      const glass = (px, pw, pb, lit) => {
+        const lg = g.createLinearGradient(0, y + sy, 0, y + pb); lg.addColorStop(0, '#6c7a86'); lg.addColorStop(1, '#262f38');
+        g.fillStyle = lg; g.fillRect(px, y + sy + 8, pw, pb - sy - 8); gr.fillStyle = 'rgb(0,26,160)'; gr.fillRect(px, y + sy + 8, pw, pb - sy - 8);
+        const le = ge.createLinearGradient(0, y + sy, 0, y + pb); le.addColorStop(0, lit ? '#ffe2a8' : '#8a7a5a'); le.addColorStop(1, lit ? '#c08a3c' : '#4a3c28'); ge.fillStyle = le; ge.fillRect(px, y + sy + 8, pw, pb - sy - 8);
+        g.fillStyle = 'rgba(0,0,0,.4)'; g.fillRect(px, y + sy + 8, pw, 6);
+      };
+      if (sh.k === 'garage') { // workshop: a roller door and a small office window
+        g.fillStyle = '#8d959c'; g.fillRect(x + 30, y + sy, 300, TH - sy); for (let yy = y + sy + 4; yy < y + TH; yy += 9) { g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x + 30, yy, 300, 3); }
+        gr.fillStyle = 'rgb(0,110,0)'; gr.fillRect(x + 30, y + sy, 300, TH - sy); glass(x + 360, 120, base, true);
+      } else if (sh.k === 'bank') { // sober front with a cash machine
+        glass(x + 24, 150, base, false); glass(x + 190, 90, TH - 6, false); glass(x + 296, 110, base, false);
+        g.fillStyle = '#c9ccd2'; g.fillRect(x + 424, y + sy + 30, 64, 110); g.fillStyle = '#18324a'; g.fillRect(x + 434, y + sy + 42, 44, 32); ge.fillStyle = '#6fd0ff'; ge.fillRect(x + 434, y + sy + 42, 44, 32);
+      } else {
+        const side = (TW - 110) / 2 - 22;
+        glass(x + 16, side, base, true); glass(x + (TW - 86) / 2, 86, TH - 6, true); glass(x + (TW + 110) / 2 + 6, side, base, true);
+        for (const px of [x + 16, x + (TW + 110) / 2 + 6]) for (let s2 = 0; s2 < 3; s2++) { // goods in the window
+          g.fillStyle = 'rgba(230,220,200,.22)'; g.fillRect(px + 8, y + sy + 44 + s2 * 34, side - 16, 3);
+          for (let q = px + 12; q < px + side - 18; q += 13 + R() * 10) { g.fillStyle = `hsla(${sh.k === 'bakery' ? 30 + R() * 20 : sh.k === 'florist' ? R() * 360 : R() * 360 | 0},${sh.k === 'florist' ? 80 : 45}%,60%,.55)`; g.fillRect(q, y + sy + 26 + s2 * 34, 8 + R() * 6, 18); }
+        }
+        if (sh.k === 'cafe' || sh.k === 'restaurant') { g.fillStyle = '#1b1b1b'; g.fillRect(x + 30, y + sy + 60, 60, 84); g.fillStyle = '#e9e2cf'; for (let l = 0; l < 6; l++) g.fillRect(x + 36, y + sy + 70 + l * 12, 20 + R() * 28, 3); } // menu board
+      }
+      g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(x, y, 3, TH); g.fillRect(x + TW - 3, y, 3, TH);
+      info.push({ uv: [(x + 2) / AW, 1 - (y + TH) / AH, (x + TW - 2) / AW, 1 - (y + 1) / AH], col: ink, awning: !!f[3] });
+    });
+    const mk = cv => { const t = new THREE.CanvasTexture(cv); t.anisotropy = 8; return t; };
+    const half = cv => { const [c2, g2] = canvas(AW / 2, AH / 2); g2.drawImage(cv, 0, 0, AW / 2, AH / 2); return c2; };
+    const rm = mk(half(cr));
+    const mat = new THREE.MeshStandardMaterial({ map: mk(c), emissive: 0xffffff, emissiveMap: mk(half(ce)), emissiveIntensity: 0, roughness: 1, metalness: 1, roughnessMap: rm, metalnessMap: rm, envMapIntensity: 0.9 });
+    mat.color.setScalar(0.8); // painted wood, not a light box: keep it in step with the walls
+    return { mat, info };
+  }
+  function wallMat(style, ground, variant) {
+    const t = facadeTextures(style, ground, variant);
     return new THREE.MeshStandardMaterial({ map: t.map, vertexColors: true, emissive: 0xffffff, emissiveMap: t.emissive, emissiveIntensity: 0, normalMap: t.normal, normalScale: new THREE.Vector2(0.9, 0.9),
       roughness: 1, metalness: 1, roughnessMap: t.rough, metalnessMap: t.rough, envMapIntensity: 0.9 });
   }
@@ -1013,6 +1084,6 @@ const hd = !HD ? null : (() => {
     if (pfT > 5000) { const fps = pfN * 1000 / pfT; pfN = 0; pfT = 0; if (fps < 25 && qi > 0 && started && !paused) { setQuality(qi - 1); feed('Qualité graphique réduite : ' + q.name); const b = document.querySelectorAll('#hdSeg button'); b.forEach(x => x.classList.toggle('on', +x.dataset.q === qi)); } }
   }
   addEventListener('resize', resize);
-  return { QUAL, setQuality, perf, get quality() { return qi; }, render, frame, setTime, world, linearize, makeCar, fx, explode: explodeAt, muzzle, roadMat, waterMat, crownGeo, wallMat, groundMat, footMat, roofMat, GROUND_STYLES, shake, lin, linHex, get floatRT() { return floatRT; } };
+  return { QUAL, setQuality, perf, get quality() { return qi; }, render, frame, setTime, world, linearize, makeCar, fx, explode: explodeAt, muzzle, roadMat, waterMat, crownGeo, wallMat, wallSet, shopSet, groundMat, footMat, roofMat, shake, lin, linHex, get floatRT() { return floatRT; } };
 })();
 // <<< HD MODULE

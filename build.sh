@@ -4,7 +4,7 @@
 set -e
 cd "$(dirname "$0")"
 mkdir -p build && cd build
-cp ../data/world_raw.json ../data/facades2.json .
+cp ../data/world_raw.json ../data/facades2.json ../data/shops.json ../data/facade_hints.json .
 # the HD renderer lives in its own file and is inlined into the template
 python3 - <<'PY'
 t = open('../src/template.html', encoding='utf-8').read()
