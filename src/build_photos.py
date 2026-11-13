@@ -13,6 +13,11 @@ w['photos'] = {
 }
 if meta.get('bt'):
     w['photos']['bt'] = meta['bt']
+# real shops (OpenStreetMap) and window spacing measured in the photos: see make_street_data.py
+import os
+for key, fn in (('shops', 'shops.json'), ('hints', 'facade_hints.json')):
+    if os.path.exists(fn):
+        w[key] = json.load(open(fn, encoding='utf-8'))
 prods = sorted({p for c in meta['chunks'] for p in (c.get('prods') or [c.get('prod')])})
 print('chunks', len(meta['chunks']), 'producers', prods)
 atl = [base64.b64encode(open(f'{up}/{PFX}_{k}.jpg', 'rb').read()).decode() for k in range(len(meta['atlas']))]

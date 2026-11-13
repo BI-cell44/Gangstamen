@@ -484,11 +484,37 @@ const WALL_TINTS = [
 ];
 const ROOF_TINTS = ['#4a5263', '#6c6964', '#7b8187', '#6b5b4b', '#58484a', '#6c6964', '#3f4655'];
 const facadeTex = HD ? [] : FACADES.map(facade);
-const wallMats = HD ? FACADES.map(s => hd.wallMat(s)) : facadeTex.map(([t, te]) => new THREE.MeshLambertMaterial({ map: t, vertexColors: true, emissive: 0xffffff, emissiveMap: te, emissiveIntensity: 0 }));
+const HDW = HD ? hd.wallSet(FACADES) : null; // HD: every style in a few variants, upper floors and street level
+const wallMats = HD ? [].concat(...HDW.upper, ...HDW.ground) : facadeTex.map(([t, te]) => new THREE.MeshLambertMaterial({ map: t, vertexColors: true, emissive: 0xffffff, emissiveMap: te, emissiveIntensity: 0 }));
 const roofMat = HD ? hd.roofMat() : new THREE.MeshLambertMaterial({ vertexColors: true });
-const gfMats = HD ? hd.GROUND_STYLES.map(s => hd.wallMat(s, true)) : []; // HD: street-level strips (doors, garages, shop fronts)
-if (HD) wallMats.push(...gfMats); // lit windows follow day and night like the others
-const SHOP_STYLE = 6;
+const shopSet = HD && W.shops ? hd.shopSet(W.shops) : null; // HD: the real shops of the district (OpenStreetMap)
+if (shopSet) wallMats.push(shopSet.mat); // lit like the windows at night
+const HINTS = new Map(); if (W.hints) for (const [bi, bay] of W.hints) HINTS.set(bi, bay); // window spacing measured in street photos
+// each real shop goes on the nearest wall long enough to hold it: "building:edge" -> [{s0, s1, si}]
+function assignShops() {
+  const by = new Map(); if (!shopSet) return by;
+  W.shops.slice(0, 64).forEach((sh, si) => {
+    let best = null, bd = 30;
+    W.buildings.forEach((b, bi) => {
+      const p = b.p, n = p.length / 2;
+      for (let i = 0; i < n; i++) {
+        const j = (i + 1) % n, ax = p[2 * i], az = p[2 * i + 1], dx = p[2 * j] - ax, dz = p[2 * j + 1] - az, L = Math.hypot(dx, dz);
+        if (L < 3.4) continue;
+        const t = Math.max(0, Math.min(1, ((sh.x - ax) * dx + (sh.z - az) * dz) / (L * L))), d = Math.hypot(sh.x - ax - dx * t, sh.z - az - dz * t);
+        if (d < bd) { bd = d; best = [bi + ':' + i, t * L, L]; }
+      }
+    });
+    if (!best) return;
+    let a = by.get(best[0]); if (!a) by.set(best[0], a = []);
+    a.push({ c: best[1], L: best[2], w: Math.min(best[2] - 0.3, sh.k === 'market' ? 12 : 7.5), si });
+  });
+  for (const [k, a] of by) {
+    a.sort((u, v) => u.c - v.c); let prev = 0.15; const out = [];
+    for (const o of a) { const s0 = Math.max(prev, Math.min(o.c - o.w / 2, o.L - 0.15 - o.w)), s1 = Math.min(o.L - 0.1, s0 + o.w); if (s1 - s0 < 2.6) continue; out.push({ s0, s1, si: o.si }); prev = s1 + 0.25; }
+    by.set(k, out);
+  }
+  return by;
+}
 // inward offset of a footprint, for mansard-style roofs; null when the shape does not allow it
 function insetPoly(p, d, sa) {
   const n = p.length / 2, q = [], sg = sa > 0 ? 1 : -1;
@@ -545,7 +571,8 @@ const landmarks = [];
 
 function buildCity() {
   const walls = FACADES.map(() => new Buf()), roofs = new Buf(), photoBufs = photoMats.map(() => new Buf());
-  const gwalls = gfMats.map(() => new Buf()), extras = new Buf(), cBrick = col('#8a4a38'), cStone = col('#b9b1a3');
+  const UB = HD ? HDW.upper.map(a => a.map(() => new Buf())) : [], GB = HD ? HDW.ground.map(a => a.map(() => new Buf())) : [];
+  const shopBuf = new Buf(), shopsAt = HD ? assignShops() : new Map(), extras = new Buf(), cBrick = col('#8a4a38'), cStone = col('#b9b1a3');
   W.buildings.forEach((b, bi) => {
     const p = b.p, n = p.length / 2, kind = b.k;
     const style = KIND_STYLE[kind] ?? 0;
@@ -564,7 +591,8 @@ function buildCity() {
     const insD = Math.max(1.2, Math.min(3.4, Math.sqrt(Math.abs(sa)) * 0.2));
     const inner = HD && !pitched && riseIn > 0.8 && kind !== 2 && n <= 14 && Math.abs(sa) < 1800 ? insetPoly(p, insD, sa) : null;
     const h = Math.max(y0 + 2.5, base + b.h + (pitched || inner ? 0 : riseIn * 0.45));
-    const shop = HD && (style === 0 || style === 4) && b.h >= 6 && hash(bi + 21) < 0.2;
+    const nVar = HD ? HDW.upper[style].length : 1, vr = (hash(bi + 17) * nVar) | 0;
+    const bayW = Math.max(2.4, Math.min(4.6, HINTS.get(bi) || (style === 1 ? 3.4 + hash(bi + 23) * 0.8 : style === 0 || style === 4 ? 2.8 + hash(bi + 23) * 1.1 : 4)));
     let acc = hash(bi + 3) * 16;
     const eaveC = shade(col(ROOF_TINTS[kind] || ROOF_TINTS[0]), 0.62);
     for (let i = 0; i < n; i++) {
@@ -593,17 +621,42 @@ function buildCity() {
           bf.tri([x0, yb, z0], [x1, h, z1], [x0, h, z0], nrm, [U0, vOf(yb)], [U1, vOf(h)], [U0, vOf(h)]);
         }
       } else if (HD) {
-        // three strips: foundation below street level, the ground floor (doors, garages, shops), then whole floors up to the eaves
-        const quad = (bf, ya, yb, ua, ub, va, vb, c) => {
-          const a0 = [ax, ya, az], b0 = [bx, ya, bz], b1 = [bx, yb, bz], a1 = [ax, yb, az];
+        // foundation below street level, the ground floor (doors and garages towards the street, real shops), then whole floors up to the eaves;
+        // every stretch of wall shows a whole number of window bays, of this building's own width
+        const quad = (bf, s0, s1, ya, yb, ua, ub, va, vb, c) => {
+          const xa = ax + dx * s0 / L, za = az + dz * s0 / L, xb = ax + dx * s1 / L, zb = az + dz * s1 / L;
+          const a0 = [xa, ya, za], b0 = [xb, ya, zb], b1 = [xb, yb, zb], a1 = [xa, yb, za];
           bf.tri(a0, b0, b1, nrm, [ua, va], [ub, va], [ub, vb], c); bf.tri(a0, b1, a1, nrm, [ua, va], [ub, vb], [ua, vb], c);
         };
-        const gy = Math.min(h - 0.5, Math.max(groundH(ax, az), groundH(bx, bz)) + 0.3), fy = Math.min(h, gy + 3.2);
-        if (gy > y0 + 0.02) quad(walls[3], y0, gy, u0, u1, 0, (gy - y0) / 12.8, [tint[0] * 0.72, tint[1] * 0.72, tint[2] * 0.72]);
-        const gs = shop ? SHOP_STYLE : style, ud = gs === SHOP_STYLE ? 32 : 16;
-        if (L > 2.2 || gs === 3) quad(gwalls[gs], gy, fy, acc / ud, (acc + L) / ud, 0, (fy - gy) / 3.2, tint);
-        else quad(walls[3], gy, fy, u0, u1, 0, (fy - gy) / 12.8, tint); // slivers of wall stay plain
-        if (h > fy + 0.05) { const nf = Math.round((h - fy) / 3.2); quad(walls[style], fy, h, u0, u1, 0, nf > 0 ? nf / 4 : (h - fy) / 12.8, tint); }
+        const plain = UB[3][0], dark = [tint[0] * 0.72, tint[1] * 0.72, tint[2] * 0.72];
+        const gy = Math.min(h - 0.5, Math.max(groundH(ax, az), groundH(bx, bz)) + 0.3), fy = Math.min(h, gy + 3.2), gv = (fy - gy) / 3.2;
+        if (gy > y0 + 0.02) quad(plain, 0, L, y0, gy, u0, u1, 0, (gy - y0) / 12.8, dark);
+        const street = roadEdge((ax + bx) / 2 + nrm[0] * 3, (az + bz) / 2 + nrm[2] * 3)[0] < 13 || shopsAt.has(bi + ':' + i);
+        const bays = (s0, s1, bf, ya, yb, va, vb, seed) => {
+          const len = s1 - s0; if (len < 0.05) return;
+          if (len < 1.7) return quad(plain, s0, s1, ya, yb, s0 / 16, s1 / 16, 0, (yb - ya) / 12.8, tint); // slivers of wall stay plain
+          const nb = Math.max(1, Math.round(len / bayW)), k = (hash(seed) * 4) | 0;
+          quad(bf, s0, s1, ya, yb, k / 4, (k + nb) / 4, va, vb, tint);
+        };
+        let at = 0;
+        for (const sp of shopsAt.get(bi + ':' + i) || []) {
+          bays(at, sp.s0, street ? GB[style][vr] : UB[style][vr], gy, fy, 0, street ? gv : gv / 4, bi * 7 + i * 3 + at);
+          const inf = shopSet.info[sp.si], [su0, sv0, su1, sv1] = inf.uv;
+          quad(shopBuf, sp.s0, sp.s1, gy, fy, su0, su1, sv0, sv0 + (sv1 - sv0) * gv, null);
+          if (inf.awning && fy - gy > 3) { // canvas awning over the shop window
+            const P = (s2, o, y) => [ax + dx * s2 / L + nrm[0] * o, y, az + dz * s2 / L + nrm[2] * o], c = col(inf.col).map(v => v * 0.8);
+            const A = P(sp.s0 + 0.2, 0.05, gy + 2.42), B = P(sp.s1 - 0.2, 0.05, gy + 2.42), C = P(sp.s1 - 0.2, 1.1, gy + 2.12), D = P(sp.s0 + 0.2, 1.1, gy + 2.12), nu = [nrm[0] * 0.37, 0.93, nrm[2] * 0.37], nd = [-nu[0], -nu[1], -nu[2]];
+            extras.tri(A, D, C, nu, null, null, null, c); extras.tri(A, C, B, nu, null, null, null, c);
+            extras.tri(A, C, D, nd, null, null, null, c); extras.tri(A, B, C, nd, null, null, null, c);
+          }
+          at = sp.s1;
+        }
+        bays(at, L, street ? GB[style][vr] : UB[style][vr], gy, fy, 0, street ? gv : gv / 4, bi * 7 + i * 3 + at + 1);
+        if (h > fy + 0.05) {
+          const nf = Math.round((h - fy) / (style === 1 ? 2.8 : 3));
+          if (nf < 1) quad(plain, 0, L, fy, h, u0, u1, 0, (h - fy) / 12.8, tint);
+          else bays(0, L, UB[style][vr], fy, h, 0, nf / 4, bi * 11 + i * 5);
+        }
       } else {
         walls[style].tri(A0, B0, B1, nrm, [u0, v0], [u1, v0], [u1, v1], tint);
         walls[style].tri(A0, B1, A1, nrm, [u0, v0], [u1, v1], [u0, v1], tint);
@@ -645,7 +698,7 @@ function buildCity() {
       for (const [u, v, r] of [[a1, a2, rb], [a3, a0, ra]]) {
         const gx = r[0] - cx, gz = r[1] - cz, gl = Math.hypot(gx, gz) || 1;
         const L = len(u, v), v0 = (h - y0) / 12.8, v1 = (h + rise - y0) / 12.8;
-        walls[HD ? 3 : style].tri(V(u, h), V(v, h), V(r, h + rise), [gx / gl, 0, gz / gl], [0, v0], [L / 16, v0], [L / 32, v1], tint);
+        (HD ? UB[3][0] : walls[style]).tri(V(u, h), V(v, h), V(r, h + rise), [gx / gl, 0, gz / gl], [0, v0], [L / 16, v0], [L / 32, v1], tint);
       }
       if (HD) for (const t of hash(bi + 31) < 0.5 ? [0.22] : [0.2, 0.8]) boxBuf(extras, ra[0] + (rb[0] - ra[0]) * t, ra[1] + (rb[1] - ra[1]) * t, 0.6, 0.6, h + rise - 0.6, h + rise + 0.9, hash(bi + 5) < 0.6 ? cBrick : cStone);
     } else if (inner) {
@@ -684,10 +737,13 @@ function buildCity() {
     const m = new THREE.Mesh(bf.geo(), wallMats[i]);
     m.castShadow = m.receiveShadow = true; scene.add(m);
   });
-  gwalls.forEach((bf, i) => {
-    if (!bf.p.length) return;
-    const m = new THREE.Mesh(bf.geo(), gfMats[i]); m.castShadow = m.receiveShadow = true; scene.add(m);
-  });
+  if (HD) {
+    for (const [bufs, mats] of [[UB, HDW.upper], [GB, HDW.ground]]) bufs.forEach((arr, si) => arr.forEach((bf, vi) => {
+      if (!bf.p.length) return;
+      const m = new THREE.Mesh(bf.geo(), mats[si][vi]); m.castShadow = m.receiveShadow = true; scene.add(m);
+    }));
+    if (shopBuf.p.length) { const m = new THREE.Mesh(shopBuf.geo(), shopSet.mat); m.castShadow = m.receiveShadow = true; scene.add(m); }
+  }
   if (extras.p.length) { const m = new THREE.Mesh(extras.geo(), new THREE.MeshLambertMaterial({ vertexColors: true })); m.castShadow = m.receiveShadow = true; scene.add(m); }
   const rm = new THREE.Mesh(roofs.geo(), roofMat); rm.castShadow = rm.receiveShadow = true; scene.add(rm);
 }
