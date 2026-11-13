@@ -247,6 +247,9 @@ Les deux artifacts de travail resteront ceux sur lesquels on republie. Pour ne r
 - « Gangstamen HD (référence 2026-11-13) »
 - « Gangstamen classique (référence 2026-11-13) »
 
-Leurs liens sont donnés dans la conversation d'origine ; les retrouver dans la galerie des artifacts de l'utilisateur (claude.ai/code/artifacts). Artifacts de travail (à mettre à jour) : classique `https://claude.ai/artifact/8qmc5b2RMAPv71rtScT7bC`, HD `https://claude.ai/artifact/BPok545VCEruvLU1Y8z9cf`.
+- Référence HD : `https://claude.ai/artifact/JWH66Pm5HUyYNyY4W1cdua`
+- Référence classique : `https://claude.ai/artifact/RMZCtkzA3UGBdQ6GfKuvZe`
+
+Elles sont privées (propriétaire seul) ; la galerie des artifacts est à claude.ai/code/artifacts. Ce sont des copies à l'identique du code, sauf le titre de la page. Artifacts de travail (à mettre à jour) : classique `https://claude.ai/artifact/8qmc5b2RMAPv71rtScT7bC`, HD `https://claude.ai/artifact/BPok545VCEruvLU1Y8z9cf`.
 
 Dans une nouvelle conversation, pour republier un artifact existant : le lire d'abord (`read`), puis publier le fichier avec l'URL ; ne pas oublier la déclaration `capabilities` de la section 8.
