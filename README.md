@@ -48,6 +48,8 @@ En écran partagé et en ligne, on choisit entre deux règles :
 
 **Fin de partie** : on règle un nombre de KO à atteindre (10, 20, 30 ou sans) et une durée (5, 10, 15 min ou sans). La partie s'arrête au premier des deux seuils atteint. Un écran de résultats affiche le vainqueur et le classement, avec un bouton *Revanche* qui remet les scores à zéro et tout le monde au départ. En ligne, ces réglages sont ceux du créateur, et seul l'hôte déclare la fin et lance la revanche, pour que tout le monde voie le même résultat. En solo, le réglage se trouve dans *Son et options*.
 
+**Cinématique d'intro** : au lancement, après un clic ou une touche, une séquence d'environ 35 secondes tournée dans le moteur du jeu présente le quartier et les deux bandes, calée sur les mesures de la musique. Échap, Entrée, Espace, un clic ou un bouton de manette la passent. Elle se désactive ou se revoit dans *Son et options*.
+
 ## Commandes
 
 | | Gaz / frein | Tourner | Tir | Frein à main | Caméra | Remise en route |
