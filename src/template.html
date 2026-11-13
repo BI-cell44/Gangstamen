@@ -348,7 +348,7 @@ body.cine #logo, body.cine #credit { display: none; }
       <div class="row"><span class="lab">Équipe</span><div class="seg" id="tSeg"><button class="mbtn" data-t="-1">Auto</button><button class="mbtn" data-t="0">Rapaces</button><button class="mbtn" data-t="1">Chantenaysiens</button></div></div>
       <div id="netStatus" class="netstatus">Connexion…</div>
       <div id="games" class="games"></div>
-      <div class="row"><span class="lab">Nouvelle partie</span><div class="seg" id="oSeg"><button class="mbtn" data-m="0">Chacun pour soi</button><button class="mbtn" data-m="1">Par équipes</button></div></div>
+      <div class="row"><span class="lab">Nouvelle partie</span><div class="seg wrap" id="oSeg"><button class="mbtn" data-m="0">Chacun pour soi</button><button class="mbtn" data-m="1">Par équipes</button><button class="mbtn hdOnly" data-m="3" hidden>Roi de la colline</button><button class="mbtn hdOnly" data-m="4" hidden>Course</button></div></div>
       <div class="row"><span class="lab">Fin de partie</span><div class="seg goalSeg"><button class="mbtn" data-g="10">10 KO</button><button class="mbtn" data-g="20">20 KO</button><button class="mbtn" data-g="30">30 KO</button><button class="mbtn" data-g="0">Sans</button></div></div>
       <div class="row"><span class="lab">Durée</span><div class="seg limitSeg"><button class="mbtn" data-l="5">5 min</button><button class="mbtn" data-l="10">10 min</button><button class="mbtn" data-l="15">15 min</button><button class="mbtn" data-l="0">Sans</button></div></div>
       <div class="menu"><button id="create" class="big">Créer une partie</button><button class="mbtn" data-go="vMain">Retour</button></div>
@@ -2500,7 +2500,7 @@ async function netInit() {
 function lobbyGames() {
   if (!Net.api) return [];
   const out = [];
-  for (const p of Net.api.peers()) { const g = p.presence && p.presence.gm; if (g && typeof g.code === 'string' && /^[a-z0-9]{4}$/.test(g.code) && !p.sameTab) out.push({ code: g.code, n: Math.max(1, Math.min(12, +g.n || 1)), host: String(g.host || '?').slice(0, 14), md: g.md === 1 ? 1 : 0, gl: [10, 20, 30].includes(g.gl) ? g.gl : 0, tl: [5, 10, 15].includes(g.tl) ? g.tl : 0 }); }
+  for (const p of Net.api.peers()) { const g = p.presence && p.presence.gm; if (g && typeof g.code === 'string' && /^[a-z0-9]{4}$/.test(g.code) && !p.sameTab) out.push({ code: g.code, n: Math.max(1, Math.min(12, +g.n || 1)), host: String(g.host || '?').slice(0, 14), md: g.md === 1 ? 1 : 0, gx: [3, 4].includes(g.gx) ? g.gx : 0, gl: [10, 20, 30].includes(g.gl) ? g.gl : 0, tl: [5, 10, 15].includes(g.tl) ? g.tl : 0 }); }
   return out;
 }
 function renderGames() {
@@ -2516,9 +2516,9 @@ function renderGames() {
   if (!games.length) { const e = document.createElement('div'); e.className = 'empty'; e.textContent = 'Aucune partie pour l’instant : créez-en une.'; box.replaceChildren(e); return; }
   box.replaceChildren(...games.map(g => {
     const b = document.createElement('button'); b.className = 'mbtn';
-    b.textContent = 'Partie ' + g.code.toUpperCase() + ' · ' + g.host + ' · ' + (g.md ? 'Par équipes' : 'Chacun pour soi') + (g.gl ? ' · ' + g.gl + ' KO' : '') + (g.tl ? ' · ' + g.tl + ' min' : '') + ' · ' + g.n + '/12';
+    b.textContent = 'Partie ' + g.code.toUpperCase() + ' · ' + g.host + ' · ' + (g.gx === 3 ? 'Roi de la colline' : g.gx === 4 ? 'Course' : g.md ? 'Par équipes' : 'Chacun pour soi') + (g.gl ? ' · ' + g.gl + ' KO' : '') + (g.tl ? ' · ' + g.tl + ' min' : '') + ' · ' + g.n + '/12';
     b.disabled = g.n >= 12;
-    b.addEventListener('click', () => startOnline(g.code, false, g.md, g.gl, g.tl));
+    b.addEventListener('click', () => startOnline(g.code, false, g.md, g.gl, g.tl, g.gx));
     return b;
   }));
 }
@@ -2565,7 +2565,7 @@ function becomeHost() {
   for (const r of rivals) { r.proxy = false; if (!r.ai) r.ai = { mode: 'cruise', target: nearestNode(r.x, r.z), prev: -1, stuck: 0, back: 0, lost: 0, burst: 0, firing: 0 }; }
   if (started) flashAll('Vous êtes l’hôte', 'Vous faites rouler les voitures du quartier');
 }
-async function startOnline(code, create, md, gl, tl) {
+async function startOnline(code, create, md, gl, tl, gxm) {
   if (!Net.api) return;
   settings.nick = ($('nick').value || '').trim().slice(0, 14) || 'Gangsta' + ((Math.random() * 90 + 10) | 0); saveSettings();
   if (create) code = Array.from({ length: 4 }, () => 'abcdefghjkmnpqrstuvwxyz23456789'[(Math.random() * 31) | 0]).join('');
@@ -2574,7 +2574,8 @@ async function startOnline(code, create, md, gl, tl) {
   const others = room.peers().filter(p => !p.sameTab && p.presence && Array.isArray(p.presence.c)).length;
   if (!create && others >= 12) { room.leave(); $('netStatus').textContent = 'Partie pleine (12 joueurs).'; return; }
   Net.room = room; Net.code = code; mode = 'online';
-  teamMode = create ? !!settings.netTeams : !!md;
+  Net.gxm = HD ? (create ? (settings.netGmode || 0) : (gxm || 0)) : 0;
+  teamMode = Net.gxm ? false : create ? !!settings.netTeams : !!md;
   setupMatch(create ? settings.goal : gl || 0, create ? settings.limit : tl || 0);
   Net.team = -1;
   if (teamMode) { // chosen team, or the smaller one
@@ -2601,6 +2602,8 @@ async function startOnline(code, create, md, gl, tl) {
   room.on('hb', m => { const d = m.data || {}; if (!Net.isHost) return; const r = rivals[+d.i | 0]; if (r && typeof d.d === 'number') damage(r, Math.min(40, Math.max(0, d.d)), { remotePeer: m.peer }); });
   room.on('ko', m => { const d = m.data || {}; const L = locals[0]; const victim = String(d.nick || 'un joueur').slice(0, 14); if (d.by === Net.me && L) credit(L.car, 150, victim + ' au tapis'); else { const R = Net.remotes.get(d.by); feed(victim + ' démoli par ' + (R ? R.nick : 'un joueur')); } });
   room.on('qc', m => { if (gx) gx.chatIn(m.peer, m.data); });
+  room.on('rk', m => { if (gx) gx.netIn('rk', m.peer, m.data); });
+  room.on('bl', m => { if (gx) gx.netIn('bl', m.peer, m.data); });
   room.on('bko', m => { const d = m.data || {}; const L = locals[0]; if (d.by === Net.me && L) credit(L.car, 100, botLabel(rivals[+d.i | 0]) + ' au tapis'); });
   startGame('online');
 }
@@ -2630,7 +2633,7 @@ function netTick(dt, now) {
   if (!Net.room) return;
   const L = locals[0]; if (!L) return;
   // lobby advert (host only), every 2 s
-  if (Net.isHost && (!Net.lastAdvert || now - Net.lastAdvert > 2000)) { Net.lastAdvert = now; Net.api.presence({ gm: { code: Net.code, n: Net.remotes.size + 1, host: settings.nick, md: teamMode ? 1 : 0, gl: Match.goal, tl: Match.limit } }).catch(() => { }); }
+  if (Net.isHost && (!Net.lastAdvert || now - Net.lastAdvert > 2000)) { Net.lastAdvert = now; Net.api.presence({ gm: { code: Net.code, n: Net.remotes.size + 1, host: settings.nick, md: teamMode ? 1 : 0, gx: Net.gxm || 0, gl: Match.goal, tl: Match.limit } }).catch(() => { }); }
   if (!Net.isHost && Net.lastAdvert) { Net.lastAdvert = 0; Net.api.presence({ gm: null }).catch(() => { }); }
   // own state ~30 Hz
   if (now - Net.lastSend > 33) {
@@ -2715,10 +2718,10 @@ function renderSlots() {
 document.querySelectorAll('#nSeg button').forEach(b => b.addEventListener('click', () => { settings.nPlayers = +b.dataset.n; saveSettings(); renderSlots(); }));
 document.querySelectorAll('#mSeg button').forEach(b => b.addEventListener('click', () => { settings.gmode = +b.dataset.m; settings.teams = b.dataset.m === '1' || b.dataset.m === '2'; saveSettings(); renderSlots(); b.focus(); }));
 function renderOnlineSegs() {
-  document.querySelectorAll('#oSeg button').forEach(b => b.classList.toggle('on', +b.dataset.m === (settings.netTeams ? 1 : 0)));
+  document.querySelectorAll('#oSeg button').forEach(b => b.classList.toggle('on', +b.dataset.m === (HD && settings.netGmode ? settings.netGmode : settings.netTeams ? 1 : 0)));
   document.querySelectorAll('#tSeg button').forEach(b => b.classList.toggle('on', +b.dataset.t === settings.netTeam));
 }
-document.querySelectorAll('#oSeg button').forEach(b => b.addEventListener('click', () => { settings.netTeams = b.dataset.m === '1'; saveSettings(); renderOnlineSegs(); }));
+document.querySelectorAll('#oSeg button').forEach(b => b.addEventListener('click', () => { settings.netTeams = b.dataset.m === '1'; settings.netGmode = +b.dataset.m >= 3 ? +b.dataset.m : 0; saveSettings(); renderOnlineSegs(); }));
 document.querySelectorAll('#tSeg button').forEach(b => b.addEventListener('click', () => { settings.netTeam = +b.dataset.t; saveSettings(); renderOnlineSegs(); }));
 renderOnlineSegs();
 function renderEndSegs() {

@@ -200,7 +200,7 @@ const gx = !HD ? null : (() => {
       const vx = c.vx / c.speed, vz = c.vz / c.speed, along = dx * vx + dz * vz, lat = dx * vz - dz * vx;
       if (d < 2.3) { // too late: knocked over, gets back up a bit later
         p.state = 'down'; p.timer = 2.5 + R(); p.ox += vx * 1.5; p.oz += vz * 1.5; sfx.hit();
-        if (c.local) { addHeat(c, 0.7); shout(c, true); }
+        if (c.local) { addHeat(c, 0.45); shout(c, true); }
         break;
       }
       if (along > 0 && along < c.speed * 1.4 + 3 && Math.abs(lat) < 3.2 && p.state === 'walk') {
@@ -292,12 +292,12 @@ const gx = !HD ? null : (() => {
   function damageNpc(c, d, by) {
     if (!c.alive) return;
     c.hp -= d;
-    if (by && by.local) { addHeat(by, d * (c.npc === 'cop' ? 0.05 : 0.025)); if (c.npc === 'civ') { c.nav.panic = 8; } }
+    if (by && by.local) { addHeat(by, d * (c.npc === 'cop' ? 0.035 : 0.012)); if (c.npc === 'civ') { c.nav.panic = 8; } }
     if (c.npc === 'civ' && by && by.local && !c.chase && c.npc === 'civ' && c.hp > 0 && R() < 0.02) sfx.horn && sfx.horn();
     if (c.hp > 0) return;
     c.alive = false; c.dead = 0; explode(c.x, c.z);
     c.mesh.userData.mBody.color.setHex(0x1a1414);
-    if (by && by.local) { addHeat(by, c.npc === 'cop' ? 1.6 : 1.1); if (gx.dj) gx.dj(c.npc === 'cop' ? 'copko' : 'civko'); }
+    if (by && by.local) { addHeat(by, c.npc === 'cop' ? 1.2 : 0.6); if (gx.dj) gx.dj(c.npc === 'cop' ? 'copko' : 'civko'); }
     if (gx.onNpcDown) gx.onNpcDown(c, by);
   }
   function start(kind) {
@@ -648,11 +648,19 @@ const gx = !HD ? null : (() => {
   }
   // rockets: slow, smoky, a big blast where they land
   const rockets = [];
-  function fireRocket(from, target) {
-    const [fx, fz] = from.fwd, m = mkRocket(false); hd.linearize(m); m.traverse(o => { o.userData.hdLinear = true; }); scene.add(m);
-    const [ox, oy, oz] = muzzleOf(from);
-    rockets.push({ m, x: ox + fx * 1.5, y: oy + 0.15, z: oz + fz * 1.5, vx: fx * 42 + from.vx, vz: fz * 42 + from.vz, from, target, t: 0 });
+  function fireRocket(from, target, ghost) { // ghost: another player's rocket, drawn here, its damage is counted on their side
+    const [fx, fz] = ghost ? [ghost.vx / 42, ghost.vz / 42] : from.fwd, m = mkRocket(false); hd.linearize(m); m.traverse(o => { o.userData.hdLinear = true; }); scene.add(m);
+    const [ox, oy, oz] = ghost ? [ghost.x, surfaceH(ghost.x, ghost.z) + 1, ghost.z] : muzzleOf(from);
+    const r = { m, x: ox + fx * 1.5, y: oy + 0.15, z: oz + fz * 1.5, vx: fx * 42 + (ghost ? 0 : from.vx), vz: fz * 42 + (ghost ? 0 : from.vz), from, target, t: 0, ghost: !!ghost };
+    rockets.push(r);
+    if (!ghost && from.local && mode === 'online') Net.emit('rk', { x: Math.round(r.x * 10) / 10, z: Math.round(r.z * 10) / 10, vx: Math.round(r.vx * 10) / 10, vz: Math.round(r.vz * 10) / 10 });
     sfx.whoosh(); hd.muzzle(ox, oy, oz, false, fx, fz);
+  }
+  function netIn(topic, peer, d) { // rockets and blasts from the other players, for the eyes only
+    if (!d || ![d.x, d.z].every(v => typeof v === 'number' && isFinite(v) && Math.abs(v) < 3000)) return;
+    const R = Net.remotes.get(peer);
+    if (topic === 'rk' && [d.vx, d.vz].every(v => typeof v === 'number' && isFinite(v) && Math.abs(v) < 200)) fireRocket(R ? R.car : { team: -9 }, null, d);
+    if (topic === 'bl') explode(d.x, d.z);
   }
   function blast(x, z, by, dmg, r) {
     explode(x, z);
@@ -660,8 +668,10 @@ const gx = !HD ? null : (() => {
       if (!c.alive || c === by && dmg < 0) continue;
       const d = Math.hypot(c.x - x, c.z - z); if (d > r) continue;
       const k = 1 - d / r; c.vx += (c.x - x) / (d || 1) * 14 * k; c.vz += (c.z - z) / (d || 1) * 14 * k; c.yv = (c.yv || 0) + 7 * k;
-      if (c.remote) continue;
-      if (c === by) damage(c, dmg * k * 0.35, null); else if (c.friendly && by && by.local) continue; else damage(c, dmg * k, by);
+      if (c === by) { if (!c.remote) damage(c, dmg * k * 0.35, null); }
+      else if (c.friendly && by && by.local) continue;
+      else if (by && by.local) applyHit(by, c, dmg * k, c.x, c.z); // routes to remote players and to the host's bots online
+      else if (!c.remote && !c.proxy) damage(c, dmg * k, by);
     }
     for (const f of furniture) if (!f.broken && Math.hypot(f.x - x, f.z - z) < r) breakFurniture(f, x, z);
   }
@@ -685,7 +695,7 @@ const gx = !HD ? null : (() => {
       r.m.position.set(r.x, r.y, r.z); r.m.rotation.set(0, Math.atan2(-r.vx, -r.vz), 0);
       hd.smoke(r.x - ux * 0.5, r.y, r.z - uz * 0.5, (R() - 0.5), 0.5, (R() - 0.5), 0.35, 4, 1.2, 0.75, 0.45);
       hd.fire(r.x - ux * 0.45, r.y, r.z - uz * 0.45, -ux * 6, 0, -uz * 6, 0.45, 0.08, 1.2);
-      if (hit) { scene.remove(r.m); rockets.splice(rockets.indexOf(r), 1); blast(hit[0], hit[1], r.from, 48, 8); }
+      if (hit) { scene.remove(r.m); rockets.splice(rockets.indexOf(r), 1); if (r.ghost) explode(hit[0], hit[1]); else blast(hit[0], hit[1], r.from, 48, 8); }
     }
   }
   // mines: dropped behind, armed after a second, go off when a car rolls over them
@@ -701,7 +711,7 @@ const gx = !HD ? null : (() => {
       if (mn.t < 1) continue;
       for (const c of [...allPlayerCars(), ...rivals, ...npcs, ...extras]) {
         if (!c.alive || (c === mn.owner && mn.t < 3)) continue;
-        if (Math.hypot(c.x - mn.x, c.z - mn.z) < 2.6) { scene.remove(mn.m); mines.splice(mines.indexOf(mn), 1); blast(mn.x, mn.z, mn.owner, 52, 6.5); break; }
+        if (Math.hypot(c.x - mn.x, c.z - mn.z) < 2.6) { scene.remove(mn.m); mines.splice(mines.indexOf(mn), 1); blast(mn.x, mn.z, mn.owner, 52, 6.5); if (mn.owner.local && mode === 'online') Net.emit('bl', { x: Math.round(mn.x), z: Math.round(mn.z) }); break; }
       }
       if (mn.t > 90) { scene.remove(mn.m); mines.splice(mines.indexOf(mn), 1); }
     }
@@ -1036,7 +1046,7 @@ const gx = !HD ? null : (() => {
     for (const L of locals) { L.ammo = { rockets: 0, mines: 0, nitro: 1 }; L.weapon = null; }
     if (kind === 'solo') { const L = locals[0]; L.respect = settings.bank || 0; applyUpgrades(L); }
     if (mission && kind !== 'solo') cleanupMission();
-    stopMode(); if (kind === 'split' && settings.gmode >= 2) setupMode(settings.gmode);
+    stopMode(); if (kind === 'split' && settings.gmode >= 2) setupMode(settings.gmode); else if (kind === 'online' && Net.gxm) setupMode(Net.gxm);
   }
 
   // ---------- the radio host comments on the action ----------
@@ -1145,8 +1155,10 @@ const gx = !HD ? null : (() => {
       const h = gm.hill, inside = c => c.alive && Math.hypot(c.x - h.x, c.z - h.z) < h.r;
       const ps = locals.filter(L => inside(L.car)), bots = rivals.filter(inside);
       const teams = new Set(ps.map(L => teamMode ? 't' + L.team : 'p' + L.slot)); bots.forEach(r => teams.add(teamMode ? 't' + r.team : 'bots'));
+      for (const R of Net.remotes.values()) if (inside(R.car)) teams.add('r' + R.peer);
       const owner = teams.size === 1 ? [...teams][0] : null;
       for (const L of ps) if (owner && (teamMode ? 't' + L.team : 'p' + L.slot) === owner) { L.hillT += dt; L.kills = Math.floor(L.hillT); }
+      if (owner && owner !== gm.owner && owner[0] === 'p') say('Tu tiens la place !', { rate: 1.2 });
       if (owner !== gm.owner) { gm.owner = owner; h.ring.material.color.setHex(owner ? (owner === 'bots' ? 0xff3b3b : 0x7be07b) : 0xf2c81e).multiplyScalar(3); }
       h.beam.material.opacity = teams.size > 1 ? 0.35 + Math.sin(now / 90) * 0.15 : 0.2;
     } else if (gm.kind === 4) {
@@ -1162,8 +1174,8 @@ const gx = !HD ? null : (() => {
       gm.cps.forEach((m, i) => { const next = locals.some(L => L.cp === i); m.beam.material.opacity = next ? 0.3 + Math.sin(now / 150) * 0.1 : 0.05; m.ring.visible = next || locals.some(L => L.cp < i); });
     }
     if (locals.length === 1 || true) {
-      const txt = gm.kind === 2 ? 'Rapaces ' + gm.score[0] + ' – ' + gm.score[1] + ' Chantenaysiens' : gm.kind === 3 ? (gm.owner ? (gm.owner === 'bots' ? 'Les Rapaces tiennent la place' : gm.owner[0] === 't' ? TEAMS[+gm.owner[1]].short + ' tiennent la place' : 'J' + (+gm.owner.slice(1) + 1) + ' tient la place') : 'Place libre ou disputée')
-        : locals.map(L => 'J' + (L.slot + 1) + ' ' + Math.min(L.cp, gm.cps.length) + '/' + gm.cps.length).join(' · ');
+      const txt = gm.kind === 2 ? 'Rapaces ' + gm.score[0] + ' – ' + gm.score[1] + ' Chantenaysiens' : gm.kind === 3 ? (gm.owner ? (gm.owner === 'bots' ? 'Les Rapaces tiennent la place' : gm.owner[0] === 'r' ? ((Net.remotes.get(gm.owner.slice(1)) || {}).nick || 'Un joueur') + ' tient la place' : gm.owner[0] === 't' ? TEAMS[+gm.owner[1]].short + ' tiennent la place' : 'J' + (+gm.owner.slice(1) + 1) + ' tient la place') : 'Place libre ou disputée')
+        : locals.map(L => (mode === 'online' ? 'Toi' : 'J' + (L.slot + 1)) + ' ' + Math.min(L.cp, gm.cps.length) + '/' + gm.cps.length).join(' · ') + (mode === 'online' && Net.remotes.size ? ' · en tête : ' + Math.max(0, ...[...Net.remotes.values()].map(R => R.kills)) : '');
       objective(MODE_NAMES[gm.kind], txt); objDir(null);
     }
   }
@@ -1316,7 +1328,7 @@ const gx = !HD ? null : (() => {
     if (LM.clockM) LM.clockM.emissiveIntensity = 0.15 + n * 2.2;
     if (LM.titanLights) LM.titanLights.color.setRGB((performance.now() / 700 | 0) % 2 ? 8 * n + 0.6 : 0.4, 0.3, 0.2);
   }
-  const api = { dj, quickChat, chatIn, step: gameStep, world, landmarkTick, tick, start: startHook, cars: () => npcs.concat(extras), damage: damageNpc, addHeat, say, peds: () => peds, stars, special, startMission, renderCampaign, cleanupMission, MISSIONS,
+  const api = { netIn, dj, quickChat, chatIn, step: gameStep, world, landmarkTick, tick, start: startHook, cars: () => npcs.concat(extras), damage: damageNpc, addHeat, say, peds: () => peds, stars, special, startMission, renderCampaign, cleanupMission, MISSIONS,
     get gmode() { return gm ? gm.kind : 0; }, teamScores: modeTeamScores, goalText, rematch: rematchMode,
     get blocking() { return blocking; }, get mission() { return mission; }, foes: () => extras.filter(c => c.alive && c.team === 1), saveBank, pus: () => pus, furniture: () => furniture, garage: GARAGE,
     get onGarage() { return gx_onGarage; },
