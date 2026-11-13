@@ -1356,7 +1356,7 @@ const hd = !HD ? null : (() => {
     shared.disc = new THREE.MeshStandardMaterial({ color: lin(0x55585e), roughness: 0.45, metalness: 0.9 });
     shared.ind = new THREE.MeshStandardMaterial({ color: lin(0xff8a14), emissive: lin(0xff7a10), emissiveIntensity: 0.5, roughness: 0.3 });
     shared.seam = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.55, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
-    Object.values(shared).forEach(m => done.add(m));
+    Object.values(shared).forEach(m => { done.add(m); m.userData.shared = true; });
     return shared;
   }
   function wheelGeos(R) {
@@ -1367,6 +1367,7 @@ const hd = !HD ? null : (() => {
     const spoke = new THREE.BoxGeometry(0.03, R * 0.6, 0.066).translate(0, R * 0.3, 0);
     const hub = new THREE.CylinderGeometry(R * 0.17, R * 0.2, 0.05, 14).rotateZ(Math.PI / 2);
     const disc = new THREE.CylinderGeometry(R * 0.52, R * 0.52, 0.03, 22).rotateZ(Math.PI / 2);
+    for (const g of [tyre, barrel, lip, spoke, hub, disc]) g.userData.shared = true;
     return { tyre, barrel, lip, spoke, hub, disc, w };
   }
   const wheelCache = {};

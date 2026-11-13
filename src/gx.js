@@ -53,7 +53,13 @@ const gx = !HD ? null : (() => {
     const n = spawnNode(90, 260); if (n < 0) return;
     const c = makeNpc('civ'); placeOnGraph(c, n); npcs.push(c);
   }
-  function removeNpc(c) { const i = npcs.indexOf(c); if (i >= 0) npcs.splice(i, 1); scene.remove(c.mesh); c.mesh.traverse(o => { if (o.geometry && !o.geometry.userData.shared) o.geometry.dispose(); }); }
+  function removeNpc(c) { // free what belongs to this car only (wheels and common materials are shared)
+    const i = npcs.indexOf(c); if (i >= 0) npcs.splice(i, 1); scene.remove(c.mesh);
+    c.mesh.traverse(o => {
+      if (o.geometry && !o.geometry.userData.shared) o.geometry.dispose();
+      for (const m of [].concat(o.material || [])) if (!m.userData.shared) { if (m.map) m.map.dispose(); m.dispose(); }
+    });
+  }
   function blockedAhead(c, range) { // nearest car in a narrow cone ahead
     const [fx, fz] = c.fwd; let best = 1e9;
     for (const o of [...allPlayerCars(), ...rivals, ...npcs]) {
