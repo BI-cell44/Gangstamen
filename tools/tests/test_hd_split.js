@@ -1,0 +1,25 @@
+const { chromium } = require('playwright');
+const fs = require('fs');
+(async () => {
+  const three = fs.readFileSync(process.argv[2]);
+  const html = fs.readFileSync(process.argv[3], 'utf8'); const out = process.argv[4];
+  const browser = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'] });
+  const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  const errs = [];
+  page.on('pageerror', e => errs.push('pageerror: ' + e.message));
+  page.on('console', m => { if (m.type() === 'error') errs.push(m.text().slice(0, 300)); });
+  await page.route('https://cdnjs.cloudflare.com/**', r => r.fulfill({ body: three, contentType: 'application/javascript' }));
+  await page.route('https://fonts.googleapis.com/**', r => r.fulfill({ body: '', contentType: 'text/css' }));
+  await page.setContent('<!doctype html><html><head><meta charset=utf-8></head><body>' + html + '</body></html>', { waitUntil: 'load', timeout: 120000 });
+  await page.waitForFunction(() => !document.getElementById('start').disabled, null, { timeout: 120000 });
+  const click = sel => page.evaluate(s => document.querySelector(s).click(), sel);
+  await page.evaluate(() => __gm.hd.setQuality(1));
+  await click('[data-go="vOpt"]'); await page.waitForTimeout(800); await page.screenshot({ path: out + '_opt.png' });
+  await click('#vOpt [data-go="vMain"]'); await click('[data-go="vSplit"]'); await click('#nSeg [data-n="3"]'); await click('#mSeg [data-m="1"]'); await click('#splitGo');
+  await page.waitForTimeout(5000);
+  await page.keyboard.down('KeyW'); await page.waitForTimeout(5000); await page.keyboard.up('KeyW');
+  await page.screenshot({ path: out + '_split.png' });
+  console.log(JSON.stringify(await page.evaluate(() => ({ q: __gm.hd.quality, float: __gm.hd.floatRT, n: __gm.locals().length, sp: __gm.locals()[0].car.speed | 0 }))));
+  console.log([...new Set(errs)].join('\n') || 'no errors');
+  await browser.close();
+})();
