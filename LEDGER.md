@@ -2,7 +2,7 @@
 
 Ce fichier garde la mémoire du projet : ce qui a été fait et pourquoi, comment reprendre le travail, ce qui reste à faire. À mettre à jour à chaque session (une ligne dans le journal, et cocher ou ajouter dans le reste à faire).
 
-Dernière mise à jour : 13 novembre 2026.
+Dernière mise à jour : 13 novembre 2026 (soir) : branche `hd-ambiance-campagne`.
 
 ## En un coup d'œil
 
@@ -12,10 +12,13 @@ Gangstamen est un jeu de combat de voitures des années 90, inspiré d'Interstat
 |---|---|
 | Code du jeu (source de vérité) | `src/template.html` |
 | Moteur HD (injecté dans le gabarit) | `src/hd.js` |
+| Jeu HD : circulation, police, campagne, garage, bonus, modes, décors (injecté aussi) | `src/gx.js` |
+| Mobilier urbain d'OpenStreetMap | `src/make_furniture.py` → `data/furniture.json` |
 | Construction des deux fichiers | `build.sh` |
 | Données (carte, photos, commerces, ortho) | `data/` |
 | Branche `main` | version publiée comme artifact sur claude.ai (jeu en ligne via la capacité `room`) |
 | Branche `server` | `main` + serveur Node sans dépendance (`server/`), sert aussi la HD sur `/hd` |
+| Branche `hd-ambiance-campagne` | `main` + tout le travail HD de la section 7 ; pas encore fusionnée dans `main` ni dans `server` |
 
 La branche `server` se tient à jour en y fusionnant `main` après chaque changement.
 
@@ -52,6 +55,24 @@ La branche `server` se tient à jour en y fusionnant `main` après chaque change
 - Minicarte : les ennemis hors champ sont de petits triangles au bord, dont la couleur, la taille et l'opacité varient avec la distance (0 à 300 m au-delà du bord). Les coéquipiers n'ont pas de triangle.
 - Cinématique d'intro, tournée dans le moteur du jeu : 13 mesures de la musique (environ 34 secondes). Vue aérienne, remontée du boulevard, présentation des deux bandes, convois lancés l'un contre l'autre, collision, grue sur les épaves et titre. Le morceau se construit pendant la séquence (basse, puis percussions, puis mélodie). Elle se passe avec Échap, Entrée, Espace, un clic ou un bouton de manette, se désactive et se rejoue dans *Son et options*.
 
+### 7. HD : ambiance, vie de quartier, campagne (branche `hd-ambiance-campagne`)
+Tout est dans la HD seulement (`const gx = !HD ? null : …`), sauf le dérapage au frein à main, la collision en trois cercles et les bouts de ponts, communs aux deux versions.
+- **Moment de la journée** (N) : quatre éclairages (après-midi, coucher, heure bleue, nuit) mélangés en continu, mode *Cycle* de 12 min ; la sonde de reflets se recalcule quand la lumière a bougé.
+- **Météo** (B) : sec, pluie, orage, variable. Gouttes autour de la caméra, matériaux mouillés (`wetPatch` dans `hd.js` : plus sombres, brillants, flaques), reflets étirés des lampadaires, gerbes d'eau, éclairs, bruit de pluie et tonnerre. Piège : chaque matériau patché doit avoir sa propre `customProgramCacheKey`, sinon three.js partage un seul shader (la route était devenue blanche).
+- **Circulation** : R5, 205, Twingo (nouvelles carrosseries dans `hd.js`), roulent à droite sur le graphe des rues, freinent derrière les autres, klaxonnent. Libération mémoire des voitures qui disparaissent.
+- **Piétons** (environ 64 en solo) : squelette posé sur le CPU et dessiné en instances (une douzaine d'appels de dessin pour toute la foule) ; marche avec genoux et coudes, pauses où ils regardent autour, fuite bras en l'air, chute puis relève. Tenues variées (jupes, shorts, t-shirts, casquettes, enfants).
+- **Terrasses de cafés** devant les cafés et restaurants d'OpenStreetMap : tables, chaises, parasols rayés, clients assis qui boivent et discutent, qui se lèvent quand une voiture monte sur le trottoir. Les tables se cassent.
+- **Police** : niveau de recherche en étoiles, patrouilles qui suivent les rues, sirène deux tons, tir à 3 étoiles ; on les sème hors de vue ou par une peinture neuve au garage.
+- **Campagne de 7 missions** avec dialogues (voix de synthèse française si le navigateur en a une) : retour au garage, place Jean-Macé, escorte jusqu'à la gare, le Vautour, la police, orage sur la Loire, la Butte. Progression et respect gardés dans `localStorage`.
+- **Garage de Chantenay** sur le boulevard : réparation, munitions, moteur, blindage, mitrailleuses, peinture.
+- **Bonus** : clé à molette (modèle refait : manche effilé percé, mâchoires, molette, poignée rouge), nitro, mines, roquettes, bouclier. Touche spéciale : E, Suppr, 7, Entrée du pavé, B à la manette. Les mines du joueur sont lancées vers un ennemi devant (utile en poursuite), sinon posées derrière ; toutes s'arment au bout de 0,2 s (avant : 1 s, et celles du Vautour ne touchaient jamais le poursuivant).
+- **Conduite** : dérapage au frein à main, sauts, dégâts visibles (tôle froissée, capot, pneu crevé). Collision avec les murs en trois cercles le long de la voiture au lieu d'un cercle de 2 m de rayon : on passe entre deux bâtiments dès que l'écart dépasse 2 m.
+- **Ponts** : les 12 derniers mètres de chaque tablier sont raccordés au terrain (le pont du boulevard près de Jean-Macé était 0,5 m au-dessus de la rue d'un côté).
+- **Radio** (M) : quatre stations procédurales (G-funk, rap, techno, funk) et un animateur qui commente.
+- **Multijoueur** : capture du drapeau, roi de la colline, course de checkpoints en écran partagé ; colline et course aussi en ligne. Choix de la voiture et des couleurs (transmis en ligne), discussion rapide (1 à 6, croix). Roquettes et mines vues et comptées en ligne.
+- **Décors** : mobilier cassable, clocher de Saint-Martin, quais de Loire (mur suivant la berge, bittes, péniche), falaise de la carrière Misery, grue Titan (rapprochée pour être visible).
+- **Options** : ombres, distance de vue, densité de circulation, voix ; joystick tactile.
+
 ### 6. Pistes écartées
 - Street View comme décor : impossible, les conditions de Google interdisent d'en extraire les images, même en local sans diffusion. Les photos Panoramax (libres) servent à la place.
 
@@ -63,6 +84,10 @@ La branche `server` se tient à jour en y fusionnant `main` après chaque change
 | nov. 2026 | Minicarte : triangles de bord selon la distance | beb66dc |
 | 13 nov. 2026 | Cinématique d'intro | c2db855 |
 | 13 nov. 2026 | Ce journal | voir `git log` |
+| 13 nov. 2026 | HD : météo, cycle jour-nuit, circulation, police, campagne, garage, bonus, radio | c02258f |
+| 13 nov. 2026 | HD : modes écran partagé, choix de voiture, lieux emblématiques, options | 15ed72f |
+| 13 nov. 2026 | HD : colline et course en ligne, armes en ligne, mémoire | 224e8f2, f2ca8eb |
+| 13 nov. 2026 | Mines du Vautour, bout de pont, collision entre bâtiments, piétons animés et terrasses, clé à molette, touche spéciale visible | voir `git log` |
 
 Les étapes antérieures sont dans `git log`.
 
@@ -70,12 +95,14 @@ Les étapes antérieures sont dans `git log`.
 
 **Construire** : `sh build.sh` produit `gangstamen.html` et `gangstamen-hd.html` (le second avec `const HD = true`, la photo aérienne intégrée et sans atlas de photos de façades).
 
-**Tester sans carte graphique** : un navigateur sans tête (Playwright, rendu logiciel swiftshader) charge le fichier avec three.js r128 servi en local. L'objet `window.__gm` expose l'état du jeu (`start`, `locals`, `rivals`, `Match`, `Intro`, `step`…). Trois crochets de test existent : `window.__cam` (position de caméra), `window.__trHold` (garder les tirs à l'écran) et `window.__introT` (figer l'intro à un instant donné). `window.__noIntro = true` saute l'écran d'accueil de l'intro.
+**Tester sans carte graphique** : un navigateur sans tête (Playwright, rendu logiciel swiftshader) charge le fichier avec three.js r128 servi en local. L'objet `window.__gm` expose l'état du jeu (`start`, `locals`, `rivals`, `Match`, `Intro`, `step`…). Quatre crochets de test existent : `window.__cam` (caméra relative à la voiture), `window.__camAt = [x, y, z, visée x, y, z]` (caméra libre), `window.__trHold` (garder les tirs à l'écran) et `window.__introT` (figer l'intro à un instant donné). `window.__noIntro = true` saute l'écran d'accueil de l'intro. `__gm.gx` donne accès au module de jeu HD (`startMission(i)`, `cars()`, `peds()`, `customers()`, `mines()`, `pus()`, `special(L)`…), `__gm.hd.amb` à l'ambiance (`t` : 0 jour → 3 nuit, `rain`, `wet`).
 
 **Pièges déjà rencontrés**
 - Le shell du bac à sable n'atteint pas l'IGN : la photo aérienne a été récupérée via le navigateur de l'utilisateur.
 - En navigateur sans tête, le rendu tourne à environ 2 images par seconde : tout test dépendant du temps passe par les crochets ci-dessus.
 - Les couleurs sont écrites en sRGB et converties une seule fois en linéaire en HD (`linearize`, `linMat`).
+- En rendu logiciel, la HD met environ 40 s à démarrer (génération des façades) ; lancer Chromium avec `--disable-accelerated-2d-canvas`, sinon le chargement ne finit jamais. three.js r128 est servi depuis le paquet npm `three@0.128.0` (cdnjs est bloqué par le proxy).
+- Le shell n'atteint pas non plus OpenStreetMap, Overpass, l'IGN ni Panoramax : l'agrandissement de la carte demande d'autoriser ces sites dans l'environnement, ou de lancer les scripts de `src/` ailleurs.
 
 ## Ce qui n'a pas pu être vérifié ici
 
@@ -83,6 +110,9 @@ Les étapes antérieures sont dans `git log`.
 - La synchronisation du son de l'intro (coup de grosse caisse et titre) sur un vrai navigateur, car les captures sont faites en rendu logiciel sans audio.
 - Les vibrations de manette, y compris celle de l'intro.
 - Une partie en ligne avec de vrais joueurs sur claude.ai, et une partie mélangeant classique et HD sur le serveur.
+- Les nouveaux modes en ligne (colline, course), la discussion rapide et les roquettes vues par les autres joueurs : jamais testés à deux.
+- Le ressenti de conduite (dérapage, sauts, collision en trois cercles) et l'équilibre des missions : seulement vérifiés par script.
+- Les voix françaises (synthèse vocale du navigateur) et la radio, sans audio dans les tests.
 
 ## Reste à faire
 
@@ -90,6 +120,14 @@ Les étapes antérieures sont dans `git log`.
 - [ ] **Qualité automatique** : ajouter une case pour désactiver la baisse automatique de qualité, et un délai de grâce d'environ 15 secondes au démarrage pour ignorer les saccades de chargement (le message « Qualité graphique réduite » s'est affiché à tort chez l'utilisateur).
 - [ ] Tester la HD en vrai (fluidité, taille des flammes) et la cinématique avec le son.
 - [ ] Vérifier une vraie partie en ligne à plusieurs.
+
+### Suite de la branche HD
+- [ ] Jouer la campagne en vrai et régler la difficulté (dégâts des mines, vitesse du Vautour, roquettes du Grand Duc, chrono de l'orage).
+- [ ] Fusionner `hd-ambiance-campagne` dans `main`, puis `main` dans `server`.
+- [ ] Agrandir la carte vers la butte Sainte-Anne et les bords de Loire (données OSM, IGN et photo aérienne à télécharger : bloqué ici).
+- [ ] Capture du drapeau en ligne (l'état des drapeaux doit être tenu par l'hôte).
+- [ ] Bonus, circulation et piétons sont propres à chaque joueur en ligne (pas synchronisés).
+- [ ] Vérifier sur une vraie carte graphique le coût de la foule, de la pluie et des terrasses à 4 écrans.
 
 ### Améliorations du jeu
 - [ ] Mairie : le fronton à horloge est une supposition ; le dos et les côtés reprennent la face avant.
@@ -99,7 +137,7 @@ Les étapes antérieures sont dans `git log`.
 - [ ] Nettoyage : un fichier temporaire de 5,6 Mo (`*.tmp`, la photo aérienne) traîne dans `C:\Users\SF\Downloads`.
 
 ### Idées pour plus tard
-- Nouvelles armes et ramassages, missions ou parcours chronométrés, circulation civile, météo et cycle jour-nuit automatique, plus de quartiers de Nantes.
+- ~~Nouvelles armes et ramassages, missions, circulation civile, météo et cycle jour-nuit~~ : faits (section 7). Restent : plus de quartiers de Nantes, parcours chronométrés en solo.
 - Répertoire de textures et de sons propres à la ville (enseignes, tram, cloches).
 
 ## Licences et sources

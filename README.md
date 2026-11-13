@@ -33,14 +33,14 @@ En HD, les façades sans photo exploitable sont dessinées en haute résolution 
 **Ambiance années 90**
 - **Moment de la journée** (touche N ou *Son et options*) : plein jour, coucher de soleil, nuit, ou *Cycle* (une journée de 12 minutes avec heure bleue et aube). Les lampadaires, les fenêtres, l'horloge de Saint-Martin et les feux de la grue Titan s'allument avec la nuit.
 - **Météo** (touche B) : sec, pluie, orage, ou variable. Gouttes autour de la caméra, routes qui s'assombrissent et brillent, flaques, reflets étirés des lampadaires, gerbes d'eau derrière les roues, éclairs et tonnerre, bruit de pluie.
-- **Circulation civile** : R5, 205 et Twingo qui roulent à droite, s'arrêtent derrière les autres et klaxonnent ; des piétons sur les trottoirs qui s'écartent (ou se font renverser et se relèvent).
+- **Circulation civile** : R5, 205 et Twingo qui roulent à droite, s'arrêtent derrière les autres et klaxonnent ; des piétons animés sur les trottoirs (marche, pauses, fuite) qui s'écartent ou se font renverser et se relèvent, et des clients aux terrasses des cafés et restaurants du quartier, qui se lèvent quand une voiture monte sur le trottoir.
 - **Police** : abîmer les voitures des gens, renverser des piétons ou s'en prendre aux policiers fait monter le niveau de recherche (étoiles bleues). Les patrouilles prennent en chasse, sirène deux tons, gyrophares ; à 3 étoiles elles tirent. On les sème en restant hors de vue, ou en passant au garage pour une peinture neuve.
 - **Radio de bord** (touche M) : quatre stations en musique procédurale libre de droits (G-funk, rap français, techno, funk) et un animateur, en synthèse vocale, qui annonce les stations et commente les KO. Les voix se coupent dans *Son et options*.
 
 **Solo**
 - **Campagne** de 7 missions avec dialogues entre les missions (Dédé le garagiste, Nadia, le Grand Duc, le Vautour, l'animateur de Chantenay FM) : retour au quartier, tenir la place Jean-Macé, escorter la 205 de Nadia jusqu'à la gare de Chantenay, poursuivre le Vautour depuis l'église Saint-Martin jusqu'au quai, semer la police, une nuit d'orage sur la Loire, l'assaut final sur la Butte. Progression et respect gagné sont gardés dans le navigateur. Le solo libre (bac à sable) reste disponible.
 - **Garage de Chantenay**, sur le boulevard près de la place Jean-Macé : on s'arrête sur le cercle bleu pour réparer, recharger les armes, gonfler le moteur, blinder la caisse, améliorer les mitrailleuses ou la repeindre. Ça se paie en respect.
-- **Bonus** posés sur la carte, qui réapparaissent : clé à molette (nouveau modèle, réparation), nitro, mines, lance-roquettes au tir lent, bouclier. Touche *arme spéciale* : E (clavier 1), Suppr (clavier 2), 7 (clavier 3), Entrée du pavé (clavier 4), B à la manette, SPÉ en tactile.
+- **Bonus** posés sur la carte, qui réapparaissent : clé à molette (nouveau modèle, réparation), nitro, mines (lancées sur l'ennemi qui est devant, sinon posées derrière), lance-roquettes au tir lent, bouclier. Touche *arme spéciale* : E (clavier 1), Suppr (clavier 2), 7 (clavier 3), Entrée du pavé (clavier 4), B à la manette, SPÉ en tactile.
 - **Conduite** : dérapage au frein à main qui se prolonge si on garde les gaz, sauts sur les bosses et les rampes des ponts (réception brutale = dégâts), dégâts visibles (tôle froissée, capot qui se soulève, pneu crevé qui fait pencher la voiture, fumée puis flammes).
 
 **Multijoueur**
@@ -82,13 +82,13 @@ En écran partagé et en ligne, on choisit entre deux règles :
 
 ## Commandes
 
-| | Gaz / frein | Tourner | Tir | Frein à main | Caméra | Remise en route |
-|---|---|---|---|---|---|---|
-| Clavier 1 | Z / S (W / S en QWERTY) | Q / D | Espace | Maj gauche | C | R |
-| Clavier 2 | ↑ / ↓ | ← / → | Ctrl droit ou Entrée | Maj droite | Fin | Page suiv. |
-| Clavier 3 | I / K | J / L | U | O | 9 | 8 |
-| Clavier 4 | Pavé 8 / 5 | Pavé 4 / 6 | Pavé 0 | Pavé . | Pavé + | Pavé − |
-| Manette | RT / LT | stick gauche ou croix | A ou RB | X | Y | LB |
+| | Gaz / frein | Tourner | Tir | Arme spéciale (HD) | Frein à main | Caméra | Remise en route |
+|---|---|---|---|---|---|---|---|
+| Clavier 1 | Z / S (W / S en QWERTY) | Q / D | Espace | E | Maj gauche | C | R |
+| Clavier 2 | ↑ / ↓ | ← / → | Ctrl droit ou Entrée | Suppr ou : (/ en QWERTY) | Maj droite | Fin | Page suiv. |
+| Clavier 3 | I / K | J / L | U | 7 | O | 9 | 8 |
+| Clavier 4 | Pavé 8 / 5 | Pavé 4 / 6 | Pavé 0 | Entrée du pavé | Pavé . | Pavé + | Pavé − |
+| Manette | RT / LT | stick gauche ou croix | A ou RB | B | X | Y | LB |
 
 Touches communes : N jour/nuit (HD : moment de la journée) · B météo (HD) · M musique (HD : station suivante) · P pixels rétro · Tab classement · 1 à 6 discussion rapide · Échap (ou Start) pause.
 Les manettes vibrent aux chocs, aux tirs reçus et aux explosions (désactivable dans *Son et options*, où se règlent aussi les volumes musique et effets séparément).

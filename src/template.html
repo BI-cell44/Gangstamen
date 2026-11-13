@@ -184,6 +184,8 @@ body.touch.joy #tBrake, body.touch.joy #tGas, body.touch.joy #tPadL { display: n
 #objective .oBar { margin: 6px auto 0; height: 8px; border: 2px solid var(--chalk); position: relative; } #objective .oBar i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, var(--magenta), var(--sunset)); }
 #objective .oDir { font-family: var(--data); font-size: 20px; color: var(--ok); } #objective .oArrow { display: inline-block; transition: transform .1s linear; }
 body.ingame #objective:not([hidden]) ~ #clock { display: none; }
+body.split #objective { top: calc(50% - 30px); transform: translate(-50%, -100%) scale(.82); transform-origin: 50% 100%; min-width: 0; }
+body.split #objective .oDir { display: none; }
 body:not(.ingame) #objective { display: none; }
 #garage, #mres { position: fixed; inset: 0; z-index: 27; display: grid; place-items: center; background: rgba(13,10,20,.7); padding: 16px; }
 #garage .card, #mres .card { width: min(560px, 100%); max-height: 92vh; overflow: auto; background: rgba(13,10,20,.95); border: 3px solid var(--chalk); box-shadow: 6px 6px 0 #1f3f91; padding: 18px 22px; display: flex; flex-direction: column; gap: 10px; }
@@ -319,7 +321,7 @@ body.cine #logo, body.cine #credit { display: none; }
       <h2>Commandes</h2>
       <div class="row"><span class="lab">Joueur 1 (solo / en ligne)</span><div class="cycle" id="soloCtl"></div></div>
       <div class="ctable" id="ctable"></div>
-      <p class="fine">Les touches correspondent à des positions du clavier : sur un clavier AZERTY, le joueur 1 joue avec Z Q S D. Touches communes : N jour/nuit (HD : moment de la journée) · B météo (HD) · M musique · P pixels · Tab classement en ligne · Échap menu.</p>
+      <p class="fine">Les touches correspondent à des positions du clavier : sur un clavier AZERTY, le joueur 1 joue avec Z Q S D. En HD, la touche spéciale (E pour le joueur 1, B à la manette) lance les roquettes, pose les mines ou déclenche la nitro ramassées sur la carte. Touches communes : N jour/nuit (HD : moment de la journée) · B météo (HD) · M musique · P pixels · Tab classement en ligne · Échap menu.</p>
       <div class="menu"><button class="mbtn" data-go="vMain">Retour</button></div>
     </section>
 
@@ -392,6 +394,19 @@ function groundH(x, z) {
   return (u + v <= 1 ? a + (b - a) * u + (c - a) * v : d + (c - d) * (1 - u) + (b - d) * (1 - v)) / 10;
 }
 // Bridges (deck heights computed offline): the drivable surface is the deck where there is one
+// the deck ends meet the ground: the bridge profiles were computed on a coarser grid, so the last metres are
+// eased onto the terrain (otherwise one end of the boulevard bridge stood half a metre above the street)
+(W.bridges || []).forEach(b => {
+  const p = b.p, n = p.length / 3; if (n < 2) return;
+  for (const [i0, dir] of [[0, 1], [n - 1, -1]]) {
+    const d0 = groundH(p[3 * i0], p[3 * i0 + 1]) - p[3 * i0 + 2]; let s = 0;
+    for (let i = i0; i >= 0 && i < n; i += dir) {
+      if (i !== i0) s += Math.hypot(p[3 * i] - p[3 * (i - dir)], p[3 * i + 1] - p[3 * (i - dir) + 1]);
+      if (s > 12) break;
+      const k = 1 - s / 12; p[3 * i + 2] += d0 * k * k * (3 - 2 * k);
+    }
+  }
+});
 const BR_SEGS = [];
 (W.bridges || []).forEach(b => { const p = b.p; for (let i = 0; i < p.length - 3; i += 3) BR_SEGS.push([p[i], p[i + 1], p[i + 2], p[i + 3], p[i + 4], p[i + 5], b.w / 2 + 0.4]); });
 function deckH(x, z) {
@@ -1395,18 +1410,24 @@ function drive(c, inp, dt) {
   return impact;
 }
 function collideWalls(c) {
+  // the car is about 4.4 m by 1.8 m: three circles along its length (front, middle, rear) rather than one big
+  // circle, so it fits through any gap a little wider than itself
   const segs = cellOf(c.x, c.z); if (!segs) return 0;
+  const [fx, fz] = c.fwd, half = c.mesh && c.mesh.userData.hl ? Math.max(1, c.mesh.userData.hl - 1.0) : 1.25;
   let impact = 0;
-  for (const [ax, az, bx, bz] of segs) {
-    const dx = bx - ax, dz = bz - az, L2 = dx * dx + dz * dz || 1e-6;
-    let t = ((c.x - ax) * dx + (c.z - az) * dz) / L2; t = Math.max(0, Math.min(1, t));
-    const px = ax + dx * t, pz = az + dz * t;
-    let nx = c.x - px, nz = c.z - pz; const d = Math.hypot(nx, nz);
-    if (d >= R_CAR) continue;
-    if (d < 1e-4) { nx = -dz; nz = dx; } const l = Math.hypot(nx, nz) || 1; nx /= l; nz /= l;
-    c.x += nx * (R_CAR - d); c.z += nz * (R_CAR - d);
-    const vn = c.vx * nx + c.vz * nz;
-    if (vn < 0) { impact = Math.max(impact, -vn); c.vx -= 1.25 * vn * nx; c.vz -= 1.25 * vn * nz; c.vx *= 0.9; c.vz *= 0.9; }
+  for (const [k, r] of [[half, 1.0], [0, 1.0], [-half, 1.0]]) {
+    for (const [ax, az, bx, bz] of segs) {
+      const cx = c.x + fx * k, cz = c.z + fz * k;
+      const dx = bx - ax, dz = bz - az, L2 = dx * dx + dz * dz || 1e-6;
+      let t = ((cx - ax) * dx + (cz - az) * dz) / L2; t = Math.max(0, Math.min(1, t));
+      const px = ax + dx * t, pz = az + dz * t;
+      let nx = cx - px, nz = cz - pz; const d = Math.hypot(nx, nz);
+      if (d >= r) continue;
+      if (d < 1e-4) { nx = -dz; nz = dx; } const l = Math.hypot(nx, nz) || 1; nx /= l; nz /= l;
+      c.x += nx * (r - d); c.z += nz * (r - d);
+      const vn = c.vx * nx + c.vz * nz;
+      if (vn < 0) { impact = Math.max(impact, -vn); c.vx -= 1.25 * vn * nx; c.vz -= 1.25 * vn * nz; c.vx *= 0.9; c.vz *= 0.9; }
+    }
   }
   return impact;
 }
@@ -1670,7 +1691,7 @@ const CTL_OPTIONS = ['kb1+pad0', 'kb1', 'kb2', 'kb3', 'kb4', 'pad0', 'pad1', 'pa
 let layoutMap = null;
 try { navigator.keyboard && navigator.keyboard.getLayoutMap && navigator.keyboard.getLayoutMap().then(m => { layoutMap = m; renderCtlTable(); }).catch(() => { }); } catch (e) { }
 const KEY_NAMES = { Space: 'Espace', ShiftLeft: 'Maj g.', ShiftRight: 'Maj d.', ControlRight: 'Ctrl d.', Enter: 'Entrée', End: 'Fin', PageDown: 'Pg suiv.',
-  ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→', NumpadDecimal: 'Num .', NumpadAdd: 'Num +', NumpadSubtract: 'Num −' };
+  Delete: 'Suppr', Slash: ':', NumpadEnter: 'Entrée num.', ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→', NumpadDecimal: 'Num .', NumpadAdd: 'Num +', NumpadSubtract: 'Num −' };
 function keyName(code) {
   if (layoutMap && layoutMap.get(code)) return layoutMap.get(code).toUpperCase();
   if (KEY_NAMES[code]) return KEY_NAMES[code];
@@ -3222,7 +3243,8 @@ function updateCamera(L, dt) {
   if (HD) { // speed widens the view; explosions shake it
     const f = 56 + Math.min(13, c.speed * 0.28); if (Math.abs(cam.fov - f) > 0.05) { cam.fov += (f - cam.fov) * Math.min(1, dt * 3); cam.updateProjectionMatrix(); }
     if (L.shake > 0.01) { cam.position.x += (Math.random() - 0.5) * L.shake; cam.position.y += (Math.random() - 0.5) * L.shake * 0.7; cam.position.z += (Math.random() - 0.5) * L.shake; L.shake *= Math.exp(-dt * 5); }
-    if (window.__cam) { cam.position.set(c.x + window.__cam[0], c.mesh.position.y + window.__cam[1], c.z + window.__cam[2]); L.look.set(c.x, c.mesh.position.y + 0.7, c.z); }
+    if (window.__camAt) { const [px, py, pz, lx, ly, lz] = window.__camAt; cam.position.set(px, py, pz); L.look.set(lx, ly, lz); } // test hook: free camera
+    else if (window.__cam) { cam.position.set(c.x + window.__cam[0], c.mesh.position.y + window.__cam[1], c.z + window.__cam[2]); L.look.set(c.x, c.mesh.position.y + 0.7, c.z); }
   }
   cam.lookAt(L.look);
 }
