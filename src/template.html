@@ -573,7 +573,7 @@ function buildCity() {
   const walls = FACADES.map(() => new Buf()), roofs = new Buf(), photoBufs = photoMats.map(() => new Buf());
   const UB = HD ? HDW.upper.map(a => a.map(() => new Buf())) : [], GB = HD ? HDW.ground.map(a => a.map(() => new Buf())) : [];
   const shopBuf = new Buf(), shopsAt = HD ? assignShops() : new Map(), extras = new Buf(), cBrick = col('#8a4a38'), cStone = col('#b9b1a3');
-  // HD: wings attached to the town hall are brick like it, not sheds
+  // HD: the wings attached to the town hall are clad in blue metal
   const civicWing = new Set();
   if (HD) for (const m of W.buildings) if (/^Mairie/.test(m.n || '')) W.buildings.forEach((o, oi) => {
     if (o === m) return; let sharedPts = 0;
@@ -581,11 +581,11 @@ function buildCity() {
     if (sharedPts >= 2) civicWing.add(oi);
   });
   W.buildings.forEach((b, bi) => {
-    const p = b.p, n = p.length / 2, kind = civicWing.has(bi) ? 4 : b.k;
-    const style = civicWing.has(bi) ? 4 : KIND_STYLE[kind] ?? 0;
+    const p = b.p, n = p.length / 2, kind = civicWing.has(bi) ? 2 : b.k;
+    const style = civicWing.has(bi) ? 2 : KIND_STYLE[kind] ?? 0;
     const tints = WALL_TINTS[kind] || WALL_TINTS[0];
     const pt = PHOTO_TINT.get(bi);
-    const tint = pt ? pt.map(v => Math.max(0.3, Math.min(1, v * 1.08))) : shade(col(tints[(hash(bi) * tints.length) | 0]), 0.92 + hash(bi + 7) * 0.12);
+    const tint = civicWing.has(bi) ? col('#4d7299') : pt ? pt.map(v => Math.max(0.3, Math.min(1, v * 1.08))) : shade(col(tints[(hash(bi) * tints.length) | 0]), 0.92 + hash(bi + 7) * 0.12);
     const sa = signedArea(p);
     // sit the building on the IGN terrain: walls start below the lowest ground point
     let gmin = 1e9, cxx = 0, czz = 0;
