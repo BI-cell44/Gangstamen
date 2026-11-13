@@ -168,7 +168,7 @@ const hd = !HD ? null : (() => {
       exp: 1.25, bloom: 0.95, tint: V3(0.96, 1.0, 1.1), th: 0.85, part: C3(0.16, 0.17, 0.24), night: 1, lamps: 1, disc: 6, win: 2.4 },
   ];
   const TOD = { day: 0, sunset: 1, dusk: 2, night: 3 };
-  const amb = { t: 1, target: 1, cycle: false, clock: 0.1, rain: 0, rainTarget: 0, wet: 0, auto: false, autoT: 90, bolt: 0, boltT: 14, envAt: -99, envT: -1, envR: -1 };
+  const amb = { dist: 1, t: 1, target: 1, cycle: false, clock: 0.1, rain: 0, rainTarget: 0, wet: 0, auto: false, autoT: 90, bolt: 0, boltT: 14, envAt: -99, envT: -1, envR: -1 };
   const A = {}; for (const k in KEYS[0]) A[k] = KEYS[0][k].clone ? KEYS[0][k].clone() : KEYS[0][k];
   const wetU = { value: 0 };
   const grey = new THREE.Color();
@@ -198,7 +198,7 @@ const hd = !HD ? null : (() => {
     skyU.disc.value = A.disc * (1 - ov);
     sun.color.copy(A.sCol); sun.intensity = A.sI * (1 - ov * 0.8);
     hemi.color.copy(A.hCol).lerp(grey.setRGB(0.5, 0.55, 0.62), ov * 0.6); hemi.groundColor.copy(A.hGr); hemi.intensity = A.hI * (1 + ov * 0.25);
-    fogU.color.value.copy(A.fog); fogU.near.value = A.fN * (1 - r * 0.7); fogU.far.value = A.fF * (1 - r * 0.45);
+    fogU.color.value.copy(A.fog); fogU.near.value = A.fN * (1 - r * 0.7) * amb.dist; fogU.far.value = A.fF * (1 - r * 0.45) * amb.dist;
     if (!scene.fog) scene.fog = new THREE.Fog(0, 100, 700);
     scene.fog.color.copy(A.fog); scene.fog.near = fogU.near.value; scene.fog.far = fogU.far.value;
     const fu = finalMat.uniforms; fu.exposure.value = A.exp * (1 + r * 0.12); fu.bloom.value = A.bloom; fu.tint.value.copy(A.tint).lerp(V3(0.97, 1.0, 1.04), ov); brightMat.uniforms.th.value = A.th;
@@ -233,6 +233,7 @@ const hd = !HD ? null : (() => {
     if (!amb.started) amb.t = amb.target;
     applyAmbience(!amb.started); amb.started = true;
   }
+  function setDistance(k) { amb.dist = Math.max(0.3, Math.min(1, k)); applyAmbience(false); }
   function setRain(v) { // 0..1, or 'auto' for weather that comes and goes
     amb.auto = v === 'auto'; if (amb.auto) { amb.autoT = 30 + Math.random() * 60; return; }
     amb.rainTarget = Math.max(0, Math.min(1, +v || 0));
@@ -1479,6 +1480,6 @@ const hd = !HD ? null : (() => {
     if (pfT > 5000) { const fps = pfN * 1000 / pfT; pfN = 0; pfT = 0; if (fps < 25 && qi > 0 && started && !paused) { setQuality(qi - 1); feed('Qualité graphique réduite : ' + q.name); const b = document.querySelectorAll('#hdSeg button'); b.forEach(x => x.classList.toggle('on', +x.dataset.q === qi)); } }
   }
   addEventListener('resize', resize);
-  return { QUAL, setQuality, perf, get quality() { return qi; }, render, frame, setTime, setTod, setRain, amb, wetPatch, emit, smoke, spark, fire, flashAt, world, linearize, makeCar, fx, explode: explodeAt, muzzle, roadMat, waterMat, crownGeo, wallMat, wallSet, shopSet, townHall, groundMat, footMat, roofMat, shake, lin, linHex, get floatRT() { return floatRT; } };
+  return { QUAL, setQuality, perf, get quality() { return qi; }, render, frame, setTime, setTod, setRain, setDistance, amb, wetPatch, emit, smoke, spark, fire, flashAt, world, linearize, makeCar, fx, explode: explodeAt, muzzle, roadMat, waterMat, crownGeo, wallMat, wallSet, shopSet, townHall, groundMat, footMat, roofMat, shake, lin, linHex, get floatRT() { return floatRT; } };
 })();
 // <<< HD MODULE

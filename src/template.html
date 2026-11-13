@@ -88,6 +88,10 @@ body { background: var(--ink); color: var(--chalk); font-family: var(--body); ov
 .slot .lab { min-width: 5.2em; }
 .chipc { width: 18px; height: 18px; border: 2px solid #000; box-shadow: 2px 2px 0 rgba(0,0,0,.5); }
 .cycle { display: flex; align-items: center; gap: 6px; }
+.seg.wrap { flex-wrap: wrap; }
+.mbtn.swatch { width: 44px; height: 34px; padding: 0; border-width: 3px; }
+.mbtn.swatch.on { outline: 3px solid var(--sunset); outline-offset: 2px; }
+#feed .qc { border-left-color: var(--ok); font-size: 20px; }
 .cycle output { min-width: 11em; text-align: center; font-family: var(--data); font-size: 20px; padding: 4px 8px; border: 2px solid var(--chalk); background: rgba(0,0,0,.4); }
 .cycle output.ok { border-color: var(--ok); }
 .ctable { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; font-family: var(--data); font-size: 18px; }
@@ -155,6 +159,9 @@ body.touch #plate { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
 #touch .grp { display: flex; gap: 10px; pointer-events: auto; }
 #touch button { width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--chalk); background: var(--panel); color: var(--chalk); font-family: var(--data); font-size: 20px; touch-action: none; }
 #touch button.on { background: var(--magenta); }
+#joy { pointer-events: auto; position: relative; width: 150px; height: 150px; border-radius: 50%; border: 3px solid rgba(243,234,216,.7); background: radial-gradient(circle, rgba(13,10,20,.35), rgba(13,10,20,.65)); touch-action: none; margin-bottom: -40px; }
+#joyKnob { position: absolute; left: 50%; top: 50%; width: 62px; height: 62px; margin: -31px 0 0 -31px; border-radius: 50%; background: var(--magenta); border: 3px solid var(--chalk); box-shadow: 0 0 12px rgba(226,51,122,.6); }
+body.touch.joy #tBrake, body.touch.joy #tGas, body.touch.joy #tPadL { display: none; }
 @media (max-width: 560px) {
   #minimap { width: 112px; height: 112px; }
   #speed { font-size: 46px; }
@@ -254,8 +261,9 @@ body.cine #logo, body.cine #credit { display: none; }
 <div id="credit">Carte © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">contributeurs OpenStreetMap</a> · Hauteurs et relief © IGN · Façades © contributeurs Panoramax</div>
 
 <div id="touch">
-  <div class="grp"><button id="tLeft" aria-label="Gauche">◀</button><button id="tRight" aria-label="Droite">▶</button></div>
-  <div class="grp"><button id="tFire" aria-label="Tirer">FEU</button><button id="tBrake" aria-label="Frein">FREIN</button><button id="tGas" aria-label="Accélérer">GAZ</button></div>
+  <div class="grp" id="tPadL"><button id="tLeft" aria-label="Gauche">◀</button><button id="tRight" aria-label="Droite">▶</button></div>
+  <div id="joy" hidden aria-label="Joystick : direction, gaz et frein"><div id="joyKnob"></div></div>
+  <div class="grp"><button id="tSpec" aria-label="Arme spéciale" hidden>SPÉ</button><button id="tHb" aria-label="Frein à main" hidden>F.M.</button><button id="tFire" aria-label="Tirer">FEU</button><button id="tBrake" aria-label="Frein">FREIN</button><button id="tGas" aria-label="Accélérer">GAZ</button></div>
 </div>
 
 <div id="title">
@@ -270,6 +278,7 @@ body.cine #logo, body.cine #credit { display: none; }
         <button class="mbtn hdOnly" data-go="vCamp" hidden>Campagne · 7 missions</button>
         <button class="mbtn" data-go="vSplit">Écran partagé · 2 à 4 joueurs</button>
         <button class="mbtn" data-go="vOnline">En ligne · jusqu'à 12 joueurs</button>
+        <button class="mbtn hdOnly" data-go="vCar" hidden>Ta voiture</button>
         <button class="mbtn" data-go="vCtrl">Commandes</button>
         <button class="mbtn" data-go="vOpt">Son et options</button>
       </div>
@@ -279,7 +288,7 @@ body.cine #logo, body.cine #credit { display: none; }
     <section id="vSplit" class="view" hidden>
       <h2>Écran partagé</h2>
       <div class="row"><span class="lab">Joueurs</span><div class="seg" id="nSeg"><button class="mbtn" data-n="2">2</button><button class="mbtn" data-n="3">3</button><button class="mbtn" data-n="4">4</button></div></div>
-      <div class="row"><span class="lab">Mode</span><div class="seg" id="mSeg"><button class="mbtn" data-m="0">Chacun pour soi</button><button class="mbtn" data-m="1">Par équipes</button></div></div>
+      <div class="row"><span class="lab">Mode</span><div class="seg wrap" id="mSeg"><button class="mbtn" data-m="0">Chacun pour soi</button><button class="mbtn" data-m="1">Par équipes</button><button class="mbtn hdOnly" data-m="2" hidden>Drapeau</button><button class="mbtn hdOnly" data-m="3" hidden>Roi de la colline</button><button class="mbtn hdOnly" data-m="4" hidden>Course</button></div></div>
       <div class="row"><span class="lab">Fin de partie</span><div class="seg goalSeg"><button class="mbtn" data-g="10">10 KO</button><button class="mbtn" data-g="20">20 KO</button><button class="mbtn" data-g="30">30 KO</button><button class="mbtn" data-g="0">Sans</button></div></div>
       <div class="row"><span class="lab">Durée</span><div class="seg limitSeg"><button class="mbtn" data-l="5">5 min</button><button class="mbtn" data-l="10">10 min</button><button class="mbtn" data-l="15">15 min</button><button class="mbtn" data-l="0">Sans</button></div></div>
       <div id="slots" class="slots"></div>
@@ -293,6 +302,16 @@ body.cine #logo, body.cine #credit { display: none; }
       <p>Un an après ton départ, les Rapaces de la Butte tiennent le quartier. Dédé le garagiste et Nadia, la cheffe des Chantenaysiens, comptent sur toi pour reprendre les rues, mission après mission.</p>
       <div id="campList" class="camp"></div>
       <p class="fine" id="campProg"></p>
+      <div class="menu"><button class="mbtn" data-go="vMain">Retour</button></div>
+    </section>
+
+    <section id="vCar" class="view" hidden>
+      <h2>Ta voiture</h2>
+      <div class="row"><span class="lab">Joueur</span><div class="seg" id="carSlot"><button class="mbtn" data-i="0">J1</button><button class="mbtn" data-i="1">J2</button><button class="mbtn" data-i="2">J3</button><button class="mbtn" data-i="3">J4</button></div></div>
+      <div class="row"><span class="lab">Modèle</span><div class="seg wrap" id="carStyle"></div></div>
+      <p class="fine" id="carDesc"></p>
+      <div class="row"><span class="lab">Couleurs</span><div class="seg wrap" id="carPaint"></div></div>
+      <p class="fine">J1 conduit aussi en solo et en ligne. En partie par équipes, la carrosserie prend la couleur de la bande.</p>
       <div class="menu"><button class="mbtn" data-go="vMain">Retour</button></div>
     </section>
 
@@ -314,6 +333,10 @@ body.cine #logo, body.cine #credit { display: none; }
       <div class="row" id="retroRow"><label class="lab" for="optRetro">Pixels rétro</label><input id="optRetro" type="checkbox"></div>
       <div class="row hdOnly" hidden><span class="lab">Moment</span><div class="seg" id="todSeg"><button class="mbtn" data-v="day">Jour</button><button class="mbtn" data-v="sunset">Coucher</button><button class="mbtn" data-v="night">Nuit</button><button class="mbtn" data-v="cycle">Cycle</button></div></div>
       <div class="row hdOnly" hidden><span class="lab">Météo</span><div class="seg" id="rainSeg"><button class="mbtn" data-v="0">Sec</button><button class="mbtn" data-v="0.6">Pluie</button><button class="mbtn" data-v="1">Orage</button><button class="mbtn" data-v="auto">Variable</button></div></div>
+      <div class="row hdOnly" hidden><span class="lab">Ombres</span><div class="seg" id="shSeg"><button class="mbtn" data-v="0">Non</button><button class="mbtn" data-v="1">Auto</button><button class="mbtn" data-v="2">Toujours</button></div></div>
+      <div class="row hdOnly" hidden><span class="lab">Distance de vue</span><div class="seg" id="distSeg"><button class="mbtn" data-v="0">Courte</button><button class="mbtn" data-v="1">Moyenne</button><button class="mbtn" data-v="2">Longue</button></div></div>
+      <div class="row hdOnly" hidden><span class="lab">Circulation</span><div class="seg" id="trafSeg"><button class="mbtn" data-v="0">Aucune</button><button class="mbtn" data-v="1">Calme</button><button class="mbtn" data-v="2">Normale</button></div></div>
+      <div class="row hdOnly" hidden><label class="lab" for="optVoices">Voix (radio, dialogues)</label><input id="optVoices" type="checkbox"></div>
       <div class="row" id="hdRow" hidden><span class="lab">Qualité graphique</span><div class="seg" id="hdSeg"><button class="mbtn" data-q="0">Basse</button><button class="mbtn" data-q="1">Moyenne</button><button class="mbtn" data-q="2">Haute</button><button class="mbtn" data-q="3">Ultra</button></div></div>
       <div class="row"><label class="lab" for="optIntro">Intro au lancement</label><input id="optIntro" type="checkbox"><button class="mbtn" id="introPlay">Revoir l'intro</button></div>
       <div class="menu"><button class="mbtn" data-go="vMain">Retour</button></div>
@@ -1629,7 +1652,7 @@ const SETTINGS_KEY = 'gangstamen.settings.v1';
 const settings = Object.assign({
   ctl: ['kb1', 'kb2', 'kb3', 'kb4'], soloCtl: 'kb1+pad0', nPlayers: 2,
   music: 0.7, fx: 0.8, rumble: true, retro: true, nick: '',
-  hdq: 2, tod: 'sunset', rain: '0', traffic: true, voices: true, intro: true, teams: false, team: [0, 1, 0, 1], netTeams: false, netTeam: -1, goal: 20, limit: 10,
+  hdq: 2, tod: 'sunset', rain: '0', traffic: 2, voices: true, shadows: 1, dist: 2, intro: true, teams: false, team: [0, 1, 0, 1], netTeams: false, netTeam: -1, goal: 20, limit: 10,
 }, (() => { try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); } catch (e) { return {}; } })());
 function saveSettings() { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { } }
 sfx.setVolume('music', settings.music); sfx.setVolume('fx', settings.fx);
@@ -1680,6 +1703,7 @@ addEventListener('keydown', e => {
   }
   if (e.key && e.key.toLowerCase() === 'p' && !e.repeat) toggleRetro();
   if (e.code === 'Tab') $('board').hidden = false;
+  if (gx && !e.repeat && /^Digit[1-6]$/.test(e.code) && (mode === 'online' || locals.length > 1)) gx.quickChat(locals.find(L => schemeOf(L.ctl) && schemeOf(L.ctl).name === 'Clavier 1') || locals[0], +e.code[5] - 1);
   for (const L of locals) {
     const s = schemeOf(L.ctl); if (!s) continue;
     if (e.code === s.cam && !e.repeat) L.camMode = (L.camMode + 1) % 3;
@@ -1696,6 +1720,16 @@ const bindTouch = (id, f) => {
   el.addEventListener('pointerdown', on); el.addEventListener('pointerup', off); el.addEventListener('pointercancel', off); el.addEventListener('pointerleave', off);
 };
 bindTouch('tLeft', 'l'); bindTouch('tRight', 'r'); bindTouch('tGas', 'g'); bindTouch('tBrake', 'b'); bindTouch('tFire', 'f');
+if (HD) { // virtual joystick: left/right steer, up accelerates, down brakes; extra buttons for the handbrake and the special weapon
+  bindTouch('tSpec', 'sp'); bindTouch('tHb', 'hb'); $('tSpec').hidden = $('tHb').hidden = false; $('joy').hidden = false; document.body.classList.add('joy');
+  const J = $('joy'), K = $('joyKnob'); let id = null;
+  const move = e => { const r = J.getBoundingClientRect(), R = r.width / 2; let dx = e.clientX - r.left - R, dy = e.clientY - r.top - R; const l = Math.hypot(dx, dy); if (l > R) { dx *= R / l; dy *= R / l; }
+    K.style.transform = 'translate(' + dx + 'px,' + dy + 'px)'; touch.jx = dx / R; touch.jy = dy / R; };
+  J.addEventListener('pointerdown', e => { e.preventDefault(); id = e.pointerId; J.setPointerCapture(id); move(e); });
+  J.addEventListener('pointermove', e => { if (e.pointerId === id) { e.preventDefault(); move(e); } });
+  const up = e => { if (e.pointerId !== id) return; id = null; touch.jx = touch.jy = 0; K.style.transform = ''; };
+  J.addEventListener('pointerup', up); J.addEventListener('pointercancel', up);
+}
 
 // Gamepads (standard mapping: Xbox / PlayStation / most USB pads)
 // RT gas · LT brake/reverse · left stick or D-pad steer · A or RB fire · X handbrake · Y camera · LB back on the road · Back night · Start pause
@@ -1739,7 +1773,11 @@ function readInput(L) {
   if (L.slot === 0) { // touch controls drive player 1
     if (touch.g || touch.b) t = (touch.g ? 1 : 0) - (touch.b ? 1 : 0);
     if (touch.l || touch.r) st = (touch.l ? 1 : 0) - (touch.r ? 1 : 0);
-    fire = fire || !!touch.f; special = special || !!touch.sp;
+    fire = fire || !!touch.f; special = special || !!touch.sp; hb = hb || !!touch.hb;
+    if (touch.jx || touch.jy) { // joystick: dead zone, then progressive
+      const dz = v => Math.abs(v) < 0.15 ? 0 : (v - Math.sign(v) * 0.15) / 0.85;
+      st = -dz(touch.jx); const y = dz(touch.jy); t = y < 0 ? Math.min(1, -y * 1.3) : y > 0.25 ? -1 : 0;
+    }
   }
   if (idx >= 0 && pads[idx].gp) {
     const P = pads[idx];
@@ -1747,6 +1785,7 @@ function readInput(L) {
     if (P.press[3]) L.camMode = (L.camMode + 1) % 3;
     if (P.press[4] && L.car.alive) unstick(L);
     if (P.press[8]) { if (HD) cycleTod(); else setNight(!night); }
+    if (gx && (mode === 'online' || locals.length > 1)) { if (P.press[12]) gx.quickChat(L, 0); if (P.press[13]) gx.quickChat(L, 2); if (P.press[10]) gx.quickChat(L, 1); if (P.press[11]) gx.quickChat(L, 3); }
     if (P.press[9]) togglePause();
   }
   return { t, s: st, hb, fire, special };
@@ -1873,9 +1912,22 @@ function randomSpawn() { // Math.random, not the seeded generator: every client 
   const nb = G.adj[n][0] ?? n;
   return [G.x[n], G.z[n], Math.atan2(-(G.x[nb] - G.x[n]), -(G.z[nb] - G.z[n]))];
 }
+// HD: each player picks a car (look and a touch of handling) and its colours before the game
+const CAR_CHOICES = [
+  { k: 'saloon', name: 'Berline', v: 1, a: 1, d: 'Équilibrée, la plus rapide' },
+  { k: 'p205', name: '205', v: 0.98, a: 1.1, d: 'Nerveuse' },
+  { k: 'hatch', name: 'Compacte', v: 0.96, a: 1.06, d: 'Avec aileron' },
+  { k: 'r5', name: 'R5', v: 0.93, a: 1.14, d: 'Petite et vive' },
+  { k: 'twingo', name: 'Twingo', v: 0.91, a: 1.1, d: 'Bouille de 1993' },
+];
+const CAR_PAINTS = [[0x5b2ba6, 0xf2c14e], [0xb3121f, 0xf3ead8], [0x0f5d8c, 0xf2c14e], [0x1d1d22, 0xd8a43c], [0xf2f2ee, 0x1b2f8a], [0x2b6b3a, 0xf3ead8], [0xe86a1a, 0x161616], [0xd8b23a, 0x161616], [0x1f8a8a, 0xf3ead8], [0xc23b6e, 0xf3ead8]];
+function carChoice(slot) { const c = (settings.cars || [])[slot] || {}; return { style: CAR_CHOICES.find(o => o.k === c.s) || CAR_CHOICES[0], paint: CAR_PAINTS[c.p ?? [0, 8, 6, 5][slot]] || CAR_PAINTS[0] }; }
 function makeLocal(slot, ctl, paint, team = -1) {
+  const ch = HD ? carChoice(slot) : null;
+  if (ch && team < 0) paint = ch.paint;
   const [c1, c2] = paint;
-  const car = new Car(makeCar(c1, c2, true, 'saloon'), true);
+  const car = new Car(makeCar(c1, c2, true, ch ? ch.style.k : 'saloon'), true);
+  if (ch) { car.style = ch.style.k; car.baseV = 44 * ch.style.v; car.baseA = ch.style.a; car.maxV = car.baseV; car.accK = car.baseA; }
   car.local = true;
   const L = { slot, ctl, car, cam: new THREE.PerspectiveCamera(56, 1, 0.5, 2200), camMode: 0, look: null, respect: 0, kills: 0, deadT: 0, fireCd: 0,
     hud: null, vp: { x: 0, y: 0, w: 1, h: 1 }, tickT: 0, street: '', streetAcc: 0, colour: '#' + new THREE.Color(c1).getHexString() };
@@ -2049,7 +2101,7 @@ function updateHud(dt) {
       const c = L.car, h = L.hud; if (!h) continue;
       h.ps.firstChild.nodeValue = Math.round(c.speed * 3.6);
       h.pb.style.width = c.hp + '%';
-      h.pr.textContent = 'RESPECT ' + L.respect + ' · KO ' + L.kills;
+      h.pr.textContent = 'RESPECT ' + L.respect + (gx && gx.gmode ? ' · POINTS ' : ' · KO ') + L.kills;
       L.streetAcc += dt; if (L.streetAcc > 0.3) { L.streetAcc = 0; const s = streetAt(c.x, c.z); if (s !== L.street) { L.street = s; h.pst.textContent = s; } drawMinimapOn(h.cv, c); }
       if (L.tickT > 0) { L.tickT -= dt; if (L.tickT <= 0) h.pt.hidden = true; }
     }
@@ -2061,7 +2113,7 @@ function boardRows() {
   for (const R of Net.remotes.values()) rows.push({ name: R.nick + (R.peer === Net.hostPeer ? ' ★' : ''), r: R.respect, k: R.kills, col: R.colour, t: R.car.team });
   return rows;
 }
-function teamScores(rows) { const s = [0, 0]; for (const r of rows) if (r.t >= 0) s[r.t] += r.k; return s; }
+function teamScores(rows) { if (gx && gx.teamScores) { const t = gx.teamScores(); if (t) return t; } const s = [0, 0]; for (const r of rows) if (r.t >= 0) s[r.t] += r.k; return s; }
 function updateTeamBar() {
   const bar = $('teambar'); bar.hidden = !teamMode; if (!teamMode) return;
   const s = teamScores(boardRows()), txt = s[0] + '  –  ' + s[1];
@@ -2080,7 +2132,7 @@ function renderBoard() {
 function boardTable(rows) {
   rows.sort((a, b) => teamMode ? (a.t - b.t) || (b.r - a.r) : b.r - a.r);
   const t = document.createElement('table');
-  t.innerHTML = '<tr><th></th><th>Joueur</th><th>Respect</th><th>KO</th></tr>';
+  t.innerHTML = '<tr><th></th><th>Joueur</th><th>Respect</th><th>' + (gx && gx.gmode ? 'Points' : 'KO') + '</th></tr>';
   const sc = teamScores(rows);
   let lastT = null;
   for (const r of rows) {
@@ -2112,7 +2164,7 @@ function setupMatch(goal, limit) {
 function updateClock() {
   const el = $('clock'), parts = [];
   if (Match.limit) parts.push('⏱ ' + fmtClock(Match.left));
-  if (Match.goal) parts.push(Match.goal + ' KO pour gagner');
+  if (Match.goal) parts.push(gx && gx.gmode ? gx.goalText() : Match.goal + ' KO pour gagner');
   el.hidden = !parts.length || Match.over;
   const txt = parts.join(' · ');
   if (el.textContent !== txt) el.textContent = txt;
@@ -2163,6 +2215,7 @@ function rematch() { // everyone back to the start, scores to zero
     c.place(...(mode === 'online' ? (L.team >= 0 ? teamSpawn(L.team) : randomSpawn()) : L.spawn));
   }
   for (const r of rivals) if (!r.proxy) spawnRival(r);
+  if (gx) gx.rematch();
   updateClock(); updateTeamBar();
   flashAll('Revanche !', Match.goal ? Match.goal + ' KO pour gagner' : 'C’est reparti');
   try { renderer.domElement.focus(); } catch (e) { }
@@ -2187,6 +2240,15 @@ function setNight(on) {
   sun.intensity = on ? 0.18 : 1.05; sun.color.set(on ? 0x6a78c0 : 0xffae66);
   wallMats.forEach(m => { m.emissiveIntensity = on ? 1 : 0; });
   for (const c of allPlayerCars()) { if (c.mesh.userData.spot) c.mesh.userData.spot.intensity = on ? 2.4 : 0; c.mesh.userData.head.emissive.setHex(on ? 0xfff2c0 : 0x8a8060); }
+}
+// performance: shadows and view distance (lower automatically with 3-4 screens)
+function applyPerf() {
+  const n = Math.max(1, locals.length);
+  sun.castShadow = HD ? (settings.shadows === 2 || (settings.shadows === 1 && n === 1)) : n === 1;
+  if (!HD) return;
+  const k = [0.5, 0.75, 1][settings.dist ?? 2] * (n >= 3 ? 0.7 : n === 2 ? 0.85 : 1);
+  hd.setDistance(k);
+  for (const L of locals) { L.cam.far = 2200 * k; L.cam.updateProjectionMatrix(); }
 }
 // HD: time of day and weather, kept in the settings; N and B cycle them in game
 const TOD_NAMES = { day: 'Plein jour', sunset: 'Coucher de soleil', night: 'Nuit', cycle: 'Cycle jour/nuit' };
@@ -2273,7 +2335,7 @@ function ghostShot(from, enemy) {
 }
 function credit(by, points, text) {
   if (!by || Match.over) return;
-  if (by.local) { const L = by.owner; L.respect += points; L.kills++; flashFor(L, '+' + points + ' RESPECT', text); rumbleFor(L, 0.2, 0.5, 120); if (gx) { gx.dj('ko', L); gx.saveBank(L); } }
+  if (by.local) { const L = by.owner; L.respect += points; if (!(gx && gx.gmode)) L.kills++; flashFor(L, '+' + points + ' RESPECT', text); rumbleFor(L, 0.2, 0.5, 120); if (gx) { gx.dj('ko', L); gx.saveBank(L); } }
 }
 function damage(c, d, by) {
   if (c.npc) return gx.damage(c, d, by);
@@ -2466,10 +2528,12 @@ function remoteFromPeer(p) {
   let R = Net.remotes.get(p.peer);
   if (!R) {
     const tm = teamMode && (pres.tm === 0 || pres.tm === 1) ? pres.tm : -1;
-    const col = tm >= 0 ? TEAMS[tm].body : NET_PAINT[Math.abs(+pres.col || 0) % NET_PAINT.length];
-    const car = new Car(makeCar(col, tm >= 0 ? NET_PAINT[Math.abs(+pres.col || 0) % NET_PAINT.length] : 0xf3ead8, true, 'saloon'), true);
+    const pc = Number.isInteger(pres.pc) && pres.pc >= 0 && pres.pc <= 0xffffff ? pres.pc : null;
+    const col = tm >= 0 ? TEAMS[tm].body : pc ?? NET_PAINT[Math.abs(+pres.col || 0) % NET_PAINT.length];
+    const cs = CAR_STYLES[pres.cs] && typeof pres.cs === 'string' ? pres.cs : 'saloon';
+    const car = new Car(makeCar(col, tm >= 0 ? NET_PAINT[Math.abs(+pres.col || 0) % NET_PAINT.length] : 0xf3ead8, true, cs), true);
     car.team = tm;
-    car.mesh.userData.spot.intensity = night ? 2.4 : 0;
+    if (car.mesh.userData.spot) car.mesh.userData.spot.intensity = night ? 2.4 : 0;
     R = { peer: p.peer, car, nick: 'Joueur', respect: 0, kills: 0, colour: tm >= 0 ? TEAMS[tm].css : '#' + new THREE.Color(col).getHexString(), tx: c[0], tz: c[1], th: c[2], tvx: 0, tvz: 0, tt: performance.now(), fireAcc: 0 };
     car.remote = R; car.owner = R; car.place(c[0], c[1], c[2]);
     Net.remotes.set(p.peer, R);
@@ -2536,6 +2600,7 @@ async function startOnline(code, create, md, gl, tl) {
   room.on('hit', m => { const d = m.data || {}; if (d.to !== Net.me || typeof d.d !== 'number') return; const L = locals[0]; if (L && L.car.alive) damage(L.car, Math.min(40, Math.max(0, d.d)), { remotePeer: m.peer }); });
   room.on('hb', m => { const d = m.data || {}; if (!Net.isHost) return; const r = rivals[+d.i | 0]; if (r && typeof d.d === 'number') damage(r, Math.min(40, Math.max(0, d.d)), { remotePeer: m.peer }); });
   room.on('ko', m => { const d = m.data || {}; const L = locals[0]; const victim = String(d.nick || 'un joueur').slice(0, 14); if (d.by === Net.me && L) credit(L.car, 150, victim + ' au tapis'); else { const R = Net.remotes.get(d.by); feed(victim + ' démoli par ' + (R ? R.nick : 'un joueur')); } });
+  room.on('qc', m => { if (gx) gx.chatIn(m.peer, m.data); });
   room.on('bko', m => { const d = m.data || {}; const L = locals[0]; if (d.by === Net.me && L) credit(L.car, 100, botLabel(rivals[+d.i | 0]) + ' au tapis'); });
   startGame('online');
 }
@@ -2572,7 +2637,7 @@ function netTick(dt, now) {
     Net.lastSend = now;
     const c = L.car, r1 = v => Math.round(v * 10) / 10;
     const pres = { c: [r1(c.x), r1(c.z), Math.round(c.h * 1000) / 1000, r1(c.vx), r1(c.vz), Math.round(c.steer * 100) / 100, Math.round(c.hp), c.alive ? 1 : 0, L.firing ? 1 : 0],
-      nick: settings.nick, col: Net.colIdx, tm: L.team, r: L.respect, k: L.kills, host: Net.isHost ? 1 : 0 };
+      nick: settings.nick, col: Net.colIdx, cs: L.car.style || 'saloon', pc: HD && L.team < 0 ? carChoice(0).paint[0] : undefined, tm: L.team, r: L.respect, k: L.kills, host: Net.isHost ? 1 : 0 };
     if (Net.isHost) pres.m = [Match.n, Math.round(Match.left), Match.over ? 1 : 0, Match.over ? Match.title : '', Match.over ? Match.sub : ''];
     if (Net.isHost) pres.b = rivals.map(r => [r1(r.x), r1(r.z), Math.round(r.h * 1000) / 1000, r1(r.vx), r1(r.vz), Math.round(r.hp), r.alive ? 1 : 0, r.ai && r.ai.firing ? 1 : 0]);
     Net.room.presence(pres).catch(() => { });
@@ -2601,6 +2666,8 @@ function showView(id) {
   const f = document.querySelector('#' + id + ' .big, #' + id + ' .mbtn, #' + id + ' input'); if (f) f.focus();
   if (id === 'vOnline') { $('nick').value = settings.nick || ''; renderGames(); }
   if (id === 'vCamp' && gx) gx.renderCampaign();
+  if (id === 'vCar') renderCarView();
+  if (HD) showroom(id === 'vCar');
 }
 document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => showView(b.dataset.go)));
 function cycleControl(container, get, set) {
@@ -2634,15 +2701,19 @@ function renderSlots() {
     row.append(cyc); box.append(row);
     cycleControl(cyc, () => settings.ctl[i], v => { settings.ctl[i] = v; });
   }
-  document.querySelectorAll('#mSeg button').forEach(b => b.classList.toggle('on', +b.dataset.m === (settings.teams ? 1 : 0)));
+  const gmode = HD ? (settings.gmode ?? (settings.teams ? 1 : 0)) : (settings.teams ? 1 : 0);
+  document.querySelectorAll('#mSeg button').forEach(b => b.classList.toggle('on', +b.dataset.m === gmode));
   const used = new Set(settings.team.slice(0, settings.nPlayers).map(t => t ? 1 : 0));
-  $('splitHint').textContent = !settings.teams ? 'Chaque joueur tire sur les Rapaces… et sur les autres joueurs.'
+  $('splitHint').textContent = gmode === 2 ? 'Capture du drapeau : prends le drapeau adverse et ramène-le à ta base, entre la Butte et le boulevard. 3 captures pour gagner.'
+    : gmode === 3 ? 'Roi de la colline : reste seul sur la place Jean-Macé pour marquer des points. 60 points pour gagner.'
+    : gmode === 4 ? 'Course de checkpoints à travers Chantenay : passe-les dans l’ordre, la circulation ne s’arrête pas pour toi.'
+    : !settings.teams ? 'Chaque joueur tire sur les Rapaces… et sur les autres joueurs.'
     : used.size === 1 ? 'Tous dans la même bande : vous faites équipe avec trois voitures alliées contre les trois de l’autre bande.'
       : 'Rapaces de la Butte contre Chantenaysiens : pas de tir ami. Chaque bande a aussi trois voitures du quartier avec elle.';
   const sc = $('soloCtl'); if (sc) cycleControl(sc, () => settings.soloCtl, v => { settings.soloCtl = v; });
 }
 document.querySelectorAll('#nSeg button').forEach(b => b.addEventListener('click', () => { settings.nPlayers = +b.dataset.n; saveSettings(); renderSlots(); }));
-document.querySelectorAll('#mSeg button').forEach(b => b.addEventListener('click', () => { settings.teams = b.dataset.m === '1'; saveSettings(); renderSlots(); b.focus(); }));
+document.querySelectorAll('#mSeg button').forEach(b => b.addEventListener('click', () => { settings.gmode = +b.dataset.m; settings.teams = b.dataset.m === '1' || b.dataset.m === '2'; saveSettings(); renderSlots(); b.focus(); }));
 function renderOnlineSegs() {
   document.querySelectorAll('#oSeg button').forEach(b => b.classList.toggle('on', +b.dataset.m === (settings.netTeams ? 1 : 0)));
   document.querySelectorAll('#tSeg button').forEach(b => b.classList.toggle('on', +b.dataset.t === settings.netTeam));
@@ -2686,12 +2757,39 @@ function initOptions() {
     document.querySelectorAll('.hdOnly').forEach(r => { r.hidden = false; });
     document.querySelectorAll('#todSeg button').forEach(b => b.addEventListener('click', () => { settings.tod = b.dataset.v; saveSettings(); applyAmbience(); }));
     document.querySelectorAll('#rainSeg button').forEach(b => b.addEventListener('click', () => { settings.rain = b.dataset.v; saveSettings(); applyAmbience(); }));
+    const segOpt = (id, key, after) => { const bs = document.querySelectorAll('#' + id + ' button'), show = () => bs.forEach(b => b.classList.toggle('on', +b.dataset.v === +settings[key]));
+      bs.forEach(b => b.addEventListener('click', () => { settings[key] = +b.dataset.v; saveSettings(); show(); if (after) after(); })); show(); };
+    segOpt('shSeg', 'shadows', applyPerf); segOpt('distSeg', 'dist', applyPerf); segOpt('trafSeg', 'traffic');
+    $('optVoices').checked = settings.voices !== false; $('optVoices').addEventListener('change', e => { settings.voices = e.target.checked; saveSettings(); try { if (!e.target.checked) speechSynthesis.cancel(); } catch (x) { } });
     const seg = document.querySelectorAll('#hdSeg button'), show = () => seg.forEach(b => b.classList.toggle('on', +b.dataset.q === hd.quality));
     seg.forEach(b => b.addEventListener('click', () => { hd.setQuality(+b.dataset.q); settings.hdq = hd.quality; saveSettings(); show(); }));
     show();
     document.querySelector('#title h1').insertAdjacentHTML('beforeend', ' <span style="font-family:var(--data);font-size:.3em;vertical-align:top;color:var(--sunset);text-shadow:2px 2px 0 #000">HD</span>');
   }
   show();
+}
+let carSlot = 0;
+function renderCarView() {
+  settings.cars = settings.cars || [];
+  const cur = () => settings.cars[carSlot] || (settings.cars[carSlot] = { s: 'saloon', p: [0, 8, 6, 5][carSlot] });
+  document.querySelectorAll('#carSlot button').forEach(b => { b.classList.toggle('on', +b.dataset.i === carSlot); b.onclick = () => { carSlot = +b.dataset.i; renderCarView(); }; });
+  const st = $('carStyle'); st.innerHTML = '';
+  for (const o of CAR_CHOICES) { const b = document.createElement('button'); b.className = 'mbtn' + (cur().s === o.k ? ' on' : ''); b.textContent = o.name; b.onclick = () => { cur().s = o.k; saveSettings(); renderCarView(); }; st.append(b); }
+  const o = CAR_CHOICES.find(x => x.k === cur().s) || CAR_CHOICES[0];
+  $('carDesc').textContent = o.d + ' · vitesse ' + Math.round(o.v * 100) + ' % · reprise ' + Math.round(o.a * 100) + ' %';
+  const pt = $('carPaint'); pt.innerHTML = '';
+  CAR_PAINTS.forEach(([a, b2], i) => { const b = document.createElement('button'); b.className = 'mbtn swatch' + (cur().p === i ? ' on' : ''); b.setAttribute('aria-label', 'Couleur ' + (i + 1));
+    b.style.background = 'linear-gradient(135deg, #' + new THREE.Color(a).getHexString() + ' 62%, #' + new THREE.Color(b2).getHexString() + ' 62%)'; b.onclick = () => { cur().p = i; saveSettings(); renderCarView(); }; pt.append(b); });
+  showroom(true);
+}
+// showroom: while choosing a car, the title camera circles the chosen one parked on the boulevard
+let showCar = null, showKey = '';
+function showroom(on) {
+  if (!HD) return;
+  if (!on) { if (showCar) showCar.mesh.visible = false; return; }
+  const ch = carChoice(carSlot), key = ch.style.k + ch.paint[0];
+  if (key !== showKey) { if (showCar) scene.remove(showCar.mesh); showCar = new Car(makeCar(ch.paint[0], ch.paint[1], true, ch.style.k), true); showKey = key; const b = bases()[1]; showCar.place(b.x, b.z, Math.atan2(-b.ux, -b.uz)); }
+  showCar.mesh.visible = true;
 }
 // gamepad navigation in menus: D-pad / stick to move, A to choose, B back, left/right on sliders
 let navCool = 0;
@@ -2944,6 +3042,7 @@ const Intro = (() => {
 function startGame(kind) {
   Intro.stop();
   sfx.init();
+  if (HD) showroom(false);
   mode = kind;
   for (const L of locals) scene.remove(L.car.mesh);
   locals = [];
@@ -2962,7 +3061,7 @@ function startGame(kind) {
   if (teamMode) for (const r of rivals) if (!r.proxy) spawnRival(r);
   updateTeamBar(); $('killsLab').textContent = teamMode ? 'KO' : 'RAPACES';
   player = locals[0].car;
-  sun.castShadow = locals.length === 1;
+  applyPerf();
   if (!HD) setNight(night);
   buildPlayerHuds(); layoutViews();
   $('title').hidden = true; started = true; paused = false; document.body.classList.add('ingame');
@@ -2985,6 +3084,7 @@ function frame(now) {
   if (gx) gx.tick(dt);
   Intro.update(dt);
   if (HD) hd.perf(now);
+  if (gx) gx.landmarkTick();
   if (started && (!paused || mode === 'online')) step(dt, now);
   if (started && mode === 'online') netTick(dt, now);
   render(dt);
@@ -3086,6 +3186,11 @@ function step(dt, now) {
 }
 let orbit = 0;
 function updateTitleCamera(dt) {
+  if (HD && showCar && showCar.mesh.visible && !$('title').hidden) { // showroom
+    orbit += dt * 0.35; const p = showCar.mesh.position;
+    camera.position.set(p.x + Math.sin(orbit) * 7.5, p.y + 2.4, p.z + Math.cos(orbit) * 7.5); camera.lookAt(p.x, p.y + 0.6, p.z);
+    sun.position.copy(p).add(SUN_OFF); sun.target.position.copy(p); return;
+  }
   orbit += dt * 0.05;
   camera.position.set(Math.sin(orbit) * 260, 175, Math.cos(orbit) * 260);
   camera.lookAt(0, 25, 0);
@@ -3125,6 +3230,7 @@ buildGround();
 buildMinimap();
 setupWorldActors();
 if (HD) hd.world();
+if (gx) gx.world();
 if (HD) applyAmbience(); else setNight(false);
 renderSlots(); renderCtlTable(); initOptions();
 requestAnimationFrame(frame);

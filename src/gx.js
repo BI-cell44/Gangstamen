@@ -16,7 +16,7 @@ const gx = !HD ? null : (() => {
   const CIV_PAINT = [0xc8c8c4, 0xa31d1d, 0x1d3f8a, 0xe8e0c8, 0x2b6b3a, 0xd8a400, 0x6a6a72, 0x8a1d4a, 0x2a2a2e, 0x4fa0c8, 0xe86a1a, 0x9ab84a];
   const CIV_STYLES = ['r5', 'p205', 'twingo', 'r5', 'p205', 'twingo', 'hatch'];
   // limits scale with the number of screens
-  const budget = () => { const n = Math.max(1, locals.length); return { civ: [14, 10, 8, 7][n - 1], peds: [36, 26, 20, 16][n - 1] }; };
+  const budget = () => { const n = Math.max(1, locals.length), k = settings.traffic === 1 ? 0.5 : 1; return { civ: Math.round([14, 10, 8, 7][n - 1] * k), peds: Math.round([36, 26, 20, 16][n - 1] * k) }; };
 
   // ---------- civilian traffic ----------
   function laneTarget(a, b) { // a point on the right-hand side of the street, towards node b
@@ -303,7 +303,7 @@ const gx = !HD ? null : (() => {
   function start(kind) {
     for (const c of npcs.slice()) removeNpc(c);
     for (const L of locals) { L.heat = 0; L.calm = 0; }
-    active = settings.traffic !== false;
+    active = settings.traffic !== false && settings.traffic !== 0;
     for (const p of peds) p.g.visible = false;
     if (!active) return;
     for (let i = 0; i < budget().civ; i++) spawnCiv();
@@ -475,13 +475,12 @@ const gx = !HD ? null : (() => {
     { k: 'guns', name: 'Mitrailleuses', desc: 'Cadence et dégâts', max: 3, cost: l => [300, 600, 1000][l] },
     { k: 'paint', name: 'Peinture neuve', desc: 'Nouvelle couleur · la police perd ta trace', cost: () => 150 },
   ];
-  const PAINTS = [[0x5b2ba6, 0xf2c14e], [0xb3121f, 0xf3ead8], [0x0f5d8c, 0xf2c14e], [0x1d1d22, 0xd8a43c], [0xf2f2ee, 0x1b2f8a], [0x2b6b3a, 0xf3ead8], [0xe86a1a, 0x161616], [0xd8b23a, 0x161616]];
   const gEl = document.createElement('div'); gEl.id = 'garage'; gEl.hidden = true; document.body.append(gEl);
   const upg = () => settings.upg || (settings.upg = { engine: 0, armor: 0, guns: 0, paint: 0 });
   function applyUpgrades(L) {
     if (!L || (mode !== 'solo')) return;
     const u = upg(), c = L.car;
-    c.maxV = 44 * (1 + u.engine * 0.08); c.accK = 1 + u.engine * 0.15; c.armor = 1 - u.armor * 0.15; L.gunK = u.guns;
+    c.maxV = (c.baseV || 44) * (1 + u.engine * 0.08); c.accK = (c.baseA || 1) * (1 + u.engine * 0.15); c.armor = 1 - u.armor * 0.15; L.gunK = u.guns;
   }
   function wallet(L) { return L.respect; }
   function openGarage(L) {
@@ -513,8 +512,9 @@ const gx = !HD ? null : (() => {
     if (o.k === 'repair') L.car.hp = 100;
     else if (o.k === 'ammo') { L.ammo = { rockets: 4, mines: 3, nitro: 2 }; }
     else if (o.k === 'paint') {
-      u.paint = (u.paint + 1) % PAINTS.length; const [a, b] = PAINTS[u.paint];
-      const old = L.car.mesh; L.car.mesh = makeCar(a, b, true, 'saloon'); L.car.mesh.position.copy(old.position); L.car.mesh.rotation.copy(old.rotation); scene.remove(old);
+      u.paint = (u.paint + 1) % CAR_PAINTS.length; settings.cars = settings.cars || []; settings.cars[0] = Object.assign(settings.cars[0] || { s: L.car.style || 'saloon' }, { p: (((settings.cars[0] || {}).p ?? 0) + 1) % CAR_PAINTS.length });
+      const [a, b] = CAR_PAINTS[settings.cars[0].p];
+      const old = L.car.mesh; L.car.mesh = makeCar(a, b, true, L.car.style || 'saloon'); L.car.mesh.position.copy(old.position); L.car.mesh.rotation.copy(old.rotation); scene.remove(old);
       L.colour = '#' + new THREE.Color(a).getHexString(); L.heat = 0; L.calm = 0;
       for (const c of npcs) if (c.chase === L) { c.chase = null; c.ai = null; }
     } else u[o.k] = lvl + 1;
@@ -996,7 +996,6 @@ const gx = !HD ? null : (() => {
   }
   function gameStep(dt) { // inside the world step
     const now = performance.now();
-    if (!furnitureBuilt) { buildFurniture(); buildGarage(); furnitureBuilt = true; for (const L of furniture) L.parts.forEach(o => { o.userData.p0 = o.position.clone(); }); }
     step(dt);
     puStep(dt, now); rocketStep(dt); mineStep(dt, now); shieldStep(dt); furnitureStep(dt);
     for (const L of locals) {
@@ -1007,12 +1006,12 @@ const gx = !HD ? null : (() => {
       if (mode === 'solo' && GARAGE.pad && !garageOpen && c.alive) {
         garageCool -= dt;
         const d = Math.hypot(c.x - GARAGE.x, c.z - GARAGE.z);
-        if (d < 5 && c.speed < 9 && garageCool <= 0) openGarage(L);
+        if (d < 6 && c.speed < 9 && garageCool <= 0) openGarage(L);
       }
     }
     if (GARAGE.pad) { GARAGE.pad.ring.visible = mode === 'solo'; GARAGE.pad.ring.material.opacity = 0.5 + Math.sin(now / 250) * 0.3; }
     for (const m of markers) { m.ring.rotation.y += dt * 0.6; m.beam.material.opacity = 0.16 + Math.sin(now / 300) * 0.05; }
-    hud(dt);
+    hud(dt); modeStep(dt);
     if (mission && mission.live) {
       const r = mission.update(mission, dt);
       if (r) endMission(r);
@@ -1029,6 +1028,7 @@ const gx = !HD ? null : (() => {
   }
   gx_onGarage = () => { if (mission && mission.garage) { mission.garageVisited = true; mission.painted = mission.paintAt !== undefined && mission.paintAt !== upg().paint; } };
   function startHook(kind) {
+    if (!furnitureBuilt) { buildFurniture(); buildGarage(); furnitureBuilt = true; for (const f of furniture) f.parts.forEach(o => { o.userData.p0 = o.position.clone(); }); }
     start(kind);
     for (const pk of pickups) { pk.on = false; pk.mesh.visible = false; }
     if (!pus.length) for (let i = 0; i < 12; i++) pus.push(makePu(PU_KINDS[i % PU_KINDS.length]));
@@ -1036,6 +1036,7 @@ const gx = !HD ? null : (() => {
     for (const L of locals) { L.ammo = { rockets: 0, mines: 0, nitro: 1 }; L.weapon = null; }
     if (kind === 'solo') { const L = locals[0]; L.respect = settings.bank || 0; applyUpgrades(L); }
     if (mission && kind !== 'solo') cleanupMission();
+    stopMode(); if (kind === 'split' && settings.gmode >= 2) setupMode(settings.gmode);
   }
 
   // ---------- the radio host comments on the action ----------
@@ -1056,7 +1057,267 @@ const gx = !HD ? null : (() => {
     djCd = performance.now() + 14000;
     say(t, { pitch: 1.05, rate: 1.12, vol: 0.8 });
   }
-  const api = { dj, step: gameStep, tick, start: startHook, cars: () => npcs.concat(extras), damage: damageNpc, addHeat, say, peds: () => peds, stars, special, startMission, renderCampaign, cleanupMission, MISSIONS,
+  // ---------- quick chat: a few ready-made lines, D-pad or keys 1 to 6 ----------
+  const QC = ['Par ici !', 'Attention, derrière toi !', 'Bien joué !', 'Revanche ?', 'Les flics !', 'Tous sur la Butte !'];
+  let qcCd = 0;
+  function quickChat(L, i) {
+    if (!L || !QC[i] || performance.now() < qcCd) return; qcCd = performance.now() + 1200;
+    const who = mode === 'online' ? (settings.nick || 'Moi') : 'J' + (L.slot + 1);
+    if (mode === 'online') Net.emit('qc', { i, nick: settings.nick || 'Joueur' });
+    chatShow(who, QC[i], L.colour);
+  }
+  function chatIn(peer, d) {
+    if (!d || !Number.isInteger(d.i) || !QC[d.i]) return;
+    const R = Net.remotes.get(peer); chatShow(R ? R.nick : String(d.nick || 'Joueur').slice(0, 14), QC[d.i], R ? R.colour : '#fff');
+  }
+  function chatShow(who, text, colour) {
+    const d = document.createElement('div'); d.className = 'qc'; const b = document.createElement('b'); b.textContent = who + ' '; b.style.color = colour || 'var(--sunset)'; d.append(b, text);
+    $('feed').prepend(d); setTimeout(() => d.remove(), 6000); while ($('feed').children.length > 6) $('feed').lastChild.remove();
+    sfx.pick();
+  }
+  // =====================================================================================
+  // split-screen modes: capture the flag (butte vs boulevard), king of the hill (place Jean-Macé), checkpoint race
+  // =====================================================================================
+  let gm = null;
+  const MODE_NAMES = { 2: 'Capture du drapeau', 3: 'Roi de la colline', 4: 'Course de checkpoints' };
+  function flagMesh(team) {
+    const g = new THREE.Group(), T = TEAMS[team];
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3.2, 8), chrome); pole.position.y = 1.6; g.add(pole);
+    const cloth = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.95, 8, 4), new THREE.MeshStandardMaterial({ color: hd.lin(T.body), emissive: hd.lin(T.body), emissiveIntensity: 0.35, side: THREE.DoubleSide, roughness: 0.7 }));
+    cloth.position.set(0.78, 2.7, 0); g.add(cloth); g.userData.cloth = cloth;
+    const p0 = cloth.geometry.attributes.position.array.slice(); cloth.userData.p0 = p0;
+    g.traverse(o => { o.userData.hdLinear = true; o.castShadow = !!o.geometry; }); scene.add(g); return g;
+  }
+  const CP_ROUTE = [[160, -440], [-150, -537], [-86, -374], [-200, -150], [-232, 352], [-300, 540], [45, 283], [100, 20]];
+  function setupMode(k) {
+    gm = { kind: k, t: 0, objs: [] };
+    if (k === 2) { // flags at the two bases
+      gm.score = [0, 0];
+      gm.flags = [0, 1].map(t => { const b = bases()[t], [x, z] = [b.x + b.ux * 14, b.z + b.uz * 14]; const m = addMarker(x, z, 4, TEAMS[t].body); return { team: t, home: [x, z], x, z, carrier: null, atHome: true, mesh: flagMesh(t), marker: m, idle: 0 }; });
+      Match.goal = 3;
+    } else if (k === 3) {
+      const [x, z] = roadPoint(...P.jeanMace); gm.hill = addMarker(x, z, 26, 0xf2c81e); gm.owner = null;
+      for (const r of rivals) r.ai.goal = { x, z };
+      for (const L of locals) L.hillT = 0;
+      Match.goal = 60;
+    } else if (k === 4) {
+      benchRivals();
+      gm.cps = CP_ROUTE.map(([x, z], i) => { const [a, b] = roadPoint(x, z); return addMarker(a, b, 9, i === CP_ROUTE.length - 1 ? 0xffffff : 0x3ac8ff); });
+      for (const L of locals) { L.cp = 0; L.kills = 0; }
+      gm.count = 3.5; Match.goal = gm.cps.length;
+    }
+    updateClock();
+  }
+  function stopMode() { if (!gm) return; if (gm.flags) for (const f of gm.flags) scene.remove(f.mesh); clearMarkers(); if (gm.kind === 4) restoreRivals(); gm = null; }
+  function modeStep(dt) {
+    if (!gm) return;
+    gm.t += dt;
+    const now = performance.now();
+    if (gm.kind === 2) {
+      const cars = [...allPlayerCars(), ...rivals].filter(c => c.alive && c.team >= 0);
+      for (const f of gm.flags) {
+        if (f.carrier && !f.carrier.alive) { f.carrier = null; f.idle = 0; flashAll('Drapeau ' + (f.team ? 'chantenaysien' : 'des Rapaces') + ' à terre', ''); }
+        if (f.carrier) { f.x = f.carrier.x; f.z = f.carrier.z; }
+        else if (!f.atHome) { f.idle += dt; if (f.idle > 25) { f.atHome = true; [f.x, f.z] = f.home; } }
+        for (const c of cars) {
+          if (f.carrier || Math.hypot(c.x - f.x, c.z - f.z) > 4.5) continue;
+          if (c.team !== f.team) { f.carrier = c; f.atHome = false; f.idle = 0; sfx.pick(); flashAll((c.owner && c.owner.slot !== undefined ? 'J' + (c.owner.slot + 1) : TEAMS[c.team].one) + ' a le drapeau !', 'Ramène-le à ta base'); break; }
+          if (!f.atHome) { f.atHome = true; [f.x, f.z] = f.home; sfx.pick(); flashAll('Drapeau ramené', TEAMS[f.team].short); break; }
+        }
+        // capture: carrier reaches its own flag, which must be at home
+        if (f.carrier) { const own = gm.flags[f.carrier.team]; if (own.atHome && Math.hypot(f.carrier.x - own.home[0], f.carrier.z - own.home[1]) < 6) {
+          const tm = f.carrier.team; gm.score[tm]++; if (f.carrier.owner && f.carrier.local) { f.carrier.owner.kills++; f.carrier.owner.respect += 300; }
+          flashAll('Capture ! ' + TEAMS[tm].short, gm.score[0] + ' – ' + gm.score[1]); say('Drapeau capturé pour les ' + TEAMS[tm].short + ' !', { cancel: true });
+          f.carrier = null; f.atHome = true; [f.x, f.z] = f.home; for (const L of locals) rumbleFor(L, 0.5, 0.6, 300);
+        } }
+        const y = f.carrier ? f.carrier.mesh.position.y + 1.1 : surfaceH(f.x, f.z) + 0.2;
+        f.mesh.position.set(f.x, y, f.z); f.mesh.rotation.y = now / 1400;
+        const cl = f.mesh.userData.cloth, pa = cl.geometry.attributes.position, p0 = cl.userData.p0;
+        for (let i = 0; i < pa.count; i++) { const x = p0[i * 3]; pa.array[i * 3 + 2] = Math.sin(x * 3 + now / 160) * 0.12 * (x + 0.75); } pa.needsUpdate = true;
+        f.marker.set(f.x, f.z); f.marker.beam.visible = !f.carrier;
+      }
+      for (const r of rivals) { // bots: grab the other flag, carriers go home
+        const enemyFlag = gm.flags[1 - r.team], mine = gm.flags[r.team];
+        r.ai.goal = enemyFlag.carrier === r ? { x: mine.home[0], z: mine.home[1] } : !mine.atHome && !mine.carrier ? { x: mine.x, z: mine.z } : { x: enemyFlag.x, z: enemyFlag.z };
+        if (enemyFlag.carrier === r) { r.ai.mode = 'cruise'; }
+      }
+    } else if (gm.kind === 3) {
+      const h = gm.hill, inside = c => c.alive && Math.hypot(c.x - h.x, c.z - h.z) < h.r;
+      const ps = locals.filter(L => inside(L.car)), bots = rivals.filter(inside);
+      const teams = new Set(ps.map(L => teamMode ? 't' + L.team : 'p' + L.slot)); bots.forEach(r => teams.add(teamMode ? 't' + r.team : 'bots'));
+      const owner = teams.size === 1 ? [...teams][0] : null;
+      for (const L of ps) if (owner && (teamMode ? 't' + L.team : 'p' + L.slot) === owner) { L.hillT += dt; L.kills = Math.floor(L.hillT); }
+      if (owner !== gm.owner) { gm.owner = owner; h.ring.material.color.setHex(owner ? (owner === 'bots' ? 0xff3b3b : 0x7be07b) : 0xf2c81e).multiplyScalar(3); }
+      h.beam.material.opacity = teams.size > 1 ? 0.35 + Math.sin(now / 90) * 0.15 : 0.2;
+    } else if (gm.kind === 4) {
+      if (gm.count > 0) {
+        const before = Math.ceil(gm.count); gm.count -= dt; const after = Math.ceil(gm.count);
+        for (const L of locals) { L.car.vx = L.car.vz = 0; }
+        if (after !== before) { flashAll(after > 0 ? String(after) : 'Partez !', after > 0 ? 'Course de checkpoints' : ''); sfx.gun(after > 0); }
+      }
+      for (const L of locals) {
+        const cp = gm.cps[L.cp]; if (!cp) continue;
+        if (Math.hypot(L.car.x - cp.x, L.car.z - cp.z) < cp.r + 2) { L.cp++; L.kills = L.cp; L.respect += 50; sfx.pick(); flashFor(L, L.cp >= gm.cps.length ? 'Arrivée !' : 'Checkpoint ' + L.cp + ' / ' + gm.cps.length, ''); }
+      }
+      gm.cps.forEach((m, i) => { const next = locals.some(L => L.cp === i); m.beam.material.opacity = next ? 0.3 + Math.sin(now / 150) * 0.1 : 0.05; m.ring.visible = next || locals.some(L => L.cp < i); });
+    }
+    if (locals.length === 1 || true) {
+      const txt = gm.kind === 2 ? 'Rapaces ' + gm.score[0] + ' – ' + gm.score[1] + ' Chantenaysiens' : gm.kind === 3 ? (gm.owner ? (gm.owner === 'bots' ? 'Les Rapaces tiennent la place' : gm.owner[0] === 't' ? TEAMS[+gm.owner[1]].short + ' tiennent la place' : 'J' + (+gm.owner.slice(1) + 1) + ' tient la place') : 'Place libre ou disputée')
+        : locals.map(L => 'J' + (L.slot + 1) + ' ' + Math.min(L.cp, gm.cps.length) + '/' + gm.cps.length).join(' · ');
+      objective(MODE_NAMES[gm.kind], txt); objDir(null);
+    }
+  }
+  function modeTeamScores() { return gm && gm.kind === 2 ? gm.score.slice() : null; }
+  function goalText() { return gm ? (gm.kind === 2 ? '3 captures pour gagner' : gm.kind === 3 ? '60 points pour gagner' : gm.cps.length + ' checkpoints') : ''; }
+  function rematchMode() { if (!gm) return; const k = gm.kind; stopMode(); setupMode(k); }
+  // =====================================================================================
+  // hand-made landmarks: Saint-Martin's bell tower, the Loire quays, the Misery quarry, the yellow Titan crane
+  // =====================================================================================
+  const LM = {};
+  const stdM = (c, r = 0.8, m = 0, extra = {}) => Object.assign(new THREE.MeshStandardMaterial({ color: hd.lin(c), roughness: r, metalness: m }), extra);
+  function stoneTex(w, h, rows, tint) { // ashlar courses for the church and the quay walls
+    const [c, g] = canvas(w, h); g.fillStyle = tint; g.fillRect(0, 0, w, h);
+    const rh = h / rows;
+    for (let r = 0; r < rows; r++) { let x = -(r % 2) * 18; while (x < w) { const bw = 26 + Math.random() * 22, l = 0.85 + Math.random() * 0.25;
+      g.fillStyle = `rgba(${l > 1 ? 255 : 0},${l > 1 ? 255 : 0},${l > 1 ? 255 : 0},${Math.abs(l - 1) * 0.5})`; g.fillRect(x + 1, r * rh + 1, bw - 2, rh - 2);
+      g.fillStyle = 'rgba(40,30,25,.45)'; g.fillRect(x, r * rh, bw, 1.5); g.fillRect(x, r * rh, 1.5, rh); x += bw; } }
+    const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.encoding = THREE.sRGBEncoding; t.anisotropy = 8; return t;
+  }
+  function church() { // Saint-Martin de Chantenay: west bell tower with a slate spire over the place du Bourg
+    let b = null, bi = -1; W.buildings.forEach((x, i) => { if (x.k === 6) { const n = x.p.length / 2; let cx = 0, cz = 0; for (let k = 0; k < n; k++) { cx += x.p[2 * k]; cz += x.p[2 * k + 1]; } cx /= n; cz /= n; if (Math.hypot(cx + 205, cz - 350) < 40) { b = x; bi = i; } } });
+    if (!b) return;
+    let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (let k = 0; k < b.p.length; k += 2) { x0 = Math.min(x0, b.p[k]); x1 = Math.max(x1, b.p[k]); z0 = Math.min(z0, b.p[k + 1]); z1 = Math.max(z1, b.p[k + 1]); }
+    const tx = x0 - 1.5, tz = (z0 + z1) / 2, base = Math.min(groundH(tx, tz), b.b != null ? b.b : 1e9) - 0.5, top = base + 26;
+    const st = stoneTex(512, 512, 16, '#cfc5b0'); st.repeat.set(1, 3);
+    const stone = stdM(0xffffff, 0.85, 0, { map: st }), slate = stdM(0x3c4250, 0.55, 0.2), dark = stdM(0x141418, 0.9), gold = stdM(0xd8a43c, 0.3, 1);
+    const g = new THREE.Group(); g.position.set(tx, 0, tz);
+    const add = (geo, m, x, y, z) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = o.receiveShadow = true; g.add(o); return o; };
+    add(new THREE.BoxGeometry(7, top - base, 7), stone, 0, (top + base) / 2, 0);                    // tower shaft
+    add(new THREE.BoxGeometry(7.6, 0.6, 7.6), stone, 0, base + 10, 0); add(new THREE.BoxGeometry(7.6, 0.6, 7.6), stone, 0, top - 0.3, 0); // string courses
+    for (const [sx, sz, ry] of [[0, 3.52, 0], [0, -3.52, 0], [3.52, 0, Math.PI / 2], [-3.52, 0, Math.PI / 2]]) {
+      const o = add(new THREE.BoxGeometry(1.6, 4, 0.1), dark, sx, top - 4, sz); o.rotation.y = ry;          // belfry openings
+      const w = add(new THREE.BoxGeometry(1.2, 2.6, 0.1), dark, sx * 0.995, base + 5.5, sz * 0.995); w.rotation.y = ry; // tall windows
+    }
+    // west portal facing the place du Bourg
+    const door = add(new THREE.BoxGeometry(0.2, 4.5, 2.6), stdM(0x3a2416, 0.7), -3.55, base + 2.25 + 0.5, 0);
+    const arch = add(new THREE.CylinderGeometry(1.3, 1.3, 0.22, 16, 1, false, 0, Math.PI).rotateX(Math.PI / 2).rotateY(Math.PI / 2), stdM(0x3a2416, 0.7), -3.55, base + 5, 0); arch.rotation.z = 0;
+    // clock faces, lit at night
+    const [cc, cg] = canvas(128, 128); cg.fillStyle = '#efe6cf'; cg.beginPath(); cg.arc(64, 64, 60, 0, 6.283); cg.fill(); cg.strokeStyle = '#222'; cg.lineWidth = 5; cg.stroke();
+    for (let k = 0; k < 12; k++) { const a = k / 12 * 6.283; cg.fillStyle = '#222'; cg.fillRect(64 + Math.cos(a) * 48 - 3, 64 + Math.sin(a) * 48 - 3, 6, 6); }
+    cg.lineWidth = 6; cg.beginPath(); cg.moveTo(64, 64); cg.lineTo(64, 26); cg.moveTo(64, 64); cg.lineTo(92, 74); cg.stroke();
+    const ct = new THREE.CanvasTexture(cc); ct.encoding = THREE.sRGBEncoding;
+    const clockM = new THREE.MeshStandardMaterial({ map: ct, emissive: 0xffffff, emissiveMap: ct, emissiveIntensity: 0.15, roughness: 0.4 }); LM.clockM = clockM;
+    for (const [sx, sz, ry] of [[0, 3.56, 0], [0, -3.56, Math.PI], [3.56, 0, Math.PI / 2], [-3.56, 0, -Math.PI / 2]]) { const o = add(new THREE.CircleGeometry(1.2, 24), clockM, sx, base + 13.5, sz); o.rotation.y = ry; }
+    // pinnacles and the octagonal spire
+    for (const sx of [-3.2, 3.2]) for (const sz of [-3.2, 3.2]) add(new THREE.ConeGeometry(0.5, 3.4, 4), stone, sx, top + 1.7, sz);
+    add(new THREE.CylinderGeometry(3.2, 3.6, 1.2, 8), stone, 0, top + 0.6, 0);
+    add(new THREE.ConeGeometry(3.1, 17, 8), slate, 0, top + 1.2 + 8.5, 0);
+    for (let k = 0; k < 8; k++) { const a = k / 8 * 6.283; const d = add(new THREE.BoxGeometry(0.7, 1.4, 0.7), slate, Math.cos(a) * 2.6, top + 3.2, Math.sin(a) * 2.6); d.rotation.y = -a; } // lucarnes
+    add(new THREE.BoxGeometry(0.12, 2, 0.12), gold, 0, top + 19.1, 0); add(new THREE.BoxGeometry(0.12, 0.12, 1.1), gold, 0, top + 19.5, 0); // cross
+    add(new THREE.SphereGeometry(0.25, 10, 8), gold, 0, top + 18.2, 0);
+    hd.linearize(g); g.traverse(o => { o.userData.hdLinear = true; }); scene.add(g);
+    for (const [ax, az, bx, bz] of [[tx - 3.5, tz - 3.5, tx + 3.5, tz - 3.5], [tx + 3.5, tz - 3.5, tx + 3.5, tz + 3.5], [tx + 3.5, tz + 3.5, tx - 3.5, tz + 3.5], [tx - 3.5, tz + 3.5, tx - 3.5, tz - 3.5]]) gridAdd([ax, az, bx, bz], 0);
+  }
+  // quays: a stone wall along the Loire, traced on the terrain (marching squares on the height grid)
+  function quays() {
+    const D = DEM, lvl = (WATER_Y + 1.0) * 10, H = (i, j) => D.h[Math.max(0, Math.min(D.nz - 1, j)) * D.nx + Math.max(0, Math.min(D.nx - 1, i))];
+    const segs = [];
+    for (let j = 0; j < D.nz - 1; j++) for (let i = 0; i < D.nx - 1; i++) {
+      const v = [H(i, j), H(i + 1, j), H(i + 1, j + 1), H(i, j + 1)], P_ = [[i, j], [i + 1, j], [i + 1, j + 1], [i, j + 1]], pts = [];
+      for (let e = 0; e < 4; e++) { const a = v[e], b2 = v[(e + 1) % 4]; if ((a < lvl) !== (b2 < lvl)) { const t = (lvl - a) / (b2 - a), [ai, aj] = P_[e], [bi, bj] = P_[(e + 1) % 4]; pts.push([D.x0 + (ai + (bi - ai) * t) * D.step, D.z0 + (aj + (bj - aj) * t) * D.step]); } }
+      if (pts.length === 2) segs.push([...pts[0], ...pts[1]]); else if (pts.length === 4) { segs.push([...pts[0], ...pts[1]]); segs.push([...pts[2], ...pts[3]]); }
+    }
+    if (!segs.length) return;
+    const st = stoneTex(512, 256, 8, '#9a9184'); const wallM = stdM(0xffffff, 0.9, 0, { map: st }), copeM = stdM(0xb8b0a2, 0.75);
+    const pos = [], uv = [], cpos = [], bollards = [];
+    let acc = 0;
+    for (const [ax, az, bx, bz] of segs) {
+      const L = Math.hypot(bx - ax, bz - az); if (L < 0.01) continue;
+      const yt = Math.max(groundH(ax, az), groundH(bx, bz), WATER_Y + 1.3) + 0.15, yb = WATER_Y - 2.5;
+      pos.push(ax, yb, az, bx, yb, bz, bx, yt, bz, ax, yb, az, bx, yt, bz, ax, yt, az);
+      uv.push(acc / 6, 0, (acc + L) / 6, 0, (acc + L) / 6, (yt - yb) / 3, acc / 6, 0, (acc + L) / 6, (yt - yb) / 3, acc / 6, (yt - yb) / 3);
+      const nx = -(bz - az) / L * 0.35, nz = (bx - ax) / L * 0.35;
+      cpos.push(ax - nx, yt, az - nz, bx - nx, yt, bz - nz, bx + nx, yt, bz + nz, ax - nx, yt, az - nz, bx + nx, yt, bz + nz, ax + nx, yt, az + nz);
+      acc += L; if (acc % 22 < L && Math.abs(ax) < HX + 140) bollards.push([ax, az, yt]);
+    }
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); geo.computeVertexNormals();
+    const wall = new THREE.Mesh(geo, wallM); wall.material.side = THREE.DoubleSide; wall.receiveShadow = true;
+    const cg = new THREE.BufferGeometry(); cg.setAttribute('position', new THREE.Float32BufferAttribute(cpos, 3)); cg.computeVertexNormals();
+    const cope = new THREE.Mesh(cg, copeM); cope.material.side = THREE.DoubleSide; cope.receiveShadow = true;
+    const bm = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.18, 0.24, 0.6, 10).translate(0, 0.3, 0), stdM(0x1c1c20, 0.5, 0.6), bollards.length);
+    const m4 = new THREE.Matrix4(); bollards.forEach(([x, z, y], i) => { m4.makeTranslation(x, y, z); bm.setMatrixAt(i, m4); }); bm.castShadow = true;
+    const g = new THREE.Group(); g.add(wall, cope, bm); hd.linearize(g); g.traverse(o => { o.userData.hdLinear = true; }); scene.add(g);
+    LM.quay = segs;
+    // a moored barge and the yellow Titan crane at the far end of the quays, towards the Île de Nantes
+    let east = null; for (const sg of segs) if (sg[1] > 480 && (!east || sg[0] > east[0])) east = sg;
+    let mid = null; for (const sg of segs) if (sg[1] > 520 && Math.abs(sg[0] - 250) < (mid ? Math.abs(mid[0] - 250) : 1e9)) mid = sg;
+    if (mid) barge(mid); if (east) titan(east);
+  }
+  function barge(sg) {
+    const [ax, az, bx, bz] = sg, L = Math.hypot(bx - ax, bz - az) || 1, ux = (bx - ax) / L, uz = (bz - az) / L;
+    let nx = -uz, nz = ux; if (groundH(ax + nx * 8, az + nz * 8) > groundH(ax - nx * 8, az - nz * 8)) { nx = -nx; nz = -nz; } // towards the water
+    const g = new THREE.Group(), hull = stdM(0x1f2a36, 0.6, 0.2), red = stdM(0x8a1d1d, 0.6), cream = stdM(0xe8e2d0, 0.6);
+    const add = (geo, m, x, y, z) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
+    add(new THREE.BoxGeometry(5.2, 1.6, 30), hull, 0, 0.2, 0); add(new THREE.BoxGeometry(5.3, 0.25, 30.1), red, 0, 1.05, 0);
+    add(new THREE.BoxGeometry(3.8, 2.4, 5), cream, 0, 2.2, 11); add(new THREE.BoxGeometry(4, 0.2, 5.4), red, 0, 3.5, 11);
+    add(new THREE.BoxGeometry(3.6, 0.7, 18), stdM(0x3a3020, 0.8), 0, 1.4, -3);
+    g.position.set(ax + nx * 6, WATER_Y - 0.1, az + nz * 6); g.rotation.y = Math.atan2(ux, uz);
+    hd.linearize(g); g.traverse(o => { o.userData.hdLinear = true; }); scene.add(g); LM.barge = g;
+  }
+  function titan(sg) { // the yellow Titan crane (1954): a lattice tower, the cabin, the long boom over the river
+    const [ax, az] = sg, x = Math.max(ax + 160, HX + 150), z = Math.min(az + 30, 600);
+    const yel = stdM(0xf2b705, 0.45, 0.35), dark = stdM(0x2a2a2e, 0.6, 0.5), g = new THREE.Group();
+    const add = (geo, m, px, py, pz, rx = 0, ry = 0, rz = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(px, py, pz); o.rotation.set(rx, ry, rz); o.castShadow = true; g.add(o); return o; };
+    // portal legs with cross-bracing
+    for (const lx of [-5, 5]) for (const lz of [-5, 5]) add(new THREE.BoxGeometry(0.8, 26, 0.8), yel, lx, 13, lz);
+    for (const y of [6, 13, 20, 26]) { add(new THREE.BoxGeometry(11, 0.6, 0.6), yel, 0, y, -5); add(new THREE.BoxGeometry(11, 0.6, 0.6), yel, 0, y, 5); add(new THREE.BoxGeometry(0.6, 0.6, 11), yel, -5, y, 0); add(new THREE.BoxGeometry(0.6, 0.6, 11), yel, 5, y, 0); }
+    for (const y of [3, 10, 17]) { add(new THREE.BoxGeometry(0.35, 9.5, 0.35), yel, 0, y + 3.5, -5, 0, 0, 0.9); add(new THREE.BoxGeometry(0.35, 9.5, 0.35), yel, 0, y + 3.5, 5, 0, 0, -0.9); }
+    add(new THREE.CylinderGeometry(2.4, 2.4, 1.2, 20), dark, 0, 27, 0);
+    add(new THREE.BoxGeometry(7, 6, 7), yel, 0, 31, 0);                                  // machinery house
+    add(new THREE.BoxGeometry(2.6, 2.4, 2.4), stdM(0x9ab0c0, 0.1, 0.2), 4.6, 30, 0);     // cabin
+    add(new THREE.BoxGeometry(4, 12, 4), yel, 0, 40, 0);                                 // A-frame mast
+    add(new THREE.BoxGeometry(1.4, 1.6, 62), yel, 0, 34.5, -24);                         // the boom over the water
+    add(new THREE.BoxGeometry(1.2, 1.2, 18), yel, 0, 35, 14);                            // counter-jib
+    add(new THREE.BoxGeometry(4.5, 4, 5), dark, 0, 33, 21);                              // counterweight
+    add(new THREE.CylinderGeometry(0.05, 0.05, 46, 4), dark, 0, 40, -18, 1.2, 0, 0); add(new THREE.CylinderGeometry(0.05, 0.05, 22, 4), dark, 0, 40, 10, -1.0, 0, 0);
+    add(new THREE.CylinderGeometry(0.04, 0.04, 20, 4), dark, 0, 24, -52); add(new THREE.BoxGeometry(1.2, 1.4, 1.2), dark, 0, 14, -52);
+    const redL = new THREE.MeshBasicMaterial({ color: new THREE.Color(8, 0.3, 0.2) }); LM.titanLights = redL;
+    for (const p of [[0, 46.2, 0], [0, 35.6, -55], [0, 35.6, 22]]) add(new THREE.SphereGeometry(0.35, 8, 6), redL, ...p);
+    g.position.set(x, Math.max(groundH(x, z), WATER_Y + 1.2), z); g.rotation.y = -0.6; g.scale.setScalar(1.15);
+    hd.linearize(g); g.traverse(o => { o.userData.hdLinear = true; }); scene.add(g); LM.titan = g;
+  }
+  // the Misery quarry: the granite cliff face of the old quarry, just east of the district
+  function misery() {
+    const x = HX + 75, z0 = 180, z1 = 380, g = new THREE.Group();
+    const [c, cg] = canvas(512, 256); cg.fillStyle = '#7d7468'; cg.fillRect(0, 0, 512, 256);
+    for (let i = 0; i < 900; i++) { const l = 80 + Math.random() * 90; cg.fillStyle = `rgba(${l},${l - 6},${l - 14},.5)`; const w = 6 + Math.random() * 40; cg.fillRect(Math.random() * 512, Math.random() * 256, w, 2 + Math.random() * 10); }
+    for (let i = 0; i < 40; i++) { cg.strokeStyle = 'rgba(30,26,22,.55)'; cg.lineWidth = 1 + Math.random() * 2; cg.beginPath(); const sx = Math.random() * 512; cg.moveTo(sx, 0); cg.lineTo(sx + (Math.random() - 0.5) * 60, 256); cg.stroke(); }
+    for (let i = 0; i < 160; i++) { cg.fillStyle = `rgba(${40 + Math.random() * 40},${80 + Math.random() * 50},${30},.6)`; cg.beginPath(); cg.arc(Math.random() * 512, Math.random() < 0.6 ? Math.random() * 40 : Math.random() * 256, 3 + Math.random() * 9, 0, 6.283); cg.fill(); }
+    const t = new THREE.CanvasTexture(c); t.wrapS = THREE.RepeatWrapping; t.encoding = THREE.sRGBEncoding; t.repeat.set(3, 1);
+    const n = 40, geo = new THREE.PlaneGeometry(z1 - z0, 30, n, 8), p = geo.attributes.position;
+    for (let i = 0; i < p.count; i++) { const u = p.getX(i), v = p.getY(i); p.setZ(i, Math.sin(u * 0.13) * 3 + Math.sin(u * 0.41 + v * 0.3) * 1.6 + (Math.random() - 0.5) * 1.2 + (v + 15) * 0.25); }
+    geo.computeVertexNormals();
+    const face = new THREE.Mesh(geo, stdM(0xffffff, 0.95, 0, { map: t })); face.rotation.y = -Math.PI / 2; face.position.set(x, groundH(x - 30, (z0 + z1) / 2) + 14, (z0 + z1) / 2); face.receiveShadow = face.castShadow = true;
+    g.add(face);
+    // the top of the cliff: trees
+    const crown = new THREE.InstancedMesh(hd.crownGeo(), stdM(0x3c6a2a, 0.9), 26), m4 = new THREE.Matrix4();
+    for (let i = 0; i < 26; i++) { const zz = z0 + Math.random() * (z1 - z0); m4.compose(new THREE.Vector3(x + 4 + Math.random() * 14, face.position.y + 15 + Math.random() * 2, zz), new THREE.Quaternion(), new THREE.Vector3().setScalar(1.4 + Math.random())); crown.setMatrixAt(i, m4); }
+    g.add(crown);
+    hd.linearize(g); g.traverse(o => { o.userData.hdLinear = true; }); scene.add(g); LM.misery = g;
+  }
+  function world() {
+    try { church(); } catch (e) { console.warn('church', e); }
+    try { quays(); } catch (e) { console.warn('quays', e); }
+    try { misery(); } catch (e) { console.warn('misery', e); }
+    buildFurniture(); buildGarage(); furnitureBuilt = true; for (const f of furniture) f.parts.forEach(o => { o.userData.p0 = o.position.clone(); });
+  }
+  function landmarkTick() { // lights that follow the time of day
+    const n = hd.amb ? Math.min(1, hd.amb.t / 2.2) : 0;
+    if (LM.clockM) LM.clockM.emissiveIntensity = 0.15 + n * 2.2;
+    if (LM.titanLights) LM.titanLights.color.setRGB((performance.now() / 700 | 0) % 2 ? 8 * n + 0.6 : 0.4, 0.3, 0.2);
+  }
+  const api = { dj, quickChat, chatIn, step: gameStep, world, landmarkTick, tick, start: startHook, cars: () => npcs.concat(extras), damage: damageNpc, addHeat, say, peds: () => peds, stars, special, startMission, renderCampaign, cleanupMission, MISSIONS,
+    get gmode() { return gm ? gm.kind : 0; }, teamScores: modeTeamScores, goalText, rematch: rematchMode,
     get blocking() { return blocking; }, get mission() { return mission; }, foes: () => extras.filter(c => c.alive && c.team === 1), saveBank, pus: () => pus, furniture: () => furniture, garage: GARAGE,
     get onGarage() { return gx_onGarage; },
     minimap(me, add) { minimap(me, add); for (const pu of pus) if (pu.on) add(pu, '#' + new THREE.Color(PU_COL[pu.kind]).getHexString()); for (const c of extras) if (c.alive) add(c, c.friendly ? '#f2c81e' : '#ff3b3b'); for (const m of markers) add(m, '#ffffff'); if (GARAGE.pad && mode === 'solo') add(GARAGE, '#3a8aff'); } };
