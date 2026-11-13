@@ -4,12 +4,14 @@
 set -e
 cd "$(dirname "$0")"
 mkdir -p build && cd build
-cp ../data/world_raw.json ../data/facades2.json ../data/shops.json ../data/facade_hints.json .
+cp ../data/world_raw.json ../data/facades2.json ../data/shops.json ../data/facade_hints.json ../data/furniture.json .
 # the HD renderer lives in its own file and is inlined into the template
 python3 - <<'PY'
 t = open('../src/template.html', encoding='utf-8').read()
 assert '/*@HD_MODULE@*/' in t
-open('template.html', 'w', encoding='utf-8').write(t.replace('/*@HD_MODULE@*/', open('../src/hd.js', encoding='utf-8').read()))
+assert '/*@GX_MODULE@*/' in t
+t = t.replace('/*@HD_MODULE@*/', open('../src/hd.js', encoding='utf-8').read()).replace('/*@GX_MODULE@*/', open('../src/gx.js', encoding='utf-8').read())
+open('template.html', 'w', encoding='utf-8').write(t)
 PY
 python3 ../src/carve.py                                   # smooth road profiles, bridges, finer terrain -> world.json
 # data/facades_curated is made from data/facades by src/curate_facades.py (needs Pillow + numpy); it is committed
