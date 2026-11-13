@@ -832,7 +832,7 @@ const hd = !HD ? null : (() => {
     const S = bays * 256, SH = 1024, [c, g] = canvas(S, SH), [ce, ge] = canvas(S, SH), [ch, gh] = canvas(S, SH), [cr, gr] = canvas(S, SH), R = Math.random;
     ge.fillStyle = '#000'; ge.fillRect(0, 0, S, SH); gr.fillStyle = 'rgb(0,235,0)'; gr.fillRect(0, 0, S, SH);
     const H = (v, x, y, w, h) => { gh.fillStyle = `rgb(${v},${v},${v})`; gh.fillRect(x, y, w, h); };
-    const stone = (x, y, w, h, hv, tone = 0) => { const v = Math.min(250, 222 + tone + (R() * 8 | 0)); g.fillStyle = `rgb(${v},${v - 5},${v - 16})`; g.fillRect(x, y, w, h); H(hv, x, y, w, h); };
+    const stone = (x, y, w, h, hv, tone = 0) => { const v = Math.min(240, 212 + tone + (R() * 8 | 0)); g.fillStyle = `rgb(${v},${v - 14},${v - 40})`; g.fillRect(x, y, w, h); H(hv, x, y, w, h); g.fillStyle = 'rgba(70,55,35,.22)'; g.fillRect(x, y + h - 3, w, 3); g.fillRect(x + w - 2, y, 2, h); };
     // white limestone in courses of dressed blocks
     H(140, 0, 0, S, SH);
     for (let y = 0, row = 0; y < SH; y += 34, row++) {
@@ -869,8 +869,12 @@ const hd = !HD ? null : (() => {
       // ground floor: window in a stone frame, most with the white blinds down
       const gx = x0 + 80, gyy = 628, gw = 96, ghh = 236;
       stone(gx - 16, gyy - 14, gw + 32, ghh + 28, 172, 2); stone(gx + gw / 2 - 10, gyy - 26, 20, 26, 212, 12);
-      if (R() < 0.7) { g.fillStyle = '#e6e3db'; g.fillRect(gx, gyy, gw, ghh); H(118, gx, gyy, gw, ghh); g.fillStyle = 'rgba(0,0,0,.1)'; for (let y = gyy + 4; y < gyy + ghh; y += 7) g.fillRect(gx, y, gw, 2); gr.fillStyle = 'rgb(0,150,0)'; gr.fillRect(gx, gyy, gw, ghh); }
-      else { lg = g.createLinearGradient(0, gyy, 0, gyy + ghh); lg.addColorStop(0, '#5c6c7c'); lg.addColorStop(1, '#1c252e'); g.fillStyle = lg; g.fillRect(gx, gyy, gw, ghh); H(70, gx, gyy, gw, ghh); gr.fillStyle = 'rgb(0,24,165)'; gr.fillRect(gx, gyy, gw, ghh); g.fillStyle = '#f1efe8'; g.fillRect(gx + gw / 2 - 3, gyy, 6, ghh); g.fillRect(gx, gyy + ghh * 0.3, gw, 4); }
+      lg = g.createLinearGradient(0, gyy, 0, gyy + ghh); lg.addColorStop(0, '#7f95ab'); lg.addColorStop(0.5, '#42546a'); lg.addColorStop(1, '#1e2833'); g.fillStyle = lg; g.fillRect(gx, gyy, gw, ghh);
+      H(70, gx, gyy, gw, ghh); gr.fillStyle = 'rgb(0,24,165)'; gr.fillRect(gx, gyy, gw, ghh);
+      if (R() < 0.5) { const le = ge.createLinearGradient(0, gyy, 0, gyy + ghh); le.addColorStop(0, '#ffdc98'); le.addColorStop(1, '#c58c3c'); ge.fillStyle = le; ge.fillRect(gx, gyy, gw, ghh); }
+      g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(gx, gyy, 5, ghh);
+      g.fillStyle = '#f1efe8'; g.fillRect(gx + gw / 2 - 3, gyy, 6, ghh); for (let k = 1; k < 4; k++) g.fillRect(gx, gyy + ghh * k / 4 - 1, gw, 3); g.strokeStyle = '#f1efe8'; g.lineWidth = 5; g.strokeRect(gx + 2, gyy + 2, gw - 4, ghh - 4);
+      ge.fillStyle = '#000'; ge.fillRect(gx + gw / 2 - 3, gyy, 6, ghh); for (let k = 1; k < 4; k++) ge.fillRect(gx, gyy + ghh * k / 4 - 1, gw, 3);
       g.fillStyle = 'rgba(0,0,0,.38)'; g.fillRect(gx, gyy, gw, 7);
       stone(gx - 22, gyy + ghh + 14, gw + 44, 12, 215, 10); g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(gx - 22, gyy + ghh + 26, gw + 44, 5);
     }
@@ -883,7 +887,7 @@ const hd = !HD ? null : (() => {
   function townHall(b, base, y0, sa) {
     const p = b.p, n = p.length / 2, gy = base + 0.3, top = gy + 9.6, WH = 9.6;
     const main = new Buf(), plain = new Buf(), st = new Buf(), roof = new Buf();
-    const cStone = col('#e9e4d6'), cGran = col('#8f8a84'), cBrick = col('#d8d2c2'), cDark = col('#141a22'), cWood = col('#3a2416'), cPink = col('#b08a7c');
+    const cStone = col('#ddd0b4'), cGran = col('#8f8a84'), cBrick = col('#d8d2c2'), cDark = col('#141a22'), cWood = col('#3a2416'), cPink = col('#b08a7c');
     // oriented box: along t (centre cx,cz, half length hl), from depth d0 to d1 along nrm, between ya and yb
     const obox = (bf, cx, cz, tx, tz, hl, nx, nz, d0, d1, ya, yb, c) => {
       const P = (a, d, y) => [cx + tx * a + nx * d, y, cz + tz * a + nz * d];
