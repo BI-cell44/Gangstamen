@@ -26,7 +26,7 @@ Environnement de l'utilisateur : francophone, fuseau Europe/Paris, Windows ; le 
 
 ## 1. Le jeu, précisément
 
-**Gangstamen** est un jeu de combat de voitures « année 1996 » dans la tradition d'Interstate '82 : conduite vue de derrière, mitrailleuses, bonus, vagues d'ennemis. Il se déroule dans les **vraies rues du quartier de Chantenay à Nantes** (zone de 745 m sur 1 373 m, x de −372 à +372, z de −686 à +686, origine à 47,2025° N, −1,5900° E).
+**Gangstamen** est un jeu de combat de voitures « année 1996 » dans la tradition d'Interstate '82 : conduite vue de derrière, mitrailleuses, bonus, vagues d'ennemis. Il se déroule dans les **vraies rues du quartier de Chantenay à Nantes**, jusqu'à la butte Sainte-Anne et au quai de la Fosse depuis le 14 novembre 2026 (zone de 2 037 m sur 1 532 m, x de −372,5 à 1 664, z de −845 à 686,5, origine inchangée à 47,2025° N, −1,590005° E ; centre `CX`, `CZ` et demi-tailles `HX`, `HZ` dans `W.meta`). Au nord, la ligne 1 du tram ferme la carte ; ailleurs, des barrières de chantier.
 
 **Histoire** : deux bandes se disputent le quartier : les *Rapaces de la Butte* (voitures noires à bande rouge, en haut de la butte) et les *Chantenaysiens* (voitures jaunes, sur le boulevard de la Liberté). Le joueur prend le volant ; la campagne HD ajoute des personnages (Dédé le garagiste, Nadia, le Grand Duc, le Vautour, l'animateur de Chantenay FM).
 
@@ -46,7 +46,7 @@ Environnement de l'utilisateur : francophone, fuseau Europe/Paris, Windows ; le 
 
 Légende : (C) classique et HD, (HD) HD seulement.
 
-**Monde** : rues, bâtiments, arbres OpenStreetMap ; relief et hauteurs IGN ; ponts et rampes ; façades photo (Panoramax) sur le boulevard de la Liberté et la rue de la Marseillaise (C) ; en HD, bâtiments redessinés par style avec la couleur du mur mesurée sur les photos, rez-de-chaussée à part avec 59 vrais commerces OSM, travées de fenêtres adaptées, toits à brisis avec cheminées et couleurs tirées de la photo aérienne, mairie en modèle dédié, mobilier urbain cassable, clocher de Saint-Martin, quais de Loire avec péniche, falaise de la carrière Misery, grue Titan.
+**Monde** : tram ligne 1 en bord nord (deux rames, stations réelles) ; barrières de chantier aux sorties de carte ; église, escalier et statue Sainte-Anne (HD) ; rues, bâtiments, arbres OpenStreetMap ; relief et hauteurs IGN ; ponts et rampes ; façades photo (Panoramax) sur le boulevard de la Liberté et la rue de la Marseillaise (C) ; en HD, bâtiments redessinés par style avec la couleur du mur mesurée sur les photos, rez-de-chaussée à part avec 59 vrais commerces OSM, travées de fenêtres adaptées, toits à brisis avec cheminées et couleurs tirées de la photo aérienne, mairie en modèle dédié, mobilier urbain cassable, clocher de Saint-Martin, quais de Loire avec péniche, falaise de la carrière Misery, grue Titan.
 
 **Voitures** : modèles lissés en coupes extrudées, peinture vernie, vitres, phares, feux, deux mitrailleuses aux canons d'où partent les tirs (C) ; carrosseries R5, 205, Twingo pour la circulation (HD) ; dégâts visibles : tôle froissée, capot, pneu crevé, fumée puis flammes (HD).
 
@@ -125,7 +125,7 @@ générateur aléatoire à graine · rendu et scène · textures · grille de co
 - Nouveaux sujets de la HD : `rk` (roquettes vues par les autres), `bl` (explosions), `qc` (discussion rapide). Les dégâts d'armes en ligne restent calculés chez le tireur.
 - État de partie (`pres.m`) et équipes (`tm`, `md`) circulent par la présence.
 - Deux transports avec la même interface : la capacité `room` de claude.ai, ou le WebSocket du serveur Node (`window.GM_SERVER="auto"`, injecté par le serveur). Le serveur ne simule rien : il relaie, et accepte tout sujet de la forme `^[a-z][a-z0-9_.-]{0,47}$`.
-- **Capture du drapeau n'est pas encore en ligne**, et circulation, piétons et bonus sont propres à chaque joueur (non synchronisés).
+- **Capture du drapeau n'est pas encore en ligne**, et circulation, piétons et bonus sont propres à chaque joueur (non synchronisés). Le tram aussi est simulé chez chaque joueur (même horaire de départ, mais pas synchronisé).
 
 ---
 
@@ -160,6 +160,7 @@ générateur aléatoire à graine · rendu et scène · textures · grille de co
 ## 6. Bugs connus et problèmes non résolus
 
 **À corriger**
+0. **Carte agrandie (14 novembre)** : chargement et fluidité de la HD à vérifier sur une vraie carte graphique (environ 4 800 bâtiments au lieu de 2 900). Les volées basses de l'escalier Sainte-Anne dépassent un peu du terrain.
 1. **Message « Qualité graphique réduite » à tort** (signalé par l'utilisateur au lancement de la HD). Cause probable : saccades de chargement ou PC sur carte graphique intégrée, vus comme une machine trop lente. Correctif prévu : case « Qualité automatique » et délai de grâce d'environ 15 s au démarrage (`hd.perf` dans `src/hd.js`).
 2. **Les mines du Vautour** : l'utilisateur a signalé qu'elles « ne semblent pas marcher » ; une correction est dans la dernière branche (mines visibles et efficaces), **non revérifiée par l'utilisateur**. Le dire clairement et demander à l'utilisateur de rejouer la mission.
 3. **Bout de pont près de la place Jean-Macé légèrement décollé** : correctif fait (12 derniers mètres de chaque tablier raccordés au terrain), **non revérifié visuellement par l'utilisateur**.
@@ -193,7 +194,7 @@ Par ordre proposé :
 3. **Essai en ligne à plusieurs** (claude.ai et serveur), puis corrections.
 4. **Régler la difficulté de la campagne** après une vraie partie.
 5. **Capture du drapeau en ligne** (l'hôte doit tenir l'état des drapeaux) et synchronisation des bonus.
-6. **Agrandir la carte** vers la butte Sainte-Anne et les bords de Loire (données OSM, IGN et photo aérienne à télécharger).
+6. ~~Agrandir la carte~~ (fait le 14 novembre 2026). Pour refaire les données : requêtes Overpass, WFS `BDTOPO_V3:batiment`, altimétrie `ign_rge_alti_wld` et WMS ortho lancées depuis le navigateur intégré (voir `LEDGER.md`, section 8), puis `convert.py`, `make_street_data.py`, `make_furniture.py`, `make_ortho.py`.
 7. Améliorer la mairie, les toits, les jardins, les enseignes.
 8. Idées à plus long terme : parcours chronométrés en solo, plus de quartiers de Nantes, sons et textures propres à la ville (tram, cloches, enseignes).
 

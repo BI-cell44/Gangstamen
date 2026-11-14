@@ -2,6 +2,8 @@
 
 Combat de voitures façon fin des années 90, dans les **vraies rues de Chantenay** (Nantes) : rues OpenStreetMap, hauteurs et relief de l'IGN, façades photographiées (Panoramax) sur le boulevard de la Liberté et la rue de la Marseillaise.
 
+**La carte** (2 km sur 1,5 km) va du boulevard de la Liberté jusqu'à la butte Sainte-Anne (église et escalier modélisés, statue de sainte Anne) et au début du quai de la Fosse. Au nord, la ligne 1 du tram ferme la carte : deux rames circulent et s'arrêtent aux vraies stations (Égalité, Du Chaffault, Gare Maritime) ; on peut rouler sur la voie sud, mais le tram ne s'arrête pas pour vous. Ailleurs, des barrières de chantier ferment les rues qui sortent de la carte.
+
 Un seul fichier, `gangstamen.html`, qui tourne dans tout navigateur récent avec WebGL (three.js est chargé depuis cdnjs).
 
 
@@ -39,8 +41,9 @@ En HD, les façades sans photo exploitable sont dessinées en haute résolution 
 
 **Solo**
 - **Campagne** de 7 missions avec dialogues entre les missions (Dédé le garagiste, Nadia, le Grand Duc, le Vautour, l'animateur de Chantenay FM) : retour au quartier, tenir la place Jean-Macé, escorter la 205 de Nadia jusqu'à la gare de Chantenay, poursuivre le Vautour depuis l'église Saint-Martin jusqu'au quai, semer la police, une nuit d'orage sur la Loire, l'assaut final sur la Butte. Progression et respect gagné sont gardés dans le navigateur. Le solo libre (bac à sable) reste disponible.
-- **Garage de Chantenay**, sur le boulevard près de la place Jean-Macé : on s'arrête sur le cercle bleu pour réparer, recharger les armes, gonfler le moteur, blinder la caisse, améliorer les mitrailleuses ou la repeindre. Ça se paie en respect.
-- **Bonus** posés sur la carte, qui réapparaissent : clé à molette (nouveau modèle, réparation), nitro, mines (lancées sur l'ennemi qui est devant, sinon posées derrière), lance-roquettes au tir lent, bouclier. Touche *arme spéciale* : E (clavier 1), Suppr (clavier 2), 7 (clavier 3), Entrée du pavé (clavier 4), B à la manette, SPÉ en tactile.
+- **Garage de Chantenay** (celui de Dédé, à l'emplacement du vrai garage Tribot), sur le boulevard près de la place Jean-Macé : on s'arrête sur le cercle bleu pour réparer, recharger les armes, gonfler le moteur, blinder la caisse, améliorer les mitrailleuses ou la repeindre. Ça se paie en respect. Les autres vrais garages de la carte (Garage Auto 98 sur le boulevard de la Liberté, l'atelier près de la station Égalité) offrent les mêmes services.
+- **Campagne** : mourir pendant une mission la fait reprendre depuis le début (respect et munitions comme au départ).
+- **Bonus** posés sur la carte, qui réapparaissent : clé à molette (nouveau modèle, réparation), nitro, mines (lancées sur l'ennemi qui est devant, sinon posées derrière), lance-roquettes au tir lent, bouclier. Touche *arme spéciale* : E (clavier 1), Suppr (clavier 2), 7 (clavier 3), Entrée du pavé (clavier 4), B à la manette, SPÉ en tactile. Touche *changer d'arme* (quand on en a plusieurs) : A (Q en QWERTY, clavier 1), Origine ou . (clavier 2), Y (clavier 3), pavé 9 (clavier 4), RB à la manette, ou un appui sur le compteur d'armes.
 - **Conduite** : dérapage au frein à main qui se prolonge si on garde les gaz, sauts sur les bosses et les rampes des ponts (réception brutale = dégâts), dégâts visibles (tôle froissée, capot qui se soulève, pneu crevé qui fait pencher la voiture, fumée puis flammes).
 
 **Multijoueur**
@@ -82,13 +85,13 @@ En écran partagé et en ligne, on choisit entre deux règles :
 
 ## Commandes
 
-| | Gaz / frein | Tourner | Tir | Arme spéciale (HD) | Frein à main | Caméra | Remise en route |
-|---|---|---|---|---|---|---|---|
-| Clavier 1 | Z / S (W / S en QWERTY) | Q / D | Espace | E | Maj gauche | C | R |
-| Clavier 2 | ↑ / ↓ | ← / → | Ctrl droit ou Entrée | Suppr ou : (/ en QWERTY) | Maj droite | Fin | Page suiv. |
-| Clavier 3 | I / K | J / L | U | 7 | O | 9 | 8 |
-| Clavier 4 | Pavé 8 / 5 | Pavé 4 / 6 | Pavé 0 | Entrée du pavé | Pavé . | Pavé + | Pavé − |
-| Manette | RT / LT | stick gauche ou croix | A ou RB | B | X | Y | LB |
+| | Gaz / frein | Tourner | Tir | Arme spéciale (HD) | Changer d'arme (HD) | Frein à main | Caméra | Remise en route |
+|---|---|---|---|---|---|---|---|---|
+| Clavier 1 | Z / S (W / S en QWERTY) | Q / D | Espace | E | A (Q en QWERTY) | Maj gauche | C | R |
+| Clavier 2 | ↑ / ↓ | ← / → | Ctrl droit ou Entrée | Suppr ou ! (/ en QWERTY) | Origine ou : (. en QWERTY) | Maj droite | Fin | Page suiv. |
+| Clavier 3 | I / K | J / L | U | 7 | Y | O | 9 | 8 |
+| Clavier 4 | Pavé 8 / 5 | Pavé 4 / 6 | Pavé 0 | Entrée du pavé | Pavé 9 | Pavé . | Pavé + | Pavé − |
+| Manette | RT / LT | stick gauche ou croix | A (et RB en classique) | B | RB | X | Y | LB |
 
 Touches communes : N jour/nuit (HD : moment de la journée) · B météo (HD) · M musique (HD : station suivante) · P pixels rétro · Tab classement · 1 à 6 discussion rapide · Échap (ou Start) pause.
 Les manettes vibrent aux chocs, aux tirs reçus et aux explosions (désactivable dans *Son et options*, où se règlent aussi les volumes musique et effets séparément).

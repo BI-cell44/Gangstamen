@@ -23,7 +23,7 @@ t = open('gangstamen.html', encoding='utf-8').read()
 assert t.count('const HD = false;') == 1 and t.count('<title>Gangstamen</title>') == 1
 t = t.replace('const HD = false;', 'const HD = true;').replace('<title>Gangstamen</title>', '<title>Gangstamen HD</title>')
 ortho = base64.b64encode(open('../data/ortho/ortho.jpg', 'rb').read()).decode()
-pre = '<script>window.PHOTO_ATLAS=[];window.ORTHO={src:"data:image/jpeg;base64,' + ortho + '",x0:-440,z0:-760,x1:440,z1:760};</script>'
+pre = '<script>window.PHOTO_ATLAS=[];window.ORTHO={src:"data:image/jpeg;base64,' + ortho + '",x0:-440,z0:-1000,x1:1840,z1:760};</script>'
 t, n = re.subn(r'<script>window\.PHOTO_ATLAS=\[.*?\];</script>', lambda m: pre, t, count=1, flags=re.S)
 assert n == 1
 open('gangstamen-hd.html', 'w', encoding='utf-8').write(t)

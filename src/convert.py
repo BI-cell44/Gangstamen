@@ -8,14 +8,18 @@ root = ET.parse(src).getroot()
 b = root.find('bounds')
 minlat, maxlat = float(b.get('minlat')), float(b.get('maxlat'))
 minlon, maxlon = float(b.get('minlon')), float(b.get('maxlon'))
-lat0, lon0 = (minlat + maxlat) / 2, (minlon + maxlon) / 2
+# the origin stays where the first Chantenay map had its centre, so every place written in game metres keeps its spot
+lat0, lon0 = 47.2025, -1.5900050000000001
 KX = math.cos(math.radians(lat0)) * 111320.0
 KZ = 110540.0
 
 def proj(lat, lon):
     return ((lon - lon0) * KX, -(lat - lat0) * KZ)
 
-HX, HZ = (maxlon - minlon) * KX / 2, (maxlat - minlat) * KZ / 2
+# play area (game metres): west and south edges of the first map; east to the start of the quai de la Fosse,
+# north just past the tram line 1, which closes the map on that side
+X0, X1, Z0, Z1 = -372.5, 1664.0, -845.0, 686.5
+CX, CZ, HX, HZ = (X0 + X1) / 2, (Z0 + Z1) / 2, (X1 - X0) / 2, (Z1 - Z0) / 2
 MARGIN = 60.0
 
 nodes = {}
@@ -31,7 +35,7 @@ for w in root.iter('way'):
     ways[w.get('id')] = (pts, tags(w))
 
 def inside(p, m=0.0):
-    return abs(p[0]) <= HX + m and abs(p[1]) <= HZ + m
+    return abs(p[0] - CX) <= HX + m and abs(p[1] - CZ) <= HZ + m
 
 def area(pts):
     a = 0.0
@@ -189,12 +193,91 @@ for wid, (pts, tg) in ways.items():
                 ring = ring[::-1]
             greens.append({'g': g, 'p': flat(ring)})
 
+# ---- the tram line 1 closes the map to the north: a function z(x) sampled every 5 m (south rail and centre)
+TSTEP = 5.0
+ntc = int(math.ceil((X1 - X0) / TSTEP)) + 1
+tS, tN = [None] * ntc, [None] * ntc
+for r in rails:
+    if r['t'] != 1: continue
+    p = r['p']
+    for i in range(0, len(p) - 2, 2):
+        x1, z1, x2, z2 = p[i:i + 4]; L = math.hypot(x2 - x1, z2 - z1); n = max(1, int(L / 1.0))
+        for k in range(n + 1):
+            x = x1 + (x2 - x1) * k / n; z = z1 + (z2 - z1) * k / n
+            c = int(round((x - X0) / TSTEP))
+            if 0 <= c < ntc:
+                tS[c] = z if tS[c] is None else max(tS[c], z); tN[c] = z if tN[c] is None else min(tN[c], z)
+known = [i for i in range(ntc) if tS[i] is not None]
+for i in range(ntc):  # fill gaps by interpolation / extension
+    if tS[i] is None:
+        a = max([k for k in known if k < i], default=None); b = min([k for k in known if k > i], default=None)
+        if a is None: tS[i], tN[i] = tS[b], tN[b]
+        elif b is None: tS[i], tN[i] = tS[a], tN[a]
+        else:
+            u = (i - a) / (b - a); tS[i] = tS[a] + (tS[b] - tS[a]) * u; tN[i] = tN[a] + (tN[b] - tN[a]) * u
+def tramS(x):
+    c = (x - X0) / TSTEP; i = max(0, min(ntc - 2, int(c))); u = max(0.0, min(1.0, c - i))
+    return tS[i] + (tS[i + 1] - tS[i]) * u
+def south_of_tram(x, z, m=0.0):
+    return z > tramS(x) + m
+# drivable and walkable streets stop at the tram (the run keeps its crossing point so it reaches the rails)
+def cut_north(p, m=1.5):
+    runs, cur = [], []
+    pts = [(p[i], p[i + 1]) for i in range(0, len(p), 2)]
+    for i, q in enumerate(pts):
+        ok = south_of_tram(q[0], q[1], m)
+        if ok:
+            if not cur and i > 0:  # entering from the north: start at the crossing
+                a = pts[i - 1]; cur.append(cross(a, q, m))
+            cur.append(q)
+        elif cur:
+            cur.append(cross(cur[-1], q, m)); runs.append(cur); cur = []
+    if cur: runs.append(cur)
+    return [r for r in runs if len(r) >= 2]
+def cross(a, b, m):
+    lo, hi = 0.0, 1.0; sa = south_of_tram(a[0], a[1], m)
+    for _ in range(30):
+        mid = (lo + hi) / 2; q = (a[0] + (b[0] - a[0]) * mid, a[1] + (b[1] - a[1]) * mid)
+        if south_of_tram(q[0], q[1], m) == sa: lo = mid
+        else: hi = mid
+    return (a[0] + (b[0] - a[0]) * lo, a[1] + (b[1] - a[1]) * lo)
+nroads = []
+for rd in roads:
+    for run in cut_north(rd['p']):
+        nroads.append({**rd, 'p': flat(run)})
+roads = nroads
+# streets with no link to the main network (Île de Nantes across the Loire, no bridge in the play area): dropped
+par = {}
+def fnd(a):
+    while par.setdefault(a, a) != a:
+        par[a] = par[par[a]]; a = par[a]
+    return a
+key = lambda x, z: (round(x, 1), round(z, 1))
+for rd in roads:
+    if not rd['d']: continue
+    p = rd['p']; k0 = key(p[0], p[1])
+    for i in range(2, len(p), 2): par[fnd(key(p[i], p[i + 1]))] = fnd(k0)
+size = {}
+for rd in roads:
+    if rd['d']:
+        r = fnd(key(rd['p'][0], rd['p'][1])); size[r] = size.get(r, 0) + len(rd['p'])
+main = max(size, key=size.get)
+before = len(roads)
+roads = [rd for rd in roads if not rd['d'] or fnd(key(rd['p'][0], rd['p'][1])) == main or size[fnd(key(rd['p'][0], rd['p'][1]))] > 0.15 * size[main]]
+print('streets cut off from the network, dropped:', before - len(roads))
+BAND = 70.0  # beyond the rails only a strip of facades remains, as a backdrop
+def keep_poly(p):
+    n = len(p) // 2; cx = sum(p[0::2]) / n; cz = sum(p[1::2]) / n
+    return south_of_tram(cx, cz, -BAND)
+buildings = [b for b in buildings if keep_poly(b['p'])]
+greens = [g for g in greens if keep_poly(g['p'])]
+
 trees = []
 for n in root.iter('node'):
     tg = tags(n)
     if tg.get('natural') == 'tree':
         p = nodes[n.get('id')]
-        if inside(p):
+        if inside(p) and south_of_tram(p[0], p[1], -BAND):
             trees += [r1(p[0]), r1(p[1])]
 for wid, (pts, tg) in ways.items():
     if tg.get('natural') == 'tree_row':
@@ -204,7 +287,7 @@ for wid, (pts, tg) in ways.items():
             for k in range(int(L // 9) + 1):
                 t = (k * 9) / L if L else 0
                 p = (x1 + (x2 - x1) * t, z1 + (z2 - z1) * t)
-                if inside(p):
+                if inside(p) and south_of_tram(p[0], p[1], -BAND):
                     trees += [r1(p[0]), r1(p[1])]
 
 # Loire: the export carries no river geometry, so estimate the north bank from where
@@ -214,7 +297,7 @@ COL = 20.0
 ncol = int(math.ceil(2 * HX / COL)) + 1
 south = [-1e9] * ncol
 def mark(x, z):
-    c = int((x + HX) // COL)
+    c = int((x - X0) // COL)
     if 0 <= c < ncol and z > south[c]:
         south[c] = z
 for bd in buildings:
@@ -235,7 +318,7 @@ for r in rails:
 
 bank = []
 for c in range(ncol):
-    x = -HX + c * COL
+    x = X0 + c * COL
     bank.append([r1(x), r1(south[c])])
 
 
@@ -311,8 +394,9 @@ if BD:
     print('BD TOPO match', stats)
 
 out = {
-    'meta': {'hx': r1(HX), 'hz': r1(HZ), 'lat0': lat0, 'lon0': lon0,
+    'meta': {'hx': r1(HX), 'hz': r1(HZ), 'cx': r1(CX), 'cz': r1(CZ), 'x0': X0, 'x1': X1, 'z0': Z0, 'z1': Z1, 'lat0': lat0, 'lon0': lon0,
              'src': '© OpenStreetMap contributors (ODbL); IGN BD TOPO & RGE ALTI (Licence Ouverte)'},
+    'tram': {'x0': X0, 'step': TSTEP, 's': [r1(v) for v in tS], 'n': [r1(v) for v in tN]},
     'names': names, 'buildings': buildings, 'roads': roads, 'rails': rails,
     'greens': greens, 'trees': trees,
     'dem': ({'nx': BD['dem']['nx'], 'nz': BD['dem']['nz'], 'step': BD['dem']['STEP'], 'x0': BD['dem']['X0'], 'z0': BD['dem']['Z0'], 'h': BD['dem']['h']} if BD else None),

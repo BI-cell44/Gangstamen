@@ -2,7 +2,7 @@
 
 Ce fichier garde la mémoire du projet : ce qui a été fait et pourquoi, comment reprendre le travail, ce qui reste à faire. À mettre à jour à chaque session (une ligne dans le journal, et cocher ou ajouter dans le reste à faire).
 
-Dernière mise à jour : 13 novembre 2026 (nuit) : passation. Voir `HANDOFF.md` pour le dossier complet de reprise.
+Dernière mise à jour : 14 novembre 2026 : carte agrandie (Sainte-Anne, quai de la Fosse, tram), garages, corrections de jeu. Voir `HANDOFF.md` pour le dossier complet de reprise.
 
 ## En un coup d'œil
 
@@ -73,6 +73,16 @@ Tout est dans la HD seulement (`const gx = !HD ? null : …`), sauf le dérapage
 - **Décors** : mobilier cassable, clocher de Saint-Martin, quais de Loire (mur suivant la berge, bittes, péniche), falaise de la carrière Misery, grue Titan (rapprochée pour être visible).
 - **Options** : ombres, distance de vue, densité de circulation, voix ; joystick tactile.
 
+### 8. Carte agrandie et retours de jeu (14 novembre 2026)
+- **Carte agrandie** : de x −372,5 à 1 664 m et de z −845 à 686,5 m (2 km sur 1,5 km), toujours autour de l'ancienne origine (47,2025° N, −1,590005° E), donc toutes les positions écrites en mètres de jeu (missions, garage, quais) restent valables. Le code ne suppose plus une carte centrée sur (0, 0) : centre `CX`, `CZ` et demi-tailles `HX`, `HZ` dans `W.meta`.
+- **Données refaites** pour toute la zone, via le navigateur de l'utilisateur (le bac à sable n'y a pas accès) : extrait OSM Overpass (`data/map.osm`, 25 Mo), bâtiments BD TOPO et grille RGE ALTI à 12,5 m (`data/bdtopo.json`, les 3 512 anciens bâtiments retrouvés à l'identique), photo aérienne (`data/ortho/ortho_raw.jpg` 0,4 m, réduite à 0,6 m dans `ortho.jpg` pour tenir dans 3 800 px). Les fichiers téléchargés par le navigateur intégré arrivent en `*.tmp` dans le dossier Téléchargements.
+- **Tram ligne 1** comme bord nord : `convert.py` en tire une fonction z(x) (`W.tram`), coupe les rues au nord des voies et ne garde au-delà qu'une bande de 70 m de bâtiments en décor. Mur invisible entre les deux voies (on peut rouler sur la voie sud), deux rames articulées qui s'arrêtent à Égalité, Du Chaffault et Gare Maritime, sonnent et repoussent une voiture sur la voie (un choc par passage), poteaux et ligne aérienne.
+- **Barrières de chantier** rouges et blanches, avec lampes, partout où une rue sort de la carte (ouest, sud, est) et derrière le tram dans le prolongement des rues ; murs invisibles le long des bords.
+- **Sainte-Anne** (HD) : église modélisée (nef, bas-côtés, transept, abside, clocher et flèche côté avenue Sainte-Anne, vitraux éclairés la nuit), escalier en deux volées puis deux rampes d'après les voies OSM, statue de sainte Anne sur sa colonne avec deux réverbères.
+- **Grue Titan** replacée à son vrai emplacement, à la pointe de l'île de Nantes ; la fausse falaise de la carrière Misery est retirée (le vrai relief est là). Les rues de l'île de Nantes, sans pont dans la zone, sont retirées (les bâtiments restent en décor).
+- **Garages** : celui de Dédé est à l'emplacement du vrai garage Tribot ; Garage Auto 98 et l'atelier près d'Égalité (OSM) offrent les mêmes services, avec leur enseigne. Les garages au-delà du tram (AD Boucard, Carrosserie Guillemot, Garage de la Convention…) sont hors de portée.
+- **Retours de l'utilisateur** : la radio de la mission Pin-pon décrit la vraie voiture du joueur (« une Twingo rose framboise ») ; les clients des terrasses fuient, se font renverser et retournent s'asseoir ; mourir en mission la fait reprendre depuis le début (respect et munitions remis comme au départ, police et mines effacées) ; le message de KO dit « la police », « Tu t'es planté tout seul » ou les Rapaces seulement après un combat avec eux dans les 10 dernières secondes ; touche pour changer d'arme spéciale (A / RB / clic sur le compteur).
+
 ### 6. Pistes écartées
 - Street View comme décor : impossible, les conditions de Google interdisent d'en extraire les images, même en local sans diffusion. Les photos Panoramax (libres) servent à la place.
 
@@ -90,6 +100,7 @@ Tout est dans la HD seulement (`const gx = !HD ? null : …`), sauf le dérapage
 | 13 nov. 2026 | Mines du Vautour, bout de pont, collision entre bâtiments, piétons animés et terrasses, clé à molette, touche spéciale visible | voir `git log` |
 
 | 13 nov. 2026 | Fusion dans `main` et `server`, artifacts republiés ; dossier de passation `HANDOFF.md`, scripts de test dans `tools/`, branches figées `passation-2026-11-13` et `passation-2026-11-13-server` | voir `git log` |
+| 14 nov. 2026 | Carte agrandie jusqu'à Sainte-Anne et au quai de la Fosse, tram ligne 1, barrières, église et escalier Sainte-Anne, garages réels ; Nadia et la couleur, terrasses, mort en mission, message de KO, changement d'arme | voir `git log` |
 
 Les étapes antérieures sont dans `git log`.
 
@@ -126,7 +137,10 @@ Les étapes antérieures sont dans `git log`.
 ### Suite de la branche HD
 - [ ] Jouer la campagne en vrai et régler la difficulté (dégâts des mines, vitesse du Vautour, roquettes du Grand Duc, chrono de l'orage).
 - [x] Fusionner `hd-ambiance-campagne` dans `main`, puis `main` dans `server` (fait).
-- [ ] Agrandir la carte vers la butte Sainte-Anne et les bords de Loire (données OSM, IGN et photo aérienne à télécharger : bloqué ici).
+- [x] Agrandir la carte vers la butte Sainte-Anne et le quai de la Fosse (fait le 14 novembre, données passées par le navigateur de l'utilisateur).
+- [ ] Vérifier sur une vraie carte graphique le chargement et la fluidité de la HD avec la carte trois fois plus grande (en rendu logiciel, le chargement passe de 40 s à 100 s).
+- [ ] Missions : le Vautour fuit encore « vers le quai de la Fosse » par le boulevard de Cardiff alors que le quai est maintenant dans la carte ; on pourrait y placer des missions (escalier Sainte-Anne, tram).
+- [ ] Façades Panoramax : la nouvelle zone n'a que des façades dessinées (classique comme HD).
 - [ ] Capture du drapeau en ligne (l'état des drapeaux doit être tenu par l'hôte).
 - [ ] Bonus, circulation et piétons sont propres à chaque joueur en ligne (pas synchronisés).
 - [ ] Vérifier sur une vraie carte graphique le coût de la foule, de la pluie et des terrasses à 4 écrans.
