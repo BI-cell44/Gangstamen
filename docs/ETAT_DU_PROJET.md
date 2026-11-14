@@ -1,6 +1,6 @@
 # État du projet
 
-Mis à jour le 14 novembre 2026 (branche `ultra`, cycles 0 à 10 faits, sources découpées ; prochain : cycle 11, courses et défis ; l'utilisateur a demandé d'enchaîner jusqu'au cycle 14). À relire en premier avec `CLAUDE.md`.
+Mis à jour le 14 novembre 2026 (branche `ultra`, cycles 0 à 11 faits, sources découpées ; prochain : cycle 12, garage et personnalisation ; l'utilisateur a demandé d'enchaîner jusqu'au cycle 14). À relire en premier avec `CLAUDE.md`.
 
 ## 1. Le jeu aujourd'hui
 

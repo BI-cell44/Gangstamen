@@ -18,5 +18,6 @@ gx/campaign.js
 gx/radio.js
 gx/quick-chat.js
 gx/modes.js
+gx/activities.js
 gx/landmarks.js
 gx/zz-world-api.js

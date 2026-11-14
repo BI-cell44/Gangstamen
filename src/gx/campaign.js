@@ -192,6 +192,10 @@
       box.append(b);
     });
     const prog = $('campProg'); if (prog) prog.textContent = done.length + ' / ' + MISSIONS.length + ' missions · respect en banque : ' + (settings.bank || 0);
+    // races and challenges of the open world, with the records of this save (cycle 11)
+    const rb = document.createElement('div'); rb.className = 'fine'; rb.style.marginTop = '10px';
+    rb.innerHTML = '<b>Courses et défis</b> (en partie solo, roule dans une balise bleue ou orange) :<br>' + actRecords().map(r => (r.kind === 'race' ? '🏁 ' : '★ ') + r.name + ' : ' + (r.best || '—')).join('<br>');
+    box.append(rb);
   }
 
   // =====================================================================================
@@ -208,7 +212,7 @@
   function gameStep(dt) { // inside the world step
     const now = performance.now();
     step(dt);
-    puStep(dt, now); rocketStep(dt); mineStep(dt, now); shieldStep(dt); furnitureStep(dt); Fences.step(dt);
+    puStep(dt, now); rocketStep(dt); mineStep(dt, now); shieldStep(dt); furnitureStep(dt); Fences.step(dt); actStep(dt);
     for (const L of locals) {
       L.specCd = (L.specCd || 0) - dt;
       const c = L.car;

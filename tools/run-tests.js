@@ -248,6 +248,21 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
       });
       expect(r.eauAuDessus < 1.5 && r.bouclierLogDepth && r.tuilesCachees > 0, JSON.stringify(r)); return r;
     });
+    await check('courses et défis : départ, points de passage, record, défis', async () => {
+      await skipDialogue();
+      const r = await ev(() => {
+        const X = __gm.gx, A = X.acts(), L = __gm.locals()[0], c = L.car, out = { activites: A.length };
+        const race = A.find(a => a.id === 'r_lib'); out.longueur = Math.round(race.len); out.points = race.cps.length;
+        c.place(race.start[0], race.start[1], 0); c.hp = 100; __gm.step(1 / 30); out.depart = !!X.actRun();
+        for (let i = 0; i < 100; i++) __gm.step(1 / 30); // countdown
+        for (let k = 1; k < race.cps.length; k++) { const [x, z] = race.cps[k]; for (let i = 0; i < 12; i++) { c.place(x, z, c.h); c.hp = 100; __gm.step(1 / 30); } }
+        out.fini = !X.actRun(); out.record = __gm.Profile.cur.records.race_r_lib; out.fantome = (__gm.Profile.cur.records.ghost_r_lib || []).length;
+        const smash = A.find(a => a.id === 'd_smash'); c.place(smash.start[0], smash.start[1], 0); __gm.step(1 / 30); out.defi = X.actRun() && X.actRun().a.id;
+        c.shield = 0; __gm.damage(c, 1000); __gm.step(1 / 30); out.abandon = !X.actRun(); for (let i = 0; i < 200 && !c.alive; i++) __gm.step(1 / 30); c.hp = 100; c.place(61, 276, 0);
+        return out;
+      });
+      expect(r.activites === 8 && r.longueur > 250 && r.depart && r.fini && r.record > 0 && r.fantome > 3 && r.defi === 'd_smash' && r.abandon, JSON.stringify(r)); return r;
+    });
     await check('garages réels', async () => {
       const r = await ev(() => __gm.gx.garages.map(g => g.name)); expect(r.length >= 3, 'garages : ' + r.join(', '));
       await ev(() => { const g = __gm.gx.garages[1], L = __gm.locals()[0]; L.car.place(g.x + 1, g.z + 1, 0); L.car.vx = L.car.vz = 0; for (let i = 0; i < 8; i++) __gm.step(1 / 30); });

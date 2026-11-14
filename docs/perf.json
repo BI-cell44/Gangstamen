@@ -236,5 +236,33 @@
   "simMs": 6.91,
   "loadS": 21,
   "failed": 0
+ },
+ {
+  "date": "2026-11-14T16:20",
+  "label": "cycle 11 : courses et défis",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 681,
+  "trianglesK": 962,
+  "meshes": 2143,
+  "geometries": 1755,
+  "materials": 356,
+  "heapMB": 228,
+  "simMs": 7.39,
+  "loadS": 21,
+  "failed": 1
+ },
+ {
+  "date": "2026-11-14T16:24",
+  "label": "cycle 11 : courses et défis",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 639,
+  "trianglesK": 951,
+  "meshes": 2143,
+  "geometries": 1755,
+  "materials": 355,
+  "heapMB": 242,
+  "simMs": 6.6,
+  "loadS": 20,
+  "failed": 0
  }
 ]

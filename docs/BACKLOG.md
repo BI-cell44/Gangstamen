@@ -94,10 +94,12 @@
 - [x] Statistiques : kilomètres, KO, morts, vitesse de pointe, temps de jeu.
 - Note : si le navigateur refuse le stockage (certains contextes d'artifact), la partie vit en mémoire le temps de la session ; l'export en code reste possible.
 
-### Cycle 11 : courses et défis ★★★
-- Courses chronométrées dans les vraies rues (Sainte-Anne → quai de la Fosse, tour de la Butte…), points de passage, fantôme du meilleur temps, médailles.
-- Défis : dérapage, saut, livraison à l'heure, semer la police, destruction ; tableau des records local.
-- Icônes sur la carte et la minicarte pour lancer une activité en roulant (monde ouvert).
+### Cycle 11 : courses et défis ★★★ (fait le 14 nov. 2026)
+- [x] `src/gx/activities.js` : 8 activités en partie solo hors mission, balises sur la carte et la minicarte (bleu : course, orange : défi), départ en s'arrêtant dans la balise (moins de 30 km/h).
+- [x] 3 courses sur les vraies rues (Sainte-Anne → quai de la Fosse, tour de la butte, sprint du boulevard de la Liberté) : tracé calculé sur le graphe des rues, points de passage tous les 110 m, compte à rebours, **fantôme** du meilleur temps, médailles or, argent, bronze selon la vitesse moyenne (20, 16, 13 m/s), abandon à plus de 320 m du parcours.
+- [x] 5 défis : dérapage (points avec multiplicateur), sauts de la carrière Misery (distance en vol), livraison express (vers un vrai commerce, chrono selon la distance), semer la police (2 étoiles), destruction (mobilier et clôtures en 60 s).
+- [x] Records dans la sauvegarde (`Profile.record`), affichés sur l'écran *Campagne* ; respect gagné selon la médaille ou le score.
+- [ ] À régler après essai : seuils des médailles, durée des défis, tracés.
 
 ### Cycle 12 : garage et personnalisation v2 ★★★
 - Plusieurs voitures possédées ; réglages par voiture (moteur, boîte, suspensions, pneus, freins) branchés sur la physique v2.
