@@ -107,6 +107,8 @@ Captures dans `docs/retours/`.
 - [ ] **Près de la mairie, de l'herbe apparaît selon l'angle** (`2026-11-14-mairie-herbe.png` : pelouse qui transparaît sur la chaussée, probablement un conflit de profondeur entre le sol et la route).
 - [ ] **Eau de la Loire visible sur la terre ferme près d'un pont** (`2026-11-14-eau-pont.png` : nappes bleues sur le pavé, tablier du pont qui flotte) : le relief y descend sous le niveau de l'eau.
 - [ ] Capture `2026-11-14-boulevard.png` (boulevard de la Liberté) : à examiner avec l'utilisateur (lampadaire sans crosse ? ombre ?).
+- [ ] **Bulle du bouclier à revoir** : pas très belle (cycle 9, détail visuel, ou avant).
+- [ ] **Barrières, clôtures et portails cassables le long des propriétés** (jardins, cours) : décor qui se brise comme le mobilier (`gx/batch.js` et `breakFurniture` le permettent) ; positions à tirer d'OpenStreetMap (`barrier=fence|wall|gate`) et des limites de parcelles (cycle 8 ou 9).
 - [ ] **Lumières au sol des lampadaires pendant l'intro de nuit** : taches lumineuses mal placées ou mal dessinées ; revoir les bugs d'affichage de lumière.
 
 ## Backlog hérité (hors cycles, à caser quand c'est pertinent)
