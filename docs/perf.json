@@ -138,5 +138,19 @@
   "simMs": 5.02,
   "loadS": 20,
   "failed": 0
+ },
+ {
+  "date": "2026-11-14T12:15",
+  "label": "cycle 5 : son v2",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 412,
+  "trianglesK": 546,
+  "meshes": 1809,
+  "geometries": 1556,
+  "materials": 312,
+  "heapMB": 190,
+  "simMs": 5.22,
+  "loadS": 20,
+  "failed": 0
  }
 ]

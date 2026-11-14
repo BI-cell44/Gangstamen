@@ -11,6 +11,7 @@ vehicles/cars.js
 vehicles/physics.js
 fx/effects.js
 audio/sound.js
+audio/soundscape.js
 core/settings.js
 input/input.js
 game/state.js

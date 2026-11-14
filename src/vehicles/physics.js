@@ -5,7 +5,7 @@
 // fun side of real (a 90s hot hatch with about 1.5 times its real punch), so that town fights stay lively.
 const VEHICLES = {
   //          mass  front/rear axle to centre  CG height  peak torque  drive   grip   drag     top gear
-  saloon: { m: 1150, a: 1.22, b: 1.42, h: 0.52, T: 330, drive: 'R', mu: 1.12, cda: 0.70, gears: [3.4, 2.1, 1.48, 1.12, 0.88], fd: 3.9 },
+  saloon: { m: 1150, a: 1.22, b: 1.42, h: 0.52, T: 330, drive: 'R', mu: 1.12, cda: 0.70, gears: [3.4, 2.1, 1.48, 1.12, 0.88], fd: 3.9, turbo: true },
   p205:   { m: 900,  a: 1.00, b: 1.42, h: 0.50, T: 280, drive: 'F', mu: 1.18, cda: 0.62, gears: [3.3, 2.0, 1.44, 1.10, 0.86], fd: 4.1 },
   hatch:  { m: 1000, a: 1.05, b: 1.45, h: 0.51, T: 280, drive: 'F', mu: 1.15, cda: 0.66, gears: [3.3, 2.0, 1.44, 1.10, 0.86], fd: 4.0 },
   r5:     { m: 850,  a: 0.98, b: 1.43, h: 0.49, T: 265, drive: 'F', mu: 1.16, cda: 0.62, gears: [3.4, 2.1, 1.48, 1.12, 0.88], fd: 4.2 },
@@ -110,8 +110,32 @@ function planarReal(c, inp, dt) {
   const [nfx, nfz] = c.fwd, nrx = -nfz, nrz = nfx;
   c.vx = nfx * u - nrx * v; c.vz = nfz * u - nrz * v;
 }
-// the engine note follows the revs in the realistic mode: an equivalent "speed" for sfx.engine
+// the engine note follows the revs in the realistic mode: an equivalent "speed" for sfx.engine (intro, old callers)
 function engineVoice(c) {
   if (!c.phys || !useRealPhysics(c)) return c.speed;
   return Math.max(0, (c.phys.rpm - PHYS.idle) / (PHYS.red - PHYS.idle)) * 38 + 4;
+}
+// What the engine sounds like this frame (sound v2): revs, load (0..1), gear, gear change in progress. In the realistic
+// mode it is the real gearbox; in arcade (and for every other car), a virtual gearbox from the speed, so the note climbs,
+// drops at each change and settles in top gear, instead of a siren that follows the speed.
+const ARC_GEARS = [0, 8, 14.5, 21, 29, 38, 99]; // m/s at which the virtual gearbox changes up
+function engineState(c, thr) {
+  const es = c._es || (c._es = { rpm: PHYS.idle, gear: 1, load: 0, shift: 0 });
+  thr = Math.max(0, Math.min(1, thr || 0));
+  if (c.phys && useRealPhysics(c)) {
+    es.rpm = c.phys.rpm; es.shift = c.phys.shift || 0; es.gear = c.phys.gear;
+    es.load += ((es.shift > 0 ? 0.2 : thr) - es.load) * 0.3;
+    return es;
+  }
+  const v = Math.abs(c.speed || Math.hypot(c.vx || 0, c.vz || 0));
+  let g = es.gear;
+  while (g < ARC_GEARS.length - 2 && v > ARC_GEARS[g]) g++;
+  while (g > 1 && v < ARC_GEARS[g - 1] - 2.5) g--;
+  if (g !== es.gear) { es.shift = g > es.gear ? 0.12 : 0.06; es.gear = g; }
+  es.shift = Math.max(0, es.shift - 1 / 60);
+  const lo = g > 1 ? ARC_GEARS[g - 1] - 2.5 : 0, hi = ARC_GEARS[g], k = Math.max(0, Math.min(1.08, (v - lo) / (hi - lo)));
+  const target = c.air > 0.3 && thr > 0 ? PHYS.red * 0.95 : PHYS.idle + (PHYS.up - PHYS.idle) * (g === 1 ? k : 0.42 + 0.58 * k);
+  es.rpm += (target - es.rpm) * 0.25;
+  es.load += ((es.shift > 0 ? 0.2 : thr) - es.load) * 0.3;
+  return es;
 }

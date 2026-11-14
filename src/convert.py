@@ -170,9 +170,12 @@ for wid, (pts, tg) in ways.items():
             layer = 1
         if tg.get('tunnel') == 'yes':
             continue
+        cob = tg.get('surface') in ('sett', 'cobblestone', 'unhewn_cobblestone', 'paving_stones')
         for run in clip_line(pts, MARGIN):
-            roads.append({'w': w, 'd': 1 if hw in DRIVE else 0, 'n': name_idx[nm], 'b': layer,
-                          'p': flat(run)})
+            rd = {'w': w, 'd': 1 if hw in DRIVE else 0, 'n': name_idx[nm], 'b': layer, 'p': flat(run)}
+            if cob:
+                rd['s'] = 1  # cobbles (pavés): rumble under the tyres
+            roads.append(rd)
     rw = tg.get('railway')
     if rw in ('rail', 'tram') and len(pts) >= 2:
         for run in clip_line(pts, MARGIN):

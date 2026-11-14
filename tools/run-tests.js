@@ -59,6 +59,39 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
     });
     perf.loadS = Math.round(loadS); return perf;
   });
+  await check('son v2 : moteur, pneus, chocs, voitures autour, lieux', async () => {
+    const r = await ev(async () => {
+      const wait = ms => new Promise(f => setTimeout(f, ms)), S = __gm.sfx, L = __gm.locals()[0], c = L.car;
+      S.init(); if (S.ctx.state !== 'running') await S.ctx.resume(); __gm.settings.voices = false;
+      // virtual gearbox (arcade): the gear climbs with the speed, the revs stay between idle and the red line
+      const o = { speed: 0, vx: 0, vz: 0, air: 0 }, gears = [], rpms = [];
+      for (let v = 0; v <= 42; v += 0.5) { o.speed = v; for (let i = 0; i < 20; i++) __gm.engineState(o, 1); gears.push(o._es.gear); rpms.push(o._es.rpm); }
+      const res = { rapports: Math.max(...gears), rpmMin: Math.round(Math.min(...rpms)), rpmMax: Math.round(Math.max(...rpms)) };
+      // the player's engine plays; sliding sideways makes the tyres squeal
+      // (the game loop keeps running between our awaits: set the state and read the levels in the same task)
+      c.place(500, 500, 0); c.hp = 100;
+      for (let i = 0; i < 10; i++) { c.vx = 0; c.vz = -15; L._inp = { t: 1, s: 0 }; __gm.Soundscape.tick(1 / 30, L); }
+      res.moteur = +S._lv.eng.toFixed(3);
+      c.vx = 9; c.vz = -12; L._inp = { t: 1, s: 0 }; __gm.Soundscape.tick(1 / 30, L); res.pneus = +S._lv.tyre.toFixed(3);
+      c.vx = 0; c.vz = 0; L._inp = { t: 0, s: 0 }; __gm.Soundscape.tick(1 / 30, L);
+      // a rival coming closer: heard among the cars around, pitched up (Doppler)
+      const rv = __gm.rivals()[0]; rv.alive = true; rv.place(500, 470, 0); rv.vx = 0; rv.vz = 25; L.cam.position.set(500, 4, 505); __gm.Soundscape.tick(1 / 30, L);
+      res.autour = S._lv.others;
+      // places: the Loire below the Sainte-Anne stairs, a crash, the bells, dialogue ducking
+      L.cam.position.set(960, 4, 160); __gm.Soundscape.tick(0.3, L); res.loire = +__gm.Soundscape._place.water.toFixed(2);
+      L.cam.position.set(300, 40, -200); __gm.Soundscape.tick(0.3, L); res.loireLoin = +__gm.Soundscape._place.water.toFixed(2);
+      // (the audio clock and the timers drift too much in software rendering to measure the output itself: count the events)
+      const i0 = S._lv.impacts; S.impact(15); S.impact(1); res.choc = S._lv.impacts - i0;
+      L.cam.position.set(__gm.Soundscape.stAnne()[0], 30, __gm.Soundscape.stAnne()[1] + 50); const b0 = S._lv.bells; __gm.Soundscape.ring(); __gm.Soundscape.tick(1 / 30, L); res.cloches = S._lv.bells - b0;
+      const d = document.getElementById('dlg'); if (d) { d.hidden = false; __gm.Soundscape.tick(1 / 30, L); res.attenue = S.ducked; d.hidden = true; __gm.Soundscape.tick(1 / 30, L); res.retour = !S.ducked; }
+      return res;
+    });
+    expect(r.rapports >= 5 && r.rpmMin >= 850 && r.rpmMax <= 7000, 'boîte virtuelle ' + JSON.stringify(r));
+    expect(r.moteur > 0.03 && r.pneus > 0.05 && r.autour >= 1 && r.choc === 1 && r.cloches >= 1, JSON.stringify(r));
+    expect(r.loire > 0.4 && r.loireLoin < r.loire, 'Loire ' + JSON.stringify(r));
+    if (r.attenue !== undefined) expect(r.attenue && r.retour, 'atténuation sous les dialogues');
+    return r;
+  });
   await check('mur du tram (nord)', async () => {
     const r = await ev(() => { const c = __gm.locals()[0].car, x = 600, w = __gm.tramWall(x); c.place(x, w + 8, Math.PI); c.hp = 100; for (let i = 0; i < 60; i++) { c.vx = 0; c.vz = -8; __gm.step(1 / 30); } return +(c.z - w).toFixed(2); });
     expect(r > 0, 'la voiture a franchi les voies (' + r + ')'); return { marge: r };

@@ -81,9 +81,10 @@ function renderCtlTable() {
   t.replaceChildren(...cells);
 }
 function initOptions() {
-  const vm = $('volMusic'), vf = $('volFx');
-  vm.value = Math.round(settings.music * 100); vf.value = Math.round(settings.fx * 100);
-  const show = () => { $('volMusicV').textContent = vm.value + ' %'; $('volFxV').textContent = vf.value + ' %'; };
+  const vm = $('volMusic'), vf = $('volFx'), va = $('volAmb');
+  vm.value = Math.round(settings.music * 100); vf.value = Math.round(settings.fx * 100); va.value = Math.round((settings.amb ?? 0.8) * 100);
+  const show = () => { $('volMusicV').textContent = vm.value + ' %'; $('volFxV').textContent = vf.value + ' %'; $('volAmbV').textContent = va.value + ' %'; };
+  va.addEventListener('input', () => { settings.amb = va.value / 100; sfx.setVolume('amb', settings.amb); saveSettings(); show(); });
   vm.addEventListener('input', () => { settings.music = vm.value / 100; sfx.setVolume('music', settings.music); saveSettings(); show(); });
   vf.addEventListener('input', () => { settings.fx = vf.value / 100; sfx.setVolume('fx', settings.fx); saveSettings(); show(); sfx.init(); sfx.gun(false); });
   $('optRumble').checked = settings.rumble; $('optRumble').addEventListener('change', e => { settings.rumble = e.target.checked; saveSettings(); });

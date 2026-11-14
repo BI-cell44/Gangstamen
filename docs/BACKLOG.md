@@ -49,11 +49,12 @@
 - [x] **Retour de l'utilisateur (14 nov.) : « injouable, trop long à démarrer, impossible de tourner »**. Réglage refait sur des cibles mesurées en arcade : 0 à 50 km/h en 1,4 s (arcade 1,0 s), 0 à 100 en 2,9 s (arcade 3,1 s), rayon de virage proche de l'arcade (13 m à 36 km/h). Moyens : adhérence de jeu ×2,3, couple ×2,2 et plat, direction moins réduite avec la vitesse, antipatinage quand on braque (les roues motrices gardent de quoi tourner), aide à la stabilité type ESP (coupée au frein à main), passages de rapport plus courts.
 - [ ] À régler après un nouvel essai de l'utilisateur : ressenti au clavier et à la manette, glisse de la berline, tangage et roulis en l'air.
 
-### Cycle 5 : son v2 ★★★
-- Bus audio : général, musique, effets, ambiance, voix ; atténuation de la musique sous les dialogues.
-- Moteur synthétisé selon le régime et la charge (harmoniques, admission, échappement), passages de rapport, pétarades, turbo pour les sportives.
-- Crissements selon le glissement réel des pneus, roulement sur pavés, chocs selon la force, effet Doppler des autres voitures.
-- Ambiance par lieu : Loire et goélands sur les quais, cloches de Sainte-Anne à l'heure, tram (roulement, cloche, freins), place animée.
+### Cycle 5 : son v2 ★★★ (fait le 14 nov. 2026 ; à écouter en vrai : rien n'a pu être entendu ici)
+- [x] Bus audio : musique, effets, **ambiance** (nouveau curseur dans *Son et options*) ; musique et ambiance baissent sous les dialogues et la synthèse vocale (la voix elle-même passe par le navigateur, hors du mélangeur).
+- [x] Moteur 4 cylindres synthétisé selon le régime et la charge (`src/audio/sound.js`, `makeEngine`) : harmoniques d'allumage, grondement du vilebrequin, ralenti irrégulier, saturation en charge, souffle d'admission ; coupure aux passages de rapport ; pétarades au lever de pied à haut régime ; turbo (sifflement et soupape) sur la berline. En arcade, une **boîte virtuelle** (`engineState`, `src/vehicles/physics.js`) donne rapports et régime ; en réaliste, la vraie boîte.
+- [x] Crissements selon le glissement (dérive latérale, frein à main, freinage fort, patinage au démarrage), **roulement sur pavés** (rues et places `surface=sett|cobblestone|paving_stones` d'OSM, 88 tronçons), chocs selon la force (murs, voitures, réceptions de saut), effet Doppler et position stéréo des 4 voitures les plus proches.
+- [x] Ambiance par lieu (`src/audio/soundscape.js`) : clapot de la Loire et goélands près de l'eau, cloches de Sainte-Anne qui sonnent l'heure (heure du jeu en cycle jour-nuit, heure réelle sinon), roulement et freins du tram, brouhaha près des piétons et des terrasses.
+- [ ] Après écoute : équilibre des volumes, timbre du moteur, fréquence des goélands.
 
 ### Cycle 6 : caméras ★★
 - Gestionnaire de caméras : poursuite à ressort qui suit la vitesse, caméra capot et pare-chocs, caméra cinématique, retour arrière ; la caméra évite les murs dans les rues étroites.
@@ -101,6 +102,7 @@
 - Synchronisation en ligne des bonus, de la circulation et du tram ; capture du drapeau en ligne.
 
 ## Retours de jeu de l'utilisateur (14 nov. 2026), à traiter
+Décision de l'utilisateur (14 nov.) : chaque point est traité dans le cycle où il est prévu ; les corrections partent aussi dans `main` (classique et HD).
 Captures dans `docs/retours/`.
 - [ ] **Police contre Rapaces** : la police doit aussi s'en prendre aux Rapaces (cycle 7 ou avant).
 - [ ] **Piétons qui traversent les murs en fuyant** : la fuite (voiture qui arrive) les décale sans tenir compte des bâtiments ; les garder sur le trottoir ou les arrêter aux murs (cycle 8, ou correctif rapide).

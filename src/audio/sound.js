@@ -1,7 +1,7 @@
 // ---------- sound (WebAudio, generated) ----------
 const sfx = (() => {
-  let ac = null, rainG = null, sirenO = null, sirenG = null, master, fxG, engO, engF, engG, musicG, noiseBuf, musicOn = true, step = 0, nextT = 0, timer = null, arr = 4; // arr: how much of the loop plays (the intro builds it up; 4 = all of it)
-  const vol = { music: 0.7, fx: 0.8 };
+  let nImp = 0, nBell = 0, ac = null, ambG = null, an = null, duckK = 1, me = null, tyre = null, roll = null, others = [], amb = {}, rainG = null, sirenO = null, sirenG = null, master, fxG, engO, engF, engG, musicG, noiseBuf, musicOn = true, step = 0, nextT = 0, timer = null, arr = 4; // arr: how much of the loop plays (the intro builds it up; 4 = all of it)
+  const vol = { music: 0.7, fx: 0.8, amb: 0.8 };
   function init() {
     if (ac) return; try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
     master = ac.createGain(); master.gain.value = 0.5; master.connect(ac.destination);
@@ -10,6 +10,9 @@ const sfx = (() => {
     engG = ac.createGain(); engG.gain.value = 0.0; engO.connect(engF).connect(engG).connect(fxG); engO.start();
     noiseBuf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     musicG = ac.createGain(); musicG.gain.value = 0.46 * vol.music; musicG.connect(master);
+    // sound v2 buses: ambience (places, weather) on its own volume; an analyser on the master for the tests and the F3 meter
+    ambG = ac.createGain(); ambG.gain.value = vol.amb; ambG.connect(master);
+    an = ac.createAnalyser(); an.fftSize = 2048; master.connect(an);
     nextT = ac.currentTime + 0.1; timer = setInterval(schedule, 50);
   }
   function noise(t, dur, f, q, vol, dest, type = 'bandpass') {
@@ -104,8 +107,125 @@ const sfx = (() => {
       nextT += S16; step++;
     }
   }
+  // ---------- sound v2 ----------
+  // A 4-cylinder engine: the firing frequency is rpm / 30 (two bangs per turn). The wave carries the harmonics of the
+  // firing order, a sub-octave gives the crankshaft rumble, an amplitude wobble at half the firing rate makes the idle
+  // lumpy, a soft clipper adds grit under load, and band-passed noise is the intake breathing. Optional turbo whistle.
+  let engWave = null;
+  function makeEngine(dest, full) {
+    if (!engWave) { const re = new Float32Array(10), im = new Float32Array([0, 1, 0.75, 0.3, 0.55, 0.18, 0.28, 0.08, 0.14, 0.05]); engWave = ac.createPeriodicWave(re, im); }
+    const e = { rpm: 900, load: 0, gear: 1, boost: 0, on: false };
+    e.o1 = ac.createOscillator(); e.o1.setPeriodicWave(engWave);
+    e.o2 = ac.createOscillator(); e.o2.type = 'sawtooth';
+    e.g2 = ac.createGain(); e.g2.gain.value = 0.45;
+    e.mix = ac.createGain(); e.mix.gain.value = 1;
+    e.lp = ac.createBiquadFilter(); e.lp.type = 'lowpass'; e.lp.Q.value = 1.6;
+    e.g = ac.createGain(); e.g.gain.value = 0;
+    e.o1.connect(e.mix); e.o2.connect(e.g2).connect(e.mix);
+    let node = e.lp; e.mix.connect(e.lp);
+    if (full) {
+      e.o3 = ac.createOscillator(); e.o3.type = 'square'; e.g3 = ac.createGain(); e.g3.gain.value = 0.08; e.o3.connect(e.g3).connect(e.mix);
+      e.lfo = ac.createOscillator(); e.lfoG = ac.createGain(); e.lfoG.gain.value = 0.3; e.lfo.connect(e.lfoG).connect(e.mix.gain); e.lfo.start();
+      const curve = new Float32Array(256); for (let i = 0; i < 256; i++) { const x = i / 127.5 - 1; curve[i] = Math.tanh(2.2 * x); }
+      e.sh = ac.createWaveShaper(); e.sh.curve = curve; e.lp.connect(e.sh); node = e.sh;
+      e.ns = ac.createBufferSource(); e.ns.buffer = noiseBuf; e.ns.loop = true;
+      e.bp = ac.createBiquadFilter(); e.bp.type = 'bandpass'; e.bp.Q.value = 1.2; e.ig = ac.createGain(); e.ig.gain.value = 0;
+      e.ns.connect(e.bp).connect(e.ig).connect(e.g); e.ns.start();
+      e.tw = ac.createOscillator(); e.tw.type = 'sine'; e.tg = ac.createGain(); e.tg.gain.value = 0; e.tw.connect(e.tg).connect(e.g); e.tw.start();
+      e.o3.start();
+    }
+    if (dest.pan) { e.pan = ac.createStereoPanner(); node.connect(e.g).connect(e.pan).connect(dest.node); } else node.connect(e.g).connect(dest);
+    e.o1.start(); e.o2.start();
+    return e;
+  }
+  // rpm, load 0..1, gear, gear change running (s), turbo; k = extra gain (distance), f = pitch factor (Doppler)
+  function driveEngine(e, s, on, k = 1, f = 1, turbo = false) {
+    const t = ac.currentTime, rpmN = Math.max(0, Math.min(1, (s.rpm - 900) / 5900)), fr = s.rpm / 30 * f;
+    e.o1.frequency.setTargetAtTime(fr, t, 0.025); e.o2.frequency.setTargetAtTime(fr / 2, t, 0.025);
+    e.lp.frequency.setTargetAtTime(220 + fr * (2.2 + 4 * s.load) + 700 * s.load, t, 0.04);
+    let g = on ? (0.032 + 0.05 * s.load + 0.028 * rpmN) * k : 0;
+    if (s.shift > 0) g *= 0.35;
+    e.g.gain.setTargetAtTime(g, t, s.shift > 0 ? 0.012 : 0.05); e._g = g;
+    if (e.o3) {
+      e.o3.frequency.setTargetAtTime(fr * 2.01, t, 0.025);
+      e.lfo.frequency.setTargetAtTime(fr / 2, t, 0.05); e.lfoG.gain.setTargetAtTime(0.32 * (1 - rpmN) + 0.05, t, 0.1);
+      e.bp.frequency.setTargetAtTime(500 + rpmN * 2400, t, 0.05); e.ig.gain.setTargetAtTime(on ? s.load * (0.04 + 0.1 * rpmN) * k : 0, t, 0.05);
+      // lift-off at high revs: the exhaust pops (pétarades); turbo: blow-off valve
+      if (on && e.load > 0.6 && s.load < 0.3 && rpmN > 0.55) {
+        const n = 1 + (Math.random() * 3 | 0); for (let i = 0; i < n; i++) noise(t + 0.05 + i * (0.06 + Math.random() * 0.08), 0.045, 260 + Math.random() * 500, 0.7, 0.35 * k, fxG, 'lowpass');
+        if (turbo && e.boost > 0.4) noise(t, 0.35, 2600, 2.5, 0.12 * k, fxG);
+      }
+      if (turbo) { e.boost += ((s.load > 0.5 ? rpmN : 0) - e.boost) * (s.load > 0.5 ? 0.04 : 0.2); e.tw.frequency.setTargetAtTime(1800 + e.boost * 4200, t, 0.05); e.tg.gain.setTargetAtTime(on ? e.boost * 0.05 * k : 0, t, 0.05); }
+    }
+    e.load = s.load; e.on = on;
+  }
+  // a looping noise through a band-pass: tyre squeal, cobble rumble, water, crowd, tram rolling
+  function loopNoise(f, q, dest, type = 'bandpass') {
+    const s = ac.createBufferSource(); s.buffer = noiseBuf; s.loop = true; s.playbackRate.value = 0.7 + Math.random() * 0.6;
+    const bf = ac.createBiquadFilter(); bf.type = type; bf.frequency.value = f; bf.Q.value = q;
+    const g = ac.createGain(); g.gain.value = 0; s.connect(bf).connect(g).connect(dest); s.start(); return { s, bf, g };
+  }
+  const level = (o, v, tc = 0.08) => { if (Math.abs(v - (o._l ?? -1)) > 0.003) { o._l = v; o.g.gain.setTargetAtTime(v, ac.currentTime, tc); } };
+  function bellStrike(t, base, v, dest) { // a church bell: inharmonic partials (hum, prime, tierce, quint, nominal), long decay
+    for (const [r, a, d] of [[0.5, 0.5, 6], [1, 0.8, 4], [1.19, 0.45, 3], [1.5, 0.3, 2.5], [2, 0.5, 2], [2.66, 0.2, 1.2], [3.01, 0.15, 1]]) {
+      const o = ac.createOscillator(), g = ac.createGain(); o.frequency.value = base * r; g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v * a, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0005, t + d);
+      o.connect(g).connect(dest); o.start(t); o.stop(t + d + 0.1);
+    }
+  }
+  function gull(t, v) { // a herring gull call: falling, wavering whistle, two or three times
+    const n = 2 + (Math.random() * 2 | 0);
+    for (let i = 0; i < n; i++) {
+      const t0 = t + i * (0.32 + Math.random() * 0.1), o = ac.createOscillator(), g = ac.createGain(), bf = ac.createBiquadFilter(); o.type = 'sawtooth';
+      const f0 = 1900 + Math.random() * 500; o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(f0 * 0.55, t0 + 0.26);
+      bf.type = 'bandpass'; bf.frequency.value = 2200; bf.Q.value = 3;
+      g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(v, t0 + 0.03); g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.28);
+      o.connect(bf).connect(g).connect(ambG); o.start(t0); o.stop(t0 + 0.3);
+    }
+  }
   return {
     init,
+    // the player's car (slot 0): engine from engineState(), tyre squeal from the slide, rumble on cobbles
+    car(s, on, slip, cobbles, turbo) {
+      if (!ac) return;
+      if (!me) { me = makeEngine(fxG, true); tyre = [loopNoise(1250, 7, fxG), loopNoise(2300, 9, fxG)]; roll = loopNoise(90, 0.8, fxG, 'lowpass'); }
+      driveEngine(me, s, on, 1, 1, turbo);
+      const sq = on ? Math.max(0, Math.min(1, slip)) : 0;
+      level(tyre[0], sq * 0.13); level(tyre[1], sq * sq * 0.07);
+      if (sq > 0.05) { tyre[0].bf.frequency.setTargetAtTime(1100 + Math.random() * 350, ac.currentTime, 0.05); tyre[1].bf.frequency.setTargetAtTime(2100 + Math.random() * 500, ac.currentTime, 0.05); }
+      level(roll, on ? cobbles : 0, 0.05);
+    },
+    // other cars near the listener, with distance, stereo position and Doppler; list of { s, k, f, pan }
+    others(list) {
+      if (!ac) return;
+      while (others.length < list.length) others.push(makeEngine({ pan: true, node: fxG }, false));
+      others.forEach((e, i) => { const o = list[i]; if (o) { driveEngine(e, o.s, true, o.k, o.f); e.pan.pan.setTargetAtTime(o.pan, ac.currentTime, 0.05); } else driveEngine(e, e, false); });
+    },
+    // a crash: a low thump and a metal crunch, both with the force (m/s of speed lost)
+    impact(force) {
+      if (!ac || force < 2) return; const t = ac.currentTime, k = Math.min(1, force / 22); nImp++;
+      const o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(110 - 40 * k, t); o.frequency.exponentialRampToValueAtTime(35, t + 0.18);
+      g.gain.setValueAtTime(0.25 + 0.6 * k, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.25); o.connect(g).connect(fxG); o.start(t); o.stop(t + 0.28);
+      noise(t, 0.08 + 0.3 * k, 700 + 900 * k, 0.9, 0.2 + 0.45 * k);
+      if (k > 0.35) { noise(t + 0.03, 0.5 * k, 3200, 4, 0.12 * k); noise(t + 0.08, 0.4, 5200, 6, 0.06 * k); } // glass and loose bits
+    },
+    // places: { water, crowd, tram, brake } levels 0..1, set every frame by soundscape.js
+    places(p) {
+      if (!ac) return;
+      if (!amb.water) { amb.water = loopNoise(420, 0.5, ambG, 'lowpass'); amb.wash = loopNoise(900, 0.7, ambG); amb.crowd = loopNoise(650, 1.1, ambG); amb.crowd2 = loopNoise(1600, 1.6, ambG); amb.tram = loopNoise(140, 1.2, ambG, 'lowpass'); amb.brake = loopNoise(3400, 18, ambG); }
+      const t = ac.currentTime, sw = 0.6 + 0.4 * Math.sin(t * 0.7) * Math.sin(t * 0.23); // the swell of the river
+      level(amb.water, p.water * 0.11 * sw, 0.3); level(amb.wash, p.water * 0.035 * (1 - sw * 0.5), 0.3);
+      const mur = 0.7 + 0.3 * Math.sin(t * 3.1) * Math.sin(t * 1.7); level(amb.crowd, p.crowd * 0.06 * mur, 0.2); level(amb.crowd2, p.crowd * 0.025 * (1.3 - mur), 0.2);
+      level(amb.tram, p.tram * 0.16, 0.15); level(amb.brake, p.brake * 0.05, 0.05);
+    },
+    gull(v) { if (ac) gull(ac.currentTime, v); },
+    bells(n, v) { if (!ac) return; const t = ac.currentTime; for (let i = 0; i < n; i++) bellStrike(t + i * 2.2, 196, v, ambG); nBell += n; },
+    // music and ambience go quieter while somebody speaks (mission dialogues)
+    duck(on) { const k = on ? 0.35 : 1; if (!ac || k === duckK) return; duckK = k; musicG.gain.setTargetAtTime(0.46 * vol.music * k, ac.currentTime, on ? 0.08 : 0.6); ambG.gain.setTargetAtTime(vol.amb * (on ? 0.6 : 1), ac.currentTime, 0.3); },
+    // loudness of the mix (RMS, 0..1) and the share of energy above 1 kHz: for the tests
+    meter() { if (!an) return null; const a = new Float32Array(an.fftSize); an.getFloatTimeDomainData(a); let s = 0; for (const x of a) s += x * x; const fb = new Float32Array(an.frequencyBinCount); an.getFloatFrequencyData(fb); let lo = 0, hi = 0; const k1 = Math.round(1000 / (ac.sampleRate / 2) * fb.length); fb.forEach((db, i) => { const p = Math.pow(10, db / 10); if (i < k1) lo += p; else hi += p; }); return { rms: Math.sqrt(s / a.length), hi: hi / (lo + hi || 1) }; },
+    get ctx() { return ac; },
+    get ducked() { return duckK < 1; },
+    get _lv() { return { tyre: tyre ? tyre[0]._l || 0 : 0, roll: roll ? roll._l || 0 : 0, eng: me ? me._g : 0, others: others.filter(e => e.on).length, impacts: nImp, bells: nBell }; },
     engine(speed, on) { if (!ac) return; engO.frequency.setTargetAtTime(38 + speed * 2.4, ac.currentTime, 0.05); engF.frequency.setTargetAtTime(300 + speed * 25, ac.currentTime, 0.1); engG.gain.setTargetAtTime(on ? 0.05 : 0, ac.currentTime, 0.1); },
     gun(enemy) { if (ac) noise(ac.currentTime, 0.07, enemy ? 1100 : 1600, 0.9, enemy ? 0.25 : 0.4); },
     hit() { if (ac) noise(ac.currentTime, 0.12, 600, 1.2, 0.5); },
@@ -156,7 +276,7 @@ const sfx = (() => {
     get station() { return musicOn ? STATIONS[station] : null; },
     get music() { return musicOn; },
     // separate music / effects volumes, 0..1
-    setVolume(kind, v) { vol[kind] = v; if (!ac) return; if (kind === 'music') musicG.gain.setTargetAtTime(0.46 * v, ac.currentTime, 0.05); else fxG.gain.setTargetAtTime(v, ac.currentTime, 0.05); },
+    setVolume(kind, v) { vol[kind] = v; if (!ac) return; if (kind === 'music') musicG.gain.setTargetAtTime(0.46 * v * duckK, ac.currentTime, 0.05); else if (kind === 'amb') ambG.gain.setTargetAtTime(v, ac.currentTime, 0.05); else fxG.gain.setTargetAtTime(v, ac.currentTime, 0.05); },
     get volume() { return { ...vol }; },
   };
 })();

@@ -41,6 +41,7 @@ function frame(now) {
   if (gx) gx.landmarkTick();
   if (started && (!paused || mode === 'online')) { const t0 = performance.now(); step(dt, now); PerfHud.sim(performance.now() - t0); }
   if (started && mode === 'online') netTick(dt, now);
+  if (started && locals.length && (!(paused || Match.over) || mode === 'online')) Soundscape.tick(dt, locals[0]); else Soundscape.hush();
   render(dt);
   PerfHud.end();
 }
@@ -73,10 +74,11 @@ function step(dt, now) {
     const c = L.car;
     if (c.alive) {
       const inp = paused ? { t: 0, s: 0, hb: true, fire: false } : readInput(L);
-      L.firing = inp.fire;
+      L.firing = inp.fire; L._inp = inp;
       const imp = drive(c, inp, dt);
       const braking = inp.t < 0 && (c.vx * c.fwd[0] + c.vz * c.fwd[1]) > 0.5;
       c.mesh.userData.tail.emissive.setHex(braking ? 0xff2a2a : 0x400000);
+      if (imp > 3 && L.slot === 0) sfx.impact(imp);
       if (imp > 9) { rumbleFor(L, Math.min(1, imp / 25), 0.4, 160); damage(c, (imp - 8) * 1.2); spawnFx(c.x, 1, c.z, 0.6, 0xffe28a, 0.2, 2, 2); }
       L.fireCd -= dt;
       if (inp.fire && L.fireCd <= 0) {
@@ -88,7 +90,6 @@ function step(dt, now) {
       if (gx && inp.swap && !L.swHeld) gx.cycleWeapon(L);
       L.swHeld = inp.swap;
       L.specHeld = inp.special;
-      if (L.slot === 0) sfx.engine(engineVoice(c), true);
     } else {
       L.firing = false;
       if (L.slot === 0) sfx.engine(0, false);
