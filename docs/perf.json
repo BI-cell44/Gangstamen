@@ -124,5 +124,19 @@
   "simMs": 1.53,
   "loadS": 5,
   "failed": 0
+ },
+ {
+  "date": "2026-11-14T11:56",
+  "label": "cycle 4 : réaliste réglé jouable",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 357,
+  "trianglesK": 528,
+  "meshes": 1809,
+  "geometries": 1556,
+  "materials": 312,
+  "heapMB": 179,
+  "simMs": 5.02,
+  "loadS": 20,
+  "failed": 0
  }
 ]

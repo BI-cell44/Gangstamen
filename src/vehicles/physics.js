@@ -11,7 +11,9 @@ const VEHICLES = {
   r5:     { m: 850,  a: 0.98, b: 1.43, h: 0.49, T: 265, drive: 'F', mu: 1.16, cda: 0.62, gears: [3.4, 2.1, 1.48, 1.12, 0.88], fd: 4.2 },
   twingo: { m: 800,  a: 0.95, b: 1.40, h: 0.55, T: 200, drive: 'F', mu: 1.10, cda: 0.68, gears: [3.6, 2.2, 1.5, 1.12, 0.86], fd: 4.2 },
 };
-const PHYS = { g: 9.81, rw: 0.30, idle: 900, red: 6800, up: 6300, down: 2600, eff: 0.85, roll: 0.015, airG: 1.35 };
+// gripK and torqueK: game factors over the real figures (14 Nov.: a strictly real setting was unplayable in town: too slow
+// off the line, unable to turn). The model keeps its behaviour (weight, slides, gears), at arcade-like pace.
+const PHYS = { g: 9.81, rw: 0.30, idle: 900, red: 6800, up: 6300, down: 2600, eff: 0.85, roll: 0.015, airG: 1.35, gripK: 2.3, torqueK: 2.2, steer: 0.62, steerV: 20 };
 const vehOf = c => VEHICLES[c.style] || VEHICLES.saloon;
 const useRealPhysics = c => HD && c.local && settings.physics === 'real';
 // grip of the surface under the car: carriageway, pavement, or the rest (grass, gravel); wet roads lose a quarter
@@ -24,7 +26,7 @@ function surfaceGrip(x, z) {
 // engine torque at the crank (N·m) for a given rpm: rises to a peak around 4 000 rpm, falls towards the red line
 function engineTorque(V, rpm) {
   const x = Math.max(0, Math.min(1, (rpm - PHYS.idle) / (PHYS.red - PHYS.idle)));
-  return V.T * (0.62 + 0.38 * Math.sin(Math.PI * Math.min(1, x * 1.15)));
+  return V.T * PHYS.torqueK * (0.85 + 0.15 * Math.sin(Math.PI * Math.min(1, x * 1.15))); // flat torque: lively from low revs
 }
 // lateral tyre force (simplified magic formula): grows with the slip angle, peaks near 8°, then fades a little
 const tyreY = (alpha, Fz, mu) => mu * Fz * Math.sin(1.35 * Math.atan(9 * alpha));
@@ -35,7 +37,7 @@ const tyreYRear = (alpha, Fz, mu) => mu * 1.15 * Fz * Math.tanh(12.1 * alpha / 1
 function planarReal(c, inp, dt) {
   const V = vehOf(c), L = V.a + V.b, m = V.m, Iz = m * V.a * V.b * 1.05, g = PHYS.g;
   const ph = c.phys || (c.phys = { gear: 1, rpm: PHYS.idle, ax: 0, r: 0, shift: 0, slipR: 0 });
-  const grip = (c.air > 0.25 ? 0.04 : 1) * (c._grip ?? surfaceGrip(c.x, c.z)), mu = V.mu * grip; // c._grip: test hook
+  const grip = (c.air > 0.25 ? 0.04 : 1) * (c._grip ?? surfaceGrip(c.x, c.z)), mu = V.mu * PHYS.gripK * grip; // c._grip: test hook
   const [fx, fz] = c.fwd, rx = -fz, rz = fx;
   let u = c.vx * fx + c.vz * fz, v = -(c.vx * rx + c.vz * rz); // forward, left
   let r = ph.r;
@@ -44,17 +46,17 @@ function planarReal(c, inp, dt) {
   const n = Math.max(1, Math.ceil(dt / 0.008)), h = dt / n;
   const power = (c.accK || 1) * (c.nitro > 0 ? 1.55 : 1), vmax = (c.maxV || 44) * (c.nitro > 0 ? 1.25 : 1);
   for (let s = 0; s < n; s++) {
-    const spd = Math.abs(u), delta = c.steer * 0.6 / (1 + (spd / 9) ** 2); // speed-sensitive steering: full lock sits near the grip limit at any speed
+    const spd = Math.abs(u), delta = c.steer * PHYS.steer / (1 + (spd / PHYS.steerV) ** 2); // speed-sensitive steering
     // gearbox (automatic) and engine speed
     const wheelRpm = u / PHYS.rw * 60 / (2 * Math.PI), ratio = V.gears[ph.gear - 1] * V.fd;
     ph.rpm = Math.max(PHYS.idle, Math.abs(wheelRpm) * ratio);
     if (ph.shift > 0) ph.shift -= h;
-    else if (ph.rpm > PHYS.up && ph.gear < V.gears.length && inp.t > 0) { ph.gear++; ph.shift = 0.22; }
-    else if (ph.rpm < PHYS.down && ph.gear > 1) { ph.gear--; ph.shift = 0.12; }
+    else if (ph.rpm > PHYS.up && ph.gear < V.gears.length && inp.t > 0) { ph.gear++; ph.shift = 0.1; }
+    else if (ph.rpm < PHYS.down && ph.gear > 1) { ph.gear--; ph.shift = 0.06; }
     // longitudinal forces: engine through the driven wheels, brakes, reverse
     let Fdrive = 0, Fbrake = 0;
     if (inp.t > 0 && u > -1) {
-      const tq = engineTorque(V, Math.min(PHYS.red, ph.rpm)) * power * (ph.shift > 0 ? 0.25 : 1);
+      const tq = engineTorque(V, Math.min(PHYS.red, ph.rpm)) * power * (ph.shift > 0 ? 0.5 : 1);
       Fdrive = inp.t * tq * ratio * PHYS.eff / PHYS.rw * Math.max(0, Math.min(1, (vmax - u) / 3)); // limiter at the game's top speed
     } else if (inp.t < 0) {
       if (u > 0.8) Fbrake = -inp.t * mu * m * g * 1.05; // full braking ~1 g
@@ -70,6 +72,9 @@ function planarReal(c, inp, dt) {
     if (inp.hb) Fxr += -sgn * Math.min(Math.abs(u) * m, mu * Fzr * 0.75); // handbrake locks the rear
     // traction limits (friction circle) and lateral forces
     const capF = mu * Math.max(0, Fzf), capR = mu * Math.max(0, Fzr) * (inp.hb ? 0.75 : 1);
+    // traction control: when steering, the engine leaves part of the driven wheels' grip to the turn
+    const tc = 1 - 0.4 * Math.abs(c.steer); // full traction in a straight line, 60 % with the wheel turned
+    if (V.drive === 'F' && Fxf > 0) Fxf = Math.min(Fxf, tc * capF); if (V.drive === 'R' && Fxr > 0 && !inp.hb) Fxr = Math.min(Fxr, tc * capR);
     Fxf = Math.max(-capF, Math.min(capF, Fxf)); Fxr = Math.max(-capR, Math.min(capR, Fxr));
     let Fyf = 0, Fyr = 0;
     if (spd > 1.5) {
@@ -91,6 +96,9 @@ function planarReal(c, inp, dt) {
     const slope = (surfaceH(c.x + fx * 1.7, c.z + fz * 1.7) - surfaceH(c.x - fx * 1.7, c.z - fz * 1.7)) / 3.4;
     du -= g * slope * (c.air > 0.25 ? 0 : 1);
     u += du * h; v += dv * h; r += dr * h;
+    // stability aid (like ESP): without the handbrake the car never turns faster than its grip allows at that speed,
+    // and the slide is gently brought back; the handbrake switches it off for drifts
+    if (!inp.hb && spd > 5) { const rMax = 1.15 * mu * g / spd; if (Math.abs(r) > rMax) r = Math.sign(r) * rMax; if (Math.abs(v) > 0.25 * spd) v *= Math.exp(-3 * h); }
     if (inp.t === 0 && Fbrake === 0 && Math.abs(u) < 0.3) u *= Math.exp(-6 * h); // comes to rest
     const axTrue = Math.max(-1.5 * g, Math.min(1.5 * g, Fx / m)); // weight transfer follows the real longitudinal acceleration (forces / mass), not du, which carries the v·r turning term
     ph.ax = ph.ax + (axTrue - ph.ax) * Math.min(1, h * 10);

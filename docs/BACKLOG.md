@@ -38,15 +38,16 @@
 
 ## Phase 1 : le ressenti de conduite (cycles 4 à 6)
 
-### Cycle 4 : physique automobile v2 ★★★ (fait le 14 nov. 2026 : mode « Réaliste », par défaut sur Ultra ; à régler après essai en vrai)
+### Cycle 4 : physique automobile v2 ★★★ (fait le 14 nov. 2026 ; premier réglage jugé injouable par l'utilisateur, refait le jour même au rythme de l'arcade ; arcade par défaut)
 - [x] Modèle « bicyclette » avec pneus (force latérale selon l'angle de glissement, adhérence qui sature), transfert de masse à l'accélération et au freinage, sous-virage, frein à main qui bloque l'arrière (`vehicles/physics.js`).
 - [x] Moteur et boîte automatique : courbe de couple, régime, 5 rapports, rapport affiché au compteur, son du moteur qui suit le régime.
 - [x] Paramètres par véhicule dans un tableau de données (`VEHICLES` : masse, empattement, centre de gravité, couple, traction ou propulsion, adhérence, traînée, rapports) : base des catégories de véhicules.
 - [x] Surfaces : chaussée, trottoir, reste (herbe, gravier), mouillé (−25 %).
 - Sauts et collisions en hauteur (retour de l'utilisateur, 14 nov.) : une première correction est faite (les obstacles bas ont une hauteur : troncs 2,2 m environ, lampadaires 6,5 m ; une voiture plus haute passe au-dessus). À reprendre ici : vraie gravité, tangage et roulis en l'air, réception sur les suspensions, collisions par hauteur pour tout le mobilier.
-- [x] Réglage « Conduite : Arcade / Réaliste » (Son et options) ; réaliste par défaut sur Ultra, arcade ailleurs ; seules les voitures des joueurs locaux l'utilisent (bots, circulation et version classique restent en arcade) ; réseau inchangé.
+- [x] Réglage « Conduite : Arcade / Réaliste » (Son et options) ; arcade par défaut partout ; seules les voitures des joueurs locaux l'utilisent (bots, circulation et version classique restent en arcade) ; réseau inchangé.
 - [x] Sauts : gravité 1,35 g en réaliste (22 m/s² en arcade), dégâts à la réception plus tôt et plus forts (une chute de 10 m coûte environ la moitié de la carrosserie).
-- [ ] **À régler après essai en vrai** : sensation au clavier et à la manette, puissance (0 à 100 km/h entre 5,6 et 6,8 s selon la voiture, contre 2 à 3 s en arcade), dérapage de la berline (propulsion), adhérence de l'arrière (volontairement un peu supérieure à l'avant pour ne pas partir en tête-à-queue), tangage et roulis en l'air.
+- [x] **Retour de l'utilisateur (14 nov.) : « injouable, trop long à démarrer, impossible de tourner »**. Réglage refait sur des cibles mesurées en arcade : 0 à 50 km/h en 1,4 s (arcade 1,0 s), 0 à 100 en 2,9 s (arcade 3,1 s), rayon de virage proche de l'arcade (13 m à 36 km/h). Moyens : adhérence de jeu ×2,3, couple ×2,2 et plat, direction moins réduite avec la vitesse, antipatinage quand on braque (les roues motrices gardent de quoi tourner), aide à la stabilité type ESP (coupée au frein à main), passages de rapport plus courts.
+- [ ] À régler après un nouvel essai de l'utilisateur : ressenti au clavier et à la manette, glisse de la berline, tangage et roulis en l'air.
 
 ### Cycle 5 : son v2 ★★★
 - Bus audio : général, musique, effets, ambiance, voix ; atténuation de la musique sous les dialogues.
