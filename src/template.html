@@ -1116,7 +1116,9 @@ function buildGround() {
     const [pts, tris] = triangulate(gp.p);
     const c = col(GC[gp.g]);
     if (gp.g === 3) {
-      let y = -1e9; for (const v of pts) y = Math.max(y, groundH(v.x, v.y)); y += ROAD_Y.green;
+      // water lies at the lowest point of its outline: at the highest one, the pond of the Misery quarry (17 m of slope)
+      // hung as a flat blue floor over the paths and under the footbridges
+      let y = 1e9; for (const v of pts) y = Math.min(y, groundH(v.x, v.y)); y += ROAD_Y.green;
       for (const [a, b, cc] of tris) greens.tri([pts[a].x, y, pts[a].y], [pts[b].x, y, pts[b].y], [pts[cc].x, y, pts[cc].y], [0, 1, 0], null, null, null, c);
     }
     if (gp.g === 0) {
@@ -1560,34 +1562,38 @@ const sfx = (() => {
   // rap: dusty minor piano chords, deep bass, swung hats, a bit of vinyl
   const RAP_CH = [[57, 60, 64], [53, 57, 60], [55, 59, 62], [52, 55, 59]];
   const RAP_B = [45, 0, 0, 0, 0, 0, 45, 0, 0, 0, 41, 0, 0, 0, 0, 0];
+  const RAP_HOOK = { 0: 81, 3: 79, 6: 76, 8: 74, 12: 76 };
   function rapStep(s, t, bar) {
     const sw = s % 2 ? s16() * 0.18 : 0; t += sw;
     if (s === 0 || s === 7 || s === 10) kick(t, 0.95, 110);
-    if (s === 4 || s === 12) { noise(t, 0.2, 1500, 0.7, 0.55, musicG); noise(t, 0.08, 4000, 0.5, 0.2, musicG); }
+    if (s === 4 || s === 12) { noise(t, 0.2, 1500, 0.7, 0.75, musicG); noise(t, 0.08, 4000, 0.5, 0.3, musicG); }
     if (s % 2 === 0) noise(t, 0.035, 9000, 1.6, s % 4 ? 0.07 : 0.11, musicG, 'highpass');
-    if (RAP_B[s]) tone(t, mtof(RAP_B[s] - (bar % 4 === 3 ? 2 : 0) - 12), 0.5, 'sine', 0.42);
-    if (s === 0 || s === 6 || (s === 11 && bar % 2)) for (const n of RAP_CH[bar % 4]) tone(t, mtof(n), 0.55, 'triangle', 0.06, null, { lp: 1600 });
+    if (RAP_B[s]) { const b = mtof(RAP_B[s] - (bar % 4 === 3 ? 2 : 0) - 12); tone(t, b, 0.5, 'sine', 0.36); tone(t, b * 2, 0.4, 'sawtooth', 0.07, null, { lp: 700, lpTo: 300 }); }
+    if (s === 0 || s === 6 || (s === 11 && bar % 2)) for (const n of RAP_CH[bar % 4]) tone(t, mtof(n), 0.55, 'triangle', 0.13, null, { lp: 2200 });
+    if (bar % 4 >= 2 && RAP_HOOK[s]) tone(t, mtof(RAP_HOOK[s]), s16() * 3, 'sine', 0.09, null, { att: 0.03 }); // whistled hook every other pair of bars
     if (Math.random() < 0.3) noise(t, 0.01, 3000, 0.4, 0.03, musicG, 'highpass');
   }
   // techno: four on the floor, off-beat open hats, a 303-ish acid line
   const ACID = [33, 33, 45, 33, 36, 33, 43, 33, 33, 45, 33, 38, 33, 40, 33, 31];
   function technoStep(s, t, bar) {
-    if (s % 4 === 0) kick(t, 1, 150);
+    if (s % 4 === 0) { kick(t, 1, 150); noise(t, 0.012, 3500, 0.8, 0.25, musicG); }
     if (s % 4 === 2) noise(t, 0.09, 8500, 1, 0.13, musicG, 'highpass');
     if (s === 4 || s === 12) noise(t, 0.12, 1200, 1.4, 0.32, musicG);
-    if (bar % 8 >= 2) { const sweep = 400 + 1600 * (0.5 + 0.5 * Math.sin(bar * 0.7 + s * 0.05)); tone(t, mtof(ACID[s]), s16() * 0.9, 'sawtooth', 0.11, null, { lp: sweep * 2.2, lpTo: sweep * 0.5, q: 12 }); }
+    if (s % 8 === 6) for (const n of [57, 60, 64]) tone(t, mtof(n), 0.16, 'sawtooth', 0.035, null, { lp: 2600, lpTo: 900 });
+    { const sweep = 400 + 1600 * (0.5 + 0.5 * Math.sin(bar * 0.7 + s * 0.05)); tone(t, mtof(ACID[s] + 12), s16() * 0.9, 'sawtooth', 0.13, null, { lp: sweep * 2.2, lpTo: sweep * 0.5, q: 12 }); }
     if (bar % 4 === 3 && s === 14) noise(t, 0.4, 2000, 0.4, 0.15, musicG, 'highpass');
   }
   // funk: slap bass, clavinet chops, brass stabs
   const FB = [40, 0, 52, 40, 0, 40, 50, 0, 43, 0, 55, 43, 45, 47, 0, 50];
   function funkStep(s, t, bar) {
     if (s === 0 || s === 3 || s === 10) kick(t, 0.85, 120);
-    if (s === 4 || s === 12) noise(t, 0.16, 2000, 0.8, 0.45, musicG);
+    if (s === 4 || s === 12) noise(t, 0.16, 2000, 0.8, 0.65, musicG);
     if (s === 7 || s === 15) noise(t, 0.05, 2500, 1, 0.12, musicG);
     noise(t, 0.03, 9000, 1.6, s % 2 ? 0.05 : 0.09, musicG, 'highpass');
-    if (FB[s]) tone(t, mtof(FB[s] - 12), 0.18, 'square', 0.16, null, { lp: 900, lpTo: 200 });
-    if (s % 4 === 2 || s === 7) for (const n of [64, 67, 71]) tone(t, mtof(n), 0.09, 'square', 0.025, null, { lp: 1800, bp: true, q: 3 });
-    if (bar % 2 === 1 && (s === 14 || s === 15)) for (const n of [74, 79]) tone(t, mtof(n), 0.18, 'sawtooth', 0.05, null, { lp: 2400, att: 0.02 });
+    if (FB[s]) { tone(t, mtof(FB[s] - 12), 0.18, 'square', 0.12, null, { lp: 900, lpTo: 200 }); tone(t, mtof(FB[s]), 0.14, 'square', 0.12, null, { lp: 2000, lpTo: 500 }); } // slap: the octave pops
+    if (s % 4 === 2 || s === 7) for (const n of [64, 67, 71]) tone(t, mtof(n), 0.1, 'square', 0.1, null, { lp: 2400, lpTo: 900, q: 2 });
+    if (s % 2 === 1) noise(t, 0.03, 2600, 3, 0.12, musicG); // muted guitar scratch
+    if ((s === 14 || s === 15) || (bar % 2 === 0 && s === 6)) for (const n of [74, 79]) tone(t, mtof(n), 0.18, 'sawtooth', 0.08, null, { lp: 2400, att: 0.02 });
   }
   function schedule() {
     if (!ac) return;
@@ -1902,7 +1908,7 @@ let mode = 'solo', night = false, started = false, paused = false;
 
 function nearestNode(x, z) {
   let best = 0, bd = 1e18;
-  for (let i = 0; i < G.x.length; i++) { const d = (G.x[i] - x) ** 2 + (G.z[i] - z) ** 2; if (d < bd && G.adj[i].length) { bd = d; best = i; } }
+  for (let i = 0; i < G.x.length; i++) { const d = (G.x[i] - x) ** 2 + (G.z[i] - z) ** 2; if (d < bd && G.adj[i].length && nodeOk(i)) { bd = d; best = i; } }
   return best;
 }
 function farNode(fromX, fromZ, minD) {
@@ -2376,6 +2382,7 @@ function credit(by, points, text) {
 }
 function damage(c, d, by) {
   if (c.npc) return gx.damage(c, d, by);
+  if (c.alive && c.shield > 0 && gx && gx.shieldHit) gx.shieldHit(c, by && by.x !== undefined ? by : null);
   if (!c.alive || c.shield > 0) return;
   markFight(c, by); if (by && by.local) markFight(by, c);
   c.hp -= d * (c.armor || 1);
@@ -2401,6 +2408,13 @@ function damage(c, d, by) {
 }
 
 // ---------- AI ----------
+// graph nodes a car can really reach (inside the barriers, south of the tram, on dry land): bots used to aim at nodes
+// beyond the edges and stay stuck against the barriers
+let NODE_OK = null;
+function nodeOk(n) {
+  if (!NODE_OK) { NODE_OK = new Uint8Array(G.x.length); for (let i = 0; i < G.x.length; i++) { const x = G.x[i], z = G.z[i]; NODE_OK[i] = G.adj[i].length && Math.abs(x - CX) < HX - 9 && Math.abs(z - CZ) < HZ - 9 && (typeof tramWall !== 'function' || z > tramWall(x) + 4) && groundH(x, z) > WATER_Y + 1 ? 1 : 0; } }
+  return NODE_OK[n] === 1;
+}
 function rivalInput(r, dt) {
   const ai = r.ai;
   let target = null, dp = 1e9;
@@ -2421,7 +2435,7 @@ function rivalInput(r, dt) {
   } else {
     tx = G.x[ai.target]; tz = G.z[ai.target]; thr = 0.75;
     if (Math.hypot(tx - r.x, tz - r.z) < 7) {
-      const opts = G.adj[ai.target].filter(n => n !== ai.prev);
+      let opts = G.adj[ai.target].filter(n => n !== ai.prev && nodeOk(n)); if (!opts.length) opts = G.adj[ai.target].filter(n => nodeOk(n));
       let nx = opts.length ? opts[(rnd() * opts.length) | 0] : (ai.prev >= 0 ? ai.prev : ai.target);
       if (ai.goal && opts.length && rnd() < 0.75) nx = opts.reduce((b, n) => Math.hypot(G.x[n] - ai.goal.x, G.z[n] - ai.goal.z) < Math.hypot(G.x[b] - ai.goal.x, G.z[b] - ai.goal.z) ? n : b, opts[0]);
       ai.prev = ai.target; ai.target = nx;
