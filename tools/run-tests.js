@@ -181,9 +181,13 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
         const out = {};
         for (const s of Object.keys(__gm.VEHICLES)) { c.style = s;
           const a = run(null, () => ({ t: 1, s: 0, hb: false }), 12), b = run(() => { c.vz = -30; }, () => ({ t: 0, s: 0.6, hb: false }), 5), h = run(() => { c.vz = -20; }, t => ({ t: 0, s: 1, hb: t < 0.8 }), 1.6);
-          out[s] = [+a.t100.toFixed(1), Math.round(b.maxB), Math.round(Math.abs(h.yaw))]; }
+          // reverse with the wheel turned, and hard braking in a turn held into reverse: the car must not slide away sideways
+          const sideMax = (setup, inp, T) => { c.phys = null; c.vx = c.vz = 0; c.h = 0; c.steer = 0; setup && setup(); let mv = 0; for (let i = 0; i < T / dt; i++) { __gm.planarReal(c, inp(i * dt), dt); const [fx, fz] = c.fwd; mv = Math.max(mv, Math.abs(c.vx * fz - c.vz * fx)); } return mv; };
+          const rv = Math.max(sideMax(null, t => ({ t: -1, s: t > 1 ? 0.5 : 0, hb: false }), 4), sideMax(() => { c.vz = 8; c.vx = 0.3; }, () => ({ t: -1, s: 0, hb: false }), 3));
+          const bk = sideMax(() => { c.vz = -30; }, () => ({ t: -1, s: 0.6, hb: false }), 3);
+          out[s] = [+a.t100.toFixed(1), Math.round(b.maxB), Math.round(Math.abs(h.yaw)), +rv.toFixed(1), +bk.toFixed(1)]; }
         c._grip = undefined; c.phys = null; c.style = keep[3]; c.place(keep[0], keep[1], keep[2]); return out; });
-      const bad = Object.entries(r).filter(([k, [t100, beta, hb]]) => !(t100 > 1.5 && t100 < (k === 'van' ? 6.5 : 4.5) && beta < 20 && hb > 60)); // the van is slow on purpose (cycle 13)
+      const bad = Object.entries(r).filter(([k, [t100, beta, hb, rv, bk]]) => !(t100 > 1.5 && t100 < (k === 'van' ? 6.5 : 4.5) && beta < 20 && hb > 60 && rv < 4 && bk < 7)); // the van is slow on purpose (cycle 13)
       expect(!bad.length, 'hors limites : ' + JSON.stringify(bad)); return r;
     });
     await check('circulation v2 : feux, sens unique, police contre Rapaces, bus', async () => {

@@ -79,10 +79,17 @@ function planarReal(c, inp, dt) {
     // traction control: when steering, the engine leaves part of the driven wheels' grip to the turn
     const tc = 1 - 0.4 * Math.abs(c.steer); // full traction in a straight line, 60 % with the wheel turned
     if (V.drive === 'F' && Fxf > 0) Fxf = Math.min(Fxf, tc * capF); if (V.drive === 'R' && Fxr > 0 && !inp.hb) Fxr = Math.min(Fxr, tc * capR);
-    Fxf = Math.max(-capF, Math.min(capF, Fxf)); Fxr = Math.max(-capR, Math.min(capR, Fxr));
+    // brake distribution (like ABS): braking never takes more than 85 % of an axle's grip, so the tyres still hold the
+    // car sideways; the engine never more than 92 % (a front-wheel drive at full throttle kept no grip to go straight)
+    if (!inp.hb && Fbrake > 0) { Fxf = Math.max(-0.85 * capF, Math.min(0.85 * capF, Fxf)); Fxr = Math.max(-0.85 * capR, Math.min(0.85 * capR, Fxr)); }
+    Fxf = Math.max(-capF, Math.min(0.92 * capF, Fxf)); Fxr = Math.max(-capR, Math.min(inp.hb ? capR : 0.92 * capR, Fxr));
     let Fyf = 0, Fyr = 0;
     if (spd > 1.5) {
-      const af = delta - Math.atan2(v + V.a * r, spd) * sgn, ar = -Math.atan2(v - V.b * r, spd) * sgn;
+      // slip angles. The tyre force always opposes the sideways speed of its axle, forwards or backwards; only the
+      // steering term changes sign in reverse. (Until 14 Nov. the whole angle was flipped in reverse: the tyres pushed
+      // the car further sideways instead of holding it, and it slid away at up to 25 m/s: the "car that translates
+      // sideways" reported by the user, in reverse and at the end of every hard braking that ran into reverse.)
+      const af = sgn * delta - Math.atan2(v + V.a * r, spd), ar = -Math.atan2(v - V.b * r, spd);
       Fyf = tyreY(af, Math.max(0, Fzf), mu) * Math.sqrt(Math.max(0, 1 - (Fxf / (capF || 1)) ** 2));
       Fyr = tyreYRear(ar, Math.max(0, Fzr), mu * (inp.hb ? 0.45 : 1)) * Math.sqrt(Math.max(0.15, 1 - (Fxr / (capR || 1)) ** 2));
       ph.slipR = Math.abs(ar);
@@ -103,6 +110,8 @@ function planarReal(c, inp, dt) {
     // stability aid (like ESP): without the handbrake the car never turns faster than its grip allows at that speed,
     // and the slide is gently brought back; the handbrake switches it off for drifts
     if (!inp.hb && spd > 5) { const rMax = 1.15 * mu * g / spd; if (Math.abs(r) > rMax) r = Math.sign(r) * rMax; if (Math.abs(v) > 0.25 * spd) v *= Math.exp(-3 * h); }
+    if (!inp.hb && u < -1.5 && Math.abs(v) > 0.3 * spd) v *= Math.exp(-8 * h); // reversing: no drifting backwards
+    if (!inp.hb && spd < 7) { v *= Math.exp(-(7 - spd) * 1.2 * h); r *= Math.exp(-(7 - spd) * 0.25 * h * (Math.abs(c.steer) < 0.2 ? 1 : 0)); } // slowing down: the slide dies out with the speed instead of ending in a sideways drift
     if (inp.t === 0 && Fbrake === 0 && Math.abs(u) < 0.3) u *= Math.exp(-6 * h); // comes to rest
     const axTrue = Math.max(-1.5 * g, Math.min(1.5 * g, Fx / m)); // weight transfer follows the real longitudinal acceleration (forces / mass), not du, which carries the v·r turning term
     ph.ax = ph.ax + (axTrue - ph.ax) * Math.min(1, h * 10);
