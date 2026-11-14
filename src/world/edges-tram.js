@@ -75,26 +75,60 @@ function buildTrams() {
   if (!TRAM) return;
   const white = edgeMat(0xe9ecee, { r: 0.35, m: 0.1 }), glass = edgeMat(0x1c2630, { r: 0.1, m: 0.3 }), stripe = edgeMat(0x1a9a8a, { r: 0.4 }), grey = edgeMat(0x3a3d44, { r: 0.6 }), lightM = HD ? new THREE.MeshBasicMaterial({ color: new THREE.Color(6, 5.5, 4) }) : new THREE.MeshBasicMaterial({ color: 0xfff4d0 }), tailM = HD ? new THREE.MeshBasicMaterial({ color: new THREE.Color(6, 0.2, 0.1) }) : new THREE.MeshBasicMaterial({ color: 0xff2010 });
   const SEG = 9.4, NSEG = 4;
+  // (Fable 5.2, user feedback: the tram was a stack of boxes.) The Nantes tram of 1996, in the spirit of the first French
+  // standard tram: white body with a green waistband, rounded roof, big windows between thin pillars, double doors,
+  // a raked cab with a wide windscreen, bogies under the floor, bellows between the sections, a pantograph.
+  const doorM = edgeMat(0x157a6e, { r: 0.45 }), roofM = edgeMat(0xbfc4c8, { r: 0.7 }), dark = edgeMat(0x17181b, { r: 0.8 }), steel = edgeMat(0x6b6f76, { r: 0.45, m: 0.6 });
+  const dest = HD ? new THREE.MeshBasicMaterial({ color: new THREE.Color(4, 2.6, 0.3) }) : new THREE.MeshBasicMaterial({ color: 0xffb020 });
+  const MATS = [white, glass, stripe, grey, doorM, roofM];
+  const PROF = [[0.32, 1.06], [0.72, 1.2], [1.28, 1.22], [1.56, 1.22], [2.8, 1.2], [3.02, 1.14], [3.26, 0.9], [3.4, 0.5], [3.45, 0]];
   const section = (cab) => {
-    const g = new THREE.Group(), add = (geo, mt, x, y, z) => { const o = new THREE.Mesh(geo, mt); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
-    add(new THREE.BoxGeometry(2.4, 0.9, SEG - 0.5), grey, 0, 0.75, 0);            // skirt over the bogies
-    add(new THREE.BoxGeometry(2.4, 1.0, SEG - 0.5), white, 0, 1.5, 0);
-    add(new THREE.BoxGeometry(2.42, 1.15, SEG - 0.9), glass, 0, 2.55, 0);          // window band
-    add(new THREE.BoxGeometry(2.43, 0.22, SEG - 0.5), stripe, 0, 1.95, 0);
-    add(new THREE.BoxGeometry(2.4, 0.55, SEG - 0.5), white, 0, 3.4, 0);
-    add(new THREE.BoxGeometry(1.6, 0.35, 3), grey, 0, 3.85, 0);                     // roof equipment
-    for (const s of [-1, 1]) add(new THREE.BoxGeometry(0.04, 2.1, 1.3), stripe, s * 1.215, 1.85, 0); // doors
-    if (cab) { // the rounded nose with its big windscreen and lights
-      const nose = add(new THREE.CylinderGeometry(1.2, 1.2, 2.9, 16, 1, false, -Math.PI / 2, Math.PI), white, 0, 2.1, SEG / 2 - 0.25); nose.rotation.y = 0;
-      const ws = add(new THREE.CylinderGeometry(1.22, 1.22, 1.3, 16, 1, false, -Math.PI / 2 + 0.3, Math.PI - 0.6), glass, 0, 2.7, SEG / 2 - 0.25);
-      for (const s of [-1, 1]) { add(new THREE.BoxGeometry(0.3, 0.14, 0.1), lightM, s * 0.75, 1.2, SEG / 2 + 0.85); }
-      g.userData.tail = [-1, 1].map(s => add(new THREE.BoxGeometry(0.22, 0.12, 0.1), tailM, s * 0.75, 1.2, SEG / 2 + 0.86));
+    const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
+    const add = (geo, mt, x, y, z, cast = true) => { const o = new THREE.Mesh(geo, mt); o.position.set(x, y, z); o.castShadow = cast; body.add(o); return o; };
+    const len = SEG - 0.55, zb = -len / 2, zf = len / 2, noseL = cab ? 1.9 : 0;
+    // doors (double leaf, 1.3 m) and window pillars every 1.75 m
+    const doors = cab ? [[-2.9, -1.6], [0.6, 1.9]] : [[-3.2, -1.9], [1.9, 3.2]], cuts = [];
+    for (const [a, b] of doors) cuts.push(a, b, (a + b) / 2 - 0.03, (a + b) / 2 + 0.03);
+    const pillars = []; for (let z = zb + 0.35; z < zf - noseL - 0.3; z += 1.75) { if (doors.some(([a, b]) => z + 0.2 > a - 0.05 && z < b + 0.05)) continue; pillars.push([z, z + 0.2]); cuts.push(z, z + 0.2); }
+    const inR = (z, list) => list.some(([a, b]) => z > a && z < b);
+    const paint = (z, y, t, side, end) => {
+      if (y > 3.1) return 5;                                   // roof
+      if (y < 0.72) return 3;                                  // skirt
+      if (end === 'f') { if (y > 1.56 && y < 2.8 && t > 0.12) return 1; return y > 1.28 && y < 1.56 ? 2 : 0; } // cab: windscreen, band
+      if (inR(z, doors)) { if (Math.abs(z - (doors.find(([a, b]) => z > a && z < b)[0] + doors.find(([a, b]) => z > a && z < b)[1]) / 2) < 0.03) return 3; return y > 1.56 && y < 2.8 ? 1 : 4; }
+      if (y > 1.28 && y < 1.56) return 2;                       // green waistband
+      if (y > 1.56 && y < 2.8) return inR(z, pillars) || z < zb + 0.3 || z > zf - noseL - 0.25 ? 0 : 1; // windows
+      return 0;
+    };
+    const shell = loftBody({ len, prof: PROF, front: cab ? { len: noseL, taper: 0.3, rake: 0.5, y0: 1.3, round: true } : null, back: null, cuts, paint, mats: MATS, capMat: 3 });
+    body.add(shell);
+    // bellows towards the next section, bogie and its wheels, roof equipment
+    add(new THREE.BoxGeometry(2.05, 2.75, 0.7), dark, 0, 1.8, zb - 0.26);
+    for (const zz of cab ? [1.6] : [0]) {
+      add(new THREE.BoxGeometry(1.9, 0.34, 2.3), dark, 0, 0.36, zz);
+      for (const sx of [-1, 1]) for (const dz of [-0.75, 0.75]) { const w = add(new THREE.CylinderGeometry(0.33, 0.33, 0.14, 14), steel, sx * 0.78, 0.33, zz + dz); w.rotation.z = Math.PI / 2; }
     }
+    add(new THREE.BoxGeometry(1.5, 0.26, cab ? 2.6 : 3.4), grey, 0, 3.55, cab ? -1.2 : 0);
+    if (cab) {
+      add(new THREE.BoxGeometry(1.25, 0.24, 0.06), dest, 0, 2.93, zf - 0.93);                 // destination display over the windscreen
+      for (const s of [-1, 1]) {
+        add(new THREE.BoxGeometry(0.3, 0.13, 0.08), lightM, s * 0.55, 1.02, zf + 0.03, false);
+        const mir = add(new THREE.BoxGeometry(0.07, 0.3, 0.16), dark, s * 1.22, 2.3, zf - 1.75); mir.rotation.y = s * 0.3;
+      }
+      add(new THREE.BoxGeometry(1.5, 0.12, 0.1), dark, 0, 0.5, zf + 0.03);                    // bumper
+      g.userData.tail = [-1, 1].map(s => add(new THREE.BoxGeometry(0.2, 0.11, 0.08), tailM, s * 0.3, 1.02, zf + 0.04, false));
+    }
+    g.userData.body = body;
     return g;
+  };
+  const pantograph = g => { // diamond frame up to the wire (6.3 m above the rail)
+    const bar = (x0, y0, z0, x1, y1, z1) => { const d = new THREE.Vector3(x1 - x0, y1 - y0, z1 - z0), o = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, d.length(), 5), dark); o.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); o.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); g.userData.body.add(o); };
+    for (const s of [-0.35, 0.35]) { bar(s, 3.68, -0.9, s, 4.95, 0.1); bar(s, 4.95, 0.1, s, 6.2, -0.75); }
+    bar(-0.35, 4.95, 0.1, 0.35, 4.95, 0.1); bar(-0.75, 6.22, -0.75, 0.75, 6.22, -0.75);
   };
   for (const dir of [1, -1]) {
     const segs = [];
-    for (let k = 0; k < NSEG; k++) { const s = section(k === 0 || k === NSEG - 1); if (k === NSEG - 1) s.children.forEach(o => { o.position.z = -o.position.z; }); s.traverse(o => { o.userData.hdLinear = true; }); if (HD) hd.linearize(s); scene.add(s); segs.push(s); }
+    for (let k = 0; k < NSEG; k++) { const s = section(k === 0 || k === NSEG - 1); if (k === NSEG - 1) s.userData.body.rotation.y = Math.PI; if (k === 1) pantograph(s); s.traverse(o => { o.userData.hdLinear = true; }); if (HD) hd.linearize(s); scene.add(s); segs.push(s); }
     // catenary pantograph on the second section
     trams.push({ dir, x: dir > 0 ? EDGE.x0 - 60 : EDGE.x1 + 60, v: 9, segs, SEG, wait: 0, stopAt: null, hitCd: 0, bellCd: 0, sleep: dir > 0 ? 0 : 25 });
   }

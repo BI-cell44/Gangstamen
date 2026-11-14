@@ -5533,15 +5533,53 @@ const gx = !HD ? null : (() => {
   }
 
   // ---------- TAN buses on their real lines (OSM route=bus) ----------
+  // (Fable 5.2, user feedback: the bus was a box.) A city bus of the 1990s in the TAN colours of the time: white body,
+  // green band along the sills, rounded roof, raked windscreen with the route display above it, big side windows,
+  // two double doors on the right-hand side, wheels in dark arches, mirrors.
+  let BUS = null;
+  function busParts() {
+    if (BUS) return BUS;
+    const M = (c, o = {}) => edgeMat(c, o), mats = [M(0xf2f2ee, { r: 0.45 }), M(0x16202a, { r: 0.1, m: 0.4 }), M(0x00965e, { r: 0.5 }), M(0x1a1b1e, { r: 0.8 }), M(0x0a6f48, { r: 0.5 }), M(0xd9dcde, { r: 0.7 })];
+    const prof = [[0.3, 1.16], [0.52, 1.25], [0.98, 1.27], [1.3, 1.27], [2.42, 1.26], [2.72, 1.2], [2.94, 0.98], [3.06, 0.5], [3.1, 0]];
+    const len = 11.6, zf = len / 2, zb = -len / 2, doors = [[zf - 2.35, zf - 1.05], [-1.0, 0.3]], cuts = [], pillars = [];
+    for (const [a, b] of doors) cuts.push(a, b, (a + b) / 2 - 0.03, (a + b) / 2 + 0.03);
+    for (let z = zb + 0.9; z < zf - 1.0; z += 1.55) { pillars.push([z, z + 0.14]); cuts.push(z, z + 0.14); }
+    const inR = (z, l) => l.some(([a, b]) => z > a && z < b);
+    const paint = (z, y, t, side, end) => {
+      if (y > 2.83) return 5;
+      if (y < 0.5) return 3;
+      if (end === 'f') return y > 1.2 && y < 2.42 && t > 0.1 ? 1 : y < 0.98 ? 2 : 0;       // windscreen
+      if (end === 'b') return y > 1.5 && y < 2.42 && t > 0.3 ? 1 : y < 0.98 ? 2 : 0;       // rear window
+      if (side < 0 && inR(z, doors)) { const d = doors.find(([a, b]) => z > a && z < b); if (Math.abs(z - (d[0] + d[1]) / 2) < 0.03) return 3; return y > 0.98 && y < 2.42 ? 1 : 4; } // glazed double doors
+      if (y < 0.98) return 2;                                                              // green band
+      if (y > 1.3 && y < 2.42) return inR(z, pillars) || z < zb + 0.75 || z > zf - 0.9 ? 0 : 1;
+      return 0;
+    };
+    BUS = { mats, prof, len, cuts, paint, tyre: M(0x121214, { r: 0.9 }), hub: M(0xb9bcc4, { r: 0.35, m: 0.8 }), dest: new THREE.MeshBasicMaterial({ color: new THREE.Color(4, 2.6, 0.3) }), head: new THREE.MeshBasicMaterial({ color: new THREE.Color(5, 4.6, 3.6) }), tail: new THREE.MeshBasicMaterial({ color: new THREE.Color(4, 0.15, 0.08) }) };
+    for (const m of [...mats, BUS.tyre, BUS.hub, BUS.dest, BUS.head, BUS.tail]) m.userData.shared = true;
+    BUS.wheel = new THREE.CylinderGeometry(0.48, 0.48, 0.3, 16).rotateZ(Math.PI / 2); BUS.hubG = new THREE.CylinderGeometry(0.22, 0.22, 0.32, 10).rotateZ(Math.PI / 2); BUS.arch = new THREE.CylinderGeometry(0.62, 0.62, 2.56, 16, 1, false, 0, Math.PI).rotateZ(Math.PI / 2).rotateX(-Math.PI / 2);
+    for (const g of [BUS.wheel, BUS.hubG, BUS.arch]) g.userData.shared = true;
+    return BUS;
+  }
   function makeBus() {
     const c = makeNpc('civ'); c.style = 'bus';
     for (const ch of c.mesh.children) ch.visible = false;
-    const g = new THREE.Group(), body = new THREE.MeshStandardMaterial({ color: 0xf2f2ee, roughness: 0.5 }), green = new THREE.MeshStandardMaterial({ color: 0x00965e, roughness: 0.5 }), glass = new THREE.MeshStandardMaterial({ color: 0x1c2a33, roughness: 0.15, metalness: 0.3 }), tyre = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.9 });
-    const box = (w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
-    box(2.5, 2.6, 11.8, body, 0, 1.75, 0); box(2.52, 0.5, 11.82, green, 0, 0.75, 0); box(2.54, 1.0, 10.4, glass, 0, 2.2, 0.3); box(2.3, 1.1, 0.06, glass, 0, 2.15, -5.92);
-    box(2.0, 0.3, 0.08, new THREE.MeshBasicMaterial({ color: new THREE.Color(3, 2, 0.2) }), 0, 2.95, -5.93); // route display
-    for (const [x, z] of [[-1.15, -3.8], [1.15, -3.8], [-1.15, 3.6], [1.15, 3.6]]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.3, 14), tyre); w.rotation.z = Math.PI / 2; w.position.set(x, 0.16, z); g.add(w); }
-    g.position.y = -0.34; g.traverse(o => { o.userData.hdLinear = true; }); hd.linearize && hd.linearize(g); c.mesh.add(g);
+    const B = busParts(), g = new THREE.Group(), zf = B.len / 2;
+    const add = (geo, m, x, y, z, cast = false) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = cast; g.add(o); return o; };
+    g.add(loftBody({ len: B.len, prof: B.prof, front: { len: 0.9, taper: 0.1, rake: 0.55, y0: 1.2 }, back: { len: 0.45, taper: 0.07, rake: 0.3, y0: 1.4 }, cuts: B.cuts, paint: B.paint, mats: B.mats }));
+    for (const z of [zf - 2.9, -zf + 3.1]) { // wheels in their arches
+      add(B.arch, B.mats[3], 0, 0.5, z);
+      for (const sx of [-1, 1]) { add(B.wheel, B.tyre, sx * 1.1, 0.48, z, true); add(B.hubG, B.hub, sx * 1.11, 0.48, z); }
+    }
+    add(new THREE.BoxGeometry(1.5, 0.26, 0.06), B.dest, 0, 2.62, zf - 0.52);                       // route display
+    add(new THREE.BoxGeometry(2.3, 0.16, 0.12), B.mats[3], 0, 0.42, zf + 0.02); add(new THREE.BoxGeometry(2.3, 0.16, 0.12), B.mats[3], 0, 0.42, -zf - 0.02); // bumpers
+    for (const s of [-1, 1]) {
+      add(new THREE.BoxGeometry(0.3, 0.14, 0.06), B.head, s * 0.85, 0.72, zf + 0.02); add(new THREE.BoxGeometry(0.22, 0.3, 0.06), B.tail, s * 0.95, 1.1, -zf - 0.02);
+      const arm = add(new THREE.BoxGeometry(0.34, 0.04, 0.04), B.mats[3], s * 1.36, 2.3, zf - 0.75), mir = add(new THREE.BoxGeometry(0.05, 0.36, 0.2), B.mats[3], s * 1.52, 2.15, zf - 0.75);
+    }
+    add(new THREE.BoxGeometry(1.4, 0.16, 2.2), B.mats[5], 0, 3.14, -1.5);                            // roof hatch and vents
+    // the car frame drives towards -z: turn the bus round; its floor sits at the height of the car's origin
+    g.rotation.y = Math.PI; g.position.y = -0.34; g.traverse(o => { o.userData.hdLinear = true; }); c.mesh.add(g);
     c.mesh.userData.hl = 5.6; c.long = 4.2; c.maxV = 11; c.hp = 160; c.bus = true; c.blink = null;
     return c;
   }
@@ -7867,7 +7905,7 @@ const gx = !HD ? null : (() => {
     if (LM.titanLights) LM.titanLights.color.setRGB((performance.now() / 700 | 0) % 2 ? 8 * n + 0.6 : 0.4, 0.3, 0.2);
   }
   { const el = $('ammo'); if (el) { el.style.pointerEvents = 'auto'; el.style.cursor = 'pointer'; el.addEventListener('pointerdown', e => { e.preventDefault(); if (locals[0]) cycleWeapon(locals[0]); }); } }
-  const api = { netIn, dj, cycleWeapon, hearShot, quickChat, chatIn, step: gameStep, world, landmarkTick, tick, start: startHook, cars: () => npcs.concat(extras), copsOn, shieldHit, policeHQ: HQ, hqNode, spots: SPOTS, unlocked, postcards, acts: () => (actsBuild(), acts), actRun: () => run, startAct, hearCars: carsHearShot, traffic: TF, Fences, lightState, roadRules, makeNpc, placeOnGraph, nextNode, spawnPatrol, npcs: () => npcs, damage: damageNpc, addHeat, say, peds: () => peds, stars, special, startMission, renderCampaign, cleanupMission, MISSIONS,
+  const api = { netIn, dj, cycleWeapon, hearShot, quickChat, chatIn, step: gameStep, world, landmarkTick, tick, start: startHook, cars: () => npcs.concat(extras), copsOn, shieldHit, makeBus, policeHQ: HQ, hqNode, spots: SPOTS, unlocked, postcards, acts: () => (actsBuild(), acts), actRun: () => run, startAct, hearCars: carsHearShot, traffic: TF, Fences, lightState, roadRules, makeNpc, placeOnGraph, nextNode, spawnPatrol, npcs: () => npcs, damage: damageNpc, addHeat, say, peds: () => peds, stars, special, startMission, renderCampaign, cleanupMission, MISSIONS,
     get gmode() { return gm ? gm.kind : 0; }, mines: () => mines, customers: () => customers, teamScores: modeTeamScores, goalText, rematch: rematchMode,
     get blocking() { return blocking; }, get mission() { return mission; }, foes: () => extras.filter(c => c.alive && c.team === 1), saveBank, pus: () => pus, furniture: () => furniture, garage: GARAGE, garages: GARAGES,
     get onGarage() { return gx_onGarage; },
@@ -8225,6 +8263,59 @@ function updateTitleCamera(dt) {
   sun.position.set(0, 0, 0).add(SUN_OFF); sun.target.position.set(0, 0, 0);
 }
 
+// ---------- lofted bodies for the long vehicles (tram, bus): a rounded cross-section swept along the length ----------
+// loftBody({ len, prof, front, back, cuts, paint, mats }) -> THREE.Mesh, long axis z, front towards +z.
+//   prof: half cross-section from the sill to the roof centre, [[y, halfWidth], ...] (last point on the axis)
+//   front / back: { len, taper, rake, y0 } nose: the section narrows by `taper` and the upper part (above y0) leans
+//     back by `rake` x len, like a raked windscreen; omit for a flat open end (hidden by a bellows)
+//   cuts: z positions where the paint changes (window pillars, doors); paint(z, y, t, side, end) -> index in mats,
+//     with t the progress along a nose (0 on the straight body), side -1 / +1 (x sign), end 'f' | 'b' | ''
+function loftBody(o) {
+  const P = o.prof, n = P.length, L = o.len, z0 = -L / 2, z1 = L / 2, NS = 7;
+  const fl = o.front ? o.front.len : 0, bl = o.back ? o.back.len : 0;
+  const zs = new Set([z0 + bl, z1 - fl]);
+  for (const c of o.cuts || []) if (c > z0 + bl + 0.01 && c < z1 - fl - 0.01) zs.add(+c.toFixed(3));
+  for (let i = 0; i <= NS; i++) { if (fl) zs.add(z1 - fl + fl * i / NS); if (bl) zs.add(z0 + bl - bl * i / NS); }
+  const Z = [...zs].sort((a, b) => a - b), yTop = P[n - 1][0];
+  const noseAt = z => z > z1 - fl + 1e-6 ? ['f', (z - (z1 - fl)) / fl, o.front] : z < z0 + bl - 1e-6 ? ['b', (z0 + bl - z) / bl, o.back] : ['', 0, null];
+  const ring = 2 * n - 1, pos = [], tris = [[]];
+  for (const z of Z) {
+    const [end, t, N] = noseAt(z);
+    for (let k = 0; k < ring; k++) {
+      const j = k < n ? k : 2 * n - 2 - k, side = k < n - 1 ? 1 : k === n - 1 ? 0 : -1, [y, w] = P[j];
+      let zz = z, ww = w;
+      if (N) { // round the plan of the nose, lean the upper part back
+        ww = w * (1 - N.taper * t * t) * (t > 0.999 && N.round ? 0.86 : 1);
+        const up = Math.max(0, Math.min(1, (y - N.y0) / (yTop - N.y0)));
+        zz = z - (end === 'f' ? 1 : -1) * N.rake * N.len * t * up * up * (3 - 2 * up);
+      }
+      pos.push(side * ww, y, zz);
+    }
+  }
+  const put = (m, a, b, c) => { (tris[m] || (tris[m] = [])).push(a, b, c); };
+  for (let i = 0; i + 1 < Z.length; i++) {
+    const zm = (Z[i] + Z[i + 1]) / 2, [end, t] = noseAt(zm);
+    for (let k = 0; k + 1 < ring; k++) {
+      const ja = k < n ? k : 2 * n - 2 - k, jb = k + 1 < n ? k + 1 : 2 * n - 3 - k, ym = (P[ja][0] + P[jb][0]) / 2, side = k < n - 1 ? 1 : -1;
+      const m = o.paint(zm, ym, t, side, end), a = i * ring + k, b = a + 1, c = a + ring, d = c + 1;
+      put(m, a, b, c); put(m, b, d, c);
+    }
+  }
+  for (const [end, i] of [['f', Z.length - 1], ['b', 0]]) { // close the two ends: one strip across per profile step
+    const N = end === 'f' ? o.front : o.back, base = i * ring;
+    for (let j = 0; j + 1 < n; j++) {
+      const ym = (P[j][0] + P[j + 1][0]) / 2, m = N ? o.paint(Z[i], ym, 1, 0, end) : (o.capMat ?? 0);
+      const a = base + j, b2 = base + j + 1, c = base + 2 * n - 3 - j, d = base + 2 * n - 2 - j; // right low, right high, left high, left low
+      if (end === 'f') { put(m, a, b2, d); if (c !== b2) put(m, b2, c, d); } else { put(m, a, d, b2); if (c !== b2) put(m, b2, d, c); }
+    }
+  }
+  const g = new THREE.BufferGeometry(), index = [];
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  tris.forEach((t, m) => { if (!t || !t.length) return; g.addGroup(index.length, t.length, m); index.push(...t); });
+  g.setIndex(index); g.computeVertexNormals();
+  const mesh = new THREE.Mesh(g, o.mats); mesh.castShadow = true; mesh.receiveShadow = true;
+  return mesh;
+}
 // ---------- map edges: construction barriers where the streets leave the map, and the tram line 1 to the north ----------
 const TRAM = W.tram || null;
 function tramZ(arr, x) { const c = (x - TRAM.x0) / TRAM.step, i = Math.max(0, Math.min(arr.length - 2, Math.floor(c))), u = Math.max(0, Math.min(1, c - i)); return arr[i] + (arr[i + 1] - arr[i]) * u; }
@@ -8302,26 +8393,60 @@ function buildTrams() {
   if (!TRAM) return;
   const white = edgeMat(0xe9ecee, { r: 0.35, m: 0.1 }), glass = edgeMat(0x1c2630, { r: 0.1, m: 0.3 }), stripe = edgeMat(0x1a9a8a, { r: 0.4 }), grey = edgeMat(0x3a3d44, { r: 0.6 }), lightM = HD ? new THREE.MeshBasicMaterial({ color: new THREE.Color(6, 5.5, 4) }) : new THREE.MeshBasicMaterial({ color: 0xfff4d0 }), tailM = HD ? new THREE.MeshBasicMaterial({ color: new THREE.Color(6, 0.2, 0.1) }) : new THREE.MeshBasicMaterial({ color: 0xff2010 });
   const SEG = 9.4, NSEG = 4;
+  // (Fable 5.2, user feedback: the tram was a stack of boxes.) The Nantes tram of 1996, in the spirit of the first French
+  // standard tram: white body with a green waistband, rounded roof, big windows between thin pillars, double doors,
+  // a raked cab with a wide windscreen, bogies under the floor, bellows between the sections, a pantograph.
+  const doorM = edgeMat(0x157a6e, { r: 0.45 }), roofM = edgeMat(0xbfc4c8, { r: 0.7 }), dark = edgeMat(0x17181b, { r: 0.8 }), steel = edgeMat(0x6b6f76, { r: 0.45, m: 0.6 });
+  const dest = HD ? new THREE.MeshBasicMaterial({ color: new THREE.Color(4, 2.6, 0.3) }) : new THREE.MeshBasicMaterial({ color: 0xffb020 });
+  const MATS = [white, glass, stripe, grey, doorM, roofM];
+  const PROF = [[0.32, 1.06], [0.72, 1.2], [1.28, 1.22], [1.56, 1.22], [2.8, 1.2], [3.02, 1.14], [3.26, 0.9], [3.4, 0.5], [3.45, 0]];
   const section = (cab) => {
-    const g = new THREE.Group(), add = (geo, mt, x, y, z) => { const o = new THREE.Mesh(geo, mt); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
-    add(new THREE.BoxGeometry(2.4, 0.9, SEG - 0.5), grey, 0, 0.75, 0);            // skirt over the bogies
-    add(new THREE.BoxGeometry(2.4, 1.0, SEG - 0.5), white, 0, 1.5, 0);
-    add(new THREE.BoxGeometry(2.42, 1.15, SEG - 0.9), glass, 0, 2.55, 0);          // window band
-    add(new THREE.BoxGeometry(2.43, 0.22, SEG - 0.5), stripe, 0, 1.95, 0);
-    add(new THREE.BoxGeometry(2.4, 0.55, SEG - 0.5), white, 0, 3.4, 0);
-    add(new THREE.BoxGeometry(1.6, 0.35, 3), grey, 0, 3.85, 0);                     // roof equipment
-    for (const s of [-1, 1]) add(new THREE.BoxGeometry(0.04, 2.1, 1.3), stripe, s * 1.215, 1.85, 0); // doors
-    if (cab) { // the rounded nose with its big windscreen and lights
-      const nose = add(new THREE.CylinderGeometry(1.2, 1.2, 2.9, 16, 1, false, -Math.PI / 2, Math.PI), white, 0, 2.1, SEG / 2 - 0.25); nose.rotation.y = 0;
-      const ws = add(new THREE.CylinderGeometry(1.22, 1.22, 1.3, 16, 1, false, -Math.PI / 2 + 0.3, Math.PI - 0.6), glass, 0, 2.7, SEG / 2 - 0.25);
-      for (const s of [-1, 1]) { add(new THREE.BoxGeometry(0.3, 0.14, 0.1), lightM, s * 0.75, 1.2, SEG / 2 + 0.85); }
-      g.userData.tail = [-1, 1].map(s => add(new THREE.BoxGeometry(0.22, 0.12, 0.1), tailM, s * 0.75, 1.2, SEG / 2 + 0.86));
+    const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
+    const add = (geo, mt, x, y, z, cast = true) => { const o = new THREE.Mesh(geo, mt); o.position.set(x, y, z); o.castShadow = cast; body.add(o); return o; };
+    const len = SEG - 0.55, zb = -len / 2, zf = len / 2, noseL = cab ? 1.9 : 0;
+    // doors (double leaf, 1.3 m) and window pillars every 1.75 m
+    const doors = cab ? [[-2.9, -1.6], [0.6, 1.9]] : [[-3.2, -1.9], [1.9, 3.2]], cuts = [];
+    for (const [a, b] of doors) cuts.push(a, b, (a + b) / 2 - 0.03, (a + b) / 2 + 0.03);
+    const pillars = []; for (let z = zb + 0.35; z < zf - noseL - 0.3; z += 1.75) { if (doors.some(([a, b]) => z + 0.2 > a - 0.05 && z < b + 0.05)) continue; pillars.push([z, z + 0.2]); cuts.push(z, z + 0.2); }
+    const inR = (z, list) => list.some(([a, b]) => z > a && z < b);
+    const paint = (z, y, t, side, end) => {
+      if (y > 3.1) return 5;                                   // roof
+      if (y < 0.72) return 3;                                  // skirt
+      if (end === 'f') { if (y > 1.56 && y < 2.8 && t > 0.12) return 1; return y > 1.28 && y < 1.56 ? 2 : 0; } // cab: windscreen, band
+      if (inR(z, doors)) { if (Math.abs(z - (doors.find(([a, b]) => z > a && z < b)[0] + doors.find(([a, b]) => z > a && z < b)[1]) / 2) < 0.03) return 3; return y > 1.56 && y < 2.8 ? 1 : 4; }
+      if (y > 1.28 && y < 1.56) return 2;                       // green waistband
+      if (y > 1.56 && y < 2.8) return inR(z, pillars) || z < zb + 0.3 || z > zf - noseL - 0.25 ? 0 : 1; // windows
+      return 0;
+    };
+    const shell = loftBody({ len, prof: PROF, front: cab ? { len: noseL, taper: 0.3, rake: 0.5, y0: 1.3, round: true } : null, back: null, cuts, paint, mats: MATS, capMat: 3 });
+    body.add(shell);
+    // bellows towards the next section, bogie and its wheels, roof equipment
+    add(new THREE.BoxGeometry(2.05, 2.75, 0.7), dark, 0, 1.8, zb - 0.26);
+    for (const zz of cab ? [1.6] : [0]) {
+      add(new THREE.BoxGeometry(1.9, 0.34, 2.3), dark, 0, 0.36, zz);
+      for (const sx of [-1, 1]) for (const dz of [-0.75, 0.75]) { const w = add(new THREE.CylinderGeometry(0.33, 0.33, 0.14, 14), steel, sx * 0.78, 0.33, zz + dz); w.rotation.z = Math.PI / 2; }
     }
+    add(new THREE.BoxGeometry(1.5, 0.26, cab ? 2.6 : 3.4), grey, 0, 3.55, cab ? -1.2 : 0);
+    if (cab) {
+      add(new THREE.BoxGeometry(1.25, 0.24, 0.06), dest, 0, 2.93, zf - 0.93);                 // destination display over the windscreen
+      for (const s of [-1, 1]) {
+        add(new THREE.BoxGeometry(0.3, 0.13, 0.08), lightM, s * 0.55, 1.02, zf + 0.03, false);
+        const mir = add(new THREE.BoxGeometry(0.07, 0.3, 0.16), dark, s * 1.22, 2.3, zf - 1.75); mir.rotation.y = s * 0.3;
+      }
+      add(new THREE.BoxGeometry(1.5, 0.12, 0.1), dark, 0, 0.5, zf + 0.03);                    // bumper
+      g.userData.tail = [-1, 1].map(s => add(new THREE.BoxGeometry(0.2, 0.11, 0.08), tailM, s * 0.3, 1.02, zf + 0.04, false));
+    }
+    g.userData.body = body;
     return g;
+  };
+  const pantograph = g => { // diamond frame up to the wire (6.3 m above the rail)
+    const bar = (x0, y0, z0, x1, y1, z1) => { const d = new THREE.Vector3(x1 - x0, y1 - y0, z1 - z0), o = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, d.length(), 5), dark); o.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); o.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); g.userData.body.add(o); };
+    for (const s of [-0.35, 0.35]) { bar(s, 3.68, -0.9, s, 4.95, 0.1); bar(s, 4.95, 0.1, s, 6.2, -0.75); }
+    bar(-0.35, 4.95, 0.1, 0.35, 4.95, 0.1); bar(-0.75, 6.22, -0.75, 0.75, 6.22, -0.75);
   };
   for (const dir of [1, -1]) {
     const segs = [];
-    for (let k = 0; k < NSEG; k++) { const s = section(k === 0 || k === NSEG - 1); if (k === NSEG - 1) s.children.forEach(o => { o.position.z = -o.position.z; }); s.traverse(o => { o.userData.hdLinear = true; }); if (HD) hd.linearize(s); scene.add(s); segs.push(s); }
+    for (let k = 0; k < NSEG; k++) { const s = section(k === 0 || k === NSEG - 1); if (k === NSEG - 1) s.userData.body.rotation.y = Math.PI; if (k === 1) pantograph(s); s.traverse(o => { o.userData.hdLinear = true; }); if (HD) hd.linearize(s); scene.add(s); segs.push(s); }
     // catenary pantograph on the second section
     trams.push({ dir, x: dir > 0 ? EDGE.x0 - 60 : EDGE.x1 + 60, v: 9, segs, SEG, wait: 0, stopAt: null, hitCd: 0, bellCd: 0, sleep: dir > 0 ? 0 : 25 });
   }

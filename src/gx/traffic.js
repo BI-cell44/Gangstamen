@@ -231,15 +231,53 @@
   }
 
   // ---------- TAN buses on their real lines (OSM route=bus) ----------
+  // (Fable 5.2, user feedback: the bus was a box.) A city bus of the 1990s in the TAN colours of the time: white body,
+  // green band along the sills, rounded roof, raked windscreen with the route display above it, big side windows,
+  // two double doors on the right-hand side, wheels in dark arches, mirrors.
+  let BUS = null;
+  function busParts() {
+    if (BUS) return BUS;
+    const M = (c, o = {}) => edgeMat(c, o), mats = [M(0xf2f2ee, { r: 0.45 }), M(0x16202a, { r: 0.1, m: 0.4 }), M(0x00965e, { r: 0.5 }), M(0x1a1b1e, { r: 0.8 }), M(0x0a6f48, { r: 0.5 }), M(0xd9dcde, { r: 0.7 })];
+    const prof = [[0.3, 1.16], [0.52, 1.25], [0.98, 1.27], [1.3, 1.27], [2.42, 1.26], [2.72, 1.2], [2.94, 0.98], [3.06, 0.5], [3.1, 0]];
+    const len = 11.6, zf = len / 2, zb = -len / 2, doors = [[zf - 2.35, zf - 1.05], [-1.0, 0.3]], cuts = [], pillars = [];
+    for (const [a, b] of doors) cuts.push(a, b, (a + b) / 2 - 0.03, (a + b) / 2 + 0.03);
+    for (let z = zb + 0.9; z < zf - 1.0; z += 1.55) { pillars.push([z, z + 0.14]); cuts.push(z, z + 0.14); }
+    const inR = (z, l) => l.some(([a, b]) => z > a && z < b);
+    const paint = (z, y, t, side, end) => {
+      if (y > 2.83) return 5;
+      if (y < 0.5) return 3;
+      if (end === 'f') return y > 1.2 && y < 2.42 && t > 0.1 ? 1 : y < 0.98 ? 2 : 0;       // windscreen
+      if (end === 'b') return y > 1.5 && y < 2.42 && t > 0.3 ? 1 : y < 0.98 ? 2 : 0;       // rear window
+      if (side < 0 && inR(z, doors)) { const d = doors.find(([a, b]) => z > a && z < b); if (Math.abs(z - (d[0] + d[1]) / 2) < 0.03) return 3; return y > 0.98 && y < 2.42 ? 1 : 4; } // glazed double doors
+      if (y < 0.98) return 2;                                                              // green band
+      if (y > 1.3 && y < 2.42) return inR(z, pillars) || z < zb + 0.75 || z > zf - 0.9 ? 0 : 1;
+      return 0;
+    };
+    BUS = { mats, prof, len, cuts, paint, tyre: M(0x121214, { r: 0.9 }), hub: M(0xb9bcc4, { r: 0.35, m: 0.8 }), dest: new THREE.MeshBasicMaterial({ color: new THREE.Color(4, 2.6, 0.3) }), head: new THREE.MeshBasicMaterial({ color: new THREE.Color(5, 4.6, 3.6) }), tail: new THREE.MeshBasicMaterial({ color: new THREE.Color(4, 0.15, 0.08) }) };
+    for (const m of [...mats, BUS.tyre, BUS.hub, BUS.dest, BUS.head, BUS.tail]) m.userData.shared = true;
+    BUS.wheel = new THREE.CylinderGeometry(0.48, 0.48, 0.3, 16).rotateZ(Math.PI / 2); BUS.hubG = new THREE.CylinderGeometry(0.22, 0.22, 0.32, 10).rotateZ(Math.PI / 2); BUS.arch = new THREE.CylinderGeometry(0.62, 0.62, 2.56, 16, 1, false, 0, Math.PI).rotateZ(Math.PI / 2).rotateX(-Math.PI / 2);
+    for (const g of [BUS.wheel, BUS.hubG, BUS.arch]) g.userData.shared = true;
+    return BUS;
+  }
   function makeBus() {
     const c = makeNpc('civ'); c.style = 'bus';
     for (const ch of c.mesh.children) ch.visible = false;
-    const g = new THREE.Group(), body = new THREE.MeshStandardMaterial({ color: 0xf2f2ee, roughness: 0.5 }), green = new THREE.MeshStandardMaterial({ color: 0x00965e, roughness: 0.5 }), glass = new THREE.MeshStandardMaterial({ color: 0x1c2a33, roughness: 0.15, metalness: 0.3 }), tyre = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.9 });
-    const box = (w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
-    box(2.5, 2.6, 11.8, body, 0, 1.75, 0); box(2.52, 0.5, 11.82, green, 0, 0.75, 0); box(2.54, 1.0, 10.4, glass, 0, 2.2, 0.3); box(2.3, 1.1, 0.06, glass, 0, 2.15, -5.92);
-    box(2.0, 0.3, 0.08, new THREE.MeshBasicMaterial({ color: new THREE.Color(3, 2, 0.2) }), 0, 2.95, -5.93); // route display
-    for (const [x, z] of [[-1.15, -3.8], [1.15, -3.8], [-1.15, 3.6], [1.15, 3.6]]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.3, 14), tyre); w.rotation.z = Math.PI / 2; w.position.set(x, 0.16, z); g.add(w); }
-    g.position.y = -0.34; g.traverse(o => { o.userData.hdLinear = true; }); hd.linearize && hd.linearize(g); c.mesh.add(g);
+    const B = busParts(), g = new THREE.Group(), zf = B.len / 2;
+    const add = (geo, m, x, y, z, cast = false) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = cast; g.add(o); return o; };
+    g.add(loftBody({ len: B.len, prof: B.prof, front: { len: 0.9, taper: 0.1, rake: 0.55, y0: 1.2 }, back: { len: 0.45, taper: 0.07, rake: 0.3, y0: 1.4 }, cuts: B.cuts, paint: B.paint, mats: B.mats }));
+    for (const z of [zf - 2.9, -zf + 3.1]) { // wheels in their arches
+      add(B.arch, B.mats[3], 0, 0.5, z);
+      for (const sx of [-1, 1]) { add(B.wheel, B.tyre, sx * 1.1, 0.48, z, true); add(B.hubG, B.hub, sx * 1.11, 0.48, z); }
+    }
+    add(new THREE.BoxGeometry(1.5, 0.26, 0.06), B.dest, 0, 2.62, zf - 0.52);                       // route display
+    add(new THREE.BoxGeometry(2.3, 0.16, 0.12), B.mats[3], 0, 0.42, zf + 0.02); add(new THREE.BoxGeometry(2.3, 0.16, 0.12), B.mats[3], 0, 0.42, -zf - 0.02); // bumpers
+    for (const s of [-1, 1]) {
+      add(new THREE.BoxGeometry(0.3, 0.14, 0.06), B.head, s * 0.85, 0.72, zf + 0.02); add(new THREE.BoxGeometry(0.22, 0.3, 0.06), B.tail, s * 0.95, 1.1, -zf - 0.02);
+      const arm = add(new THREE.BoxGeometry(0.34, 0.04, 0.04), B.mats[3], s * 1.36, 2.3, zf - 0.75), mir = add(new THREE.BoxGeometry(0.05, 0.36, 0.2), B.mats[3], s * 1.52, 2.15, zf - 0.75);
+    }
+    add(new THREE.BoxGeometry(1.4, 0.16, 2.2), B.mats[5], 0, 3.14, -1.5);                            // roof hatch and vents
+    // the car frame drives towards -z: turn the bus round; its floor sits at the height of the car's origin
+    g.rotation.y = Math.PI; g.position.y = -0.34; g.traverse(o => { o.userData.hdLinear = true; }); c.mesh.add(g);
     c.mesh.userData.hl = 5.6; c.long = 4.2; c.maxV = 11; c.hp = 160; c.bus = true; c.blink = null;
     return c;
   }

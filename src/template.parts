@@ -29,6 +29,7 @@ ui/intro.js
 game/start.js
 game/camera.js
 game/loop.js
+world/loft.js
 world/edges-tram.js
 world/tiles.js
 core/boot.js

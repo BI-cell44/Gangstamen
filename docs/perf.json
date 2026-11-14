@@ -376,5 +376,19 @@
   "simMs": 6.77,
   "loadS": 21,
   "failed": 0
+ },
+ {
+  "date": "2026-11-14T19:40",
+  "label": "Fable : physique, tram et bus",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 613,
+  "trianglesK": 930,
+  "meshes": 2166,
+  "geometries": 1825,
+  "materials": 388,
+  "heapMB": 228,
+  "simMs": 6.18,
+  "loadS": 20,
+  "failed": 0
  }
 ]
