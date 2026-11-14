@@ -62,6 +62,7 @@ function credit(by, points, text) {
 }
 function damage(c, d, by) {
   if (c.npc) return gx.damage(c, d, by);
+  if (c.alive && c.shield > 0 && gx && gx.shieldHit) gx.shieldHit(c, by && by.x !== undefined ? by : null);
   if (!c.alive || c.shield > 0) return;
   markFight(c, by); if (by && by.local) markFight(by, c);
   c.hp -= d * (c.armor || 1);

@@ -168,20 +168,6 @@
   "failed": 0
  },
  {
-  "date": "2026-11-14T13:01",
-  "label": "cycle 7 : circulation v2",
-  "build": "gangstamen-ultra.html",
-  "drawCalls": 468,
-  "trianglesK": 568,
-  "meshes": 1868,
-  "geometries": 1560,
-  "materials": 316,
-  "heapMB": 190,
-  "simMs": 6.07,
-  "loadS": 18,
-  "failed": 0
- },
- {
   "date": "2026-11-14T13:39",
   "label": "cycle 8 : ambiance",
   "build": "gangstamen-ultra.html",
@@ -221,6 +207,20 @@
   "heapMB": 242,
   "simMs": 5.79,
   "loadS": 19,
+  "failed": 0
+ },
+ {
+  "date": "2026-11-14T15:44",
+  "label": "cycle 9 : détail visuel",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 625,
+  "trianglesK": 947,
+  "meshes": 2025,
+  "geometries": 1717,
+  "materials": 321,
+  "heapMB": 215,
+  "simMs": 5.72,
+  "loadS": 21,
   "failed": 0
  }
 ]

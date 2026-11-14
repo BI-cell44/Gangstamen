@@ -3,7 +3,8 @@
 // three.js skips the tiles out of view, in the shadow pass too. Only meshes over MIN triangles are cut (each tile costs
 // a draw call), and nothing that other code holds on to: this runs once, after the world is built.
 const Tiles = (() => {
-  const SIZE = 300, MIN = 20000, info = { split: 0, tiles: 0, inst: 0 };
+  const SIZE = 300, MIN = 20000, info = { split: 0, tiles: 0, inst: 0, hidden: 0 }, lodTiles = [];
+  let lodT = 0;
   const tileOf = (x, z) => Math.floor(x / SIZE) * 1000 + Math.floor(z / SIZE);
   function splitMesh(m) {
     const g = m.geometry, pos = g.attributes.position, idx = g.index ? g.index.array : null, nT = (idx ? idx.length : pos.count) / 3;
@@ -49,6 +50,8 @@ const Tiles = (() => {
       t.frustumCulled = true; // bounds set above (r128 turns culling off for instanced meshes)
       t.castShadow = m.castShadow; t.receiveShadow = m.receiveShadow; Object.assign(t.userData, m.userData);
       m.parent.add(t); info.tiles++;
+      // small repeated objects (trees, posts, furniture) fade out of the picture far away: the tile is hidden past LOD_FAR
+      if (m.geometry.boundingBox.max.y - m.geometry.boundingBox.min.y < 14) { box.getCenter(t.userData.lodC = new THREE.Vector3()); lodTiles.push(t); }
     }
     m.parent.remove(m); info.inst++;
     return true;
@@ -64,6 +67,17 @@ const Tiles = (() => {
     for (const o of todo) { try { o.isInstancedMesh ? splitInstanced(o) : splitMesh(o); } catch (e) { console.warn('tiles', e); } }
     return info;
   }
-  return { run, info, SIZE };
+  // level of detail (cycle 9): every half second, hide the tiles of small objects beyond the distance (shorter with a
+  // shorter view distance; the fog covers the rest)
+  function lod(dt, cams) {
+    if ((lodT -= dt) > 0 || !lodTiles.length) return; lodT = 0.5;
+    const far = (HD && hd.amb ? 260 + 260 * (hd.amb.dist || 1) : 520); let hidden = 0;
+    for (const t of lodTiles) {
+      let d = 1e9; for (const c of cams) d = Math.min(d, Math.hypot(c.position.x - t.userData.lodC.x, c.position.z - t.userData.lodC.z));
+      t.visible = d < far + SIZE * 0.7; if (!t.visible) hidden++;
+    }
+    info.hidden = hidden;
+  }
+  return { run, info, SIZE, lod };
 })();
 

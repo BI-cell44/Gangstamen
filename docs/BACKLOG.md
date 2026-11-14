@@ -79,8 +79,12 @@
 - [x] Correctif : depuis le réglage de la physique (cycle 4), un commentaire mal placé avait effacé une partie des réglages par défaut d'Ultra (équipes, fin de partie, moment de la journée, circulation, distance de vue) : le menu des joueurs plantait sur une nouvelle installation. Vérifié maintenant par un test.
 - [ ] Reste pour plus tard : enseignes lumineuses, marché de la butte et sorties d'école (avec la refonte des piétons).
 
-### Cycle 9 : détail visuel ★★
-- Niveaux de détail des arbres, mobilier, bâtiments lointains ; brouillard et atmosphère selon la météo ; meilleurs toits et rez-de-chaussée.
+### Cycle 9 : détail visuel ★★ (fait le 14 nov. 2026, en partie)
+- [x] **Eau sur la terre ferme et « étage » de la carrière Misery** (retours de jeu) : même cause. Les plans d'eau OSM (bassins, piscines, l'étang de la carrière) étaient posés à plat au point **le plus haut** de leur contour ; l'étang de Misery (17 m de pente) flottait comme un plancher bleu au-dessus des allées et sous les passerelles. Ils sont maintenant au point le plus bas. En plus, le sol hors de la Loire (multipolygone OSM) qui descend sous le niveau de l'eau est remonté juste au-dessus (`src/carve.py`).
+- [x] **Bulle du bouclier** (retour de jeu) : champ d'énergie (bord lumineux, centre clair, nid d'abeilles qui ondule et monte, onde là où le tir touche, scintillement les deux dernières secondes). Leçon : le moteur utilise un tampon de profondeur logarithmique ; un shader maison doit inclure `<common>` et les morceaux `logdepthbuf`, sinon il est caché derrière tout (D-19).
+- [x] Niveaux de détail : les tuiles d'objets répétés (arbres, poteaux, mobilier) sont masquées au-delà de la distance de vue (`Tiles.lod`).
+- [ ] **Herbe près de la mairie selon l'angle** : pas reproduite ici (la mairie, son parc et le boulevard s'affichent bien sous plusieurs angles) ; il faut l'endroit exact (nom de rue affiché en bas à gauche, ou une capture avec la minicarte).
+- [ ] Reste : brouillard et atmosphère selon la météo plus poussés, meilleurs toits et rez-de-chaussée (à confier plutôt à Fable 5.2 avec la refonte des façades).
 
 ## Phase 3 : progression et contenu (cycles 10 à 14)
 
@@ -135,10 +139,10 @@ Captures dans `docs/retours/`.
 - [ ] **Piétons qui traversent les murs en fuyant** : la fuite (voiture qui arrive) les décale sans tenir compte des bâtiments ; les garder sur le trottoir ou les arrêter aux murs (cycle 8, ou correctif rapide).
 - [x] **Dégâts des gros sauts** : faits au cycle 4 (arcade : au-delà de 12 m/s à la réception ; réaliste : au-delà de 8 m/s, deux fois plus forts) ; à régler après essai.
 - [x] **Véhicules bloqués**, surtout près du pont de la place Jean-Macé : fait au cycle 7. Cause trouvée en simulation : voitures envoyées vers des nœuds hors carte (barrières) et dans les chemins étroits (chemin des Vignes du Bourg, place Jean-Macé, 4 m de large). À revérifier en jeu.
-- [ ] **Bug d'affichage d'étage dans la carrière Misery** (bâtiment mal posé sur la pente ?).
+- [x] **Bug d'affichage d'étage dans la carrière Misery** : l'étang flottait au point haut de son contour (cycle 9).
 - [ ] **Près de la mairie, de l'herbe apparaît selon l'angle de la caméra** : `2026-11-14-boulevard.png` et `2026-11-14-mairie-herbe.png` montrent le **même endroit** (boulevard de la Liberté devant la mairie) sous deux angles ; sur l'une la chaussée et le trottoir sont normaux, sur l'autre une pelouse les recouvre. Piste : conflit de profondeur entre la surface verte (parc ou pelouse OSM, ou sol HD selon la photo aérienne) et la route, qui dépend de la distance et de l'angle ; ou ordre de dessin des tuiles.
-- [ ] **Eau de la Loire visible sur la terre ferme près d'un pont** (`2026-11-14-eau-pont.png` : nappes bleues sur le pavé, tablier du pont qui flotte) : le relief y descend sous le niveau de l'eau.
-- [ ] **Bulle du bouclier à revoir** : pas très belle (cycle 9, détail visuel, ou avant).
+- [x] (cycle 9 : plans d'eau posés au point bas, sol hors Loire remonté) **Eau de la Loire visible sur la terre ferme près d'un pont** (`2026-11-14-eau-pont.png` : nappes bleues sur le pavé, tablier du pont qui flotte) : le relief y descend sous le niveau de l'eau.
+- [x] **Bulle du bouclier à revoir** : refaite au cycle 9 (champ d'énergie).
 - [ ] **Barrières, clôtures et portails cassables le long des propriétés** (jardins, cours) : décor qui se brise comme le mobilier (`gx/batch.js` et `breakFurniture` le permettent) ; positions à tirer d'OpenStreetMap (`barrier=fence|wall|gate`) et des limites de parcelles (cycle 8 ou 9).
 - [ ] **Garages ouverts, on entre dedans** (retour du 14 nov.) : chaque garage a une porte ouverte (rideau levé) et un intérieur ; le menu s'ouvre quand la voiture est **à l'intérieur du bâtiment**, plus dans la zone devant. Murs de collision du bâtiment avec une ouverture à la porte (cycle 12, garage et personnalisation, ou avant).
 - [x] **Radio : stations rap, techno (et peut-être funk) presque inaudibles** (retour du 14 nov.) : mesuré hors ligne (`sfx.stationLevels`) : même volume global que la G-funk, mais presque tout sous 220 Hz (basses en sinus, que des haut-parleurs d'ordinateur ou de téléphone ne rendent pas ; acid techno muette les 2 premières mesures). Basses avec harmoniques, accords, caisse claire, gimmick sifflé (rap), clic de grosse caisse, accords, acid dès la 1re mesure (techno), slap à l'octave, clavinet, guitare étouffée, cuivres (funk) : niveau au-dessus de 220 Hz à 85-100 % de la G-funk (vérification automatique). À réécouter.

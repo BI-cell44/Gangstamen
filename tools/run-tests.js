@@ -219,6 +219,21 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
       });
       expect(r.panneaux > 3000 && r.casse && r.murTient && r.ecartSol < 0.01, JSON.stringify(r)); return r;
     });
+    await check('détail visuel : eau à sa place, bouclier visible, niveaux de détail', async () => {
+      const r = await ev(async () => {
+        const out = {};
+        // water outlines lie at their lowest point (the Misery pond used to hang as a floor 17 m up)
+        let maxUp = 0; const wm = __gm.scene.getObjectByName('eaux');
+        if (wm) { const p = wm.geometry.attributes.position; for (let i = 0; i < p.count; i++) maxUp = Math.max(maxUp, p.getY(i) - __gm.groundH(p.getX(i), p.getZ(i))); }
+        out.eauAuDessus = +maxUp.toFixed(2);
+        // shield: the field shader writes the logarithmic depth like everything else
+        const c = __gm.locals()[0].car; c.shield = 5; __gm.step(1 / 30); out.bouclierLogDepth = !!(c.bubble && /logdepthbuf_vertex/.test(c.bubble.material.vertexShader)); c.shield = 0; __gm.step(1 / 30);
+        // level of detail: far tiles of small objects hidden
+        const L = __gm.locals()[0]; L.cam.position.set(-300, 200, -700); __gm.Tiles.lod(1, [L.cam]); out.tuilesCachees = __gm.Tiles.info.hidden;
+        return out;
+      });
+      expect(r.eauAuDessus < 1.5 && r.bouclierLogDepth && r.tuilesCachees > 0, JSON.stringify(r)); return r;
+    });
     await check('garages réels', async () => {
       const r = await ev(() => __gm.gx.garages.map(g => g.name)); expect(r.length >= 3, 'garages : ' + r.join(', '));
       await ev(() => { const g = __gm.gx.garages[1], L = __gm.locals()[0]; L.car.place(g.x + 1, g.z + 1, 0); L.car.vx = L.car.vz = 0; for (let i = 0; i < 8; i++) __gm.step(1 / 30); });

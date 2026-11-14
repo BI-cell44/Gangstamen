@@ -43,6 +43,9 @@ Le bac à sable n'atteint ni OSM, ni Overpass, ni l'IGN. Les requêtes (`tools/f
 **Bénéfice** : évolutions plus rapides et plus sûres pour toutes les phases suivantes. **Risque** : faible (contrôlé par la comparaison à l'octet), mais tous les numéros de ligne des documents changent.
 **Alternative écartée** : modules ES avec bundler (Vite, esbuild) : contraire à D-01 pour un gain modeste ici.
 
+## D-19 Shaders maison et profondeur logarithmique (en vigueur, 14 nov. 2026)
+Le moteur crée le rendu avec `logarithmicDepthBuffer: true` (`src/core/renderer.js`) pour la grande profondeur de la carte. Tout `ShaderMaterial` dessiné dans la scène doit inclure `#include <common>` puis `<logdepthbuf_pars_vertex>` / `<logdepthbuf_vertex>` et `<logdepthbuf_pars_fragment>` / `<logdepthbuf_fragment>` ; sans cela, sa profondeur ne correspond pas à celle du reste et il disparaît derrière le décor, sans erreur (bulle du bouclier, cycle 9). Les passes plein écran (post-traitement) et le ciel (sans test de profondeur) n'en ont pas besoin.
+
 ## D-18 Son entièrement synthétisé (en vigueur, 14 nov. 2026)
 Tous les sons sont fabriqués par WebAudio au lancement (oscillateurs, bruit filtré), sans fichier audio : le jeu reste un seul fichier sans droits à gérer, et le moteur suit le régime en continu. Le moteur du joueur a sa propre voix complète ; les autres voitures partagent 4 voix plus simples, attribuées aux plus proches (coût fixe). Les tests ne peuvent pas écouter le résultat ni mesurer la sortie (horloge audio et minuteries trop irrégulières en rendu logiciel) : ils vérifient les niveaux demandés et les événements.
 

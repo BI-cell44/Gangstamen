@@ -523,7 +523,9 @@ function buildGround() {
     const [pts, tris] = triangulate(gp.p);
     const c = col(GC[gp.g]);
     if (gp.g === 3) {
-      let y = -1e9; for (const v of pts) y = Math.max(y, groundH(v.x, v.y)); y += ROAD_Y.green;
+      // water lies at the lowest point of its outline: at the highest one, the pond of the Misery quarry (17 m of slope)
+      // hung as a flat blue floor over the paths and under the footbridges (cycle 9)
+      let y = 1e9; for (const v of pts) y = Math.min(y, groundH(v.x, v.y)); y += ROAD_Y.green;
       for (const [a, b, cc] of tris) greens.tri([pts[a].x, y, pts[a].y], [pts[b].x, y, pts[b].y], [pts[cc].x, y, pts[cc].y], [0, 1, 0], null, null, null, c);
     }
     if (gp.g === 0) {
@@ -536,7 +538,7 @@ function buildGround() {
       }
     }
   });
-  const gmesh = new THREE.Mesh(greens.geo(), new THREE.MeshLambertMaterial({ vertexColors: true })); gmesh.receiveShadow = true; scene.add(gmesh);
+  const gmesh = new THREE.Mesh(greens.geo(), new THREE.MeshLambertMaterial({ vertexColors: true })); gmesh.receiveShadow = true; gmesh.name = 'eaux'; gmesh.userData.noTile = true; scene.add(gmesh);
 
   // trees (instanced)
   if (HD) { // tell the terrain shader where the streets are: pavements stay paved even under tree crowns

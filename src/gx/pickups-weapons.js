@@ -226,16 +226,48 @@
     }
   }
   // shield bubble around protected cars
-  const bubbleMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.35, 0.3, 1.6), transparent: true, opacity: 0.18, blending: THREE.AdditiveBlending, depthWrite: false, fog: false });
-  const bubbleGeo = new THREE.SphereGeometry(1, 20, 12);
+  // (cycle 9) an energy field rather than a plain ball: bright rim (fresnel), clear centre, a honeycomb that shimmers and
+  // scrolls up, a ripple where it is hit, a flicker in the last two seconds
+  const bubbleGeo = new THREE.SphereGeometry(1, 40, 24); bubbleGeo.userData.shared = true;
+  const bubbleShader = {
+    // (the renderer uses a logarithmic depth buffer: a custom shader must write the same depth, or it hides behind everything)
+    vertexShader: `#include <common>
+      #include <logdepthbuf_pars_vertex>
+      varying vec3 vN, vV, vP; void main(){ vec4 wp = modelMatrix * vec4(position, 1.0); vP = position; vN = normalize(mat3(modelMatrix) * normal); vV = normalize(cameraPosition - wp.xyz); gl_Position = projectionMatrix * viewMatrix * wp;
+      #include <logdepthbuf_vertex>
+      }`,
+    fragmentShader: `#include <common>
+      #include <logdepthbuf_pars_fragment>
+      uniform float uT, uHit, uFade; uniform vec3 uCol, uHitP; varying vec3 vN, vV, vP;
+      float hex(vec2 p){ p.x *= 1.1547; p.y += mod(floor(p.x), 2.0) * 0.5; p = abs(fract(p) - 0.5); return abs(max(p.x * 1.5 + p.y, p.y * 2.0) - 1.0); }
+      void main(){
+        #include <logdepthbuf_fragment>
+        float f = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 2.4);
+        vec2 uv = vec2(atan(vP.x, vP.z) * 3.0, vP.y * 5.0 - uT * 0.6);
+        float h = smoothstep(0.08, 0.0, hex(uv * 1.6)) * (0.35 + 0.65 * (0.5 + 0.5 * sin(uT * 3.0 + vP.y * 6.0 + vP.x * 4.0)));
+        float band = smoothstep(0.06, 0.0, abs(fract(vP.y * 0.5 - uT * 0.35) - 0.5) - 0.44);
+        float rip = uHit * smoothstep(0.35, 0.0, abs(distance(vP, uHitP) - (1.0 - uHit) * 1.6));
+        float a = (f * 0.9 + h * (0.12 + f * 0.5) + band * 0.12 + rip * 0.9) * uFade;
+        gl_FragColor = vec4(uCol * a + vec3(1.0) * rip * 0.6 * uFade, 1.0);
+      }`,
+  };
+  function makeBubbleMat() {
+    return new THREE.ShaderMaterial({ uniforms: { uT: { value: 0 }, uHit: { value: 0 }, uFade: { value: 1 }, uCol: { value: new THREE.Color(0.45, 0.4, 2.2) }, uHitP: { value: new THREE.Vector3(0, 0, 1) } },
+      vertexShader: bubbleShader.vertexShader, fragmentShader: bubbleShader.fragmentShader, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+  }
+  function shieldHit(c, from) { // the field ripples where the shot lands
+    if (!c.bubble) return; const u = c.bubble.material.uniforms, [fx, fz] = c.fwd, dx = (from ? from.x : c.x + fx) - c.x, dz = (from ? from.z : c.z + fz) - c.z, L = Math.hypot(dx, dz) || 1;
+    const lx = (dx * -fz + dz * fx) / L, lz = -(dx * fx + dz * fz) / L; u.uHitP.value.set(lx, 0.1, lz).normalize(); u.uHit.value = 1;
+  }
   function shieldStep(dt) {
     for (const c of [...allPlayerCars(), ...rivals, ...extras]) {
       if (c.shield > 0) {
         c.shield -= dt;
-        if (!c.bubble) { c.bubble = new THREE.Mesh(bubbleGeo, bubbleMat); c.bubble.scale.set(1.6, 1.15, 2.8); c.bubble.userData.hdLinear = true; c.bubble.renderOrder = 22; scene.add(c.bubble); }
-        c.bubble.visible = c.shield > 2 || (performance.now() / 120 | 0) % 2 === 0;
+        if (!c.bubble) { c.bubble = new THREE.Mesh(bubbleGeo, makeBubbleMat()); c.bubble.scale.set(1.6, 1.15, 2.8); c.bubble.userData.hdLinear = true; c.bubble.renderOrder = 22; scene.add(c.bubble); }
+        const u = c.bubble.material.uniforms; u.uT.value += dt; u.uHit.value = Math.max(0, u.uHit.value - dt * 2.2);
+        u.uFade.value = Math.min(1, u.uT.value * 4) * (c.shield > 2 ? 1 : 0.45 + 0.55 * ((performance.now() / 110 | 0) % 2)); // grows in, flickers out
         c.bubble.position.set(c.x, c.mesh.position.y + 0.8, c.z); c.bubble.rotation.y = c.h;
-      } else if (c.bubble) { scene.remove(c.bubble); c.bubble = null; }
+      } else if (c.bubble) { scene.remove(c.bubble); c.bubble.material.dispose(); c.bubble = null; }
     }
   }
 
