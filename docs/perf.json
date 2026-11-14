@@ -152,5 +152,19 @@
   "simMs": 5.22,
   "loadS": 20,
   "failed": 0
+ },
+ {
+  "date": "2026-11-14T12:41",
+  "label": "cycle 6 : caméras, radio",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 457,
+  "trianglesK": 566,
+  "meshes": 1807,
+  "geometries": 1554,
+  "materials": 310,
+  "heapMB": 169,
+  "simMs": 4.93,
+  "loadS": 18,
+  "failed": 0
  }
 ]

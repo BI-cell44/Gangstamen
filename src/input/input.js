@@ -1,9 +1,9 @@
 // ---------- input: keyboards (physical keys), gamepads, touch ----------
 const SCHEMES = {
-  kb1: { name: 'Clavier 1', up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD', fire: ['Space'], hb: ['ShiftLeft'], cam: 'KeyC', fix: 'KeyR', sp: ['KeyE'], sw: ['KeyQ'] },
-  kb2: { name: 'Clavier 2', up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight', fire: ['ControlRight', 'Enter'], hb: ['ShiftRight'], cam: 'End', fix: 'PageDown', sp: ['Delete', 'Slash'], sw: ['Home', 'Period'] },
-  kb3: { name: 'Clavier 3', up: 'KeyI', down: 'KeyK', left: 'KeyJ', right: 'KeyL', fire: ['KeyU'], hb: ['KeyO'], cam: 'Digit9', fix: 'Digit8', sp: ['Digit7'], sw: ['KeyY'] },
-  kb4: { name: 'Clavier 4', up: 'Numpad8', down: 'Numpad5', left: 'Numpad4', right: 'Numpad6', fire: ['Numpad0'], hb: ['NumpadDecimal'], cam: 'NumpadAdd', fix: 'NumpadSubtract', sp: ['NumpadEnter'], sw: ['Numpad9'] },
+  kb1: { name: 'Clavier 1', up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD', fire: ['Space'], hb: ['ShiftLeft'], cam: 'KeyC', back: 'KeyX', fix: 'KeyR', sp: ['KeyE'], sw: ['KeyQ'] },
+  kb2: { name: 'Clavier 2', up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight', fire: ['ControlRight', 'Enter'], hb: ['ShiftRight'], cam: 'End', back: 'PageUp', fix: 'PageDown', sp: ['Delete', 'Slash'], sw: ['Home', 'Period'] },
+  kb3: { name: 'Clavier 3', up: 'KeyI', down: 'KeyK', left: 'KeyJ', right: 'KeyL', fire: ['KeyU'], hb: ['KeyO'], cam: 'Digit9', back: 'KeyH', fix: 'Digit8', sp: ['Digit7'], sw: ['KeyY'] },
+  kb4: { name: 'Clavier 4', up: 'Numpad8', down: 'Numpad5', left: 'Numpad4', right: 'Numpad6', fire: ['Numpad0'], hb: ['NumpadDecimal'], cam: 'NumpadAdd', back: 'Numpad7', fix: 'NumpadSubtract', sp: ['NumpadEnter'], sw: ['Numpad9'] },
 };
 const CTL_OPTIONS = ['kb1+pad0', 'kb1', 'kb2', 'kb3', 'kb4', 'pad0', 'pad1', 'pad2', 'pad3'];
 let layoutMap = null;
@@ -45,7 +45,7 @@ addEventListener('keydown', e => {
   if (gx && !e.repeat && /^Digit[1-6]$/.test(e.code) && (mode === 'online' || locals.length > 1)) gx.quickChat(locals.find(L => schemeOf(L.ctl) && schemeOf(L.ctl).name === 'Clavier 1') || locals[0], +e.code[5] - 1);
   for (const L of locals) {
     const s = schemeOf(L.ctl); if (!s) continue;
-    if (e.code === s.cam && !e.repeat) L.camMode = (L.camMode + 1) % 3;
+    if (e.code === s.cam && !e.repeat) nextCamMode(L);
     if (e.code === s.fix && !e.repeat && L.car.alive) unstick(L);
   }
 });
@@ -102,12 +102,12 @@ addEventListener('gamepaddisconnected', e => { renderSlots(); if (started) flash
 
 function readInput(L) {
   const ctl = L.ctl, s = schemeOf(ctl), idx = padIndexOf(ctl);
-  let t = 0, st = 0, hb = false, fire = false, special = false, swap = false;
+  let t = 0, st = 0, hb = false, fire = false, special = false, swap = false, back = false;
   if (s) {
     special = (s.sp || []).some(c => codes[c]); swap = (s.sw || []).some(c => codes[c]);
     t = (codes[s.up] ? 1 : 0) - (codes[s.down] ? 1 : 0);
     st = (codes[s.left] ? 1 : 0) - (codes[s.right] ? 1 : 0);
-    hb = s.hb.some(c => codes[c]); fire = s.fire.some(c => codes[c]);
+    hb = s.hb.some(c => codes[c]); fire = s.fire.some(c => codes[c]); back = !!(s.back && codes[s.back]);
   }
   if (L.slot === 0) { // touch controls drive player 1
     if (touch.g || touch.b) t = (touch.g ? 1 : 0) - (touch.b ? 1 : 0);
@@ -121,7 +121,8 @@ function readInput(L) {
   if (idx >= 0 && pads[idx].gp) {
     const P = pads[idx];
     t = t || P.t; st = st || P.s; hb = hb || P.hb; fire = fire || P.fire; special = special || !!(P.gp && P.gp.buttons[1] && P.gp.buttons[1].pressed);
-    if (P.press[3]) L.camMode = (L.camMode + 1) % 3;
+    if (P.press[3]) nextCamMode(L);
+    if (P.gp.axes && P.gp.axes[3] > 0.7) back = true; // right stick down: look back
     if (HD && P.press[5]) swap = true;
     if (P.press[4] && L.car.alive) unstick(L);
     if (P.press[8]) { if (HD) cycleTod(); else setNight(!night); }
@@ -129,6 +130,7 @@ function readInput(L) {
     if (P.press[9]) togglePause();
   }
   if (L.slot === 0 && touch.sw) { swap = true; touch.sw = false; }
+  L.lookBack = back;
   return { t, s: st, hb, fire, special, swap };
 }
 

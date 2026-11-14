@@ -1,5 +1,4 @@
 // ---------- loop ----------
-const camPos = new THREE.Vector3(), camLook = new THREE.Vector3();
 let last = performance.now(), boardAcc = 0;
 // performance overlay (F3): frame time, draw calls and triangles of the whole frame (every pass), scene size
 const PerfHud = (() => {
@@ -42,6 +41,7 @@ function frame(now) {
   if (started && (!paused || mode === 'online')) { const t0 = performance.now(); step(dt, now); PerfHud.sim(performance.now() - t0); }
   if (started && mode === 'online') netTick(dt, now);
   if (started && locals.length && (!(paused || Match.over) || mode === 'online')) Soundscape.tick(dt, locals[0]); else Soundscape.hush();
+  PhotoMode.tick(dt);
   render(dt);
   PerfHud.end();
 }
@@ -153,33 +153,5 @@ function updateTitleCamera(dt) {
   camera.position.set(Math.sin(orbit) * 260, 175, Math.cos(orbit) * 260);
   camera.lookAt(0, 25, 0);
   sun.position.set(0, 0, 0).add(SUN_OFF); sun.target.position.set(0, 0, 0);
-}
-function updateCamera(L, dt) {
-  const c = L.car, cam = L.cam;
-  const [fx, fz] = c.fwd;
-  const gp = surfaceH(c.x, c.z);
-  let dist = 12, hgt = 5.2, ahead = 8;
-  if (L.camMode === 1) { dist = 18; hgt = 8; ahead = 10; }
-  if (L.camMode === 2) {
-    camPos.set(c.x - fx * 10, gp + 62 + c.speed * 0.8, c.z - fz * 10);
-    camLook.set(c.x + fx * 9, gp, c.z + fz * 9);
-  } else {
-    const free = segHit(c.x, c.z, -fx, -fz, dist + 1) - 1;
-    const d = Math.max(3.5, Math.min(dist, free));
-    camPos.set(c.x - fx * d, gp + hgt + (dist - d) * 0.35, c.z - fz * d);
-    camPos.y = Math.max(camPos.y, surfaceH(camPos.x, camPos.z) + 2);
-    camLook.set(c.x + fx * ahead, Math.max(gp, groundH(c.x + fx * ahead, c.z + fz * ahead)) + 1.2, c.z + fz * ahead);
-  }
-  const k = 1 - Math.exp(-dt * (L.camMode === 2 ? 4 : 7));
-  cam.position.lerp(camPos, k);
-  L.look = L.look || camLook.clone();
-  L.look.lerp(camLook, k);
-  if (HD) { // speed widens the view; explosions shake it
-    const f = 56 + Math.min(13, c.speed * 0.28); if (Math.abs(cam.fov - f) > 0.05) { cam.fov += (f - cam.fov) * Math.min(1, dt * 3); cam.updateProjectionMatrix(); }
-    if (L.shake > 0.01) { cam.position.x += (Math.random() - 0.5) * L.shake; cam.position.y += (Math.random() - 0.5) * L.shake * 0.7; cam.position.z += (Math.random() - 0.5) * L.shake; L.shake *= Math.exp(-dt * 5); }
-    if (window.__camAt) { const [px, py, pz, lx, ly, lz] = window.__camAt; cam.position.set(px, py, pz); L.look.set(lx, ly, lz); } // test hook: free camera
-    else if (window.__cam) { cam.position.set(c.x + window.__cam[0], c.mesh.position.y + window.__cam[1], c.z + window.__cam[2]); L.look.set(c.x, c.mesh.position.y + 0.7, c.z); }
-  }
-  cam.lookAt(L.look);
 }
 

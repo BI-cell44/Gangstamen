@@ -92,6 +92,30 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
     if (r.attenue !== undefined) expect(r.attenue && r.retour, 'atténuation sous les dialogues');
     return r;
   });
+  await check('caméras : 6 vues, mur derrière, regard arrière, mode photo', async () => {
+    const r = await ev(async () => {
+      const L = __gm.locals()[0], c = L.car, cam = L.cam, dt = 1 / 30, out = {};
+      const w = __gm.tramWall(600); c.place(600, w + 4, Math.PI); // facing south: the tram wall is 4 m behind c.vx = 0; c.vz = 0; c.hp = 100;
+      for (let m = 0; m < __gm.CAM_MODES.length; m++) { L.camMode = m; L.camCut = true; for (let i = 0; i < 40; i++) __gm.updateCamera(L, dt);
+        const d = Math.hypot(cam.position.x - c.x, cam.position.z - c.z); if (!isFinite(d)) return { nan: m }; out[__gm.CAM_MODES[m]] = +d.toFixed(1); }
+      // chase camera with the tram wall 4 m behind the car: it stays on the car's side of the wall
+      L.camMode = 0; L.camCut = true; for (let i = 0; i < 40; i++) __gm.updateCamera(L, dt); out.murOk = cam.position.z > w; out.dMur = +Math.hypot(cam.position.x - c.x, cam.position.z - c.z).toFixed(1);
+      // look back: the camera goes in front of the car
+      L.lookBack = true; for (let i = 0; i < 5; i++) __gm.updateCamera(L, dt); out.arriere = +(cam.position.z - c.z).toFixed(1); L.lookBack = false;
+      // photo mode: the game pauses, the camera flies, a picture can be taken
+      __gm.PhotoMode.toggle(true); const p0 = cam.position.clone();
+      document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW', bubbles: true })); window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW' }));
+      for (let i = 0; i < 30; i++) { __gm.PhotoMode.tick(dt); __gm.updateCamera(L, dt); }
+      window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW' }));
+      out.pause = __gm.paused; out.vol = +cam.position.distanceTo(p0).toFixed(1);
+      __gm.PhotoMode.shot(); const img = document.querySelector('#phOut img'); out.photoKo = img ? Math.round(img.src.length / 1024) : 0;
+      if (__gm.hd) { __gm.PhotoMode._P.dof = 0.8; __gm.PhotoMode.shot(); out.flou = !!document.querySelector('#phOut img'); }
+      __gm.PhotoMode.toggle(false); out.reprise = !__gm.paused;
+      return out;
+    });
+    expect(!r.nan && r.murOk && r.dMur < 5 && r.arriere > 2 && r.pause && r.vol > 3 && r.photoKo > 5 && r.reprise, JSON.stringify(r));
+    expect(r['Capot'] < 2 && r['Pare-chocs'] < 3 && r['Poursuite'] > 2.5, 'distances ' + JSON.stringify(r)); return r;
+  });
   await check('mur du tram (nord)', async () => {
     const r = await ev(() => { const c = __gm.locals()[0].car, x = 600, w = __gm.tramWall(x); c.place(x, w + 8, Math.PI); c.hp = 100; for (let i = 0; i < 60; i++) { c.vx = 0; c.vz = -8; __gm.step(1 / 30); } return +(c.z - w).toFixed(2); });
     expect(r > 0, 'la voiture a franchi les voies (' + r + ')'); return { marge: r };
@@ -118,6 +142,11 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
         __gm.shoot(L.car, [], 1, 95, 0.05, false); const s1 = p.state, t0 = p.t;
         for (let i = 0; i < 20; i++) __gm.step(1 / 30); return { peds: peds.length, state: s1, moved: +Math.abs(p.t - t0).toFixed(2), later: p.state }; });
       expect(r.peds > 0 && r.state === 'panic' && r.moved > 0, JSON.stringify(r)); return r;
+    });
+    await check('radio : les 4 stations au même niveau audible (au-dessus de 220 Hz)', async () => {
+      const r = await ev(() => __gm.sfx.stationLevels(8, 220)), base = r[0].rms;
+      const bad = r.filter(s => s.rms < base * 0.8 || s.rms > base * 1.3);
+      expect(!bad.length, JSON.stringify(r)); return r.map(s => s.rms);
     });
     await check('saut : la voiture passe au-dessus d’un arbre', async () => {
       const r = await ev(() => { const T = __gm.W.trees, c = __gm.locals()[0].car; let tx = null, tz = null;

@@ -15,14 +15,20 @@
       gl_FragColor = c; }`);
   const finalMat = fsMat({
     t: { value: null }, b0: { value: null }, b1: { value: null }, b2: { value: null }, b3: { value: null }, b4: { value: null },
-    bloom: { value: 0.5 }, exposure: { value: 1 }, time: { value: 0 }, tint: { value: new THREE.Vector3(1, 1, 1) }, levels: { value: 5 }, ldr: { value: floatRT ? 0 : 1 },
+    bloom: { value: 0.5 }, exposure: { value: 1 }, time: { value: 0 }, dep: { value: null }, dof: { value: 0 }, cn: { value: 0.5 }, cf: { value: 2200 }, asp: { value: 1.78 }, tint: { value: new THREE.Vector3(1, 1, 1) }, levels: { value: 5 }, ldr: { value: floatRT ? 0 : 1 },
   }, `
-    uniform sampler2D t, b0, b1, b2, b3, b4; uniform float bloom, exposure, time, levels, ldr; uniform vec3 tint; varying vec2 vUv;
+    uniform sampler2D t, b0, b1, b2, b3, b4, dep; uniform float bloom, exposure, time, levels, ldr, dof, cn, cf, asp; uniform vec3 tint; varying vec2 vUv;
+    float lin(float d){ float z = d * 2.0 - 1.0; return 2.0 * cn * cf / (cf + cn - z * (cf - cn)); }
     float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
     void main(){
       vec2 cc = vUv - 0.5; float r2 = dot(cc, cc);
       vec2 ca = cc * r2 * 0.003; // slight lens fringing towards the corners
       vec3 c = vec3(texture2D(t, vUv + ca).r, texture2D(t, vUv).g, texture2D(t, vUv - ca).b);
+      if (dof > 0.0) { // photo mode depth of field: sharp at the distance of what is in the centre, blurred before and behind
+        float z = lin(texture2D(dep, vUv).r), f = lin(texture2D(dep, vec2(0.5)).r);
+        float coc = clamp(abs(z - f) / max(f, 2.0), 0.0, 1.0) * dof * 0.014;
+        if (coc > 0.0006) { vec3 acc = c; for (int i = 0; i < 16; i++) { float a = float(i) * 2.39996, r = sqrt((float(i) + 0.5) / 16.0); acc += texture2D(t, vUv + vec2(cos(a) / asp, sin(a)) * r * coc).rgb; } c = acc / 17.0; }
+      }
       vec3 bl = texture2D(b0, vUv).rgb * 0.9 + texture2D(b1, vUv).rgb * 1.0 + texture2D(b2, vUv).rgb * 1.1;
       if (levels > 3.5) bl += texture2D(b3, vUv).rgb * 1.2;
       if (levels > 4.5) bl += texture2D(b4, vUv).rgb * 1.3;

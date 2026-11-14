@@ -1,5 +1,6 @@
   // ---------- frame rendering ----------
   const focus = new THREE.Vector3();
+  let dofRT = null;
   function render(views) {
     const pr = renderer.getPixelRatio();
     skyU.time.value = time; finalMat.uniforms.time.value = time;
@@ -33,8 +34,17 @@
       blurMat.uniforms.t.value = bB[i].texture; blurMat.uniforms.d.value.set(0, 1 / bA[i].height); pass(blurMat, bA[i]);
     }
     const u = finalMat.uniforms; u.t.value = sceneRT.texture; u.levels.value = bA.length;
+    // photo mode (one view): exposure, and the depth of field from a depth pass of the same view
+    const ex0 = u.exposure.value; u.exposure.value = ex0 * PhotoMode.exposure;
+    u.dof.value = 0;
+    if (PhotoMode.dof > 0 && views.length === 1) {
+      if (!dofRT || dofRT.width !== RW || dofRT.height !== RH) { if (dofRT) dofRT.dispose(); dofRT = new THREE.WebGLRenderTarget(RW, RH); dofRT.depthTexture = new THREE.DepthTexture(RW, RH); dofRT.depthTexture.type = THREE.UnsignedIntType; }
+      const cam = views[0].cam; renderer.setRenderTarget(dofRT); renderer.render(scene, cam);
+      u.dep.value = dofRT.depthTexture; u.dof.value = PhotoMode.dof; u.cn.value = cam.near; u.cf.value = cam.far; u.asp.value = RW / RH;
+    }
     for (let i = 0; i < 5; i++) u['b' + i].value = bA[Math.min(i, bA.length - 1)].texture;
     renderer.setRenderTarget(null); renderer.setScissorTest(false); renderer.setViewport(0, 0, innerWidth, innerHeight);
     pass(finalMat, null);
+    u.exposure.value = ex0;
   }
 

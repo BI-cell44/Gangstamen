@@ -46,38 +46,42 @@ const sfx = (() => {
   // rap: dusty minor piano chords, deep bass, swung hats, a bit of vinyl
   const RAP_CH = [[57, 60, 64], [53, 57, 60], [55, 59, 62], [52, 55, 59]];
   const RAP_B = [45, 0, 0, 0, 0, 0, 45, 0, 0, 0, 41, 0, 0, 0, 0, 0];
+  const RAP_HOOK = { 0: 81, 3: 79, 6: 76, 8: 74, 12: 76 };
   function rapStep(s, t, bar) {
     const sw = s % 2 ? s16() * 0.18 : 0; t += sw;
     if (s === 0 || s === 7 || s === 10) kick(t, 0.95, 110);
-    if (s === 4 || s === 12) { noise(t, 0.2, 1500, 0.7, 0.55, musicG); noise(t, 0.08, 4000, 0.5, 0.2, musicG); }
+    if (s === 4 || s === 12) { noise(t, 0.2, 1500, 0.7, 0.75, musicG); noise(t, 0.08, 4000, 0.5, 0.3, musicG); }
     if (s % 2 === 0) noise(t, 0.035, 9000, 1.6, s % 4 ? 0.07 : 0.11, musicG, 'highpass');
-    if (RAP_B[s]) tone(t, mtof(RAP_B[s] - (bar % 4 === 3 ? 2 : 0) - 12), 0.5, 'sine', 0.42);
-    if (s === 0 || s === 6 || (s === 11 && bar % 2)) for (const n of RAP_CH[bar % 4]) tone(t, mtof(n), 0.55, 'triangle', 0.06, null, { lp: 1600 });
+    if (RAP_B[s]) { const b = mtof(RAP_B[s] - (bar % 4 === 3 ? 2 : 0) - 12); tone(t, b, 0.5, 'sine', 0.36); tone(t, b * 2, 0.4, 'sawtooth', 0.07, null, { lp: 700, lpTo: 300 }); }
+    if (s === 0 || s === 6 || (s === 11 && bar % 2)) for (const n of RAP_CH[bar % 4]) tone(t, mtof(n), 0.55, 'triangle', 0.13, null, { lp: 2200 });
+    if (bar % 4 >= 2 && RAP_HOOK[s]) tone(t, mtof(RAP_HOOK[s]), s16() * 3, 'sine', 0.09, null, { att: 0.03 }); // whistled hook every other pair of bars
     if (Math.random() < 0.3) noise(t, 0.01, 3000, 0.4, 0.03, musicG, 'highpass');
   }
   // techno: four on the floor, off-beat open hats, a 303-ish acid line
   const ACID = [33, 33, 45, 33, 36, 33, 43, 33, 33, 45, 33, 38, 33, 40, 33, 31];
   function technoStep(s, t, bar) {
-    if (s % 4 === 0) kick(t, 1, 150);
+    if (s % 4 === 0) { kick(t, 1, 150); noise(t, 0.012, 3500, 0.8, 0.25, musicG); }
     if (s % 4 === 2) noise(t, 0.09, 8500, 1, 0.13, musicG, 'highpass');
     if (s === 4 || s === 12) noise(t, 0.12, 1200, 1.4, 0.32, musicG);
-    if (bar % 8 >= 2) { const sweep = 400 + 1600 * (0.5 + 0.5 * Math.sin(bar * 0.7 + s * 0.05)); tone(t, mtof(ACID[s]), s16() * 0.9, 'sawtooth', 0.11, null, { lp: sweep * 2.2, lpTo: sweep * 0.5, q: 12 }); }
+    if (s % 8 === 6) for (const n of [57, 60, 64]) tone(t, mtof(n), 0.16, 'sawtooth', 0.035, null, { lp: 2600, lpTo: 900 });
+    { const sweep = 400 + 1600 * (0.5 + 0.5 * Math.sin(bar * 0.7 + s * 0.05)); tone(t, mtof(ACID[s] + 12), s16() * 0.9, 'sawtooth', 0.13, null, { lp: sweep * 2.2, lpTo: sweep * 0.5, q: 12 }); }
     if (bar % 4 === 3 && s === 14) noise(t, 0.4, 2000, 0.4, 0.15, musicG, 'highpass');
   }
   // funk: slap bass, clavinet chops, brass stabs
   const FB = [40, 0, 52, 40, 0, 40, 50, 0, 43, 0, 55, 43, 45, 47, 0, 50];
   function funkStep(s, t, bar) {
     if (s === 0 || s === 3 || s === 10) kick(t, 0.85, 120);
-    if (s === 4 || s === 12) noise(t, 0.16, 2000, 0.8, 0.45, musicG);
+    if (s === 4 || s === 12) noise(t, 0.16, 2000, 0.8, 0.65, musicG);
     if (s === 7 || s === 15) noise(t, 0.05, 2500, 1, 0.12, musicG);
     noise(t, 0.03, 9000, 1.6, s % 2 ? 0.05 : 0.09, musicG, 'highpass');
-    if (FB[s]) tone(t, mtof(FB[s] - 12), 0.18, 'square', 0.16, null, { lp: 900, lpTo: 200 });
-    if (s % 4 === 2 || s === 7) for (const n of [64, 67, 71]) tone(t, mtof(n), 0.09, 'square', 0.025, null, { lp: 1800, bp: true, q: 3 });
-    if (bar % 2 === 1 && (s === 14 || s === 15)) for (const n of [74, 79]) tone(t, mtof(n), 0.18, 'sawtooth', 0.05, null, { lp: 2400, att: 0.02 });
+    if (FB[s]) { tone(t, mtof(FB[s] - 12), 0.18, 'square', 0.12, null, { lp: 900, lpTo: 200 }); tone(t, mtof(FB[s]), 0.14, 'square', 0.12, null, { lp: 2000, lpTo: 500 }); } // slap: the octave pops
+    if (s % 4 === 2 || s === 7) for (const n of [64, 67, 71]) tone(t, mtof(n), 0.1, 'square', 0.1, null, { lp: 2400, lpTo: 900, q: 2 });
+    if (s % 2 === 1) noise(t, 0.03, 2600, 3, 0.12, musicG); // muted guitar scratch
+    if ((s === 14 || s === 15) || (bar % 2 === 0 && s === 6)) for (const n of [74, 79]) tone(t, mtof(n), 0.18, 'sawtooth', 0.08, null, { lp: 2400, att: 0.02 });
   }
-  function schedule() {
+  function schedule(until) {
     if (!ac) return;
-    while (nextT < ac.currentTime + 0.15) {
+    while (nextT < (until ?? ac.currentTime + 0.15)) {
       if (musicOn && station > 0) {
         const s = step % 16, bar = (step / 16) | 0;
         if (station === 1) rapStep(s, nextT, bar); else if (station === 2) technoStep(s, nextT, bar); else funkStep(s, nextT, bar);
@@ -225,6 +229,23 @@ const sfx = (() => {
     meter() { if (!an) return null; const a = new Float32Array(an.fftSize); an.getFloatTimeDomainData(a); let s = 0; for (const x of a) s += x * x; const fb = new Float32Array(an.frequencyBinCount); an.getFloatFrequencyData(fb); let lo = 0, hi = 0; const k1 = Math.round(1000 / (ac.sampleRate / 2) * fb.length); fb.forEach((db, i) => { const p = Math.pow(10, db / 10); if (i < k1) lo += p; else hi += p; }); return { rms: Math.sqrt(s / a.length), hi: hi / (lo + hi || 1) }; },
     get ctx() { return ac; },
     get ducked() { return duckK < 1; },
+    // loudness of each radio station (RMS of a few seconds rendered offline, same code as live): to keep them level
+    // hp: high-pass in Hz, to hear it as small speakers do (laptop, phone: almost nothing under 200 Hz)
+    async stationLevels(sec = 6, hp = 0) {
+      if (!ac) init(); if (!ac) return null;
+      const keep = { ac, musicG, station, step, nextT, musicOn, arr }, out = [];
+      for (let i = 0; i < STATIONS.length; i++) {
+        const off = new OfflineAudioContext(1, 44100 * sec, 44100);
+        ac = off; musicG = off.createGain(); musicG.gain.value = 0.46 * 0.7;
+        if (hp) { const h1 = off.createBiquadFilter(), h2 = off.createBiquadFilter(); h1.type = h2.type = 'highpass'; h1.frequency.value = h2.frequency.value = hp; musicG.connect(h1).connect(h2).connect(off.destination); } else musicG.connect(off.destination);
+        station = i; step = 0; nextT = 0.05; musicOn = true; arr = 4; schedule(sec - 0.6);
+        ac = keep.ac; musicG = keep.musicG;
+        const buf = await off.startRendering(), d = buf.getChannelData(0); let s = 0, pk = 0; for (const x of d) { s += x * x; pk = Math.max(pk, Math.abs(x)); }
+        out.push({ name: STATIONS[i].name, rms: +Math.sqrt(s / d.length).toFixed(4), peak: +pk.toFixed(3) });
+      }
+      station = keep.station; step = keep.step; nextT = keep.nextT; musicOn = keep.musicOn; arr = keep.arr;
+      return out;
+    },
     get _lv() { return { tyre: tyre ? tyre[0]._l || 0 : 0, roll: roll ? roll._l || 0 : 0, eng: me ? me._g : 0, others: others.filter(e => e.on).length, impacts: nImp, bells: nBell }; },
     engine(speed, on) { if (!ac) return; engO.frequency.setTargetAtTime(38 + speed * 2.4, ac.currentTime, 0.05); engF.frequency.setTargetAtTime(300 + speed * 25, ac.currentTime, 0.1); engG.gain.setTargetAtTime(on ? 0.05 : 0, ac.currentTime, 0.1); },
     gun(enemy) { if (ac) noise(ac.currentTime, 0.07, enemy ? 1100 : 1600, 0.9, enemy ? 0.25 : 0.4); },

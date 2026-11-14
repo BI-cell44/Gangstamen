@@ -1,6 +1,6 @@
 # État du projet
 
-Mis à jour le 14 novembre 2026 (branche `ultra`, cycles 0 à 5 faits, sources découpées ; prochain : cycle 6, caméras ; l'utilisateur a demandé d'enchaîner jusqu'au cycle 14). À relire en premier avec `CLAUDE.md`.
+Mis à jour le 14 novembre 2026 (branche `ultra`, cycles 0 à 6 faits, sources découpées ; prochain : cycle 7, circulation v2 ; l'utilisateur a demandé d'enchaîner jusqu'au cycle 14). À relire en premier avec `CLAUDE.md`.
 
 ## 1. Le jeu aujourd'hui
 
@@ -22,7 +22,7 @@ Trois sorties, construites depuis le même code (`sh build.sh`) :
 - Écran partagé 2 à 4 ; en ligne jusqu'à 12 (capacité `room` de claude.ai ou serveur Node de la branche `server`).
 - HD : météo et cycle jour-nuit, circulation civile, police avec niveau de recherche, piétons et terrasses, bonus (nitro, mines, roquettes, bouclier, clé), radio à 4 stations, tram, église et escalier Sainte-Anne.
 - Son synthétisé (cycle 5) : moteur selon régime et charge, pneus, pavés, chocs, Doppler des voitures proches, ambiance par lieu (Loire, goélands, cloches de Sainte-Anne, tram, foule).
-- 5 modèles de voiture (berline, 205, compacte, R5, Twingo), 10 peintures ; 3 caméras.
+- 5 modèles de voiture (berline, 205, compacte, R5, Twingo), 10 peintures ; 6 caméras, regard arrière, mode photo (F2).
 
 ## 2. Architecture technique
 

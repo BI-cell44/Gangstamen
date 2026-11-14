@@ -86,13 +86,15 @@ En écran partagé et en ligne, on choisit entre deux règles :
 
 ## Commandes
 
-| | Gaz / frein | Tourner | Tir | Arme spéciale (HD) | Changer d'arme (HD) | Frein à main | Caméra | Remise en route |
-|---|---|---|---|---|---|---|---|---|
-| Clavier 1 | Z / S (W / S en QWERTY) | Q / D | Espace | E | A (Q en QWERTY) | Maj gauche | C | R |
-| Clavier 2 | ↑ / ↓ | ← / → | Ctrl droit ou Entrée | Suppr ou ! (/ en QWERTY) | Origine ou : (. en QWERTY) | Maj droite | Fin | Page suiv. |
-| Clavier 3 | I / K | J / L | U | 7 | Y | O | 9 | 8 |
-| Clavier 4 | Pavé 8 / 5 | Pavé 4 / 6 | Pavé 0 | Entrée du pavé | Pavé 9 | Pavé . | Pavé + | Pavé − |
-| Manette | RT / LT | stick gauche ou croix | A (et RB en classique) | B | RB | X | Y | LB |
+| | Gaz / frein | Tourner | Tir | Arme spéciale (HD) | Changer d'arme (HD) | Frein à main | Caméra | Regarder derrière (maintenu) | Remise en route |
+|---|---|---|---|---|---|---|---|---|---|
+| Clavier 1 | Z / S (W / S en QWERTY) | Q / D | Espace | E | A (Q en QWERTY) | Maj gauche | C | X | R |
+| Clavier 2 | ↑ / ↓ | ← / → | Ctrl droit ou Entrée | Suppr ou ! (/ en QWERTY) | Origine ou : (. en QWERTY) | Maj droite | Fin | Page préc. | Page suiv. |
+| Clavier 3 | I / K | J / L | U | 7 | Y | O | 9 | H | 8 |
+| Clavier 4 | Pavé 8 / 5 | Pavé 4 / 6 | Pavé 0 | Entrée du pavé | Pavé 9 | Pavé . | Pavé + | Pavé 7 | Pavé − |
+| Manette | RT / LT | stick gauche ou croix | A (et RB en classique) | B | RB | X | Y | stick droit vers le bas | LB |
+
+**Caméras** (touche Caméra) : poursuite, poursuite lointaine, capot, pare-chocs, vue du ciel, cinéma (caméra posée au bord de la rue, comme à la télé). **Mode photo** : F2 ou le bouton du menu pause ; le jeu se fige, la caméra se déplace librement (ZQSD ou flèches, A / E pour monter et descendre, souris pour regarder, molette pour zoomer) ; en HD, exposition et flou de profondeur ; « Prendre la photo » affiche l'image, à enregistrer par clic droit.
 
 Réglage *Conduite* (version HD, *Son et options*) : *Arcade* (la conduite d'origine, nerveuse) ou *Réaliste* (pneus qui glissent au-delà de la limite, poids qui se reporte au freinage et en accélération, boîte automatique avec le rapport au compteur, adhérence plus faible sur le trottoir, l'herbe et sous la pluie). Par défaut : *Arcade*.
 
