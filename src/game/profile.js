@@ -26,12 +26,14 @@ const Profile = (() => {
   function store() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { } }
   function apply(p) { // profile -> the fields the game reads
     settings.bank = p.respect; settings.camp = JSON.parse(JSON.stringify(p.camp)); settings.upg = { ...p.upg };
-    settings.cars = settings.cars || []; if (p.car) settings.cars[0] = { ...p.car };
+    settings.cars = settings.cars || []; if (p.car) settings.cars[0] = JSON.parse(JSON.stringify(p.car));
+    settings.owned = JSON.parse(JSON.stringify(p.garage || []));
   }
   function capture() { // the fields the game wrote -> profile, then stored
     if (!S) return; const p = S.slots[S.cur]; if (!p) return;
     p.respect = settings.bank || 0; if (settings.camp) p.camp = JSON.parse(JSON.stringify(settings.camp)); if (settings.upg) p.upg = { ...settings.upg };
-    if (settings.cars && settings.cars[0]) p.car = { ...settings.cars[0] };
+    if (settings.cars && settings.cars[0]) p.car = JSON.parse(JSON.stringify(settings.cars[0]));
+    if (settings.owned) p.garage = JSON.parse(JSON.stringify(settings.owned));
     p.stats.missions = p.camp.done.length; p.updated = Date.now(); store();
   }
   // statistics, counted while playing solo (slot 0 player)

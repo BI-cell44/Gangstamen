@@ -53,6 +53,7 @@ En HD, les façades sans photo exploitable sont dessinées en haute résolution 
 - **Discussion rapide** : six messages tout prêts avec les touches 1 à 6 ou la croix directionnelle (haut, bas) et les clics de sticks.
 
 **Décor**
+- **Garages** (HD) : on entre dans l'atelier par le rideau levé pour ouvrir le menu. Réparation, munitions, moteur, blindage, mitrailleuses, peinture, et pour chaque voiture : boîte courte, pneus sport, freins renforcés, couleur au choix, jantes, vitres teintées, aileron. On peut y acheter les autres modèles et changer de voiture ; chacune garde ses réglages.
 - **Courses et défis** (solo, hors mission) : arrête-toi dans une balise bleue (course) ou orange (défi), visibles aussi sur la minicarte. Trois courses dans les vraies rues avec fantôme du meilleur temps et médailles ; défis de dérapage, de sauts dans la carrière Misery, de livraison, pour semer la police et de destruction. Les records s'affichent sur l'écran *Campagne*.
 - **Sauvegardes** (menu principal) : trois parties dans ce navigateur (respect, missions, garage, statistiques, records). *Exporter* donne un code à copier pour reprendre la partie sur un autre appareil avec *Importer*.
 - **Mobilier urbain cassable** : abribus, poubelles et bancs aux positions OpenStreetMap (`src/make_furniture.py` → `data/furniture.json`), plus des bancs et poubelles le long des grands axes. Remis en place un peu plus tard.

@@ -265,11 +265,23 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
     });
     await check('garages réels', async () => {
       const r = await ev(() => __gm.gx.garages.map(g => g.name)); expect(r.length >= 3, 'garages : ' + r.join(', '));
-      await ev(() => { const g = __gm.gx.garages[1], L = __gm.locals()[0]; L.car.place(g.x + 1, g.z + 1, 0); L.car.vx = L.car.vz = 0; for (let i = 0; i < 8; i++) __gm.step(1 / 30); });
+      // (cycle 12) the workshops: the forecourt no longer opens the menu, the inside does
+      const w = await ev(() => __gm.gx.garages.map(g => !!g.shop));
+      const front = await ev(() => { const g = __gm.gx.garages[1], L = __gm.locals()[0]; L.car.place(g.x, g.z, 0); L.car.vx = L.car.vz = 0; for (let i = 0; i < 8; i++) __gm.step(1 / 30); return !document.getElementById('garage').hidden; });
+      await ev(() => { const g = __gm.gx.garages[1], L = __gm.locals()[0], s = g.shop; L.respect = 5000; if (s) L.car.place(s.ox + s.nx * 6, s.oz + s.nz * 6, Math.atan2(-s.nx, -s.nz)); else L.car.place(g.x + 1, g.z + 1, 0); L.car.vx = L.car.vz = 0; for (let i = 0; i < 8; i++) __gm.step(1 / 30); });
       await page.waitForTimeout(500);
       const t = await ev(() => { const e = document.getElementById('garage'); return !e.hidden && e.querySelector('h2').textContent; });
+      // (cycle 12) settings and cars bought in the garage
+      const shop = await ev(() => {
+        const L = __gm.locals()[0], click = txt => { const b = [...document.querySelectorAll('#garage .gItem')].find(x => x.textContent.startsWith(txt)); if (b) b.click(); return !!b; };
+        const style0 = L.car.style; click('Pneus sport'); const grip = (L.car.tune || {}).grip;
+        const other = style0 === 'twingo' ? 'R5' : 'Twingo'; click('Acheter la ' + other); const style1 = L.car.style, grip1 = (L.car.tune || {}).grip || 0;
+        click('Prendre la '); const back = L.car.style;
+        return { grip, style1, grip1, back, owned: (__gm.settings.owned || []).length, reste: L.respect };
+      });
       await page.keyboard.press('Escape'); await page.waitForTimeout(300);
-      expect(t === r[1], 'menu du garage : ' + t); return r;
+      expect(shop.grip === 1 && shop.style1 !== shop.back && shop.grip1 === 0 && shop.owned >= 2, 'achats au garage ' + JSON.stringify(shop));
+      expect(t === r[1] && (!w[1] || !front), 'menu du garage : ' + t + ' · devant : ' + front + ' · ateliers ' + JSON.stringify(w)); return { garages: r, ateliers: w };
     });
     await check('changement d’arme', async () => {
       const r = await ev(() => { const L = __gm.locals()[0]; L.ammo = { rockets: 2, mines: 3, nitro: 1 }; L.weapon = 'rockets'; const s = []; for (let i = 0; i < 3; i++) { __gm.gx.cycleWeapon(L); s.push(L.weapon); } return s; });

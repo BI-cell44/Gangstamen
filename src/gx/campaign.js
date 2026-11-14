@@ -220,7 +220,11 @@
       // garage forecourt (solo and campaign)
       if (mode === 'solo' && GARAGE.pad && !garageOpen && c.alive) {
         garageCool -= dt;
-        for (const G of GARAGES) if (Math.hypot(c.x - G.x, c.z - G.z) < 6 && c.speed < 9 && garageCool <= 0) { curGarage = G; openGarage(L); break; }
+        for (const G of GARAGES) { // the menu opens on the way in (drive out and back in to open it again)
+          const inn = G.inside ? G.inside(c) : Math.hypot(c.x - G.x, c.z - G.z) < 6;
+          if (!inn) { G.ready = true; continue; }
+          if (G.ready !== false && c.speed < 7 && garageCool <= 0) { G.ready = false; curGarage = G; openGarage(L); break; }
+        }
       }
     }
     for (const G of GARAGES) if (G.pad) { G.pad.ring.visible = mode === 'solo'; G.pad.ring.material.opacity = 0.5 + Math.sin(now / 250) * 0.3; }

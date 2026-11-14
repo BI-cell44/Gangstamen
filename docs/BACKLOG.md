@@ -101,9 +101,12 @@
 - [x] Records dans la sauvegarde (`Profile.record`), affichés sur l'écran *Campagne* ; respect gagné selon la médaille ou le score.
 - [ ] À régler après essai : seuils des médailles, durée des défis, tracés.
 
-### Cycle 12 : garage et personnalisation v2 ★★★
-- Plusieurs voitures possédées ; réglages par voiture (moteur, boîte, suspensions, pneus, freins) branchés sur la physique v2.
-- Apparence : couleur libre, jantes, vitres teintées, aileron, autocollants années 90 ; présentation en vitrine avec caméra tournante.
+### Cycle 12 : garage et personnalisation v2 ★★★ (fait le 14 nov. 2026)
+- [x] **Garages ouverts où l'on entre** (demande de l'utilisateur) : chaque garage a un atelier (7,4 × 11 m) posé sur un emplacement libre au bord de la rue près du vrai garage (sans bâtiment, rue, mur ni arbre, sol assez plat), rideau levé côté rue, pont élévateur, établi, éclairage ; murs avec collision et porte libre. Le menu s'ouvre **à l'intérieur**, plus sur le parvis ; il se rouvre en ressortant puis en rentrant.
+- [x] Plusieurs voitures : acheter les autres modèles (400 à 800 de respect), les garder au garage, en changer ; chaque voiture garde ses réglages et son apparence (sauvegarde : `settings.owned` ↔ `profil.garage`).
+- [x] Réglages par voiture, branchés sur les deux conduites : boîte courte (reprises contre vitesse de pointe ; en réaliste, rapports plus courts), pneus sport (adhérence), freins renforcés (3 niveaux chacun).
+- [x] Apparence : couleur au choix (sélecteur de couleur), jantes (5 teintes), vitres teintées, aileron.
+- [ ] Plus tard : autocollants années 90, vitrine tournante dans l'atelier, réglage de suspension.
 
 ### Cycle 13 : catégories de véhicules ★★★
 - Utilitaire, sportive des années 90, camionnette, voiture de police jouable ; deux-roues seulement si la physique le permet proprement.
@@ -148,7 +151,8 @@ Captures dans `docs/retours/`.
 - [x] (cycle 9 : plans d'eau posés au point bas, sol hors Loire remonté) **Eau de la Loire visible sur la terre ferme près d'un pont** (`2026-11-14-eau-pont.png` : nappes bleues sur le pavé, tablier du pont qui flotte) : le relief y descend sous le niveau de l'eau.
 - [x] **Bulle du bouclier à revoir** : refaite au cycle 9 (champ d'énergie).
 - [ ] **Barrières, clôtures et portails cassables le long des propriétés** (jardins, cours) : décor qui se brise comme le mobilier (`gx/batch.js` et `breakFurniture` le permettent) ; positions à tirer d'OpenStreetMap (`barrier=fence|wall|gate`) et des limites de parcelles (cycle 8 ou 9).
-- [ ] **Garages ouverts, on entre dedans** (retour du 14 nov.) : chaque garage a une porte ouverte (rideau levé) et un intérieur ; le menu s'ouvre quand la voiture est **à l'intérieur du bâtiment**, plus dans la zone devant. Murs de collision du bâtiment avec une ouverture à la porte (cycle 12, garage et personnalisation, ou avant).
+- [ ] **Loire : reprendre la texture de l'eau et ajouter des bateaux** (retour du 14 nov.) : eau plus belle (vagues, reflets, courant, écume le long des quais) ; quelques bateaux à moteur et voiliers qui se baladent sur le fleuve (trajets sur l'eau, sillage). À rapprocher des navettes fluviales vers l'île de Nantes (Phase 4).
+- [x] (cycle 12) **Garages ouverts, on entre dedans** (retour du 14 nov.) : chaque garage a une porte ouverte (rideau levé) et un intérieur ; le menu s'ouvre quand la voiture est **à l'intérieur du bâtiment**, plus dans la zone devant. Murs de collision du bâtiment avec une ouverture à la porte (cycle 12, garage et personnalisation, ou avant).
 - [x] **Radio : stations rap, techno (et peut-être funk) presque inaudibles** (retour du 14 nov.) : mesuré hors ligne (`sfx.stationLevels`) : même volume global que la G-funk, mais presque tout sous 220 Hz (basses en sinus, que des haut-parleurs d'ordinateur ou de téléphone ne rendent pas ; acid techno muette les 2 premières mesures). Basses avec harmoniques, accords, caisse claire, gimmick sifflé (rap), clic de grosse caisse, accords, acid dès la 1re mesure (techno), slap à l'octave, clavinet, guitare étouffée, cuivres (funk) : niveau au-dessus de 220 Hz à 85-100 % de la G-funk (vérification automatique). À réécouter.
 - [ ] **Lumières au sol des lampadaires pendant l'intro de nuit** : taches lumineuses mal placées ou mal dessinées ; revoir les bugs d'affichage de lumière.
 

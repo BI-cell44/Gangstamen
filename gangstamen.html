@@ -187,6 +187,7 @@ body.ingame #objective:not([hidden]) ~ #clock { display: none; }
 body.split #objective { top: calc(50% - 30px); transform: translate(-50%, -100%) scale(.82); transform-origin: 50% 100%; min-width: 0; }
 body.split #objective .oDir { display: none; }
 body:not(.ingame) #objective { display: none; }
+#garage .gPick { width: 100%; height: 36px; border: 2px solid var(--chalk); background: none; cursor: pointer; }
 #garage, #mres { position: fixed; inset: 0; z-index: 27; display: grid; place-items: center; background: rgba(13,10,20,.7); padding: 16px; }
 #garage .card, #mres .card { width: min(560px, 100%); max-height: 92vh; overflow: auto; background: rgba(13,10,20,.95); border: 3px solid var(--chalk); box-shadow: 6px 6px 0 #1f3f91; padding: 18px 22px; display: flex; flex-direction: column; gap: 10px; }
 #garage h2, #mres h2 { margin: 0; font-family: var(--display); font-weight: normal; font-size: clamp(28px, 5vw, 40px); color: var(--chalk); text-shadow: 3px 3px 0 #1f3f91; }
@@ -1999,7 +2000,7 @@ const hd = !HD ? null : (() => {
     // exhaust, aerial, spoiler
     add(new THREE.CylinderGeometry(0.032, 0.032, 0.2, 10).rotateX(Math.PI / 2), M.chrome, W_ / 2 - 0.36, 0.24, zr + 0.08);
     add(new THREE.CylinderGeometry(0.006, 0.006, 0.75, 4), M.under, -W_ / 2 + 0.24, 1.38, -(s0 + 0.75));
-    if (st.spoiler) { const o = at(C.ramps[0][1] - 0.05); const sp = new THREE.Mesh(new THREE.BoxGeometry(o.wb * 1.5, 0.035, 0.26), mPaint); sp.geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(72).map((_, i) => [paintC.r, paintC.g, paintC.b][i % 3]), 3)); sp.position.set(0, o.yb + o.hc + 0.05, -(C.ramps[0][1] - 0.2)); body.add(sp); }
+    if (st.spoiler || opts.spoiler) { const o = at(C.ramps[0][1] - 0.05); const sp = new THREE.Mesh(new THREE.BoxGeometry(o.wb * 1.5, 0.035, 0.26), mPaint); sp.geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(72).map((_, i) => [paintC.r, paintC.g, paintC.b][i % 3]), 3)); sp.position.set(0, o.yb + o.hc + 0.05, -(C.ramps[0][1] - 0.2)); body.add(sp); }
     // twin machine guns on the bonnet
     const go = at(C.ramps[1][1] + 0.5), muzzles = [];
     if (opts.police) { // light bar on the roof, POLICE on the doors
@@ -2022,7 +2023,11 @@ const hd = !HD ? null : (() => {
     }
     // wheels
     const WG = wheelCache[st.wr] || (wheelCache[st.wr] = wheelGeos(st.wr));
-    const wheels = [], steer = [], rimM = isPlayer ? M.gold : M.alloy;
+    // (cycle 12) garage options: rim colour, tinted windows
+    let rimM = isPlayer ? M.gold : M.alloy;
+    if (opts.rim != null) { rimM = new THREE.MeshStandardMaterial({ color: lin(opts.rim), roughness: 0.25, metalness: 1 }); done.add(rimM); }
+    if (opts.tint) { const tg = M.glassTint || (M.glassTint = new THREE.MeshPhysicalMaterial({ color: lin(0x020304), roughness: 0.03, metalness: 0.95, envMapIntensity: 1.2, clearcoat: 1, clearcoatRoughness: 0.02 })); tg.userData.shared = true; done.add(tg); sm.material[1] = tg; }
+    const wheels = [], steer = [];
     for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
       const pivot = new THREE.Group(); pivot.position.set(sx * (W_ / 2 - 0.13), st.wr, sz * st.wb); g.add(pivot);
       const spin = new THREE.Group(); pivot.add(spin);
@@ -3004,15 +3009,16 @@ function planarArcade(c, inp, dt) {
   const [fx, fz] = c.fwd, rx = -fz, rz = fx; // right vector
   let vf = c.vx * fx + c.vz * fz, vr = c.vx * rx + c.vz * rz;
   const acc = (c.accK || 1) * boost * grip;
+  const T = c.tune || {}; // garage settings (cycle 12)
   if (inp.t > 0) { if (vf < MAX) vf += inp.t * (vf < 0 ? 26 : Math.max(2, 15 - vf * 0.12 * 44 / MAX)) * acc * dt; }
-  else if (inp.t < 0) { if (vf > 0.5) vf -= 30 * grip * dt; else if (vf > -13) vf += inp.t * 11 * grip * dt; }
+  else if (inp.t < 0) { if (vf > 0.5) vf -= 30 * (1 + 0.15 * (T.brake || 0)) * grip * dt; else if (vf > -13) vf += inp.t * 11 * grip * dt; }
   else vf -= vf * 0.45 * grip * dt;
   if (c.nitro > 0 && vf < MAX) vf += 9 * dt;
   vf -= vf * Math.abs(vf) * 0.0011 * dt * 10 * (44 / Math.max(44, MAX));
   // handbrake: the rear lets go; keep the slide going a moment after release if the throttle is held (drift)
   if (inp.hb && Math.abs(vf) > 7) c.drift = 0.8; else c.drift = Math.max(0, (c.drift || 0) - dt * (inp.t > 0 ? 0.7 : 2.5));
   if (inp.hb) vf -= vf * 0.55 * dt;
-  vr *= Math.exp(-(inp.hb ? 1.0 : c.drift > 0 ? 2.4 : 9) * grip * dt);
+  vr *= Math.exp(-(inp.hb ? 1.0 : c.drift > 0 ? 2.4 : 9 * (1 + 0.12 * (T.grip || 0))) * grip * dt);
   // gravity along the slope of the Chantenay hills
   const slope = (surfaceH(c.x + fx * 1.7, c.z + fz * 1.7) - surfaceH(c.x - fx * 1.7, c.z - fz * 1.7)) / 3.4;
   vf -= 9.81 * slope * 0.75 * dt;
@@ -3100,7 +3106,8 @@ const tyreYRear = (alpha, Fz, mu) => mu * 1.15 * Fz * Math.tanh(12.1 * alpha / 1
 function planarReal(c, inp, dt) {
   const V = vehOf(c), L = V.a + V.b, m = V.m, Iz = m * V.a * V.b * 1.05, g = PHYS.g;
   const ph = c.phys || (c.phys = { gear: 1, rpm: PHYS.idle, ax: 0, r: 0, shift: 0, slipR: 0 });
-  const grip = (c.air > 0.25 ? 0.04 : 1) * (c._grip ?? surfaceGrip(c.x, c.z)), mu = V.mu * PHYS.gripK * grip; // c._grip: test hook
+  const T = c.tune || {}; // garage settings of this car (cycle 12): sport tyres, short gearbox, stronger brakes, 0 to 3
+  const grip = (c.air > 0.25 ? 0.04 : 1) * (c._grip ?? surfaceGrip(c.x, c.z)), mu = V.mu * PHYS.gripK * grip * (1 + 0.05 * (T.grip || 0)); // c._grip: test hook
   const [fx, fz] = c.fwd, rx = -fz, rz = fx;
   let u = c.vx * fx + c.vz * fz, v = -(c.vx * rx + c.vz * rz); // forward, left
   let r = ph.r;
@@ -3111,7 +3118,7 @@ function planarReal(c, inp, dt) {
   for (let s = 0; s < n; s++) {
     const spd = Math.abs(u), delta = c.steer * PHYS.steer / (1 + (spd / PHYS.steerV) ** 2); // speed-sensitive steering
     // gearbox (automatic) and engine speed
-    const wheelRpm = u / PHYS.rw * 60 / (2 * Math.PI), ratio = V.gears[ph.gear - 1] * V.fd;
+    const wheelRpm = u / PHYS.rw * 60 / (2 * Math.PI), ratio = V.gears[ph.gear - 1] * V.fd * (1 + 0.06 * (T.gear || 0));
     ph.rpm = Math.max(PHYS.idle, Math.abs(wheelRpm) * ratio);
     if (ph.shift > 0) ph.shift -= h;
     else if (ph.rpm > PHYS.up && ph.gear < V.gears.length && inp.t > 0) { ph.gear++; ph.shift = 0.1; }
@@ -3122,7 +3129,7 @@ function planarReal(c, inp, dt) {
       const tq = engineTorque(V, Math.min(PHYS.red, ph.rpm)) * power * (ph.shift > 0 ? 0.5 : 1);
       Fdrive = inp.t * tq * ratio * PHYS.eff / PHYS.rw * Math.max(0, Math.min(1, (vmax - u) / 3)); // limiter at the game's top speed
     } else if (inp.t < 0) {
-      if (u > 0.8) Fbrake = -inp.t * mu * m * g * 1.05; // full braking ~1 g
+      if (u > 0.8) Fbrake = -inp.t * mu * m * g * 1.05 * (1 + 0.12 * (T.brake || 0)); // full braking ~1 g
       else Fdrive = inp.t * 4200 * Math.max(0, Math.min(1, (13 + u) / 3)); // reverse, up to ~13 m/s
     } else if (inp.t > 0 && u <= -1) Fbrake = inp.t * mu * m * g; // forward while rolling back: brake first
     // loads with weight transfer (from last step's acceleration)
@@ -3721,12 +3728,14 @@ const Profile = (() => {
   function store() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { } }
   function apply(p) { // profile -> the fields the game reads
     settings.bank = p.respect; settings.camp = JSON.parse(JSON.stringify(p.camp)); settings.upg = { ...p.upg };
-    settings.cars = settings.cars || []; if (p.car) settings.cars[0] = { ...p.car };
+    settings.cars = settings.cars || []; if (p.car) settings.cars[0] = JSON.parse(JSON.stringify(p.car));
+    settings.owned = JSON.parse(JSON.stringify(p.garage || []));
   }
   function capture() { // the fields the game wrote -> profile, then stored
     if (!S) return; const p = S.slots[S.cur]; if (!p) return;
     p.respect = settings.bank || 0; if (settings.camp) p.camp = JSON.parse(JSON.stringify(settings.camp)); if (settings.upg) p.upg = { ...settings.upg };
-    if (settings.cars && settings.cars[0]) p.car = { ...settings.cars[0] };
+    if (settings.cars && settings.cars[0]) p.car = JSON.parse(JSON.stringify(settings.cars[0]));
+    if (settings.owned) p.garage = JSON.parse(JSON.stringify(settings.owned));
     p.stats.missions = p.camp.done.length; p.updated = Date.now(); store();
   }
   // statistics, counted while playing solo (slot 0 player)
@@ -4037,8 +4046,12 @@ function carChoice(slot) { const c = (settings.cars || [])[slot] || {}; return {
 function makeLocal(slot, ctl, paint, team = -1) {
   const ch = HD ? carChoice(slot) : null;
   if (ch && team < 0) paint = ch.paint;
-  const [c1, c2] = paint;
-  const car = new Car(makeCar(c1, c2, true, ch ? ch.style.k : 'saloon'), true);
+  let [c1, c2] = paint;
+  // garage options of the solo car (cycle 12): free colour, rims, tinted windows, spoiler
+  const gc = HD && slot === 0 && team < 0 ? (settings.cars || [])[0] : null;
+  if (gc && gc.col != null) c1 = gc.col;
+  const car = new Car(makeCar(c1, c2, true, ch ? ch.style.k : 'saloon', gc ? { rim: gc.rim ?? null, tint: !!gc.tint, spoiler: !!gc.spoiler } : undefined), true);
+  if (gc && mode === 'solo') car.tune = { ...(gc.tune || {}) };
   if (ch) { car.style = ch.style.k; car.baseV = 44 * ch.style.v; car.baseA = ch.style.a; car.maxV = car.baseV; car.accK = car.baseA; }
   car.local = true;
   const L = { slot, ctl, car, cam: new THREE.PerspectiveCamera(56, 1, 0.5, 2200), camMode: 0, look: null, respect: 0, kills: 0, deadT: 0, fireCd: 0,
@@ -6216,6 +6229,74 @@ const gx = !HD ? null : (() => {
     g.traverse(o => { o.userData.hdLinear = true; }); hd.linearize(g); scene.add(g); G.mesh = g;
     gridAdd([G.x + nx * 2.2 - 0.1, G.z + nz * 2.2, G.x + nx * 2.2 + 0.1, G.z + nz * 2.2], 0.4);
     const pad = addMarker(G.x, G.z, 4.2, 0x3a8aff); pad.garage = true; pad.beam.visible = false; markers.splice(markers.indexOf(pad), 1); G.pad = pad;
+    try { workshop(G, g); } catch (e) { console.warn('atelier', G.name, e); }
+  }
+  // (cycle 12, user request) an open workshop you drive into: the menu opens inside, not on the forecourt. A free spot
+  // 7 m by 11 m beside the street near the real garage (no building, no street, no wall, flat enough), door on the
+  // street side with the roller shutter up; walls collide, the door opening stays free.
+  function workshop(G, signGroup) {
+    const WD = 7.4, DP = 11, cand = [];
+    for (const r of W.roads) {
+      if (!r.d || r.b) continue;
+      for (let i = 0; i + 3 < r.p.length; i += 2) {
+        const ax = r.p[i], az = r.p[i + 1], bx = r.p[i + 2], bz = r.p[i + 3], L = Math.hypot(bx - ax, bz - az); if (L < 1) continue;
+        for (let s = 0; s <= L; s += 3) {
+          const x = ax + (bx - ax) * s / L, z = az + (bz - az) * s / L; if (Math.hypot(x - G.x, z - G.z) > 70) continue;
+          for (const side of [1, -1]) cand.push({ x, z, ux: (bx - ax) / L, uz: (bz - az) / L, side, w: r.w, d: Math.hypot(x - G.x, z - G.z) });
+        }
+      }
+    }
+    cand.sort((a, b) => a.d - b.d);
+    const near = buildingPolys.filter(b => { const p = b.p || b; return Math.hypot(p[0] - G.x, p[1] - G.z) < 160; });
+    for (const c of cand) {
+      const nx = -c.uz * c.side, nz = c.ux * c.side, d0 = c.w / 2 + 1.4; // inward normal (away from the street), door line just past the kerb
+      const P = (u, v) => [c.x + c.ux * u + nx * (d0 + v), c.z + c.uz * u + nz * (d0 + v)];
+      let ok = true, h0 = null, hmin = 1e9, hmax = -1e9;
+      for (let u = -WD / 2; u <= WD / 2 && ok; u += 1.2) for (let v = 0; v <= DP && ok; v += 1.2) {
+        const [x, z] = P(u, v); if (Math.abs(x - CX) > HX - 12 || Math.abs(z - CZ) > HZ - 12) ok = false;
+        else if (v > 0.6 && roadEdge(x, z)[0] < 0.6) ok = false;
+        else if (near.some(b => pointInPoly(x, z, b.p || b))) ok = false;
+        else { const h = groundH(x, z); hmin = Math.min(hmin, h); hmax = Math.max(hmax, h); if (h < WATER_Y + 1.5) ok = false; }
+      }
+      if (!ok || hmax - hmin > 1.6) continue;
+      for (const u of [-WD / 2 + 0.3, 0, WD / 2 - 0.3]) { const [x, z] = P(u, 0); if (segHit(x, z, nx, nz, DP) < DP) { ok = false; break; } } // no wall, tree or post inside
+      if (!ok) continue;
+      buildWorkshop(G, c, nx, nz, d0, WD, DP, hmax, signGroup); return true;
+    }
+    return false;
+  }
+  function buildWorkshop(G, c, nx, nz, d0, WD, DP, floorY, signGroup) {
+    const ux = c.ux, uz = c.uz, ox = c.x + nx * d0, oz = c.z + nz * d0; // door centre
+    const g = new THREE.Group(), a = Math.atan2(nx, nz); g.position.set(ox, floorY, oz); g.rotation.y = a; // local +z = into the workshop
+    const M = (col, o = {}) => new THREE.MeshStandardMaterial(Object.assign({ color: hd.lin(col), roughness: 0.85 }, o));
+    const wall = M(0xd9d2c3), roofM = M(0x5a5f66, { metalness: 0.4, roughness: 0.5 }), floor = M(0x77736c), steel = M(0x8a8f96, { metalness: 0.6, roughness: 0.4 }), dark = M(0x26282c);
+    const box = (w, h, d, m, x, y, z, cast = true) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = cast; o.receiveShadow = true; g.add(o); return o; };
+    const H = 4.4, DOOR = 4.8;
+    box(WD, 0.12, DP, floor, 0, 0.06, DP / 2, false);                       // slab, at the highest ground point
+    box(WD, H, 0.25, wall, 0, H / 2, DP);                                   // back wall
+    for (const s of [-1, 1]) box(0.25, H, DP, wall, s * WD / 2, H / 2, DP / 2); // side walls
+    const pier = (WD - DOOR) / 2; for (const s of [-1, 1]) box(pier, H, 0.3, wall, s * (DOOR / 2 + pier / 2), H / 2, 0);
+    box(WD, H - 3.4, 0.3, wall, 0, 3.4 + (H - 3.4) / 2, 0);                  // lintel over the 3.4 m high door
+    box(WD + 0.5, 0.18, DP + 0.6, roofM, 0, H + 0.09, DP / 2);               // roof
+    const roll = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, DOOR, 12).rotateZ(Math.PI / 2), steel); roll.position.set(0, 3.25, 0.25); g.add(roll); // shutter rolled up
+    box(DOOR, 0.08, 0.06, dark, 0, 3.38, 0.05);
+    // inside: a two-post lift, a workbench, a tool board, tyres, a strip light
+    for (const s of [-1, 1]) box(0.22, 3.0, 0.22, M(0x1f4fa0, { metalness: 0.3 }), s * 2.1, 1.5, 6.2);
+    box(1.8, 0.9, 0.7, M(0x7a4a2a), WD / 2 - 1.1, 0.45, 9.4); box(1.8, 1.0, 0.04, M(0xc9b48a), WD / 2 - 1.1, 1.8, DP - 0.15);
+    const tyreM = M(0x141414, { roughness: 0.95 }); for (let k = 0; k < 3; k++) { const t = new THREE.Mesh(new THREE.TorusGeometry(0.33, 0.13, 8, 16).rotateX(Math.PI / 2), tyreM); t.position.set(-WD / 2 + 0.8, 0.14 + k * 0.26, 9.6); g.add(t); }
+    const lamp = box(0.2, 0.06, 6, new THREE.MeshBasicMaterial({ color: new THREE.Color(3, 2.9, 2.6) }), 0, H - 0.1, DP / 2, false);
+    const L_ = new THREE.PointLight(0xfff1d8, 1.2, 14, 2); L_.position.set(0, H - 0.6, DP / 2); g.add(L_);
+    g.traverse(o => { o.userData.hdLinear = true; }); scene.add(g);
+    // the sign goes over the door, facing the street
+    if (signGroup) { signGroup.position.set(ox - nx * 0.35, floorY + 0.3 - 0.8, oz - nz * 0.35); signGroup.rotation.y = a + Math.PI; signGroup.children.forEach(o => { if (o.geometry && o.geometry.type === 'CylinderGeometry') o.visible = false; }); }
+    // collision: back, sides, door piers (the opening stays free)
+    const W2 = WD / 2, Pt = (u, v) => [ox + ux * u + nx * v, oz + uz * u + nz * v];
+    const seg = (a1, b1) => gridAdd([...Pt(...a1), ...Pt(...b1)], 3.5);
+    seg([-W2, DP], [W2, DP]); seg([-W2, 0], [-W2, DP]); seg([W2, 0], [W2, DP]); seg([-W2, 0], [-DOOR / 2, 0]); seg([DOOR / 2, 0], [W2, 0]);
+    G.door = Pt(0, -2); G.shop = { ox, oz, nx, nz, ux, uz, WD, DP };
+    G.inside = car => { const dx = car.x - ox, dz = car.z - oz, v = dx * nx + dz * nz, u = dx * ux + dz * uz; return v > 3 && v < DP - 1.5 && Math.abs(u) < W2 - 0.8; };
+    // the forecourt pad moves in front of the door (missions lead there)
+    G.x = G.door[0]; G.z = G.door[1]; if (G.pad) G.pad.set(G.x, G.z);
   }
   function buildGarage() {
     buildGarageAt(GARAGE);
@@ -6228,7 +6309,7 @@ const gx = !HD ? null : (() => {
       try { buildGarageAt(G); GARAGES.push(G); } catch (e) { console.warn('garage', s.n, e); }
     }
   }
-  const UPG = [
+  const UPG_BASE = [
     { k: 'repair', name: 'Réparation complète', desc: 'Carrosserie à 100 %', cost: () => 40 },
     { k: 'ammo', name: 'Plein de munitions', desc: '4 roquettes, 3 mines, 2 nitros', cost: () => 120 },
     { k: 'engine', name: 'Moteur gonflé', desc: 'Vitesse et reprise', max: 3, cost: l => [250, 500, 900][l] },
@@ -6236,12 +6317,48 @@ const gx = !HD ? null : (() => {
     { k: 'guns', name: 'Mitrailleuses', desc: 'Cadence et dégâts', max: 3, cost: l => [300, 600, 1000][l] },
     { k: 'paint', name: 'Peinture neuve', desc: 'Nouvelle couleur · la police perd ta trace', cost: () => 150 },
   ];
+  // (cycle 12) the full list: services, then this car's settings and looks, then the cars you own or can buy
+  const CAR_PRICE = { saloon: 800, p205: 600, hatch: 700, r5: 500, twingo: 400 };
+  const RIMS = [null, 0xd8a43c, 0x1d1d22, 0xf2f2ee, 0xb3121f];
+  const activeCar = () => { settings.cars = settings.cars || []; return settings.cars[0] || (settings.cars[0] = { s: locals[0] ? locals[0].car.style || 'saloon' : 'saloon', p: 0 }); };
+  const owned = () => { if (!settings.owned || !settings.owned.length) settings.owned = [JSON.parse(JSON.stringify(activeCar()))]; return settings.owned; };
+  function keepActive() { const ac = activeCar(), o = owned(), i = o.findIndex(x => x.s === ac.s); if (i >= 0) o[i] = JSON.parse(JSON.stringify(ac)); else o.push(JSON.parse(JSON.stringify(ac))); }
+  function rebuildCar(L) {
+    const ac = activeCar(), [a, b] = CAR_PAINTS[ac.p ?? 0], col = ac.col != null ? ac.col : a, ch = CAR_CHOICES.find(o => o.k === ac.s) || CAR_CHOICES[0];
+    const old = L.car.mesh; L.car.mesh = makeCar(col, b, true, ch.k, { rim: ac.rim ?? null, tint: !!ac.tint, spoiler: !!ac.spoiler });
+    L.car.mesh.position.copy(old.position); L.car.mesh.rotation.copy(old.rotation); scene.remove(old);
+    L.car.style = ch.k; L.car.baseV = 44 * ch.v; L.car.baseA = ch.a; L.car.tune = { ...(ac.tune || {}) }; L.car.phys = null;
+    L.colour = '#' + new THREE.Color(col).getHexString();
+  }
+  function upgList() {
+    const L = locals[0], ac = activeCar(), tune = ac.tune || (ac.tune = {}), own = owned();
+    const tuneItem = (k, name, desc, costs) => ({ k: 't_' + k, name, desc, max: 3, lvl: () => tune[k] || 0, cost: l => costs[l], act: () => { tune[k] = (tune[k] || 0) + 1; L.car.tune = { ...tune }; } });
+    const list = UPG_BASE.slice();
+    list.push(
+      tuneItem('gear', 'Boîte courte', 'Reprises plus vives, un peu moins de pointe', [200, 350, 500]),
+      tuneItem('grip', 'Pneus sport', 'Plus d’adhérence en virage', [200, 350, 500]),
+      tuneItem('brake', 'Freins renforcés', 'Freine plus court', [150, 250, 400]),
+      { k: 'col', name: 'Couleur au choix', desc: 'Choisis la teinte de la carrosserie', cost: () => 100, picker: true, act: v => { ac.col = parseInt(v.slice(1), 16); rebuildCar(L); L.heat = 0; L.calm = 0; for (const c of npcs) if (c.chase === L) { c.chase = null; c.ai = null; } } },
+      { k: 'rim', name: 'Jantes', desc: 'Change la couleur des jantes', cost: () => 60, act: () => { const i = RIMS.indexOf(ac.rim ?? null); ac.rim = RIMS[(i + 1) % RIMS.length]; rebuildCar(L); } },
+      { k: 'tint', name: ac.tint ? 'Vitres claires' : 'Vitres teintées', desc: 'Vitres fumées années 90', cost: () => 80, act: () => { ac.tint = !ac.tint; rebuildCar(L); } },
+      { k: 'spo', name: ac.spoiler ? 'Retirer l’aileron' : 'Aileron', desc: 'Aileron arrière couleur carrosserie', cost: () => (ac.spoiler ? 0 : 120), act: () => { ac.spoiler = !ac.spoiler; rebuildCar(L); } },
+    );
+    for (const ch of CAR_CHOICES) {
+      if (ch.k === ac.s) continue;
+      const has = own.find(o => o.s === ch.k);
+      list.push({ k: 'car_' + ch.k, name: (has ? 'Prendre la ' : 'Acheter la ') + ch.name, desc: has ? 'Dans ton garage · ' + ch.d : ch.d, cost: () => (has ? 0 : CAR_PRICE[ch.k] || 600),
+        act: () => { keepActive(); const o = owned(), c = o.find(x => x.s === ch.k) || { s: ch.k, p: ac.p ?? 0 }; if (!o.includes(c)) o.push(c); settings.cars[0] = JSON.parse(JSON.stringify(c)); rebuildCar(L); applyUpgrades(L); } });
+    }
+    return list;
+  }
+  let UPG = UPG_BASE;
   const gEl = document.createElement('div'); gEl.id = 'garage'; gEl.hidden = true; document.body.append(gEl);
   const upg = () => settings.upg || (settings.upg = { engine: 0, armor: 0, guns: 0, paint: 0 });
   function applyUpgrades(L) {
     if (!L || (mode !== 'solo')) return;
     const u = upg(), c = L.car;
-    c.maxV = (c.baseV || 44) * (1 + u.engine * 0.08); c.accK = (c.baseA || 1) * (1 + u.engine * 0.15); c.armor = 1 - u.armor * 0.15; L.gunK = u.guns;
+    const t = c.tune || {}; // short gearbox: livelier, a little less top speed
+    c.maxV = (c.baseV || 44) * (1 + u.engine * 0.08) * (1 - 0.025 * (t.gear || 0)); c.accK = (c.baseA || 1) * (1 + u.engine * 0.15) * (1 + 0.1 * (t.gear || 0)); c.armor = 1 - u.armor * 0.15; L.gunK = u.guns;
   }
   function wallet(L) { return L.respect; }
   function openGarage(L) {
@@ -6251,12 +6368,12 @@ const gx = !HD ? null : (() => {
   }
   function closeGarage() { garageOpen = false; blocking = false; gEl.hidden = true; garageCool = 6; if (gx_onGarage) gx_onGarage(); }
   function renderGarage(L) {
-    const u = upg();
+    const u = upg(); UPG = upgList();
     gEl.innerHTML = '<div class="card"><h2></h2><p class="gWallet">Respect à dépenser : <b>' + wallet(L) + '</b> · carrosserie ' + Math.round(L.car.hp) + ' %</p><div class="gList"></div><p class="fine">↑ ↓ choisir · Entrée ou A acheter · Échap ou B repartir</p><div class="menu"><button class="big gOut">Repartir</button></div></div>';
     gEl.querySelector('h2').textContent = curGarage.name;
     const list = gEl.querySelector('.gList');
     UPG.forEach((o, i) => {
-      const lvl = u[o.k] || 0, maxed = o.max && lvl >= o.max, cost = maxed ? 0 : o.cost(lvl);
+      const lvl = o.lvl ? o.lvl() : u[o.k] || 0, maxed = o.max && lvl >= o.max, cost = maxed ? 0 : o.cost(lvl);
       const b = document.createElement('button'); b.className = 'mbtn gItem' + (i === garageSel ? ' sel' : '');
       b.innerHTML = '<b></b><span></span><em></em>';
       b.children[0].textContent = o.name + (o.max ? ' ' + '■'.repeat(lvl) + '□'.repeat(o.max - lvl) : '');
@@ -6264,20 +6381,25 @@ const gx = !HD ? null : (() => {
       b.disabled = maxed || wallet(L) < cost;
       b.addEventListener('click', () => { garageSel = i; buy(L, o); });
       list.append(b);
+      if (o.picker && i === garageSel) { // colour field under the selected "free colour" line
+        const pk = document.createElement('input'); pk.type = 'color'; pk.className = 'gPick'; pk.value = '#' + new THREE.Color(activeCar().col ?? CAR_PAINTS[activeCar().p ?? 0][0]).getHexString();
+        pk.addEventListener('change', () => buy(L, o, pk.value)); pk.addEventListener('keydown', e => e.stopPropagation()); list.append(pk);
+      }
     });
     gEl.querySelector('.gOut').addEventListener('click', closeGarage);
+    const sel = gEl.querySelector('.gItem.sel'); if (sel && sel.scrollIntoView) sel.scrollIntoView({ block: 'nearest' });
   }
-  function buy(L, o) {
-    const u = upg(), lvl = u[o.k] || 0; if (o.max && lvl >= o.max) return;
+  function buy(L, o, val) {
+    const u = upg(), lvl = o.lvl ? o.lvl() : u[o.k] || 0; if (o.max && lvl >= o.max) return;
+    if (o.picker && val === undefined) { garageSel = UPG.indexOf(o); renderGarage(L); const pk = gEl.querySelector('.gPick'); if (pk) pk.click(); return; } // pick first, pay on change
     const cost = o.cost(lvl); if (wallet(L) < cost) { sfx.hit(); return; }
     L.respect -= cost;
+    if (o.act) { o.act(val); keepActive(); saveSettings(); applyUpgrades(L); sfx.pick(); renderGarage(L); saveBank(L); return; }
     if (o.k === 'repair') L.car.hp = 100;
     else if (o.k === 'ammo') { L.ammo = { rockets: 4, mines: 3, nitro: 2 }; }
     else if (o.k === 'paint') {
       u.paint = (u.paint + 1) % CAR_PAINTS.length; settings.cars = settings.cars || []; settings.cars[0] = Object.assign(settings.cars[0] || { s: L.car.style || 'saloon' }, { p: (((settings.cars[0] || {}).p ?? 0) + 1) % CAR_PAINTS.length });
-      const [a, b] = CAR_PAINTS[settings.cars[0].p];
-      const old = L.car.mesh; L.car.mesh = makeCar(a, b, true, L.car.style || 'saloon'); L.car.mesh.position.copy(old.position); L.car.mesh.rotation.copy(old.rotation); scene.remove(old);
-      L.colour = '#' + new THREE.Color(a).getHexString(); L.heat = 0; L.calm = 0;
+      delete settings.cars[0].col; rebuildCar(L); keepActive(); L.heat = 0; L.calm = 0;
       for (const c of npcs) if (c.chase === L) { c.chase = null; c.ai = null; }
     } else u[o.k] = lvl + 1;
     saveSettings(); applyUpgrades(L); sfx.pick(); hd.shake(L.car.x, L.car.z, 0.25);
@@ -7000,7 +7122,11 @@ const gx = !HD ? null : (() => {
       // garage forecourt (solo and campaign)
       if (mode === 'solo' && GARAGE.pad && !garageOpen && c.alive) {
         garageCool -= dt;
-        for (const G of GARAGES) if (Math.hypot(c.x - G.x, c.z - G.z) < 6 && c.speed < 9 && garageCool <= 0) { curGarage = G; openGarage(L); break; }
+        for (const G of GARAGES) { // the menu opens on the way in (drive out and back in to open it again)
+          const inn = G.inside ? G.inside(c) : Math.hypot(c.x - G.x, c.z - G.z) < 6;
+          if (!inn) { G.ready = true; continue; }
+          if (G.ready !== false && c.speed < 7 && garageCool <= 0) { G.ready = false; curGarage = G; openGarage(L); break; }
+        }
       }
     }
     for (const G of GARAGES) if (G.pad) { G.pad.ring.visible = mode === 'solo'; G.pad.ring.material.opacity = 0.5 + Math.sin(now / 250) * 0.3; }

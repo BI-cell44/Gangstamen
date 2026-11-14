@@ -128,8 +128,12 @@ function carChoice(slot) { const c = (settings.cars || [])[slot] || {}; return {
 function makeLocal(slot, ctl, paint, team = -1) {
   const ch = HD ? carChoice(slot) : null;
   if (ch && team < 0) paint = ch.paint;
-  const [c1, c2] = paint;
-  const car = new Car(makeCar(c1, c2, true, ch ? ch.style.k : 'saloon'), true);
+  let [c1, c2] = paint;
+  // garage options of the solo car (cycle 12): free colour, rims, tinted windows, spoiler
+  const gc = HD && slot === 0 && team < 0 ? (settings.cars || [])[0] : null;
+  if (gc && gc.col != null) c1 = gc.col;
+  const car = new Car(makeCar(c1, c2, true, ch ? ch.style.k : 'saloon', gc ? { rim: gc.rim ?? null, tint: !!gc.tint, spoiler: !!gc.spoiler } : undefined), true);
+  if (gc && mode === 'solo') car.tune = { ...(gc.tune || {}) };
   if (ch) { car.style = ch.style.k; car.baseV = 44 * ch.style.v; car.baseA = ch.style.a; car.maxV = car.baseV; car.accK = car.baseA; }
   car.local = true;
   const L = { slot, ctl, car, cam: new THREE.PerspectiveCamera(56, 1, 0.5, 2200), camMode: 0, look: null, respect: 0, kills: 0, deadT: 0, fireCd: 0,

@@ -264,5 +264,33 @@
   "simMs": 6.6,
   "loadS": 20,
   "failed": 0
+ },
+ {
+  "date": "2026-11-14T16:45",
+  "label": "cycle 12 : garage",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 636,
+  "trianglesK": 946,
+  "meshes": 2196,
+  "geometries": 1808,
+  "materials": 387,
+  "heapMB": 228,
+  "simMs": 7.08,
+  "loadS": 21,
+  "failed": 1
+ },
+ {
+  "date": "2026-11-14T16:48",
+  "label": "cycle 12 : garage",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 616,
+  "trianglesK": 937,
+  "meshes": 2197,
+  "geometries": 1809,
+  "materials": 388,
+  "heapMB": 228,
+  "simMs": 6.16,
+  "loadS": 21,
+  "failed": 0
  }
 ]

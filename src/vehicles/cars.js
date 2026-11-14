@@ -238,15 +238,16 @@ function planarArcade(c, inp, dt) {
   const [fx, fz] = c.fwd, rx = -fz, rz = fx; // right vector
   let vf = c.vx * fx + c.vz * fz, vr = c.vx * rx + c.vz * rz;
   const acc = (c.accK || 1) * boost * grip;
+  const T = c.tune || {}; // garage settings (cycle 12)
   if (inp.t > 0) { if (vf < MAX) vf += inp.t * (vf < 0 ? 26 : Math.max(2, 15 - vf * 0.12 * 44 / MAX)) * acc * dt; }
-  else if (inp.t < 0) { if (vf > 0.5) vf -= 30 * grip * dt; else if (vf > -13) vf += inp.t * 11 * grip * dt; }
+  else if (inp.t < 0) { if (vf > 0.5) vf -= 30 * (1 + 0.15 * (T.brake || 0)) * grip * dt; else if (vf > -13) vf += inp.t * 11 * grip * dt; }
   else vf -= vf * 0.45 * grip * dt;
   if (c.nitro > 0 && vf < MAX) vf += 9 * dt;
   vf -= vf * Math.abs(vf) * 0.0011 * dt * 10 * (44 / Math.max(44, MAX));
   // handbrake: the rear lets go; keep the slide going a moment after release if the throttle is held (drift)
   if (inp.hb && Math.abs(vf) > 7) c.drift = 0.8; else c.drift = Math.max(0, (c.drift || 0) - dt * (inp.t > 0 ? 0.7 : 2.5));
   if (inp.hb) vf -= vf * 0.55 * dt;
-  vr *= Math.exp(-(inp.hb ? 1.0 : c.drift > 0 ? 2.4 : 9) * grip * dt);
+  vr *= Math.exp(-(inp.hb ? 1.0 : c.drift > 0 ? 2.4 : 9 * (1 + 0.12 * (T.grip || 0))) * grip * dt);
   // gravity along the slope of the Chantenay hills
   const slope = (surfaceH(c.x + fx * 1.7, c.z + fz * 1.7) - surfaceH(c.x - fx * 1.7, c.z - fz * 1.7)) / 3.4;
   vf -= 9.81 * slope * 0.75 * dt;

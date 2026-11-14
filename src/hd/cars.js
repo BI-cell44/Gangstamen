@@ -208,7 +208,7 @@
     // exhaust, aerial, spoiler
     add(new THREE.CylinderGeometry(0.032, 0.032, 0.2, 10).rotateX(Math.PI / 2), M.chrome, W_ / 2 - 0.36, 0.24, zr + 0.08);
     add(new THREE.CylinderGeometry(0.006, 0.006, 0.75, 4), M.under, -W_ / 2 + 0.24, 1.38, -(s0 + 0.75));
-    if (st.spoiler) { const o = at(C.ramps[0][1] - 0.05); const sp = new THREE.Mesh(new THREE.BoxGeometry(o.wb * 1.5, 0.035, 0.26), mPaint); sp.geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(72).map((_, i) => [paintC.r, paintC.g, paintC.b][i % 3]), 3)); sp.position.set(0, o.yb + o.hc + 0.05, -(C.ramps[0][1] - 0.2)); body.add(sp); }
+    if (st.spoiler || opts.spoiler) { const o = at(C.ramps[0][1] - 0.05); const sp = new THREE.Mesh(new THREE.BoxGeometry(o.wb * 1.5, 0.035, 0.26), mPaint); sp.geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(72).map((_, i) => [paintC.r, paintC.g, paintC.b][i % 3]), 3)); sp.position.set(0, o.yb + o.hc + 0.05, -(C.ramps[0][1] - 0.2)); body.add(sp); }
     // twin machine guns on the bonnet
     const go = at(C.ramps[1][1] + 0.5), muzzles = [];
     if (opts.police) { // light bar on the roof, POLICE on the doors
@@ -231,7 +231,11 @@
     }
     // wheels
     const WG = wheelCache[st.wr] || (wheelCache[st.wr] = wheelGeos(st.wr));
-    const wheels = [], steer = [], rimM = isPlayer ? M.gold : M.alloy;
+    // (cycle 12) garage options: rim colour, tinted windows
+    let rimM = isPlayer ? M.gold : M.alloy;
+    if (opts.rim != null) { rimM = new THREE.MeshStandardMaterial({ color: lin(opts.rim), roughness: 0.25, metalness: 1 }); done.add(rimM); }
+    if (opts.tint) { const tg = M.glassTint || (M.glassTint = new THREE.MeshPhysicalMaterial({ color: lin(0x020304), roughness: 0.03, metalness: 0.95, envMapIntensity: 1.2, clearcoat: 1, clearcoatRoughness: 0.02 })); tg.userData.shared = true; done.add(tg); sm.material[1] = tg; }
+    const wheels = [], steer = [];
     for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
       const pivot = new THREE.Group(); pivot.position.set(sx * (W_ / 2 - 0.13), st.wr, sz * st.wb); g.add(pivot);
       const spin = new THREE.Group(); pivot.add(spin);

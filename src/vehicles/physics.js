@@ -37,7 +37,8 @@ const tyreYRear = (alpha, Fz, mu) => mu * 1.15 * Fz * Math.tanh(12.1 * alpha / 1
 function planarReal(c, inp, dt) {
   const V = vehOf(c), L = V.a + V.b, m = V.m, Iz = m * V.a * V.b * 1.05, g = PHYS.g;
   const ph = c.phys || (c.phys = { gear: 1, rpm: PHYS.idle, ax: 0, r: 0, shift: 0, slipR: 0 });
-  const grip = (c.air > 0.25 ? 0.04 : 1) * (c._grip ?? surfaceGrip(c.x, c.z)), mu = V.mu * PHYS.gripK * grip; // c._grip: test hook
+  const T = c.tune || {}; // garage settings of this car (cycle 12): sport tyres, short gearbox, stronger brakes, 0 to 3
+  const grip = (c.air > 0.25 ? 0.04 : 1) * (c._grip ?? surfaceGrip(c.x, c.z)), mu = V.mu * PHYS.gripK * grip * (1 + 0.05 * (T.grip || 0)); // c._grip: test hook
   const [fx, fz] = c.fwd, rx = -fz, rz = fx;
   let u = c.vx * fx + c.vz * fz, v = -(c.vx * rx + c.vz * rz); // forward, left
   let r = ph.r;
@@ -48,7 +49,7 @@ function planarReal(c, inp, dt) {
   for (let s = 0; s < n; s++) {
     const spd = Math.abs(u), delta = c.steer * PHYS.steer / (1 + (spd / PHYS.steerV) ** 2); // speed-sensitive steering
     // gearbox (automatic) and engine speed
-    const wheelRpm = u / PHYS.rw * 60 / (2 * Math.PI), ratio = V.gears[ph.gear - 1] * V.fd;
+    const wheelRpm = u / PHYS.rw * 60 / (2 * Math.PI), ratio = V.gears[ph.gear - 1] * V.fd * (1 + 0.06 * (T.gear || 0));
     ph.rpm = Math.max(PHYS.idle, Math.abs(wheelRpm) * ratio);
     if (ph.shift > 0) ph.shift -= h;
     else if (ph.rpm > PHYS.up && ph.gear < V.gears.length && inp.t > 0) { ph.gear++; ph.shift = 0.1; }
@@ -59,7 +60,7 @@ function planarReal(c, inp, dt) {
       const tq = engineTorque(V, Math.min(PHYS.red, ph.rpm)) * power * (ph.shift > 0 ? 0.5 : 1);
       Fdrive = inp.t * tq * ratio * PHYS.eff / PHYS.rw * Math.max(0, Math.min(1, (vmax - u) / 3)); // limiter at the game's top speed
     } else if (inp.t < 0) {
-      if (u > 0.8) Fbrake = -inp.t * mu * m * g * 1.05; // full braking ~1 g
+      if (u > 0.8) Fbrake = -inp.t * mu * m * g * 1.05 * (1 + 0.12 * (T.brake || 0)); // full braking ~1 g
       else Fdrive = inp.t * 4200 * Math.max(0, Math.min(1, (13 + u) / 3)); // reverse, up to ~13 m/s
     } else if (inp.t > 0 && u <= -1) Fbrake = inp.t * mu * m * g; // forward while rolling back: brake first
     // loads with weight transfer (from last step's acceleration)
