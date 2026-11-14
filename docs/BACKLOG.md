@@ -88,9 +88,11 @@
 
 ## Phase 3 : progression et contenu (cycles 10 à 14)
 
-### Cycle 10 : sauvegarde v2 ★★
-- Profil versionné (schéma `gangstamen.save.v2`) : respect, garage (voitures possédées, réglages et apparence par voiture), statistiques, records, missions, découvertes ; migration depuis `settings.v1`.
-- 3 emplacements ; export et import par code à copier (les artifacts ne peuvent pas télécharger de fichier) ; sauvegarde automatique aux moments clés.
+### Cycle 10 : sauvegarde v2 ★★ (fait le 14 nov. 2026)
+- [x] `src/game/profile.js` : schéma `gangstamen.save.v2` (3 emplacements, profil versionné : respect, missions, améliorations, voiture, garage, statistiques, records, découvertes) ; migration automatique depuis `settings.v1` au premier lancement. Le code du jeu garde ses champs (`settings.bank`, `camp`, `upg`, `cars[0]`) : charger un emplacement les remplit, `saveSettings()` les recopie dans l'emplacement (sauvegarde aux moments clés : missions, garage, et toutes les 20 s en solo pour les statistiques).
+- [x] Écran *Sauvegardes* (menu principal) : jouer, renommer, effacer (double clic de confirmation, pas de boîte de dialogue, souvent bloquée dans un artifact), **exporter en code** à copier et **importer** (somme de contrôle, version vérifiée).
+- [x] Statistiques : kilomètres, KO, morts, vitesse de pointe, temps de jeu.
+- Note : si le navigateur refuse le stockage (certains contextes d'artifact), la partie vit en mémoire le temps de la session ; l'export en code reste possible.
 
 ### Cycle 11 : courses et défis ★★★
 - Courses chronométrées dans les vraies rues (Sainte-Anne → quai de la Fosse, tour de la Butte…), points de passage, fantôme du meilleur temps, médailles.

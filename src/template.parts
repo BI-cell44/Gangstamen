@@ -13,6 +13,7 @@ fx/effects.js
 audio/sound.js
 audio/soundscape.js
 core/settings.js
+game/profile.js
 input/input.js
 game/state.js
 game/teams.js
@@ -23,6 +24,7 @@ game/combat.js
 ai/bots.js
 net/network.js
 ui/menus.js
+ui/saves.js
 ui/intro.js
 game/start.js
 game/camera.js

@@ -53,6 +53,7 @@ En HD, les façades sans photo exploitable sont dessinées en haute résolution 
 - **Discussion rapide** : six messages tout prêts avec les touches 1 à 6 ou la croix directionnelle (haut, bas) et les clics de sticks.
 
 **Décor**
+- **Sauvegardes** (menu principal) : trois parties dans ce navigateur (respect, missions, garage, statistiques, records). *Exporter* donne un code à copier pour reprendre la partie sur un autre appareil avec *Importer*.
 - **Mobilier urbain cassable** : abribus, poubelles et bancs aux positions OpenStreetMap (`src/make_furniture.py` → `data/furniture.json`), plus des bancs et poubelles le long des grands axes. Remis en place un peu plus tard.
 - **Clôtures, haies, murets et portails cassables** le long des maisons et des jardins (barrières OpenStreetMap et limites des parcelles du cadastre IGN) : une clôture en bois cède, un mur de jardin arrête une voiture lente. Remis en place une minute plus tard.
 - **Lieux modélisés à la main** : le clocher et la flèche de l'église Saint-Martin sur la place du Bourg, les quais de Loire (mur de pierre suivant la berge, bittes d'amarrage, une péniche), la falaise de la carrière Misery à l'est, la grue Titan jaune au loin vers l'île de Nantes (rapprochée pour être visible depuis le quartier).

@@ -120,6 +120,20 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
     expect(!r.nan && r.murOk && r.dMur < 5 && r.arriere > 2 && r.pause && r.vol > 3 && r.photoKo > 5 && r.reprise, JSON.stringify(r));
     expect(r['Capot'] < 2 && r['Pare-chocs'] < 3 && r['Poursuite'] > 2.5, 'distances ' + JSON.stringify(r)); return r;
   });
+  await check('sauvegarde v2 : migration, emplacements, export et import', async () => {
+    const r = await ev(() => {
+      const P = __gm.Profile, s = __gm.settings, out = {};
+      out.schema = P.data.v === 2 && P.data.slots.length === 3;
+      s.bank = 1234; s.camp = { done: ['retour'] }; __gm.saveSettingsHook(); out.capture = P.cur.respect === 1234 && P.cur.camp.done.length === 1;
+      const code = P.exportCode(); out.code = code.slice(0, 6);
+      P.use(1); out.slot2Vide = s.bank === 0 && s.camp.done.length === 0;
+      out.importErr = P.importCode(code.slice(0, -4) + 'AAAA', 2) !== null; out.importOk = P.importCode(code, 2) === null && P.data.slots[2].respect === 1234;
+      P.use(0); out.retour = s.bank === 1234; try { out.stocke = !!localStorage.getItem('gangstamen.save.v2'); } catch (e) { out.stocke = 'pas de stockage ici'; }
+      P.reset(1); P.reset(2); s.bank = 0; s.camp = { done: [] }; __gm.saveSettingsHook();
+      return out;
+    });
+    expect(r.schema && r.capture && r.code === 'GSTM2-' && r.slot2Vide && r.importErr && r.importOk && r.retour && r.stocke, JSON.stringify(r)); return r;
+  });
   await check('mur du tram (nord)', async () => {
     const r = await ev(() => { const c = __gm.locals()[0].car, x = 600, w = __gm.tramWall(x); c.place(x, w + 8, Math.PI); c.hp = 100; for (let i = 0; i < 60; i++) { c.vx = 0; c.vz = -8; __gm.step(1 / 30); } return +(c.z - w).toFixed(2); });
     expect(r > 0, 'la voiture a franchi les voies (' + r + ')'); return { marge: r };

@@ -41,7 +41,7 @@ function frame(now) {
   if (started && (!paused || mode === 'online')) { const t0 = performance.now(); step(dt, now); PerfHud.sim(performance.now() - t0); }
   if (started && mode === 'online') netTick(dt, now);
   if (started && locals.length && (!(paused || Match.over) || mode === 'online')) Soundscape.tick(dt, locals[0]); else Soundscape.hush();
-  PhotoMode.tick(dt);
+  PhotoMode.tick(dt); Profile.tick(dt);
   Tiles.lod(dt, started && locals.length ? locals.map(L => L.cam) : [camera]);
   render(dt);
   PerfHud.end();

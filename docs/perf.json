@@ -222,5 +222,19 @@
   "simMs": 5.72,
   "loadS": 21,
   "failed": 0
+ },
+ {
+  "date": "2026-11-14T16:15",
+  "label": "cycle 10 : sauvegarde v2",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 682,
+  "trianglesK": 968,
+  "meshes": 2151,
+  "geometries": 1767,
+  "materials": 346,
+  "heapMB": 215,
+  "simMs": 6.91,
+  "loadS": 21,
+  "failed": 0
  }
 ]

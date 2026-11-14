@@ -197,6 +197,7 @@ body:not(.ingame) #objective { display: none; }
 .gItem b { font-weight: 700; } .gItem span { grid-column: 1; font-weight: 400; font-size: 14px; opacity: .8; } .gItem em { grid-row: 1 / span 2; grid-column: 2; align-self: center; font-style: normal; font-family: var(--data); font-size: 20px; color: var(--sunset); }
 .gItem[disabled] { opacity: .45; cursor: not-allowed; }
 .camp { display: flex; flex-direction: column; gap: 8px; }
+.saves { display: flex; flex-direction: column; gap: 10px; } .saveCard { border: 2px solid rgba(255,255,255,.18); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; max-width: 520px; } .saveCard.cur { border-color: var(--chalk); } .saveCard b { font-size: 18px; } .saveCard .fine { margin: 0; } .saveCard .menu { flex-direction: row; flex-wrap: wrap; gap: 6px; } #saveCode { width: min(520px, 100%); font: 12px monospace; }
 .campBtn { display: flex; flex-direction: column; gap: 2px; min-width: min(420px, 100%); } .campBtn span { font-weight: 400; font-size: 14px; opacity: .8; } .campBtn[disabled] { opacity: .45; }
 #ammo { font-size: 20px; }
 @media (max-width: 560px) { #dlg .dlgFace { width: 44px; height: 44px; font-size: 20px; } #objective { top: 56px; } }
@@ -281,6 +282,7 @@ body.cine #logo, body.cine #credit { display: none; }
         <button class="mbtn" data-go="vSplit">Écran partagé · 2 à 4 joueurs</button>
         <button class="mbtn" data-go="vOnline">En ligne · jusqu'à 12 joueurs</button>
         <button class="mbtn hdOnly" data-go="vCar" hidden>Ta voiture</button>
+        <button class="mbtn" data-go="vSave">Sauvegardes</button>
         <button class="mbtn" data-go="vCtrl">Commandes</button>
         <button class="mbtn" data-go="vOpt">Son et options</button>
       </div>
@@ -314,6 +316,14 @@ body.cine #logo, body.cine #credit { display: none; }
       <p class="fine" id="carDesc"></p>
       <div class="row"><span class="lab">Couleurs</span><div class="seg wrap" id="carPaint"></div></div>
       <p class="fine">J1 conduit aussi en solo et en ligne. En partie par équipes, la carrosserie prend la couleur de la bande.</p>
+      <div class="menu"><button class="mbtn" data-go="vMain">Retour</button></div>
+    </section>
+
+    <section id="vSave" class="view" hidden>
+      <h2>Sauvegardes</h2>
+      <p class="fine">Trois parties gardées dans ce navigateur : respect, missions, garage, statistiques et records. Pour changer d'appareil, exporte la partie en code et importe-le de l'autre côté.</p>
+      <div id="saveList" class="saves"></div>
+      <div id="saveIO" hidden><textarea id="saveCode" rows="4" spellcheck="false"></textarea><div class="menu"><button class="mbtn" id="saveDo">Importer</button><button class="mbtn" id="saveClose">Fermer</button></div><p class="fine" id="saveMsg"></p></div>
       <div class="menu"><button class="mbtn" data-go="vMain">Retour</button></div>
     </section>
 

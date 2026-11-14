@@ -197,6 +197,7 @@ body:not(.ingame) #objective { display: none; }
 .gItem b { font-weight: 700; } .gItem span { grid-column: 1; font-weight: 400; font-size: 14px; opacity: .8; } .gItem em { grid-row: 1 / span 2; grid-column: 2; align-self: center; font-style: normal; font-family: var(--data); font-size: 20px; color: var(--sunset); }
 .gItem[disabled] { opacity: .45; cursor: not-allowed; }
 .camp { display: flex; flex-direction: column; gap: 8px; }
+.saves { display: flex; flex-direction: column; gap: 10px; } .saveCard { border: 2px solid rgba(255,255,255,.18); padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; max-width: 520px; } .saveCard.cur { border-color: var(--chalk); } .saveCard b { font-size: 18px; } .saveCard .fine { margin: 0; } .saveCard .menu { flex-direction: row; flex-wrap: wrap; gap: 6px; } #saveCode { width: min(520px, 100%); font: 12px monospace; }
 .campBtn { display: flex; flex-direction: column; gap: 2px; min-width: min(420px, 100%); } .campBtn span { font-weight: 400; font-size: 14px; opacity: .8; } .campBtn[disabled] { opacity: .45; }
 #ammo { font-size: 20px; }
 @media (max-width: 560px) { #dlg .dlgFace { width: 44px; height: 44px; font-size: 20px; } #objective { top: 56px; } }
@@ -281,6 +282,7 @@ body.cine #logo, body.cine #credit { display: none; }
         <button class="mbtn" data-go="vSplit">Écran partagé · 2 à 4 joueurs</button>
         <button class="mbtn" data-go="vOnline">En ligne · jusqu'à 12 joueurs</button>
         <button class="mbtn hdOnly" data-go="vCar" hidden>Ta voiture</button>
+        <button class="mbtn" data-go="vSave">Sauvegardes</button>
         <button class="mbtn" data-go="vCtrl">Commandes</button>
         <button class="mbtn" data-go="vOpt">Son et options</button>
       </div>
@@ -314,6 +316,14 @@ body.cine #logo, body.cine #credit { display: none; }
       <p class="fine" id="carDesc"></p>
       <div class="row"><span class="lab">Couleurs</span><div class="seg wrap" id="carPaint"></div></div>
       <p class="fine">J1 conduit aussi en solo et en ligne. En partie par équipes, la carrosserie prend la couleur de la bande.</p>
+      <div class="menu"><button class="mbtn" data-go="vMain">Retour</button></div>
+    </section>
+
+    <section id="vSave" class="view" hidden>
+      <h2>Sauvegardes</h2>
+      <p class="fine">Trois parties gardées dans ce navigateur : respect, missions, garage, statistiques et records. Pour changer d'appareil, exporte la partie en code et importe-le de l'autre côté.</p>
+      <div id="saveList" class="saves"></div>
+      <div id="saveIO" hidden><textarea id="saveCode" rows="4" spellcheck="false"></textarea><div class="menu"><button class="mbtn" id="saveDo">Importer</button><button class="mbtn" id="saveClose">Fermer</button></div><p class="fine" id="saveMsg"></p></div>
       <div class="menu"><button class="mbtn" data-go="vMain">Retour</button></div>
     </section>
 
@@ -3677,11 +3687,86 @@ const settings = Object.assign({
   music: 0.7, fx: 0.8, amb: 0.8, rumble: true, retro: true, nick: '',
   hdq: 2, autoQ: true, physics: 'arcade', tod: 'sunset', rain: '0', traffic: 2, voices: true, shadows: 1, dist: 2, intro: true, teams: false, team: [0, 1, 0, 1], netTeams: false, netTeam: -1, goal: 20, limit: 10, // physics 'real' = realistic mode (cycle 4), chosen in the options
 }, (() => { try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); } catch (e) { return {}; } })());
-function saveSettings() { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { } }
+function saveSettingsRaw() { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { } }
+function saveSettings() { saveSettingsRaw(); if (typeof Profile !== 'undefined') Profile.capture(); } // the progression also goes to the save slot (cycle 10)
 sfx.setVolume('music', settings.music); sfx.setVolume('fx', settings.fx); sfx.setVolume('amb', settings.amb ?? 0.8);
 if (HD) { view.classList.remove('retro'); $('scan').classList.add('off'); hd.setQuality(settings.hdq); }
 else if (!settings.retro) { retro = false; setRatio(); view.classList.remove('retro'); $('scan').classList.add('off'); }
 
+// ---------- save v2 (cycle 10): versioned profiles, 3 slots, export and import by code ----------
+// Schema 'gangstamen.save.v2' in this browser: { v: 2, cur: slot, slots: [profile | null] x3 }. A profile carries the
+// progression; the game code keeps reading and writing the same fields of `settings` (bank, camp, upg, cars[0]) as
+// before: loading a slot copies them into settings, and saveSettings() copies them back and stores the slot. Display
+// preferences (volumes, quality, controls) stay in settings.v1 and are shared by all slots.
+const SAVE_KEY = 'gangstamen.save.v2';
+const Profile = (() => {
+  const blank = name => ({ v: 2, name: name || 'Chantenaysien', created: Date.now(), updated: Date.now(), respect: 0, camp: { done: [] }, upg: { engine: 0, armor: 0, guns: 0, paint: 0 },
+    car: null, garage: [], stats: { km: 0, kos: 0, deaths: 0, missions: 0, vmax: 0, shots: 0, time: 0 }, records: {}, found: [] });
+  let S = null, statT = 0;
+  function load() {
+    try { S = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch (e) { S = null; }
+    if (!S || S.v !== 2 || !Array.isArray(S.slots)) {
+      // first start with v2: the progression of settings.v1 becomes slot 1
+      const p = blank();
+      if (settings.bank) p.respect = settings.bank;
+      if (settings.camp) p.camp = JSON.parse(JSON.stringify(settings.camp));
+      if (settings.upg) p.upg = { ...p.upg, ...settings.upg };
+      if (settings.cars && settings.cars[0]) p.car = { ...settings.cars[0] };
+      p.stats.missions = p.camp.done.length;
+      S = { v: 2, cur: 0, slots: [p, null, null] };
+      store();
+    }
+    apply(S.slots[S.cur] || (S.slots[S.cur] = blank()));
+  }
+  function store() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { } }
+  function apply(p) { // profile -> the fields the game reads
+    settings.bank = p.respect; settings.camp = JSON.parse(JSON.stringify(p.camp)); settings.upg = { ...p.upg };
+    settings.cars = settings.cars || []; if (p.car) settings.cars[0] = { ...p.car };
+  }
+  function capture() { // the fields the game wrote -> profile, then stored
+    if (!S) return; const p = S.slots[S.cur]; if (!p) return;
+    p.respect = settings.bank || 0; if (settings.camp) p.camp = JSON.parse(JSON.stringify(settings.camp)); if (settings.upg) p.upg = { ...settings.upg };
+    if (settings.cars && settings.cars[0]) p.car = { ...settings.cars[0] };
+    p.stats.missions = p.camp.done.length; p.updated = Date.now(); store();
+  }
+  // statistics, counted while playing solo (slot 0 player)
+  function tick(dt) {
+    if (!S || mode !== 'solo' || !locals.length || paused) return;
+    const p = S.slots[S.cur], L = locals[0], c = L.car; if (!p || !c) return;
+    if (c.alive) { p.stats.km += c.speed * dt / 1000; p.stats.vmax = Math.max(p.stats.vmax, Math.round(c.speed * 3.6)); }
+    p.stats.time += dt;
+    if (L.kills > (L._kSeen || 0)) { p.stats.kos += L.kills - (L._kSeen || 0); } L._kSeen = L.kills;
+    if (!c.alive && L._wasAlive) p.stats.deaths++; L._wasAlive = c.alive;
+    if ((statT += dt) > 20) { statT = 0; capture(); } // and at the key moments (missions, garage) through saveSettings()
+  }
+  function record(key, value, better = (a, b) => a < b) { // best time or score of an activity; true when it is a new record
+    const p = S && S.slots[S.cur]; if (!p) return false;
+    const old = p.records[key]; if (old !== undefined && !better(value, old)) return false;
+    p.records[key] = value; capture(); return true;
+  }
+  // export: the slot as a code to copy (base64 of the JSON, with a short checksum); import checks it before writing
+  const sum = s => { let h = 7; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h.toString(36); };
+  function exportCode(i = S.cur) {
+    capture(); const p = S.slots[i]; if (!p) return '';
+    const js = JSON.stringify(p), b = btoa(unescape(encodeURIComponent(js)));
+    return 'GSTM2-' + sum(js) + '-' + b;
+  }
+  function importCode(code, i) {
+    const m = /^GSTM2-([0-9a-z]+)-([A-Za-z0-9+/=]+)$/.exec(String(code).trim().replace(/\s+/g, ''));
+    if (!m) return 'Ce code n’est pas une sauvegarde Gangstamen.';
+    let js; try { js = decodeURIComponent(escape(atob(m[2]))); } catch (e) { return 'Code abîmé (lecture impossible).'; }
+    if (sum(js) !== m[1]) return 'Code abîmé (somme de contrôle fausse) : recopie-le en entier.';
+    let p; try { p = JSON.parse(js); } catch (e) { return 'Code abîmé.'; }
+    if (!p || p.v !== 2 || typeof p.respect !== 'number' || !p.camp || !Array.isArray(p.camp.done)) return 'Sauvegarde d’une autre version.';
+    p = Object.assign(blank(p.name), p, { stats: { ...blank().stats, ...(p.stats || {}) } });
+    S.slots[i] = p; if (i === S.cur) apply(p); store(); return null;
+  }
+  function use(i) { if (!S.slots[i]) S.slots[i] = blank('Partie ' + (i + 1)); capture(); S.cur = i; apply(S.slots[i]); store(); saveSettingsRaw(); }
+  function reset(i) { S.slots[i] = blank('Partie ' + (i + 1)); if (i === S.cur) apply(S.slots[i]); store(); saveSettingsRaw(); }
+  function rename(i, n) { if (S.slots[i]) { S.slots[i].name = String(n).slice(0, 24) || S.slots[i].name; store(); } }
+  return { load, capture, tick, record, exportCode, importCode, use, reset, rename, get data() { return S; }, get cur() { return S ? S.slots[S.cur] : null; } };
+})();
+Profile.load();
 // ---------- input: keyboards (physical keys), gamepads, touch ----------
 const SCHEMES = {
   kb1: { name: 'Clavier 1', up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD', fire: ['Space'], hb: ['ShiftLeft'], cam: 'KeyC', back: 'KeyX', fix: 'KeyR', sp: ['KeyE'], sw: ['KeyQ'] },
@@ -4890,6 +4975,32 @@ function menuPadNav(dt) {
   if (P.press[1]) { const back = document.querySelector(visible + ' [data-go="vMain"]') || $('pResume'); if (back && !back.hidden) back.click(); }
 }
 
+// ---------- the save slots screen (cycle 10) ----------
+function renderSaves() {
+  const box = $('saveList'); if (!box || !Profile.data) return;
+  const S = Profile.data, fmt = t => new Date(t).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  box.replaceChildren();
+  S.slots.forEach((p, i) => {
+    const card = document.createElement('div'); card.className = 'saveCard' + (i === S.cur ? ' cur' : '');
+    const st = p ? p.stats : null;
+    card.innerHTML = p
+      ? `<b>${i + 1}. ${p.name.replace(/[<>&]/g, '')}${i === S.cur ? ' · en cours' : ''}</b><p class="fine">Respect ${p.respect} · missions ${p.camp.done.length} / 7 · ${st.km.toFixed(1)} km · ${st.kos} KO · pointe ${st.vmax} km/h · ${Math.round(st.time / 60)} min de jeu</p><p class="fine">Mise à jour le ${fmt(p.updated)}</p>`
+      : `<b>${i + 1}. Emplacement libre</b><p class="fine">Une nouvelle partie commence à zéro.</p>`;
+    const row = document.createElement('div'); row.className = 'menu';
+    const btn = (txt, f) => { const b = document.createElement('button'); b.className = 'mbtn'; b.textContent = txt; b.addEventListener('click', f); row.appendChild(b); };
+    if (i !== S.cur) btn(p ? 'Jouer cette partie' : 'Nouvelle partie ici', () => { Profile.use(i); renderSaves(); if (typeof renderCampaign === 'function') try { renderCampaign(); } catch (e) { } if (gx && gx.renderCampaign) gx.renderCampaign(); });
+    if (p) btn('Renommer', () => { // inline field: dialogs (prompt, confirm) may be blocked inside an artifact
+      const inp = document.createElement('input'); inp.value = p.name; inp.maxLength = 24; card.querySelector('b').replaceWith(inp); inp.focus(); inp.select();
+      const done = () => { Profile.rename(i, inp.value.trim()); renderSaves(); }; inp.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') done(); if (e.key === 'Escape') renderSaves(); }); inp.addEventListener('blur', done); });
+    if (p) btn('Exporter (code)', () => { $('saveIO').hidden = false; $('saveCode').value = Profile.exportCode(i); $('saveCode').select(); $('saveDo').hidden = true; $('saveMsg').textContent = 'Copie ce code (Ctrl+C) et garde-le : il contient toute la partie.'; });
+    btn('Importer un code ici', () => { $('saveIO').hidden = false; $('saveCode').value = ''; $('saveCode').focus(); $('saveDo').hidden = false; $('saveDo').dataset.i = i; $('saveMsg').textContent = p ? 'Attention : la partie de cet emplacement sera remplacée.' : 'Colle le code exporté.'; });
+    if (p) btn('Effacer', e => { const b = e.currentTarget; if (b.dataset.sure) { Profile.reset(i); renderSaves(); } else { b.dataset.sure = 1; b.textContent = 'Sûr ? Cliquer encore (définitif)'; setTimeout(() => { if (b.isConnected) { delete b.dataset.sure; b.textContent = 'Effacer'; } }, 4000); } });
+    card.appendChild(row); box.appendChild(card);
+  });
+}
+$('saveDo').addEventListener('click', () => { const err = Profile.importCode($('saveCode').value, +$('saveDo').dataset.i); $('saveMsg').textContent = err || 'Partie importée.'; if (!err) { renderSaves(); if (gx && gx.renderCampaign) gx.renderCampaign(); } });
+$('saveClose').addEventListener('click', () => { $('saveIO').hidden = true; });
+document.querySelectorAll('[data-go="vSave"]').forEach(b => b.addEventListener('click', renderSaves));
 // ---------- intro cinematic ----------
 // Played in the engine before the menu. Every shot is a function of the time since the start, and the cuts fall on
 // the bars of the radio loop. While it plays, the six street cars are swapped for six actors.
@@ -7540,7 +7651,7 @@ function frame(now) {
   if (started && (!paused || mode === 'online')) { const t0 = performance.now(); step(dt, now); PerfHud.sim(performance.now() - t0); }
   if (started && mode === 'online') netTick(dt, now);
   if (started && locals.length && (!(paused || Match.over) || mode === 'online')) Soundscape.tick(dt, locals[0]); else Soundscape.hush();
-  PhotoMode.tick(dt);
+  PhotoMode.tick(dt); Profile.tick(dt);
   Tiles.lod(dt, started && locals.length ? locals.map(L => L.cam) : [camera]);
   render(dt);
   PerfHud.end();
@@ -7935,6 +8046,6 @@ const paintNow = () => new Promise(r => { let done = false; const go = () => { i
   netInit();
   if (settings.intro !== false && !window.__noIntro) Intro.splash();
 })();
-window.__gm = { get paused() { return paused; }, get started() { return started; }, renderer, scene, camera, PerfHud, Tiles, W, BOOT, planarReal, planarArcade, VEHICLES, engineState, Soundscape, sfx, PhotoMode, updateCamera, CAM_MODES, G, nodeOk, groundH, surfaceH, Intro, hd, gx, settings, trams, edges, tramS, tramWall, EDGE, cellOf, collideWalls, muzzleOf, shoot, damage, applyHit, locals: () => locals, rivals: () => rivals, Net, Match, step: s => step(s, performance.now()), start: k => startGame(k || 'solo'), codes };
+window.__gm = { get paused() { return paused; }, get started() { return started; }, renderer, scene, camera, PerfHud, Tiles, W, BOOT, planarReal, planarArcade, VEHICLES, engineState, Soundscape, sfx, PhotoMode, updateCamera, CAM_MODES, G, nodeOk, groundH, Profile, saveSettingsHook: () => saveSettings(), surfaceH, Intro, hd, gx, settings, trams, edges, tramS, tramWall, EDGE, cellOf, collideWalls, muzzleOf, shoot, damage, applyHit, locals: () => locals, rivals: () => rivals, Net, Match, step: s => step(s, performance.now()), start: k => startGame(k || 'solo'), codes };
 })();
 </script>
