@@ -107,7 +107,10 @@
     } else if (p.state === 'idle') { // stops, looks around, then goes on
       p.timer -= dt; if (p.timer <= 0) p.state = 'walk';
     } else if (p.state === 'flee') {
-      p.ox += p.fvx * dt; p.oz += p.fvz * dt; moving = 5.5; p.timer -= dt; p.h = Math.atan2(p.fvx, p.fvz);
+      // the dodge stops at walls (it used to carry people through the buildings) and goes 4 m at most from the pavement
+      const sp = Math.hypot(p.fvx, p.fvz), step = sp * dt;
+      if (sp > 0.01 && (segHit(p.x, p.z, p.fvx / sp, p.fvz / sp, step + 0.5) < step + 0.5 || Math.hypot(p.ox + p.fvx * dt, p.oz + p.fvz * dt) > 4)) { p.fvx = p.fvz = 0; }
+      p.ox += p.fvx * dt; p.oz += p.fvz * dt; moving = sp > 0.01 ? 5.5 : 0; p.timer -= dt; if (sp > 0.01) p.h = Math.atan2(p.fvx, p.fvz);
       if (p.timer <= 0) p.state = 'walk';
     } else if (p.state === 'down') {
       p.timer -= dt; if (p.timer <= 0) { p.state = 'walk'; }
@@ -125,7 +128,7 @@
       const dx = p.x - c.x, dz = p.z - c.z, d = Math.hypot(dx, dz); if (d > 14) continue;
       const vx = c.vx / c.speed, vz = c.vz / c.speed, along = dx * vx + dz * vz, lat = dx * vz - dz * vx;
       if (d < 2.3) { // too late: knocked over, gets back up a bit later
-        p.state = 'down'; p.timer = 2.5 + R(); p.ox += vx * 1.5; p.oz += vz * 1.5; sfx.hit();
+        p.state = 'down'; p.timer = 2.5 + R(); { const k = Math.max(0, Math.min(1.5, segHit(p.x, p.z, vx, vz, 2) - 0.5)); p.ox += vx * k; p.oz += vz * k; } sfx.hit();
         if (c.local) { addHeat(c, 0.45); shout(c, true); }
         break;
       }

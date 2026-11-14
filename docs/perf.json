@@ -180,5 +180,47 @@
   "simMs": 6.07,
   "loadS": 18,
   "failed": 0
+ },
+ {
+  "date": "2026-11-14T13:39",
+  "label": "cycle 8 : ambiance",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 393,
+  "trianglesK": 559,
+  "meshes": 2021,
+  "geometries": 1713,
+  "materials": 317,
+  "heapMB": 242,
+  "simMs": 5.79,
+  "loadS": 20,
+  "failed": 0
+ },
+ {
+  "date": "2026-11-14T13:51",
+  "label": "cycle 7 : circulation v2",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 516,
+  "trianglesK": 612,
+  "meshes": 2049,
+  "geometries": 1729,
+  "materials": 328,
+  "heapMB": 242,
+  "simMs": 5.84,
+  "loadS": 20,
+  "failed": 0
+ },
+ {
+  "date": "2026-11-14T13:56",
+  "label": "cycle 8 : ambiance et vie",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 595,
+  "trianglesK": 930,
+  "meshes": 2022,
+  "geometries": 1714,
+  "materials": 318,
+  "heapMB": 242,
+  "simMs": 5.79,
+  "loadS": 19,
+  "failed": 0
  }
 ]

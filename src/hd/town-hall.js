@@ -169,6 +169,20 @@
     const nr = g.attributes.normal; for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i).normalize(); nr.setXYZ(i, v.x, v.y, v.z); }
     return g;
   }
+  // is the straight line between two points free of walls? (low obstacles such as tree trunks do not stop the light)
+  function wallFree(ax0, az0, bx0, bz0) {
+    const dx = bx0 - ax0, dz = bz0 - az0, L = Math.hypot(dx, dz) || 1e-6, ux = dx / L, uz = dz / L, seen = new Set();
+    for (let s = 0; s <= L; s += CELL * 0.5) {
+      const segs = cellOf(ax0 + ux * s, az0 + uz * s); if (!segs) continue;
+      for (const sg of segs) {
+        if (sg.length > 4 || seen.has(sg)) continue; seen.add(sg);
+        const [ax, az, bx, bz] = sg, ex = bx - ax, ez = bz - az, den = ux * ez - uz * ex; if (Math.abs(den) < 1e-9) continue;
+        const t = ((ax - ax0) * ez - (az - az0) * ex) / den, u = ((ax - ax0) * uz - (az - az0) * ux) / den;
+        if (t > 0 && t < L - 0.3 && u >= 0 && u <= 1) return false;
+      }
+    }
+    return true;
+  }
   function buildLamps() { // sodium street lamps along the wider streets; lit at night
     const pts = [];
     let alt = 0;
@@ -195,16 +209,28 @@
     const poles = new THREE.InstancedMesh(poleG, metal, n), arms = new THREE.InstancedMesh(armG, metal, n);
     lampBulbs = new THREE.InstancedMesh(headG, new THREE.MeshBasicMaterial({ color: 0x444444, fog: false }), n);
     const poolTex = glowTexture();
-    lampPools = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: poolTex, color: new THREE.Color(0.75, 0.36, 0.1), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }), n);
+    // pools of light on the ground: one mesh that follows the relief (a flat square used to float over slopes and kerbs and
+    // to be cut by the ground), and stops at the walls (a vertex the lamp cannot see through a wall gets no light)
+    const PN = 8, pp = new Float32Array(n * (PN + 1) * (PN + 1) * 3), pu = new Float32Array(n * (PN + 1) * (PN + 1) * 2), pc = new Float32Array(n * (PN + 1) * (PN + 1) * 3), pidx = [];
+    pts.forEach(([x, z, a], li) => {
+      const hx = x - Math.sin(a) * 1.5, hz = z - Math.cos(a) * 1.5, base = li * (PN + 1) * (PN + 1);
+      for (let j = 0; j <= PN; j++) for (let i = 0; i <= PN; i++) {
+        const k = base + j * (PN + 1) + i, vx = hx + (i / PN - 0.5) * 20, vz = hz + (j / PN - 0.5) * 20, d = Math.hypot(vx - hx, vz - hz);
+        const seen = d < 7 || wallFree(hx, hz, vx, vz); // near the lamp always lit (a coarse test would cut the pool into wedges)
+        pp[k * 3] = vx; pp[k * 3 + 1] = surfaceH(vx, vz) + 0.37; /* just above the road (ROAD_Y.drive 0.32) */ pp[k * 3 + 2] = vz; pu[k * 2] = i / PN; pu[k * 2 + 1] = j / PN;
+        const lit = seen ? 1 : 0; pc[k * 3] = pc[k * 3 + 1] = pc[k * 3 + 2] = lit;
+      }
+      for (let j = 0; j < PN; j++) for (let i = 0; i < PN; i++) { const k = base + j * (PN + 1) + i; pidx.push(k, k + PN + 1, k + 1, k + 1, k + PN + 1, k + PN + 2); }
+    });
+    const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pp, 3)); pg.setAttribute('uv', new THREE.BufferAttribute(pu, 2)); pg.setAttribute('color', new THREE.BufferAttribute(pc, 3)); pg.setIndex(pidx); pg.computeBoundingSphere();
+    lampPools = new THREE.Mesh(pg, new THREE.MeshBasicMaterial({ map: poolTex, color: new THREE.Color(0.75, 0.36, 0.1), vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }));
     lampGlow = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: poolTex, color: new THREE.Color(1.6, 0.85, 0.3), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, side: THREE.DoubleSide }), n);
     const m4 = new THREE.Matrix4(), qt = new THREE.Quaternion(), e = new THREE.Euler(), s = new THREE.Vector3(), v = new THREE.Vector3();
     pts.forEach(([x, z, a], i) => {
       const gy = surfaceH(x, z) + 0.2;
       qt.setFromEuler(e.set(0, a, 0)); m4.compose(v.set(x, gy, z), qt, s.set(1, 1, 1));
       poles.setMatrixAt(i, m4); arms.setMatrixAt(i, m4); lampBulbs.setMatrixAt(i, m4);
-      const hx = x - Math.sin(a) * 1.5, hz = z - Math.cos(a) * 1.5, py = surfaceH(hx, hz) + 0.36;
-      const sx = (surfaceH(hx + 3, hz) - surfaceH(hx - 3, hz)) / 6, sz = (surfaceH(hx, hz + 3) - surfaceH(hx, hz - 3)) / 6;
-      qt.setFromEuler(e.set(Math.atan(sz), 0, -Math.atan(sx))); m4.compose(v.set(hx, py, hz), qt, s.set(20, 1, 20)); lampPools.setMatrixAt(i, m4);
+      const hx = x - Math.sin(a) * 1.5, hz = z - Math.cos(a) * 1.5;
       qt.setFromEuler(e.set(-Math.PI / 2, 0, 0)); m4.compose(v.set(hx, gy + 6.86, hz), qt, s.set(2.6, 2.6, 2.6)); lampGlow.setMatrixAt(i, m4);
       gridAdd([x - 0.12, z, x + 0.12, z, 6.5], 3.5); gridAdd([x, z - 0.12, x, z + 0.12, 6.5], 3.5); // lamp post: 6.5 m high
     });
@@ -217,7 +243,7 @@
       lampStreaks.userData.pts = pts.map(([x, z, a]) => [x - Math.sin(a) * 1.5, z - Math.cos(a) * 1.5]);
       lampStreaks.visible = false; lampStreaks.renderOrder = 4; lampStreaks.userData.hdLinear = true; lampStreaks.frustumCulled = false; scene.add(lampStreaks);
     }
-    poles.castShadow = true; lampPools.renderOrder = 3; lampGlow.renderOrder = 22;
+    poles.castShadow = true; lampPools.renderOrder = 3; lampPools.userData.noTile = true; // time-weather.js holds on to it (visible, opacity) lampGlow.renderOrder = 22;
     for (const o of [poles, arms, lampBulbs, lampPools, lampGlow]) { o.userData.hdLinear = true; o.frustumCulled = false; scene.add(o); }
   }
 

@@ -71,9 +71,13 @@
 - [x] Tram : les rues s'arrêtent avant les voies (données), les nœuds du graphe au nord du mur du tram sont exclus.
 - [x] **Retours de jeu traités** : police contre Rapaces (patrouilles qui prennent en chasse un Rapace vu à moins de 75 m, et le Rapace riposte) ; véhicules bloqués (cibles hors carte ou derrière les barrières exclues, chemins étroits évités, voiture qui recule trois fois en 15 s remise sur une rue proche hors de vue) : marches arrière divisées par plus de deux en simulation.
 
-### Cycle 8 : ambiance et vie ★★
-- Piétons selon les lieux et l'heure (marché de la butte, sorties d'école, quais le soir), terrasses qui se remplissent le soir.
-- Lumières de ville la nuit (fenêtres, enseignes, phares qui éclairent vraiment la chaussée), reflets sur le mouillé.
+### Cycle 8 : ambiance et vie ★★ (fait le 14 nov. 2026)
+- [x] **Clôtures, haies, murets et portails cassables** (`src/make_fences.py` → `data/fences.json`, `src/gx/fences.js`) : 7 103 panneaux de 2,4 m, tirés des barrières OSM (clôture, mur, haie, grille, portail) et, là où OSM n'a rien, des façades sur rue des parcelles du cadastre (IGN). Bois, muret à grille, haie, portail, mur de jardin ; chacun a sa résistance (un mur tient à faible vitesse, une clôture cède) ; débris, remise en place une minute plus tard hors de vue ; 4 appels de dessin par tuile de 250 m.
+- [x] **Lumières des lampadaires** (retour de jeu) : les flaques de lumière suivent le relief au lieu d'un carré plat qui flottait ou s'enfonçait, et s'arrêtent aux murs.
+- [x] Moins de piétons la nuit, terrasses pleines à midi et le soir, vides au petit matin ; la nuit, les voitures éclairent la chaussée devant elles.
+- [x] **Piétons qui traversent les murs** (retour de jeu) : l'écart pour éviter une voiture s'arrête aux murs (4 m au plus du trottoir), la chute aussi. La refonte complète des piétons est confiée à Fable 5.2 (section dédiée).
+- [x] Correctif : depuis le réglage de la physique (cycle 4), un commentaire mal placé avait effacé une partie des réglages par défaut d'Ultra (équipes, fin de partie, moment de la journée, circulation, distance de vue) : le menu des joueurs plantait sur une nouvelle installation. Vérifié maintenant par un test.
+- [ ] Reste pour plus tard : enseignes lumineuses, marché de la butte et sorties d'école (avec la refonte des piétons).
 
 ### Cycle 9 : détail visuel ★★
 - Niveaux de détail des arbres, mobilier, bâtiments lointains ; brouillard et atmosphère selon la météo ; meilleurs toits et rez-de-chaussée.
@@ -104,6 +108,7 @@
 - **Idée de l'utilisateur (14 nov.) : navettes fluviales vers l'île de Nantes.** Des bateaux font la navette sur la Loire (comme le Navibus) ; on peut sauter dessus avec la voiture depuis un ponton, pour un niveau en plus au bout de l'île de Nantes, avec l'éléphant mécanique et le carrousel des mondes marins. Attention : le Grand Éléphant et le Carrousel des Mondes Marins (Machines de l'île) sont des œuvres protégées. Les modéliser fidèlement serait une reproduction ; on ferait des machines originales dans le même esprit (grand animal mécanique, manège à créatures marines), à valider avec l'utilisateur. C'est un agrandissement du monde : accord de l'utilisateur avant de commencer.
 - Streaming du monde par tuiles (chargement et déchargement) une fois le rendu par tuiles en place.
 - Nouveaux quartiers : Bas-Chantenay industriel, île de Nantes par un pont.
+- **Navettes fluviales et niveau « bout de l'île de Nantes »** (idée de l'utilisateur, 14 nov.) : des bateaux font la navette sur la Loire entre un ponton côté Chantenay (quai) et l'île de Nantes ; on monte à bord depuis le ponton (voiture ou à pied ?) pour rejoindre un niveau en plus à la pointe ouest de l'île : quais, hangars et nefs des Chantiers, carrousel et parc. **Attention aux droits** : le Grand Éléphant et le Carrousel des Mondes Marins sont des œuvres de La Machine, protégées ; le jeu peut montrer les lieux (nefs, hangars, emplacement du carrousel) mais ni copier ces machines, ni en faire une variante reconnaissable. Il faudra des créations originales. Agrandissement du monde : accord de l'utilisateur donné sur le principe, à préciser (taille, accès en voiture ou non) avant de commencer.
 - Synchronisation en ligne des bonus, de la circulation et du tram ; capture du drapeau en ligne.
 
 ## À confier à Claude Fable 5.2 (demande de l'utilisateur, 14 nov. 2026)
@@ -114,6 +119,14 @@ Chantiers où un modèle plus fort apporterait le plus : gros morceaux de code �
 - **Bugs de rendu difficiles** : herbe qui recouvre la route selon l'angle (mairie), eau de la Loire sur la terre près du pont, taches de lumière des lampadaires dans l'intro.
 - **Multijoueur en ligne** : synchronisation de la circulation, du tram et des bonus, latence, reprise après déconnexion.
 - **Architecture** : chaque système déclare ce qu'il utilise des autres (suite de D-12), pour pouvoir confier un module à part.
+
+## À confier à Fable 5.2 (demande de l'utilisateur, 14 nov. 2026)
+Chantiers lourds, où un modèle plus puissant fera nettement mieux : refontes de systèmes entiers, beaucoup de code lié, réglages fins difficiles à vérifier ici sans écran. À lancer dans une session Fable 5.2 avec ce dépôt ; ils restent hors de l'enchaînement des cycles 5 à 14.
+- [ ] **Refonte des piétons** (`src/gx/pedestrians.js`, `crowd.js`, `terraces.js`) : vrai réseau de trottoirs et de passages piétons tiré d'OSM, évitement des murs et des autres piétons, traversées aux passages, animations (marche, course, fuite, chute) plus riches, foules selon le lieu et l'heure ; corrige à la racine « piétons qui traversent les murs ».
+- [ ] **Conduite des IA par voies** : planification de trajectoire sur des voies (et non des nœuds), changements de voie, ronds-points, files aux feux propres ; bots Rapaces qui conduisent aussi bien que la circulation.
+- [ ] **Partie en ligne robuste** : prédiction et correction, synchronisation de la circulation, du tram et des bonus, reprise après déconnexion (aujourd'hui jamais testée à plusieurs).
+- [ ] **Physique réaliste, 2e passe** après les essais de l'utilisateur (suspension, transfert de charge en virage, sensation à la manette).
+- [ ] **Niveau de l'île de Nantes** (voir Phase 4) : modélisation d'un nouveau quartier entier, navettes fluviales et pontons.
 
 ## Retours de jeu de l'utilisateur (14 nov. 2026), à traiter
 Décision de l'utilisateur (14 nov.) : chaque point est traité dans le cycle où il est prévu ; les corrections partent aussi dans `main` (classique et HD).

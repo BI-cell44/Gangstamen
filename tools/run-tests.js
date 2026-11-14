@@ -40,6 +40,10 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
   console.log(path.basename(file) + ' · ' + kind + ' · chargé en ' + loadS.toFixed(0) + ' s');
   if (HD) await ev(() => { __gm.hd.setQuality(0); __gm.settings.voices = false; });
 
+  await check('réglages par défaut complets', async () => {
+    const r = await ev(() => { const s = __gm.settings; return { team: Array.isArray(s.team), goal: s.goal, limit: s.limit, tod: s.tod, traffic: s.traffic, dist: s.dist }; });
+    expect(r.team && r.goal === 20 && r.limit === 10 && r.tod && r.traffic === 2 && r.dist === 2, JSON.stringify(r)); return r;
+  });
   await check('partie solo', async () => {
     await ev(() => __gm.start('solo')); await page.waitForTimeout(1500);
     const r = await ev(() => { for (let i = 0; i < 90; i++) __gm.step(1 / 30); const L = __gm.locals()[0]; return { alive: L.car.alive, rivals: __gm.rivals().length, x: Math.round(L.car.x), z: Math.round(L.car.z) }; });
@@ -195,6 +199,25 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
       expect(r.sensUniques > 50 && r.contreSens === 0, 'sens unique ' + JSON.stringify(r));
       expect(r.proie && r.riposte >= 1 && r.lignes > 5, JSON.stringify(r));
       return r;
+    });
+    await check('ambiance : clôtures cassables, lumières des lampadaires, nuit', async () => {
+      const r = await ev(() => {
+        const X = __gm.gx, F = X.Fences, c = __gm.locals()[0].car, out = { panneaux: F.count };
+        // a wood fence breaks when the car goes through at speed; a garden wall holds a slow car
+        const pn = F.panels.find(p => p.kind === 0 && !p.broken), nx = -pn.sa, nz = pn.ca;
+        c.place(pn.x + nx * 8, pn.z + nz * 8, 0); c.hp = 100; for (let i = 0; i < 40; i++) { c.vx = -nx * 14; c.vz = -nz * 14; __gm.step(1 / 30); } out.casse = pn.broken;
+        const pw = F.panels.find(p => p.kind === 4 && !p.broken), wx = -pw.sa, wz = pw.ca;
+        c.place(pw.x + wx * 5, pw.z + wz * 5, 0); for (let i = 0; i < 40; i++) { c.vx = -wx * 2; c.vz = -wz * 2; __gm.step(1 / 30); } out.murTient = !pw.broken && ((c.x - pw.x) * wx + (c.z - pw.z) * wz) > 0.5;
+        // the pools of light follow the ground: every vertex just above the surface
+        let pool = null; __gm.scene.traverse(o => { if (o.isMesh && o.renderOrder === 3 && o.userData.noTile) pool = o; });
+        const a = pool.geometry.attributes.position.array; let worst = 0; for (let i = 0; i < a.length; i += 3 * 37) { const d = a[i + 1] - __gm.surfaceH(a[i], a[i + 2]); worst = Math.max(worst, Math.abs(d - 0.37)); }
+        out.ecartSol = +worst.toFixed(3);
+        // night: the cars around light the road
+        __gm.hd.setTod('night'); __gm.hd.amb.t = 3; c.place(300, 300, 0); for (let i = 0; i < 30; i++) __gm.step(1 / 30);
+        out.phares = X.npcs().filter(o => o._hl && o._hl.visible).length; __gm.hd.setTod('day'); __gm.hd.amb.t = 0;
+        return out;
+      });
+      expect(r.panneaux > 3000 && r.casse && r.murTient && r.ecartSol < 0.01, JSON.stringify(r)); return r;
     });
     await check('garages réels', async () => {
       const r = await ev(() => __gm.gx.garages.map(g => g.name)); expect(r.length >= 3, 'garages : ' + r.join(', '));

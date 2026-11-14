@@ -13,6 +13,7 @@ gx/mission-hud.js
 gx/garages.js
 gx/pickups-weapons.js
 gx/furniture.js
+gx/fences.js
 gx/campaign.js
 gx/radio.js
 gx/quick-chat.js

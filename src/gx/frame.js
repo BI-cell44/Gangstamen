@@ -39,15 +39,36 @@
     sfx.siren && sfx.siren(sirenOn ? Math.max(0, 1 - sirenD / 160) : 0);
     // pedestrians
     if (!walks) buildWalks();
-    while (peds.length < Math.min(B.peds, CROWD_MAX - 70)) { const p = makePed(); peds.push(p); if (!placePed(p)) break; }
-    peds.forEach((p, i) => { if (i >= B.peds) p.on = false; });
-    for (const p of peds.slice(0, B.peds)) {
+    const nPed = Math.round(B.peds * pedsByHour()); // fewer people out at night (cycle 8)
+    while (peds.length < Math.min(nPed, CROWD_MAX - 70)) { const p = makePed(); peds.push(p); if (!placePed(p)) break; }
+    peds.forEach((p, i) => { if (i >= nPed) p.on = false; });
+    for (const p of peds.slice(0, nPed)) {
       if (!p.on || minPlayerDist(p.x, p.z) > 200) { if (!placePed(p)) continue; }
       pedStep(p, dt);
     }
-    for (const c of customers) { c.vis = minPlayerDist(c.x, c.z) < 160; if (c.vis) customerStep(c, dt); }
+    const fill = terraceFill(); // terraces: busy at lunch and in the evening, empty in the small hours
+    for (const c of customers) { c.vis = (c.fillK ?? (c.fillK = R())) < fill && minPlayerDist(c.x, c.z) < 160; if (c.vis) customerStep(c, dt); }
+    headlights();
     crowdDraw();
     updateWanted();
+  }
+  function pedsByHour() { const h = Soundscape.hourNow(); return h < 6 ? 0.25 : h < 8 ? 0.6 : h < 20 ? 1 : h < 23 ? 0.75 : 0.45; }
+  function terraceFill() { const h = Soundscape.hourNow(); return h < 7 ? 0 : h < 11 ? 0.3 : h < 15 ? 0.85 : h < 19 ? 0.45 : h < 24 ? 1 : 0; }
+  // at night every car lights the road in front of it (a soft pool under the headlights; the players' cars have a real light)
+  let hlMat = null, hlGeo = null;
+  function headlights() {
+    const night = hd.amb && hd.amb.t > 1.6;
+    if (!hlMat) {
+      const [cv, g] = canvas(64, 128), gr = g.createRadialGradient(32, 18, 2, 32, 40, 70); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.45, 'rgba(255,255,255,0.35)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = gr; g.fillRect(0, 0, 64, 128);
+      hlMat = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cv), color: new THREE.Color(0.9, 0.8, 0.55), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
+      hlGeo = new THREE.PlaneGeometry(5, 11).rotateX(-Math.PI / 2).translate(0, 0.06, -8.2); hlMat.userData.shared = hlGeo.userData.shared = true;
+    }
+    for (const c of [...rivals, ...npcs, ...extras]) {
+      if (!c.mesh) continue;
+      if (!c._hl) { if (!night) continue; c._hl = new THREE.Mesh(hlGeo, hlMat); c._hl.renderOrder = 3; c._hl.userData.hdLinear = true; c.mesh.add(c._hl); }
+      c._hl.visible = night && c.alive && c.mesh.visible && minPlayerDist(c.x, c.z) < 140;
+    }
   }
   function updateWanted() {
     const el = $('wanted'); if (!el) return;

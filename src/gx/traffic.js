@@ -87,7 +87,8 @@
   function nextNode(a, b) {
     let opts = G.out[b].filter(n => n !== a && nodeOk(n));
     const wide = opts.filter(n => edgeW(b, n) >= 6); if (wide.length) opts = wide;
-    if (!opts.length) opts = G.adj[b].filter(n => n !== a && nodeOk(n));
+    if (!opts.length && G.out[b].includes(a)) return a; // dead end: turn round, if that way is legal
+    if (!opts.length) opts = G.adj[b].filter(n => n !== a && nodeOk(n)); // a one-way trap (data): leave anyway
     return opts.length ? opts[(R() * opts.length) | 0] : a;
   }
   function spawnNode(minD, maxD) {
