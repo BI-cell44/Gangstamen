@@ -340,6 +340,7 @@ body.cine #logo, body.cine #credit { display: none; }
       <div class="row hdOnly" hidden><span class="lab">Circulation</span><div class="seg" id="trafSeg"><button class="mbtn" data-v="0">Aucune</button><button class="mbtn" data-v="1">Calme</button><button class="mbtn" data-v="2">Normale</button></div></div>
       <div class="row hdOnly" hidden><label class="lab" for="optVoices">Voix (radio, dialogues)</label><input id="optVoices" type="checkbox"></div>
       <div class="row" id="hdRow" hidden><span class="lab">Qualité graphique</span><div class="seg" id="hdSeg"><button class="mbtn" data-q="0">Basse</button><button class="mbtn" data-q="1">Moyenne</button><button class="mbtn" data-q="2">Haute</button><button class="mbtn" data-q="3">Ultra</button></div></div>
+      <div class="row hdOnly" hidden><span class="lab">Conduite</span><div class="seg" id="physSeg"><button class="mbtn" data-v="arcade">Arcade</button><button class="mbtn" data-v="real">Réaliste</button></div></div>
       <div class="row hdOnly" hidden><label class="lab" for="optAutoQ">Qualité automatique (baisse sous 25 images par seconde)</label><input id="optAutoQ" type="checkbox"></div>
       <div class="row"><label class="lab" for="optIntro">Intro au lancement</label><input id="optIntro" type="checkbox"><button class="mbtn" id="introPlay">Revoir l'intro</button></div>
       <div class="menu"><button class="mbtn" data-go="vMain">Retour</button></div>
@@ -2892,7 +2893,7 @@ class Car {
   }
   get speed() { return Math.hypot(this.vx, this.vz); }
   get fwd() { return [-Math.sin(this.h), -Math.cos(this.h)]; }
-  place(x, z, h) { this.x = x; this.z = z; this.h = h; this.vx = this.vz = 0; this.yb = undefined; this.yv = 0; this.air = 0; this.nitro = 0; this.sync(); }
+  place(x, z, h) { this.x = x; this.z = z; this.h = h; this.vx = this.vz = 0; this.yb = undefined; this.yv = 0; this.air = 0; this.nitro = 0; if (this.phys) { this.phys.r = 0; this.phys.gear = 1; this.phys.ax = 0; } this.sync(); }
   sync() {
     const [fx, fz] = this.fwd, rx = -fz, rz = fx;
     const hf = surfaceH(this.x + fx * 1.7, this.z + fz * 1.7), hb = surfaceH(this.x - fx * 1.7, this.z - fz * 1.7);
@@ -2905,6 +2906,35 @@ class Car {
 }
 
 function drive(c, inp, dt) {
+  const real = useRealPhysics(c);
+  if (real) planarReal(c, inp, dt); else planarArcade(c, inp, dt);
+  const ox = c.x, oz = c.z;
+  c.x += c.vx * dt; c.z += c.vz * dt;
+  if (groundH(c.x, c.z) < WATER_Y + 0.9) { // the Loire is not drivable
+    c.x = ox; c.z = oz; c.vx *= -0.3; c.vz *= -0.3;
+    if (c.player && Math.random() < 0.3) spawnFx(c.x, 0.5, c.z, 0.6, 0x9fc4d8, 0.4, 3, 2);
+  }
+  if (HD) { // vertical motion: crests and bridge ramps throw the car in the air at speed
+    // arcade: strong gravity, damage only on big falls; realistic: 1.35 g, a hard landing hurts sooner
+    const G = real ? 9.81 * PHYS.airG : 22, hurt = real ? 8 : 12, hk = real ? 3 : 1.5;
+    const g = surfaceH(c.x, c.z);
+    if (c.yb === undefined || c.yb < g - 8) { c.yb = g; c.yv = 0; c.air = 0; } // (only when it ends up under the ground: a car flying off the quarry stays in the air)
+    const ny = c.yb + (c.yv || 0) * dt - G / 2 * dt * dt;
+    if (ny > g + 0.14) { c.yv -= G * dt; c.yb = ny; c.air = c.yb - g; }
+    else {
+      if (c.air > 0.4 && c.yv < -6) { spawnFx(c.x, 0.3, c.z, 0.5, 0xffe28a, 0.2, 2, 2); if (c.local) { sfx.hit(); rumbleFor(c.owner, 0.5, 0.5, 150); } if (c.yv < -hurt) damage(c, (-c.yv - hurt) * hk); }
+      c.yv = Math.max(-14, Math.min(14, (g - c.yb) / Math.max(dt, 1e-3))); c.yb = g; c.air = 0;
+    }
+  }
+  let impact = 0;
+  for (let it = 0; it < 2; it++) impact = Math.max(impact, collideWalls(c));
+  if (impact > 0 && c.phys) c.phys.r *= 0.4; // a wall kills the spin
+  c.x = Math.max(CX - HX - 30, Math.min(CX + HX + 30, c.x));
+  c.z = Math.max(CZ - HZ - 30, Math.min(CZ + HZ + 21, c.z));
+  return impact;
+}
+// arcade driving (the original model): forward and lateral speeds, drift on the handbrake; bots and traffic use it
+function planarArcade(c, inp, dt) {
   let MAX = c.maxV || (c.player ? 44 : (c.ai && c.ai.mode === 'hunt' ? 36 : 15));
   const boost = c.nitro > 0 ? 1.6 : 1; MAX *= c.nitro > 0 ? 1.3 : 1;
   const grip = c.air > 0.25 ? 0.08 : 1; // airborne: no traction
@@ -2928,27 +2958,6 @@ function drive(c, inp, dt) {
   c.h += yaw * dt;
   const [nfx, nfz] = c.fwd, nrx = -nfz, nrz = nfx;
   c.vx = nfx * vf + nrx * vr; c.vz = nfz * vf + nrz * vr;
-  const ox = c.x, oz = c.z;
-  c.x += c.vx * dt; c.z += c.vz * dt;
-  if (groundH(c.x, c.z) < WATER_Y + 0.9) { // the Loire is not drivable
-    c.x = ox; c.z = oz; c.vx *= -0.3; c.vz *= -0.3;
-    if (c.player && Math.random() < 0.3) spawnFx(c.x, 0.5, c.z, 0.6, 0x9fc4d8, 0.4, 3, 2);
-  }
-  if (HD) { // vertical motion: crests and bridge ramps throw the car in the air at speed
-    const g = surfaceH(c.x, c.z);
-    if (c.yb === undefined || c.yb < g - 8) { c.yb = g; c.yv = 0; c.air = 0; } // (only when it ends up under the ground: a car flying off the quarry stays in the air)
-    const ny = c.yb + (c.yv || 0) * dt - 11 * dt * dt;
-    if (ny > g + 0.14) { c.yv -= 22 * dt; c.yb = ny; c.air = c.yb - g; }
-    else {
-      if (c.air > 0.4 && c.yv < -6) { spawnFx(c.x, 0.3, c.z, 0.5, 0xffe28a, 0.2, 2, 2); if (c.local) { sfx.hit(); rumbleFor(c.owner, 0.5, 0.5, 150); } if (c.yv < -12) damage(c, (-c.yv - 12) * 1.5); }
-      c.yv = Math.max(-14, Math.min(14, (g - c.yb) / Math.max(dt, 1e-3))); c.yb = g; c.air = 0;
-    }
-  }
-  let impact = 0;
-  for (let it = 0; it < 2; it++) impact = Math.max(impact, collideWalls(c));
-  c.x = Math.max(CX - HX - 30, Math.min(CX + HX + 30, c.x));
-  c.z = Math.max(CZ - HZ - 30, Math.min(CZ + HZ + 21, c.z));
-  return impact;
 }
 function collideWalls(c) {
   // the car is about 4.4 m by 1.8 m: three circles along its length (front, middle, rear) rather than one big
@@ -2989,6 +2998,115 @@ function segHit(ox, oz, dx, dz, maxT) { // ray vs walls, returns distance
   return best;
 }
 
+// ---------- driving physics v2 ("réaliste"): a bicycle model with tyres, weight transfer, engine and gearbox ----------
+// Used for the local players' cars when settings.physics === 'real' (HD builds); bots, traffic and the classic build keep
+// the arcade model of drive(). Units: metres, seconds, kilograms, newtons. Car frame: x forward, y to the LEFT, yaw
+// rate r > 0 turns left (c.h grows), like the arcade model. Each car type has its own data (VEHICLES), tuned on the
+// fun side of real (a 90s hot hatch with about 1.5 times its real punch), so that town fights stay lively.
+const VEHICLES = {
+  //          mass  front/rear axle to centre  CG height  peak torque  drive   grip   drag     top gear
+  saloon: { m: 1150, a: 1.22, b: 1.42, h: 0.52, T: 330, drive: 'R', mu: 1.12, cda: 0.70, gears: [3.4, 2.1, 1.48, 1.12, 0.88], fd: 3.9 },
+  p205:   { m: 900,  a: 1.00, b: 1.42, h: 0.50, T: 280, drive: 'F', mu: 1.18, cda: 0.62, gears: [3.3, 2.0, 1.44, 1.10, 0.86], fd: 4.1 },
+  hatch:  { m: 1000, a: 1.05, b: 1.45, h: 0.51, T: 280, drive: 'F', mu: 1.15, cda: 0.66, gears: [3.3, 2.0, 1.44, 1.10, 0.86], fd: 4.0 },
+  r5:     { m: 850,  a: 0.98, b: 1.43, h: 0.49, T: 265, drive: 'F', mu: 1.16, cda: 0.62, gears: [3.4, 2.1, 1.48, 1.12, 0.88], fd: 4.2 },
+  twingo: { m: 800,  a: 0.95, b: 1.40, h: 0.55, T: 200, drive: 'F', mu: 1.10, cda: 0.68, gears: [3.6, 2.2, 1.5, 1.12, 0.86], fd: 4.2 },
+};
+const PHYS = { g: 9.81, rw: 0.30, idle: 900, red: 6800, up: 6300, down: 2600, eff: 0.85, roll: 0.015, airG: 1.35 };
+const vehOf = c => VEHICLES[c.style] || VEHICLES.saloon;
+const useRealPhysics = c => HD && c.local && settings.physics === 'real';
+// grip of the surface under the car: carriageway, pavement, or the rest (grass, gravel); wet roads lose a quarter
+function surfaceGrip(x, z) {
+  const d = roadEdge(x, z)[0];
+  let k = d < 0.3 ? 1 : d < 4 ? 0.93 : 0.68;
+  if (HD && hd.amb && hd.amb.wet) k *= 1 - 0.25 * Math.min(1, hd.amb.wet);
+  return k;
+}
+// engine torque at the crank (N·m) for a given rpm: rises to a peak around 4 000 rpm, falls towards the red line
+function engineTorque(V, rpm) {
+  const x = Math.max(0, Math.min(1, (rpm - PHYS.idle) / (PHYS.red - PHYS.idle)));
+  return V.T * (0.62 + 0.38 * Math.sin(Math.PI * Math.min(1, x * 1.15)));
+}
+// lateral tyre force (simplified magic formula): grows with the slip angle, peaks near 8°, then fades a little
+const tyreY = (alpha, Fz, mu) => mu * Fz * Math.sin(1.35 * Math.atan(9 * alpha));
+// rear tyres: same stiffness but no fall past the peak, and a little more grip than the front. Real enough to feel the
+// weight move, stable enough for a game: the car understeers when pushed, and the handbrake still breaks the rear loose
+const tyreYRear = (alpha, Fz, mu) => mu * 1.15 * Fz * Math.tanh(12.1 * alpha / 1.15);
+
+function planarReal(c, inp, dt) {
+  const V = vehOf(c), L = V.a + V.b, m = V.m, Iz = m * V.a * V.b * 1.05, g = PHYS.g;
+  const ph = c.phys || (c.phys = { gear: 1, rpm: PHYS.idle, ax: 0, r: 0, shift: 0, slipR: 0 });
+  const grip = (c.air > 0.25 ? 0.04 : 1) * (c._grip ?? surfaceGrip(c.x, c.z)), mu = V.mu * grip; // c._grip: test hook
+  const [fx, fz] = c.fwd, rx = -fz, rz = fx;
+  let u = c.vx * fx + c.vz * fz, v = -(c.vx * rx + c.vz * rz); // forward, left
+  let r = ph.r;
+  // steering: smoothed input, less lock at speed (keyboard friendly)
+  c.steer += (inp.s - c.steer) * Math.min(1, dt * 8);
+  const n = Math.max(1, Math.ceil(dt / 0.008)), h = dt / n;
+  const power = (c.accK || 1) * (c.nitro > 0 ? 1.55 : 1), vmax = (c.maxV || 44) * (c.nitro > 0 ? 1.25 : 1);
+  for (let s = 0; s < n; s++) {
+    const spd = Math.abs(u), delta = c.steer * 0.6 / (1 + (spd / 9) ** 2); // speed-sensitive steering: full lock sits near the grip limit at any speed
+    // gearbox (automatic) and engine speed
+    const wheelRpm = u / PHYS.rw * 60 / (2 * Math.PI), ratio = V.gears[ph.gear - 1] * V.fd;
+    ph.rpm = Math.max(PHYS.idle, Math.abs(wheelRpm) * ratio);
+    if (ph.shift > 0) ph.shift -= h;
+    else if (ph.rpm > PHYS.up && ph.gear < V.gears.length && inp.t > 0) { ph.gear++; ph.shift = 0.22; }
+    else if (ph.rpm < PHYS.down && ph.gear > 1) { ph.gear--; ph.shift = 0.12; }
+    // longitudinal forces: engine through the driven wheels, brakes, reverse
+    let Fdrive = 0, Fbrake = 0;
+    if (inp.t > 0 && u > -1) {
+      const tq = engineTorque(V, Math.min(PHYS.red, ph.rpm)) * power * (ph.shift > 0 ? 0.25 : 1);
+      Fdrive = inp.t * tq * ratio * PHYS.eff / PHYS.rw * Math.max(0, Math.min(1, (vmax - u) / 3)); // limiter at the game's top speed
+    } else if (inp.t < 0) {
+      if (u > 0.8) Fbrake = -inp.t * mu * m * g * 1.05; // full braking ~1 g
+      else Fdrive = inp.t * 4200 * Math.max(0, Math.min(1, (13 + u) / 3)); // reverse, up to ~13 m/s
+    } else if (inp.t > 0 && u <= -1) Fbrake = inp.t * mu * m * g; // forward while rolling back: brake first
+    // loads with weight transfer (from last step's acceleration)
+    const Fzf = m * g * V.b / L - m * ph.ax * V.h / L, Fzr = m * g * V.a / L + m * ph.ax * V.h / L;
+    const sgn = u >= 0 ? 1 : -1;
+    let Fxf = 0, Fxr = 0;
+    const bf = Fbrake * 0.65 * -sgn, br = Fbrake * 0.35 * -sgn;
+    if (V.drive === 'F') Fxf = Fdrive; else Fxr = Fdrive;
+    Fxf += bf; Fxr += br;
+    if (inp.hb) Fxr += -sgn * Math.min(Math.abs(u) * m, mu * Fzr * 0.75); // handbrake locks the rear
+    // traction limits (friction circle) and lateral forces
+    const capF = mu * Math.max(0, Fzf), capR = mu * Math.max(0, Fzr) * (inp.hb ? 0.75 : 1);
+    Fxf = Math.max(-capF, Math.min(capF, Fxf)); Fxr = Math.max(-capR, Math.min(capR, Fxr));
+    let Fyf = 0, Fyr = 0;
+    if (spd > 1.5) {
+      const af = delta - Math.atan2(v + V.a * r, spd) * sgn, ar = -Math.atan2(v - V.b * r, spd) * sgn;
+      Fyf = tyreY(af, Math.max(0, Fzf), mu) * Math.sqrt(Math.max(0, 1 - (Fxf / (capF || 1)) ** 2));
+      Fyr = tyreYRear(ar, Math.max(0, Fzr), mu * (inp.hb ? 0.45 : 1)) * Math.sqrt(Math.max(0.15, 1 - (Fxr / (capR || 1)) ** 2));
+      ph.slipR = Math.abs(ar);
+    } else ph.slipR = 0;
+    // resistances
+    const Fres = -(0.5 * 1.2 * V.cda * u * Math.abs(u) + PHYS.roll * m * g * Math.sign(u) * Math.min(1, spd));
+    // equations of motion in the car frame
+    const cosd = Math.cos(delta), sind = Math.sin(delta);
+    const Fx = Fxr + Fxf * cosd - Fyf * sind + Fres, Fy = Fyr + Fyf * cosd + Fxf * sind;
+    let du = Fx / m + v * r, dv = Fy / m - u * r, dr = (V.a * (Fyf * cosd + Fxf * sind) - V.b * Fyr) / Iz;
+    if (spd <= 1.5) { // parking speeds: rolls where the wheels point, no sliding
+      dv = -v * 12; dr = 0; r = u * Math.tan(delta) / L;
+    }
+    // slope of the Chantenay hills
+    const slope = (surfaceH(c.x + fx * 1.7, c.z + fz * 1.7) - surfaceH(c.x - fx * 1.7, c.z - fz * 1.7)) / 3.4;
+    du -= g * slope * (c.air > 0.25 ? 0 : 1);
+    u += du * h; v += dv * h; r += dr * h;
+    if (inp.t === 0 && Fbrake === 0 && Math.abs(u) < 0.3) u *= Math.exp(-6 * h); // comes to rest
+    const axTrue = Math.max(-1.5 * g, Math.min(1.5 * g, Fx / m)); // weight transfer follows the real longitudinal acceleration (forces / mass), not du, which carries the v·r turning term
+    ph.ax = ph.ax + (axTrue - ph.ax) * Math.min(1, h * 10);
+    c.h += r * h;
+  }
+  r = Math.max(-4, Math.min(4, r)); ph.r = r;
+  // drift flag for the effects and the sound: the rear steps out
+  c.drift = ph.slipR > 0.16 && Math.abs(u) > 6 ? 0.8 : Math.max(0, (c.drift || 0) - dt * 2.5);
+  const [nfx, nfz] = c.fwd, nrx = -nfz, nrz = nfx;
+  c.vx = nfx * u - nrx * v; c.vz = nfz * u - nrz * v;
+}
+// the engine note follows the revs in the realistic mode: an equivalent "speed" for sfx.engine
+function engineVoice(c) {
+  if (!c.phys || !useRealPhysics(c)) return c.speed;
+  return Math.max(0, (c.phys.rpm - PHYS.idle) / (PHYS.red - PHYS.idle)) * 38 + 4;
+}
 // ---------- effects ----------
 const fxPool = [];
 const fxGeo = new THREE.IcosahedronGeometry(1, 0);
@@ -3220,7 +3338,7 @@ const SETTINGS_KEY = 'gangstamen.settings.v1';
 const settings = Object.assign({
   ctl: ['kb1', 'kb2', 'kb3', 'kb4'], soloCtl: 'kb1+pad0', nPlayers: 2,
   music: 0.7, fx: 0.8, rumble: true, retro: true, nick: '',
-  hdq: 2, autoQ: true, tod: 'sunset', rain: '0', traffic: 2, voices: true, shadows: 1, dist: 2, intro: true, teams: false, team: [0, 1, 0, 1], netTeams: false, netTeam: -1, goal: 20, limit: 10,
+  hdq: 2, autoQ: true, physics: ULTRA ? 'real' : 'arcade', tod: 'sunset', rain: '0', traffic: 2, voices: true, shadows: 1, dist: 2, intro: true, teams: false, team: [0, 1, 0, 1], netTeams: false, netTeam: -1, goal: 20, limit: 10,
 }, (() => { try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); } catch (e) { return {}; } })());
 function saveSettings() { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { } }
 sfx.setVolume('music', settings.music); sfx.setVolume('fx', settings.fx);
@@ -3662,6 +3780,7 @@ function updateHud(dt) {
   if (locals.length === 1) {
     const L = locals[0], c = L.car;
     $('speed').firstChild.nodeValue = Math.round(c.speed * 3.6);
+    { const sp = $('speed').lastChild, t = c.phys && useRealPhysics(c) ? 'KM/H · ' + c.phys.gear + (c.phys.gear === 1 ? 're' : 'e') : 'KM/H'; if (sp.textContent !== t) sp.textContent = t; } // gear in the realistic mode
     $('hp').style.width = c.hp + '%';
     $('respect').textContent = L.respect; $('kills').textContent = L.kills;
     L.streetAcc += dt; if (L.streetAcc > 0.25) { L.streetAcc = 0; const s = streetAt(c.x, c.z); if (s !== L.street) { L.street = s; $('street').textContent = s; } }
@@ -3670,6 +3789,7 @@ function updateHud(dt) {
     for (const L of locals) {
       const c = L.car, h = L.hud; if (!h) continue;
       h.ps.firstChild.nodeValue = Math.round(c.speed * 3.6);
+      if (c.phys && useRealPhysics(c)) { const gt = c.phys.gear + (c.phys.gear === 1 ? 're' : 'e'), sp = h.ps.lastChild; if (sp.textContent !== 'KM/H · ' + gt) sp.textContent = 'KM/H · ' + gt; } else if (h.ps.lastChild.textContent !== 'KM/H') h.ps.lastChild.textContent = 'KM/H';
       h.pb.style.width = c.hp + '%';
       h.pr.textContent = 'RESPECT ' + L.respect + (gx && gx.gmode ? ' · POINTS ' : ' · KO ') + L.kills;
       L.streetAcc += dt; if (L.streetAcc > 0.3) { L.streetAcc = 0; const s = streetAt(c.x, c.z); if (s !== L.street) { L.street = s; h.pst.textContent = s; } drawMinimapOn(h.cv, c); }
@@ -4342,6 +4462,8 @@ function initOptions() {
     const segOpt = (id, key, after) => { const bs = document.querySelectorAll('#' + id + ' button'), show = () => bs.forEach(b => b.classList.toggle('on', +b.dataset.v === +settings[key]));
       bs.forEach(b => b.addEventListener('click', () => { settings[key] = +b.dataset.v; saveSettings(); show(); if (after) after(); })); show(); };
     segOpt('shSeg', 'shadows', applyPerf); segOpt('distSeg', 'dist', applyPerf); segOpt('trafSeg', 'traffic');
+    { const bs = document.querySelectorAll('#physSeg button'), show = () => bs.forEach(b => b.classList.toggle('on', b.dataset.v === settings.physics));
+      bs.forEach(b => b.addEventListener('click', () => { settings.physics = b.dataset.v; saveSettings(); show(); })); show(); }
     $('optAutoQ').checked = settings.autoQ !== false; $('optAutoQ').addEventListener('change', e => { settings.autoQ = e.target.checked; saveSettings(); });
     $('optVoices').checked = settings.voices !== false; $('optVoices').addEventListener('change', e => { settings.voices = e.target.checked; saveSettings(); try { if (!e.target.checked) speechSynthesis.cancel(); } catch (x) { } });
     const seg = document.querySelectorAll('#hdSeg button'), show = () => seg.forEach(b => b.classList.toggle('on', +b.dataset.q === hd.quality));
@@ -6529,7 +6651,7 @@ function step(dt, now) {
       if (gx && inp.swap && !L.swHeld) gx.cycleWeapon(L);
       L.swHeld = inp.swap;
       L.specHeld = inp.special;
-      if (L.slot === 0) sfx.engine(c.speed, true);
+      if (L.slot === 0) sfx.engine(engineVoice(c), true);
     } else {
       L.firing = false;
       if (L.slot === 0) sfx.engine(0, false);
@@ -6889,6 +7011,6 @@ const paintNow = () => new Promise(r => { let done = false; const go = () => { i
   netInit();
   if (settings.intro !== false && !window.__noIntro) Intro.splash();
 })();
-window.__gm = { get paused() { return paused; }, get started() { return started; }, renderer, scene, camera, PerfHud, Tiles, W, BOOT, Intro, hd, gx, settings, trams, edges, tramS, tramWall, EDGE, cellOf, collideWalls, muzzleOf, shoot, damage, applyHit, locals: () => locals, rivals: () => rivals, Net, Match, step: s => step(s, performance.now()), start: k => startGame(k || 'solo'), codes };
+window.__gm = { get paused() { return paused; }, get started() { return started; }, renderer, scene, camera, PerfHud, Tiles, W, BOOT, planarReal, VEHICLES, Intro, hd, gx, settings, trams, edges, tramS, tramWall, EDGE, cellOf, collideWalls, muzzleOf, shoot, damage, applyHit, locals: () => locals, rivals: () => rivals, Net, Match, step: s => step(s, performance.now()), start: k => startGame(k || 'solo'), codes };
 })();
 </script>

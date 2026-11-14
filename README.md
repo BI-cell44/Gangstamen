@@ -93,6 +93,8 @@ En écran partagé et en ligne, on choisit entre deux règles :
 | Clavier 4 | Pavé 8 / 5 | Pavé 4 / 6 | Pavé 0 | Entrée du pavé | Pavé 9 | Pavé . | Pavé + | Pavé − |
 | Manette | RT / LT | stick gauche ou croix | A (et RB en classique) | B | RB | X | Y | LB |
 
+Réglage *Conduite* (version HD, *Son et options*) : *Arcade* (la conduite d'origine, nerveuse) ou *Réaliste* (pneus qui glissent au-delà de la limite, poids qui se reporte au freinage et en accélération, boîte automatique avec le rapport au compteur, adhérence plus faible sur le trottoir, l'herbe et sous la pluie). Ultra démarre en *Réaliste*.
+
 Touches communes : F3 mesures de performance (images par seconde, appels de dessin) · N jour/nuit (HD : moment de la journée) · B météo (HD) · M musique (HD : station suivante) · P pixels rétro · Tab classement · 1 à 6 discussion rapide · Échap (ou Start) pause.
 Les manettes vibrent aux chocs, aux tirs reçus et aux explosions (désactivable dans *Son et options*, où se règlent aussi les volumes musique et effets séparément).
 

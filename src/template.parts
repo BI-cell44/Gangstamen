@@ -8,6 +8,7 @@ core/collision.js
 core/geometry.js
 world/city.js
 vehicles/cars.js
+vehicles/physics.js
 fx/effects.js
 audio/sound.js
 core/settings.js

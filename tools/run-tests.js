@@ -93,6 +93,19 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
           for (let i = 0; i < 70; i++) { if (i < 30) { c.vx = 20; c.vz = 0; } __gm.step(1 / 60); } res['h' + air] = Math.round(c.x - tx); } return res; });
       expect(r.h0 < 0 && r.h4 > 3, JSON.stringify(r)); return r;
     });
+    await check('physique réaliste : accélération, freinage, virage, frein à main', async () => {
+      const r = await ev(() => { const c = __gm.locals()[0].car, dt = 1 / 60, keep = [c.x, c.z, c.h, c.style];
+        const run = (setup, inp, T) => { c.phys = null; c.vx = c.vz = 0; c.h = 0; c.x = 500; c.z = 500; c.air = 0; c.steer = 0; c.nitro = 0; c._grip = 1; c.maxV = 44; c.accK = 1; setup && setup(); let maxB = 0, t100 = 0;
+          for (let i = 0; i < T / dt; i++) { __gm.planarReal(c, inp(i * dt), dt); c.x += c.vx * dt; c.z += c.vz * dt; const [fx, fz] = c.fwd, u = c.vx * fx + c.vz * fz, v = c.vx * fz - c.vz * fx; maxB = Math.max(maxB, Math.abs(Math.atan2(v, Math.abs(u) + 0.1))); if (!t100 && c.speed > 27.78) t100 = i * dt; if (!isFinite(c.vx)) return { nan: 1 }; }
+          return { t100, maxB: maxB * 57.3, kmh: c.speed * 3.6, yaw: c.h * 57.3 }; };
+        const out = {};
+        for (const s of Object.keys(__gm.VEHICLES)) { c.style = s;
+          const a = run(null, () => ({ t: 1, s: 0, hb: false }), 12), b = run(() => { c.vz = -30; }, () => ({ t: 0, s: 0.6, hb: false }), 5), h = run(() => { c.vz = -20; }, t => ({ t: 0, s: 1, hb: t < 0.8 }), 1.6);
+          out[s] = [+a.t100.toFixed(1), Math.round(b.maxB), Math.round(Math.abs(h.yaw))]; }
+        c._grip = undefined; c.phys = null; c.style = keep[3]; c.place(keep[0], keep[1], keep[2]); return out; });
+      const bad = Object.entries(r).filter(([k, [t100, beta, hb]]) => !(t100 > 3 && t100 < 9 && beta < 20 && hb > 60));
+      expect(!bad.length, 'hors limites : ' + JSON.stringify(bad)); return r;
+    });
     await check('garages réels', async () => {
       const r = await ev(() => __gm.gx.garages.map(g => g.name)); expect(r.length >= 3, 'garages : ' + r.join(', '));
       await ev(() => { const g = __gm.gx.garages[1], L = __gm.locals()[0]; L.car.place(g.x + 1, g.z + 1, 0); L.car.vx = L.car.vz = 0; for (let i = 0; i < 8; i++) __gm.step(1 / 30); });

@@ -133,6 +133,7 @@ function updateHud(dt) {
   if (locals.length === 1) {
     const L = locals[0], c = L.car;
     $('speed').firstChild.nodeValue = Math.round(c.speed * 3.6);
+    { const sp = $('speed').lastChild, t = c.phys && useRealPhysics(c) ? 'KM/H · ' + c.phys.gear + (c.phys.gear === 1 ? 're' : 'e') : 'KM/H'; if (sp.textContent !== t) sp.textContent = t; } // gear in the realistic mode
     $('hp').style.width = c.hp + '%';
     $('respect').textContent = L.respect; $('kills').textContent = L.kills;
     L.streetAcc += dt; if (L.streetAcc > 0.25) { L.streetAcc = 0; const s = streetAt(c.x, c.z); if (s !== L.street) { L.street = s; $('street').textContent = s; } }
@@ -141,6 +142,7 @@ function updateHud(dt) {
     for (const L of locals) {
       const c = L.car, h = L.hud; if (!h) continue;
       h.ps.firstChild.nodeValue = Math.round(c.speed * 3.6);
+      if (c.phys && useRealPhysics(c)) { const gt = c.phys.gear + (c.phys.gear === 1 ? 're' : 'e'), sp = h.ps.lastChild; if (sp.textContent !== 'KM/H · ' + gt) sp.textContent = 'KM/H · ' + gt; } else if (h.ps.lastChild.textContent !== 'KM/H') h.ps.lastChild.textContent = 'KM/H';
       h.pb.style.width = c.hp + '%';
       h.pr.textContent = 'RESPECT ' + L.respect + (gx && gx.gmode ? ' · POINTS ' : ' · KO ') + L.kills;
       L.streetAcc += dt; if (L.streetAcc > 0.3) { L.streetAcc = 0; const s = streetAt(c.x, c.z); if (s !== L.street) { L.street = s; h.pst.textContent = s; } drawMinimapOn(h.cv, c); }

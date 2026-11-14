@@ -88,7 +88,7 @@ function step(dt, now) {
       if (gx && inp.swap && !L.swHeld) gx.cycleWeapon(L);
       L.swHeld = inp.swap;
       L.specHeld = inp.special;
-      if (L.slot === 0) sfx.engine(c.speed, true);
+      if (L.slot === 0) sfx.engine(engineVoice(c), true);
     } else {
       L.firing = false;
       if (L.slot === 0) sfx.engine(0, false);

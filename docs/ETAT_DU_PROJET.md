@@ -1,6 +1,6 @@
 # État du projet
 
-Mis à jour le 14 novembre 2026 (branche `ultra`, cycles 0 à 3 faits, sources découpées ; prochain : cycle 4, physique automobile v2, puis les retours de jeu notés dans `BACKLOG.md`). À relire en premier avec `CLAUDE.md`.
+Mis à jour le 14 novembre 2026 (branche `ultra`, cycles 0 à 4 faits, sources découpées ; prochain : cycle 5, son v2, ou les retours de jeu notés dans `BACKLOG.md`). À relire en premier avec `CLAUDE.md`.
 
 ## 1. Le jeu aujourd'hui
 
@@ -77,7 +77,8 @@ Mesures dans Chrome sans tête, rendu logiciel, HD, partie solo au départ (`too
 - **Forces** : un seul code pour trois sorties ; données réelles soignées ; chaîne de données reproductible ; build reproductible à l'octet ; beaucoup de systèmes déjà présents (météo, police, campagne, réseau sans latence, intro).
 - **Portée unique** : `template.html` mêle moteur, jeu, interface et réseau ; `gx.js` dépend de dizaines de variables du template (`rivals`, `locals`, `sfx`, `W`, `G`…) sans liste explicite. Ajouter un système demande de connaître tout le fichier.
 - **Collisions** : grille de segments 2D ; depuis le 14 nov., un segment peut porter une hauteur (5e valeur) au-dessus de laquelle une voiture en l'air passe (arbres, lampadaires).
-- **Conduite** : modèle arcade à un corps (vitesse avant, vitesse latérale amortie), pas de boîte de vitesses, pas de transfert de masse, pas de régime moteur ; les 5 modèles ne diffèrent que par l'apparence et quelques coefficients. Bon pour le combat, trop pauvre pour plusieurs catégories de véhicules et des courses.
+- **Conduite (cycle 4)** : deux modèles. *Réaliste* (`vehicles/physics.js`, par défaut sur Ultra, voitures des joueurs locaux) : modèle bicyclette, pneus, report de poids, moteur et boîte, données `VEHICLES` par voiture. *Arcade* (`planarArcade` dans `vehicles/cars.js`) pour les bots, la circulation, la version classique et au choix du joueur. La partie commune de `drive()` gère la Loire, le mouvement vertical, les murs et les bords.
+- **Conduite (avant le cycle 4)** : modèle arcade à un corps (vitesse avant, vitesse latérale amortie), pas de boîte de vitesses, pas de transfert de masse, pas de régime moteur ; les 5 modèles ne diffèrent que par l'apparence et quelques coefficients. Bon pour le combat, trop pauvre pour plusieurs catégories de véhicules et des courses.
 - **Son moteur** : un oscillateur et un filtre suivant la vitesse ; pas de régime, de charge, de passage de rapport ni de crissement lié au glissement.
 - **Caméras** : 3 modes fixes (poursuite proche, haute, capot) ; pas de gestion de collision avec les murs, pas de caméra libre ou photo.
 - **Circulation** : suit le graphe, s'arrête derrière les autres ; pas de feux, de priorités ni de voies ; ignore le tram.

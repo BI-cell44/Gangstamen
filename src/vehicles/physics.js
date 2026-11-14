@@ -1,0 +1,109 @@
+// ---------- driving physics v2 ("réaliste"): a bicycle model with tyres, weight transfer, engine and gearbox ----------
+// Used for the local players' cars when settings.physics === 'real' (HD builds); bots, traffic and the classic build keep
+// the arcade model of drive(). Units: metres, seconds, kilograms, newtons. Car frame: x forward, y to the LEFT, yaw
+// rate r > 0 turns left (c.h grows), like the arcade model. Each car type has its own data (VEHICLES), tuned on the
+// fun side of real (a 90s hot hatch with about 1.5 times its real punch), so that town fights stay lively.
+const VEHICLES = {
+  //          mass  front/rear axle to centre  CG height  peak torque  drive   grip   drag     top gear
+  saloon: { m: 1150, a: 1.22, b: 1.42, h: 0.52, T: 330, drive: 'R', mu: 1.12, cda: 0.70, gears: [3.4, 2.1, 1.48, 1.12, 0.88], fd: 3.9 },
+  p205:   { m: 900,  a: 1.00, b: 1.42, h: 0.50, T: 280, drive: 'F', mu: 1.18, cda: 0.62, gears: [3.3, 2.0, 1.44, 1.10, 0.86], fd: 4.1 },
+  hatch:  { m: 1000, a: 1.05, b: 1.45, h: 0.51, T: 280, drive: 'F', mu: 1.15, cda: 0.66, gears: [3.3, 2.0, 1.44, 1.10, 0.86], fd: 4.0 },
+  r5:     { m: 850,  a: 0.98, b: 1.43, h: 0.49, T: 265, drive: 'F', mu: 1.16, cda: 0.62, gears: [3.4, 2.1, 1.48, 1.12, 0.88], fd: 4.2 },
+  twingo: { m: 800,  a: 0.95, b: 1.40, h: 0.55, T: 200, drive: 'F', mu: 1.10, cda: 0.68, gears: [3.6, 2.2, 1.5, 1.12, 0.86], fd: 4.2 },
+};
+const PHYS = { g: 9.81, rw: 0.30, idle: 900, red: 6800, up: 6300, down: 2600, eff: 0.85, roll: 0.015, airG: 1.35 };
+const vehOf = c => VEHICLES[c.style] || VEHICLES.saloon;
+const useRealPhysics = c => HD && c.local && settings.physics === 'real';
+// grip of the surface under the car: carriageway, pavement, or the rest (grass, gravel); wet roads lose a quarter
+function surfaceGrip(x, z) {
+  const d = roadEdge(x, z)[0];
+  let k = d < 0.3 ? 1 : d < 4 ? 0.93 : 0.68;
+  if (HD && hd.amb && hd.amb.wet) k *= 1 - 0.25 * Math.min(1, hd.amb.wet);
+  return k;
+}
+// engine torque at the crank (N·m) for a given rpm: rises to a peak around 4 000 rpm, falls towards the red line
+function engineTorque(V, rpm) {
+  const x = Math.max(0, Math.min(1, (rpm - PHYS.idle) / (PHYS.red - PHYS.idle)));
+  return V.T * (0.62 + 0.38 * Math.sin(Math.PI * Math.min(1, x * 1.15)));
+}
+// lateral tyre force (simplified magic formula): grows with the slip angle, peaks near 8°, then fades a little
+const tyreY = (alpha, Fz, mu) => mu * Fz * Math.sin(1.35 * Math.atan(9 * alpha));
+// rear tyres: same stiffness but no fall past the peak, and a little more grip than the front. Real enough to feel the
+// weight move, stable enough for a game: the car understeers when pushed, and the handbrake still breaks the rear loose
+const tyreYRear = (alpha, Fz, mu) => mu * 1.15 * Fz * Math.tanh(12.1 * alpha / 1.15);
+
+function planarReal(c, inp, dt) {
+  const V = vehOf(c), L = V.a + V.b, m = V.m, Iz = m * V.a * V.b * 1.05, g = PHYS.g;
+  const ph = c.phys || (c.phys = { gear: 1, rpm: PHYS.idle, ax: 0, r: 0, shift: 0, slipR: 0 });
+  const grip = (c.air > 0.25 ? 0.04 : 1) * (c._grip ?? surfaceGrip(c.x, c.z)), mu = V.mu * grip; // c._grip: test hook
+  const [fx, fz] = c.fwd, rx = -fz, rz = fx;
+  let u = c.vx * fx + c.vz * fz, v = -(c.vx * rx + c.vz * rz); // forward, left
+  let r = ph.r;
+  // steering: smoothed input, less lock at speed (keyboard friendly)
+  c.steer += (inp.s - c.steer) * Math.min(1, dt * 8);
+  const n = Math.max(1, Math.ceil(dt / 0.008)), h = dt / n;
+  const power = (c.accK || 1) * (c.nitro > 0 ? 1.55 : 1), vmax = (c.maxV || 44) * (c.nitro > 0 ? 1.25 : 1);
+  for (let s = 0; s < n; s++) {
+    const spd = Math.abs(u), delta = c.steer * 0.6 / (1 + (spd / 9) ** 2); // speed-sensitive steering: full lock sits near the grip limit at any speed
+    // gearbox (automatic) and engine speed
+    const wheelRpm = u / PHYS.rw * 60 / (2 * Math.PI), ratio = V.gears[ph.gear - 1] * V.fd;
+    ph.rpm = Math.max(PHYS.idle, Math.abs(wheelRpm) * ratio);
+    if (ph.shift > 0) ph.shift -= h;
+    else if (ph.rpm > PHYS.up && ph.gear < V.gears.length && inp.t > 0) { ph.gear++; ph.shift = 0.22; }
+    else if (ph.rpm < PHYS.down && ph.gear > 1) { ph.gear--; ph.shift = 0.12; }
+    // longitudinal forces: engine through the driven wheels, brakes, reverse
+    let Fdrive = 0, Fbrake = 0;
+    if (inp.t > 0 && u > -1) {
+      const tq = engineTorque(V, Math.min(PHYS.red, ph.rpm)) * power * (ph.shift > 0 ? 0.25 : 1);
+      Fdrive = inp.t * tq * ratio * PHYS.eff / PHYS.rw * Math.max(0, Math.min(1, (vmax - u) / 3)); // limiter at the game's top speed
+    } else if (inp.t < 0) {
+      if (u > 0.8) Fbrake = -inp.t * mu * m * g * 1.05; // full braking ~1 g
+      else Fdrive = inp.t * 4200 * Math.max(0, Math.min(1, (13 + u) / 3)); // reverse, up to ~13 m/s
+    } else if (inp.t > 0 && u <= -1) Fbrake = inp.t * mu * m * g; // forward while rolling back: brake first
+    // loads with weight transfer (from last step's acceleration)
+    const Fzf = m * g * V.b / L - m * ph.ax * V.h / L, Fzr = m * g * V.a / L + m * ph.ax * V.h / L;
+    const sgn = u >= 0 ? 1 : -1;
+    let Fxf = 0, Fxr = 0;
+    const bf = Fbrake * 0.65 * -sgn, br = Fbrake * 0.35 * -sgn;
+    if (V.drive === 'F') Fxf = Fdrive; else Fxr = Fdrive;
+    Fxf += bf; Fxr += br;
+    if (inp.hb) Fxr += -sgn * Math.min(Math.abs(u) * m, mu * Fzr * 0.75); // handbrake locks the rear
+    // traction limits (friction circle) and lateral forces
+    const capF = mu * Math.max(0, Fzf), capR = mu * Math.max(0, Fzr) * (inp.hb ? 0.75 : 1);
+    Fxf = Math.max(-capF, Math.min(capF, Fxf)); Fxr = Math.max(-capR, Math.min(capR, Fxr));
+    let Fyf = 0, Fyr = 0;
+    if (spd > 1.5) {
+      const af = delta - Math.atan2(v + V.a * r, spd) * sgn, ar = -Math.atan2(v - V.b * r, spd) * sgn;
+      Fyf = tyreY(af, Math.max(0, Fzf), mu) * Math.sqrt(Math.max(0, 1 - (Fxf / (capF || 1)) ** 2));
+      Fyr = tyreYRear(ar, Math.max(0, Fzr), mu * (inp.hb ? 0.45 : 1)) * Math.sqrt(Math.max(0.15, 1 - (Fxr / (capR || 1)) ** 2));
+      ph.slipR = Math.abs(ar);
+    } else ph.slipR = 0;
+    // resistances
+    const Fres = -(0.5 * 1.2 * V.cda * u * Math.abs(u) + PHYS.roll * m * g * Math.sign(u) * Math.min(1, spd));
+    // equations of motion in the car frame
+    const cosd = Math.cos(delta), sind = Math.sin(delta);
+    const Fx = Fxr + Fxf * cosd - Fyf * sind + Fres, Fy = Fyr + Fyf * cosd + Fxf * sind;
+    let du = Fx / m + v * r, dv = Fy / m - u * r, dr = (V.a * (Fyf * cosd + Fxf * sind) - V.b * Fyr) / Iz;
+    if (spd <= 1.5) { // parking speeds: rolls where the wheels point, no sliding
+      dv = -v * 12; dr = 0; r = u * Math.tan(delta) / L;
+    }
+    // slope of the Chantenay hills
+    const slope = (surfaceH(c.x + fx * 1.7, c.z + fz * 1.7) - surfaceH(c.x - fx * 1.7, c.z - fz * 1.7)) / 3.4;
+    du -= g * slope * (c.air > 0.25 ? 0 : 1);
+    u += du * h; v += dv * h; r += dr * h;
+    if (inp.t === 0 && Fbrake === 0 && Math.abs(u) < 0.3) u *= Math.exp(-6 * h); // comes to rest
+    const axTrue = Math.max(-1.5 * g, Math.min(1.5 * g, Fx / m)); // weight transfer follows the real longitudinal acceleration (forces / mass), not du, which carries the v·r turning term
+    ph.ax = ph.ax + (axTrue - ph.ax) * Math.min(1, h * 10);
+    c.h += r * h;
+  }
+  r = Math.max(-4, Math.min(4, r)); ph.r = r;
+  // drift flag for the effects and the sound: the rear steps out
+  c.drift = ph.slipR > 0.16 && Math.abs(u) > 6 ? 0.8 : Math.max(0, (c.drift || 0) - dt * 2.5);
+  const [nfx, nfz] = c.fwd, nrx = -nfz, nrz = nfx;
+  c.vx = nfx * u - nrx * v; c.vz = nfz * u - nrz * v;
+}
+// the engine note follows the revs in the realistic mode: an equivalent "speed" for sfx.engine
+function engineVoice(c) {
+  if (!c.phys || !useRealPhysics(c)) return c.speed;
+  return Math.max(0, (c.phys.rpm - PHYS.idle) / (PHYS.red - PHYS.idle)) * 38 + 4;
+}

@@ -190,7 +190,7 @@ class Car {
   }
   get speed() { return Math.hypot(this.vx, this.vz); }
   get fwd() { return [-Math.sin(this.h), -Math.cos(this.h)]; }
-  place(x, z, h) { this.x = x; this.z = z; this.h = h; this.vx = this.vz = 0; this.yb = undefined; this.yv = 0; this.air = 0; this.nitro = 0; this.sync(); }
+  place(x, z, h) { this.x = x; this.z = z; this.h = h; this.vx = this.vz = 0; this.yb = undefined; this.yv = 0; this.air = 0; this.nitro = 0; if (this.phys) { this.phys.r = 0; this.phys.gear = 1; this.phys.ax = 0; } this.sync(); }
   sync() {
     const [fx, fz] = this.fwd, rx = -fz, rz = fx;
     const hf = surfaceH(this.x + fx * 1.7, this.z + fz * 1.7), hb = surfaceH(this.x - fx * 1.7, this.z - fz * 1.7);
@@ -203,6 +203,35 @@ class Car {
 }
 
 function drive(c, inp, dt) {
+  const real = useRealPhysics(c);
+  if (real) planarReal(c, inp, dt); else planarArcade(c, inp, dt);
+  const ox = c.x, oz = c.z;
+  c.x += c.vx * dt; c.z += c.vz * dt;
+  if (groundH(c.x, c.z) < WATER_Y + 0.9) { // the Loire is not drivable
+    c.x = ox; c.z = oz; c.vx *= -0.3; c.vz *= -0.3;
+    if (c.player && Math.random() < 0.3) spawnFx(c.x, 0.5, c.z, 0.6, 0x9fc4d8, 0.4, 3, 2);
+  }
+  if (HD) { // vertical motion: crests and bridge ramps throw the car in the air at speed
+    // arcade: strong gravity, damage only on big falls; realistic: 1.35 g, a hard landing hurts sooner
+    const G = real ? 9.81 * PHYS.airG : 22, hurt = real ? 8 : 12, hk = real ? 3 : 1.5;
+    const g = surfaceH(c.x, c.z);
+    if (c.yb === undefined || c.yb < g - 8) { c.yb = g; c.yv = 0; c.air = 0; } // (only when it ends up under the ground: a car flying off the quarry stays in the air)
+    const ny = c.yb + (c.yv || 0) * dt - G / 2 * dt * dt;
+    if (ny > g + 0.14) { c.yv -= G * dt; c.yb = ny; c.air = c.yb - g; }
+    else {
+      if (c.air > 0.4 && c.yv < -6) { spawnFx(c.x, 0.3, c.z, 0.5, 0xffe28a, 0.2, 2, 2); if (c.local) { sfx.hit(); rumbleFor(c.owner, 0.5, 0.5, 150); } if (c.yv < -hurt) damage(c, (-c.yv - hurt) * hk); }
+      c.yv = Math.max(-14, Math.min(14, (g - c.yb) / Math.max(dt, 1e-3))); c.yb = g; c.air = 0;
+    }
+  }
+  let impact = 0;
+  for (let it = 0; it < 2; it++) impact = Math.max(impact, collideWalls(c));
+  if (impact > 0 && c.phys) c.phys.r *= 0.4; // a wall kills the spin
+  c.x = Math.max(CX - HX - 30, Math.min(CX + HX + 30, c.x));
+  c.z = Math.max(CZ - HZ - 30, Math.min(CZ + HZ + 21, c.z));
+  return impact;
+}
+// arcade driving (the original model): forward and lateral speeds, drift on the handbrake; bots and traffic use it
+function planarArcade(c, inp, dt) {
   let MAX = c.maxV || (c.player ? 44 : (c.ai && c.ai.mode === 'hunt' ? 36 : 15));
   const boost = c.nitro > 0 ? 1.6 : 1; MAX *= c.nitro > 0 ? 1.3 : 1;
   const grip = c.air > 0.25 ? 0.08 : 1; // airborne: no traction
@@ -226,27 +255,6 @@ function drive(c, inp, dt) {
   c.h += yaw * dt;
   const [nfx, nfz] = c.fwd, nrx = -nfz, nrz = nfx;
   c.vx = nfx * vf + nrx * vr; c.vz = nfz * vf + nrz * vr;
-  const ox = c.x, oz = c.z;
-  c.x += c.vx * dt; c.z += c.vz * dt;
-  if (groundH(c.x, c.z) < WATER_Y + 0.9) { // the Loire is not drivable
-    c.x = ox; c.z = oz; c.vx *= -0.3; c.vz *= -0.3;
-    if (c.player && Math.random() < 0.3) spawnFx(c.x, 0.5, c.z, 0.6, 0x9fc4d8, 0.4, 3, 2);
-  }
-  if (HD) { // vertical motion: crests and bridge ramps throw the car in the air at speed
-    const g = surfaceH(c.x, c.z);
-    if (c.yb === undefined || c.yb < g - 8) { c.yb = g; c.yv = 0; c.air = 0; } // (only when it ends up under the ground: a car flying off the quarry stays in the air)
-    const ny = c.yb + (c.yv || 0) * dt - 11 * dt * dt;
-    if (ny > g + 0.14) { c.yv -= 22 * dt; c.yb = ny; c.air = c.yb - g; }
-    else {
-      if (c.air > 0.4 && c.yv < -6) { spawnFx(c.x, 0.3, c.z, 0.5, 0xffe28a, 0.2, 2, 2); if (c.local) { sfx.hit(); rumbleFor(c.owner, 0.5, 0.5, 150); } if (c.yv < -12) damage(c, (-c.yv - 12) * 1.5); }
-      c.yv = Math.max(-14, Math.min(14, (g - c.yb) / Math.max(dt, 1e-3))); c.yb = g; c.air = 0;
-    }
-  }
-  let impact = 0;
-  for (let it = 0; it < 2; it++) impact = Math.max(impact, collideWalls(c));
-  c.x = Math.max(CX - HX - 30, Math.min(CX + HX + 30, c.x));
-  c.z = Math.max(CZ - HZ - 30, Math.min(CZ + HZ + 21, c.z));
-  return impact;
 }
 function collideWalls(c) {
   // the car is about 4.4 m by 1.8 m: three circles along its length (front, middle, rear) rather than one big

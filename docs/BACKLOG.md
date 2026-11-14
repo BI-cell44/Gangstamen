@@ -38,13 +38,15 @@
 
 ## Phase 1 : le ressenti de conduite (cycles 4 à 6)
 
-### Cycle 4 : physique automobile v2 ★★★
-- Modèle « bicyclette » avec pneus (force latérale selon l'angle de glissement, adhérence qui sature), transfert de masse à l'accélération et au freinage, sous-virage et survirage, frein à main qui bloque l'arrière.
-- Moteur et boîte automatique : courbe de couple, régime, rapports (et passages visibles au compteur).
-- Paramètres par véhicule dans un tableau de données (masse, puissance, adhérence, centre de gravité, traînée) : base des catégories de véhicules.
-- Surfaces : bitume, pavés, herbe, mouillé (pluie) avec adhérence différente.
+### Cycle 4 : physique automobile v2 ★★★ (fait le 14 nov. 2026 : mode « Réaliste », par défaut sur Ultra ; à régler après essai en vrai)
+- [x] Modèle « bicyclette » avec pneus (force latérale selon l'angle de glissement, adhérence qui sature), transfert de masse à l'accélération et au freinage, sous-virage, frein à main qui bloque l'arrière (`vehicles/physics.js`).
+- [x] Moteur et boîte automatique : courbe de couple, régime, 5 rapports, rapport affiché au compteur, son du moteur qui suit le régime.
+- [x] Paramètres par véhicule dans un tableau de données (`VEHICLES` : masse, empattement, centre de gravité, couple, traction ou propulsion, adhérence, traînée, rapports) : base des catégories de véhicules.
+- [x] Surfaces : chaussée, trottoir, reste (herbe, gravier), mouillé (−25 %).
 - Sauts et collisions en hauteur (retour de l'utilisateur, 14 nov.) : une première correction est faite (les obstacles bas ont une hauteur : troncs 2,2 m environ, lampadaires 6,5 m ; une voiture plus haute passe au-dessus). À reprendre ici : vraie gravité, tangage et roulis en l'air, réception sur les suspensions, collisions par hauteur pour tout le mobilier.
-- Réglage « Conduite : arcade / réaliste » le temps de valider le ressenti ; réseau inchangé (chaque client simule sa voiture).
+- [x] Réglage « Conduite : Arcade / Réaliste » (Son et options) ; réaliste par défaut sur Ultra, arcade ailleurs ; seules les voitures des joueurs locaux l'utilisent (bots, circulation et version classique restent en arcade) ; réseau inchangé.
+- [x] Sauts : gravité 1,35 g en réaliste (22 m/s² en arcade), dégâts à la réception plus tôt et plus forts (une chute de 10 m coûte environ la moitié de la carrosserie).
+- [ ] **À régler après essai en vrai** : sensation au clavier et à la manette, puissance (0 à 100 km/h entre 5,6 et 6,8 s selon la voiture, contre 2 à 3 s en arcade), dérapage de la berline (propulsion), adhérence de l'arrière (volontairement un peu supérieure à l'avant pour ne pas partir en tête-à-queue), tangage et roulis en l'air.
 
 ### Cycle 5 : son v2 ★★★
 - Bus audio : général, musique, effets, ambiance, voix ; atténuation de la musique sous les dialogues.
@@ -101,7 +103,7 @@
 Captures dans `docs/retours/`.
 - [ ] **Police contre Rapaces** : la police doit aussi s'en prendre aux Rapaces (cycle 7 ou avant).
 - [ ] **Piétons qui traversent les murs en fuyant** : la fuite (voiture qui arrive) les décale sans tenir compte des bâtiments ; les garder sur le trottoir ou les arrêter aux murs (cycle 8, ou correctif rapide).
-- [ ] **Dégâts des gros sauts** : à régler avec la physique v2 (cycle 4), avec un mode arcade et un mode plus réaliste.
+- [x] **Dégâts des gros sauts** : faits au cycle 4 (arcade : au-delà de 12 m/s à la réception ; réaliste : au-delà de 8 m/s, deux fois plus forts) ; à régler après essai.
 - [ ] **Véhicules bloqués**, surtout près du pont de la place Jean-Macé : revoir les déplacements de la circulation et des bots (cycle 7, ou correctif rapide).
 - [ ] **Bug d'affichage d'étage dans la carrière Misery** (bâtiment mal posé sur la pente ?).
 - [ ] **Près de la mairie, de l'herbe apparaît selon l'angle de la caméra** : `2026-11-14-boulevard.png` et `2026-11-14-mairie-herbe.png` montrent le **même endroit** (boulevard de la Liberté devant la mairie) sous deux angles ; sur l'une la chaussée et le trottoir sont normaux, sur l'autre une pelouse les recouvre. Piste : conflit de profondeur entre la surface verte (parc ou pelouse OSM, ou sol HD selon la photo aérienne) et la route, qui dépend de la distance et de l'angle ; ou ordre de dessin des tuiles.
