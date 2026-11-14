@@ -73,7 +73,7 @@
       }
     }
     function breakPanel(pn, c) {
-      pn.broken = true; pn.t = 0; setPanel(pn, true);
+      pn.broken = true; pn.t = 0; pn.hp = undefined; setPanel(pn, true);
       const y = surfaceH(pn.x, pn.z), sp = Math.max(5, c.speed), dirx = c.vx / (c.speed || 1), dirz = c.vz / (c.speed || 1);
       const mat = mats[SHAPES[pn.kind][0][0]];
       for (let k = 0; k < (pn.kind === 2 ? 2 : 4); k++) {
@@ -121,5 +121,33 @@
         for (const pn of panels) if (pn.broken && (pn.t += 0.5) > 60 && minPlayerDist(pn.x, pn.z) > 50) { pn.broken = false; setPanel(pn, false); }
       }
     }
-    return { build, step, get count() { return panels.length; }, get broken() { return panels.filter(p => p.broken).length; }, panels, tiles };
+    // (user request) shots and blasts break them too: a bullet stops on the first panel it crosses and wears it down
+    const HP = [6, 16, 9, 12, 45]; // wood, low wall with railing, hedge, gate, garden wall
+    function shoot(ox, oz, dx, dz, range, from, dmg) {
+      if (!built) return range;
+      let best = range, hit = null; const seen = new Set();
+      for (let s = 0; s <= range; s += CELL * 0.5) {
+        const i = Math.floor((ox + dx * s) / CELL), j = Math.floor((oz + dz * s) / CELL), list = grid.get(i * 10000 + j); if (!list) continue;
+        for (const pn of list) {
+          if (pn.broken || seen.has(pn)) continue; seen.add(pn);
+          const ax = pn.x - pn.ca * pn.L / 2, az = pn.z - pn.sa * pn.L / 2, ex = pn.ca * pn.L, ez = pn.sa * pn.L, den = dx * ez - dz * ex; if (Math.abs(den) < 1e-6) continue;
+          const t = ((ax - ox) * ez - (az - oz) * ex) / den, u = ((ax - ox) * dz - (az - oz) * dx) / den;
+          if (t > 0.5 && t < best && u >= 0 && u <= 1) { best = t; hit = pn; }
+        }
+        if (hit && s > best + CELL) break;
+      }
+      if (!hit) return range;
+      hit.hp = (hit.hp ?? HP[hit.kind]) - dmg;
+      const y = surfaceH(hit.x, hit.z); hd.spark && hd.spark(ox + dx * best, y + 0.8, oz + dz * best, -dx * 3, 1.5, -dz * 3, 0.25);
+      if (hit.hp <= 0) breakPanel(hit, { speed: 9, vx: dx * 9, vz: dz * 9, local: !!(from && from.local), owner: from && from.owner });
+      return best;
+    }
+    function blast(x, z, r, from) {
+      if (!built) return;
+      for (let i = Math.floor((x - r) / CELL); i <= Math.floor((x + r) / CELL); i++) for (let j = Math.floor((z - r) / CELL); j <= Math.floor((z + r) / CELL); j++) {
+        const list = grid.get(i * 10000 + j); if (!list) continue;
+        for (const pn of list) { if (pn.broken) continue; const d = Math.hypot(pn.x - x, pn.z - z); if (d < r && (pn.kind !== 4 || d < r * 0.5)) { const ux = (pn.x - x) / (d || 1), uz = (pn.z - z) / (d || 1); breakPanel(pn, { speed: 14, vx: ux * 14, vz: uz * 14, local: !!(from && from.local), owner: from && from.owner }); } }
+      }
+    }
+    return { build, step, shoot, blast, get count() { return panels.length; }, get broken() { return panels.filter(p => p.broken).length; }, panels, tiles };
   })();

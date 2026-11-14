@@ -3259,6 +3259,7 @@ function updateFx(dt) {
   }
 }
 function explode(x, z) {
+  if (gx && gx.Fences) gx.Fences.blast(x, z, 7);
   if (HD) return hd.explode(x, z);
   for (let i = 0; i < 10; i++) spawnFx(x + (Math.random() - .5) * 3, 1 + Math.random() * 2, z + (Math.random() - .5) * 3, 1.2 + Math.random(), i % 2 ? 0xffb03a : 0xff5a1f, 0.7, 3, 2.5);
   for (let i = 0; i < 8; i++) spawnFx(x, 2, z, 1.5, 0x2a2228, 2.2, 4, 3);
@@ -4481,6 +4482,7 @@ function shoot(from, targets, dmg, range, spread, enemy) {
     const perp = Math.abs(px * dz - pz * dx);
     if (perp < 1.9) { best = along; hitCar = t; }
   }
+  if (!hitCar && gx && gx.Fences) best = gx.Fences.shoot(ox, oz, dx, dz, best, from, dmg); // a fence in the way takes the bullet (and breaks)
   const ex = ox + dx * best, ez = oz + dz * best;
   tracer(ox, oy, oz, ex, tracerEnd(ox, oy, oz, ex, ez, hitCar), ez, enemy, dx, dz);
   sfx.gun(enemy);
@@ -5426,6 +5428,7 @@ const gx = !HD ? null : (() => {
   }
   function removeNpc(c) { // free what belongs to this car only (wheels and common materials are shared)
     const i = npcs.indexOf(c); if (i >= 0) npcs.splice(i, 1); scene.remove(c.mesh);
+    if (c._hl) { scene.remove(c._hl); c._hl.geometry.dispose(); c._hl = null; } // headlight pool (cycle 8, laid on the ground)
     c.mesh.traverse(o => {
       if (o.geometry && !o.geometry.userData.shared) o.geometry.dispose();
       for (const m of [].concat(o.material || [])) if (!m.userData.shared) { if (m.map) m.map.dispose(); m.dispose(); }
@@ -5576,13 +5579,40 @@ const gx = !HD ? null : (() => {
     if (stars(L) > before) { flashFor(L, '★'.repeat(stars(L)) + ' POLICE', stars(L) === 1 ? 'Les flics ont vu ça' : stars(L) >= 4 ? 'Toutes les patrouilles sur vous' : 'Renforts en route'); if (gx.dj) gx.dj('police', stars(L)); }
   }
   function policeOn() { return !(mission && mission.noPolice); }
+  // (user request) the real police station near the town hall (OpenStreetMap amenity=police, « Police nationale ») is
+  // the base: patrols and reinforcements leave from its door when it is not right under the player's nose
+  const HQ = { x: 170, z: -343, node: -1, built: false };
+  function hqNode(minD = 70, maxD = 520) {
+    if (HQ.node < 0) { let bd = 1e18; for (let i = 0; i < G.x.length; i++) { if (!nodeOk(i) || !G.out[i].length) continue; const d = (G.x[i] - HQ.x) ** 2 + (G.z[i] - HQ.z) ** 2; if (d < bd) { bd = d; HQ.node = i; } } }
+    const d = minPlayerDist(G.x[HQ.node], G.z[HQ.node]);
+    return d > minD && d < maxD && !npcs.some(o => near(o, G.x[HQ.node], G.z[HQ.node]) < 10) ? HQ.node : -1;
+  }
+  function buildHQ() { // a sign on a post, a blue lamp and two parked police cars in front of the station
+    if (HQ.built || !hd) return; HQ.built = true; hqNode(-1, 1e9);
+    const nx = G.x[HQ.node], nz = G.z[HQ.node], dx = HQ.x - nx, dz = HQ.z - nz, L = Math.hypot(dx, dz) || 1, ux = dx / L, uz = dz / L; // from the street towards the building
+    const sx = nx + ux * Math.min(L - 3, 7), sz = nz + uz * Math.min(L - 3, 7), y = surfaceH(sx, sz), g = new THREE.Group();
+    const [cv, cg] = canvas(512, 128); cg.fillStyle = '#1b2f8a'; cg.fillRect(0, 0, 512, 128); cg.strokeStyle = '#ffffff'; cg.lineWidth = 6; cg.strokeRect(6, 6, 500, 116);
+    cg.fillStyle = '#ffffff'; cg.font = 'bold 54px Arial, sans-serif'; cg.textAlign = 'center'; cg.textBaseline = 'middle'; cg.fillText('POLICE', 256, 46); cg.font = 'bold 30px Arial, sans-serif'; cg.fillText('NATIONALE', 256, 96);
+    const tx = new THREE.CanvasTexture(cv); tx.encoding = THREE.sRGBEncoding;
+    const post = new THREE.MeshStandardMaterial({ color: hd.lin(0x2a2a2e), roughness: 0.5, metalness: 0.6 }), sm = new THREE.MeshStandardMaterial({ map: tx, emissive: 0xffffff, emissiveMap: tx, emissiveIntensity: 0.35, roughness: 0.5 });
+    const sign = new THREE.Mesh(new THREE.BoxGeometry(3, 0.75, 0.1), [post, post, post, post, sm, sm]); sign.position.y = 3.2; g.add(sign);
+    const pl = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 3.2, 8), post); pl.position.y = 1.6; pl.castShadow = true; g.add(pl);
+    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.4, 0.6, 4) })); lamp.position.y = 3.75; g.add(lamp);
+    g.position.set(sx, y, sz); g.rotation.y = Math.atan2(-ux, -uz); g.traverse(o => { o.userData.hdLinear = true; }); scene.add(g);
+    gridAdd([sx - 0.1, sz, sx + 0.1, sz], 0.4);
+    for (const k of [-1, 1]) { // parked along the kerb, nose to tail
+      const m = makeCar(0xeef0f2, 0x1b2f8a, false, 'saloon', { guns: false, police: true }), px = nx + ux * 4.2 + uz * k * 3.2, pz = nz + uz * 4.2 - ux * k * 3.2;
+      m.position.set(px, surfaceH(px, pz) + 0.34, pz); m.rotation.y = Math.atan2(uz, -ux); scene.add(m);
+      gridAdd([px - uz * 2, pz + ux * 2, px + uz * 2, pz - ux * 2], 3.5);
+    }
+  }
   function spawnCop(L) {
-    const n = spawnNode(110, 220); if (n < 0) return;
+    let n = R() < 0.6 ? hqNode() : -1; if (n < 0) n = spawnNode(110, 220); if (n < 0) return; // from the station when possible
     const c = makeNpc('cop'); placeOnGraph(c, n); c.ai = { mode: 'hunt' }; c.chase = L; c.lost = 0; c.fireCd = 1; npcs.push(c);
   }
   // patrol: a police car that drives like the traffic until it sees a Rapace (or the player gets wanted)
   function spawnPatrol() {
-    const n = spawnNode(120, 240); if (n < 0) return;
+    let n = R() < 0.6 ? hqNode(90, 600) : -1; if (n < 0) n = spawnNode(120, 240); if (n < 0) return;
     const c = makeNpc('cop'); placeOnGraph(c, n); c.lost = 0; c.fireCd = 1; c.lookT = 0; npcs.push(c);
   }
   function patrolLook(c, dt) {
@@ -6010,7 +6040,7 @@ const gx = !HD ? null : (() => {
     shoutCd -= dt;
     const B = budget();
     // traffic: top up, remove the far ones and the wrecks
-    trafficSetup(); lightsTick(dt); busTick(dt);
+    trafficSetup(); buildHQ(); lightsTick(dt); busTick(dt);
     const civs = npcs.filter(c => c.npc === 'civ' && !c.bus).length;
     if (civs < Math.round(B.civ * densityNow()) && R() < dt * 4) spawnCiv();
     // a police patrol now and then (it goes for the Rapaces it sees; cycle 7)
@@ -6060,20 +6090,37 @@ const gx = !HD ? null : (() => {
   }
   function pedsByHour() { const h = Soundscape.hourNow(); return h < 6 ? 0.25 : h < 8 ? 0.6 : h < 20 ? 1 : h < 23 ? 0.75 : 0.45; }
   function terraceFill() { const h = Soundscape.hourNow(); return h < 7 ? 0 : h < 11 ? 0.3 : h < 15 ? 0.85 : h < 19 ? 0.45 : h < 24 ? 1 : 0; }
-  // at night every car lights the road in front of it (a soft pool under the headlights; the players' cars have a real light)
-  let hlMat = null, hlGeo = null;
+  // at night every car lights the road in front of it: a soft pool that lies on the ground. (It used to be a flat
+  // rectangle fixed to the car, which tilted with it and cut into the road; user feedback.) The pool is a small grid in
+  // world space, laid on the relief in front of the car, trapezoid-shaped like a headlight beam.
+  let hlMat = null; const HLX = 4, HLZ = 7;
+  function hlGeo() {
+    const g = new THREE.BufferGeometry(), n = (HLX + 1) * (HLZ + 1), uv = new Float32Array(n * 2), idx = [];
+    for (let j = 0; j <= HLZ; j++) for (let i = 0; i <= HLX; i++) { const k = j * (HLX + 1) + i; uv[k * 2] = i / HLX; uv[k * 2 + 1] = j / HLZ; }
+    for (let j = 0; j < HLZ; j++) for (let i = 0; i < HLX; i++) { const k = j * (HLX + 1) + i; idx.push(k, k + HLX + 1, k + 1, k + 1, k + HLX + 1, k + HLX + 2); }
+    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3)); g.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); g.setIndex(idx);
+    return g;
+  }
+  function layPool(c) {
+    const p = c._hl.geometry.attributes.position, a = p.array, [fx, fz] = c.fwd, rx = -fz, rz = fx;
+    for (let j = 0; j <= HLZ; j++) { const along = 2.4 + 11 * j / HLZ, half = 1.1 + 1.6 * j / HLZ;
+      for (let i = 0; i <= HLX; i++) { const k = (j * (HLX + 1) + i) * 3, side = (i / HLX - 0.5) * 2 * half, x = c.x + fx * along + rx * side, z = c.z + fz * along + rz * side; a[k] = x; a[k + 1] = surfaceH(x, z) + 0.09; a[k + 2] = z; } }
+    p.needsUpdate = true; c._hl.geometry.computeBoundingSphere();
+  }
   function headlights() {
     const night = hd.amb && hd.amb.t > 1.6;
     if (!hlMat) {
-      const [cv, g] = canvas(64, 128), gr = g.createRadialGradient(32, 18, 2, 32, 40, 70); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.45, 'rgba(255,255,255,0.35)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+      const [cv, g] = canvas(64, 128), gr = g.createRadialGradient(32, 10, 2, 32, 46, 80); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.45, 'rgba(255,255,255,0.35)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
       g.fillStyle = gr; g.fillRect(0, 0, 64, 128);
-      hlMat = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cv), color: new THREE.Color(0.9, 0.8, 0.55), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
-      hlGeo = new THREE.PlaneGeometry(5, 11).rotateX(-Math.PI / 2).translate(0, 0.06, -8.2); hlMat.userData.shared = hlGeo.userData.shared = true;
+      hlMat = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cv), color: new THREE.Color(0.75, 0.66, 0.45), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
+      hlMat.userData.shared = true;
     }
     for (const c of [...rivals, ...npcs, ...extras]) {
       if (!c.mesh) continue;
-      if (!c._hl) { if (!night) continue; c._hl = new THREE.Mesh(hlGeo, hlMat); c._hl.renderOrder = 3; c._hl.userData.hdLinear = true; c.mesh.add(c._hl); }
-      c._hl.visible = night && c.alive && c.mesh.visible && minPlayerDist(c.x, c.z) < 140;
+      const on = night && c.alive && c.mesh.visible && minPlayerDist(c.x, c.z) < 140 && (c.air || 0) < 0.5;
+      if (!c._hl) { if (!on) continue; c._hl = new THREE.Mesh(hlGeo(), hlMat); c._hl.renderOrder = 3; c._hl.userData.hdLinear = true; c._hl.frustumCulled = false; scene.add(c._hl); }
+      c._hl.visible = on; if (on) layPool(c);
+      if (!c.mesh.parent && c._hl.parent) { scene.remove(c._hl); c._hl.geometry.dispose(); c._hl = null; } // the car was removed
     }
   }
   function updateWanted() {
@@ -6882,7 +6929,7 @@ const gx = !HD ? null : (() => {
       }
     }
     function breakPanel(pn, c) {
-      pn.broken = true; pn.t = 0; setPanel(pn, true);
+      pn.broken = true; pn.t = 0; pn.hp = undefined; setPanel(pn, true);
       const y = surfaceH(pn.x, pn.z), sp = Math.max(5, c.speed), dirx = c.vx / (c.speed || 1), dirz = c.vz / (c.speed || 1);
       const mat = mats[SHAPES[pn.kind][0][0]];
       for (let k = 0; k < (pn.kind === 2 ? 2 : 4); k++) {
@@ -6930,7 +6977,35 @@ const gx = !HD ? null : (() => {
         for (const pn of panels) if (pn.broken && (pn.t += 0.5) > 60 && minPlayerDist(pn.x, pn.z) > 50) { pn.broken = false; setPanel(pn, false); }
       }
     }
-    return { build, step, get count() { return panels.length; }, get broken() { return panels.filter(p => p.broken).length; }, panels, tiles };
+    // (user request) shots and blasts break them too: a bullet stops on the first panel it crosses and wears it down
+    const HP = [6, 16, 9, 12, 45]; // wood, low wall with railing, hedge, gate, garden wall
+    function shoot(ox, oz, dx, dz, range, from, dmg) {
+      if (!built) return range;
+      let best = range, hit = null; const seen = new Set();
+      for (let s = 0; s <= range; s += CELL * 0.5) {
+        const i = Math.floor((ox + dx * s) / CELL), j = Math.floor((oz + dz * s) / CELL), list = grid.get(i * 10000 + j); if (!list) continue;
+        for (const pn of list) {
+          if (pn.broken || seen.has(pn)) continue; seen.add(pn);
+          const ax = pn.x - pn.ca * pn.L / 2, az = pn.z - pn.sa * pn.L / 2, ex = pn.ca * pn.L, ez = pn.sa * pn.L, den = dx * ez - dz * ex; if (Math.abs(den) < 1e-6) continue;
+          const t = ((ax - ox) * ez - (az - oz) * ex) / den, u = ((ax - ox) * dz - (az - oz) * dx) / den;
+          if (t > 0.5 && t < best && u >= 0 && u <= 1) { best = t; hit = pn; }
+        }
+        if (hit && s > best + CELL) break;
+      }
+      if (!hit) return range;
+      hit.hp = (hit.hp ?? HP[hit.kind]) - dmg;
+      const y = surfaceH(hit.x, hit.z); hd.spark && hd.spark(ox + dx * best, y + 0.8, oz + dz * best, -dx * 3, 1.5, -dz * 3, 0.25);
+      if (hit.hp <= 0) breakPanel(hit, { speed: 9, vx: dx * 9, vz: dz * 9, local: !!(from && from.local), owner: from && from.owner });
+      return best;
+    }
+    function blast(x, z, r, from) {
+      if (!built) return;
+      for (let i = Math.floor((x - r) / CELL); i <= Math.floor((x + r) / CELL); i++) for (let j = Math.floor((z - r) / CELL); j <= Math.floor((z + r) / CELL); j++) {
+        const list = grid.get(i * 10000 + j); if (!list) continue;
+        for (const pn of list) { if (pn.broken) continue; const d = Math.hypot(pn.x - x, pn.z - z); if (d < r && (pn.kind !== 4 || d < r * 0.5)) { const ux = (pn.x - x) / (d || 1), uz = (pn.z - z) / (d || 1); breakPanel(pn, { speed: 14, vx: ux * 14, vz: uz * 14, local: !!(from && from.local), owner: from && from.owner }); } }
+      }
+    }
+    return { build, step, shoot, blast, get count() { return panels.length; }, get broken() { return panels.filter(p => p.broken).length; }, panels, tiles };
   })();
   // =====================================================================================
   // the campaign: seven missions in the spirit of a 70s/90s car-combat B-movie
@@ -7468,6 +7543,7 @@ const gx = !HD ? null : (() => {
     { id: 'gare', name: 'Gare de Chantenay', x: -322, z: 580, r: 32, text: 'La petite gare du quartier, au bord des voies.' },
     { id: 'maritime', name: 'Gare maritime', x: 1285, z: -440, r: 45, text: 'Les quais, le fleuve et les bateaux d’autrefois.' },
     { id: 'titan', name: 'Grue Titan', x: 1690, z: -430, r: 170, text: 'La grue jaune de 1954, en face, à la pointe de l’île de Nantes.' },
+    { id: 'police', name: 'Commissariat', x: 170, z: -343, r: 30, text: 'Le commissariat de police nationale, près de la mairie : c’est d’ici que partent les patrouilles.' },
     { id: 'temple', name: 'Temple antoiniste', x: 89, z: -374, r: 26, text: 'Un temple antoiniste, une rareté dans l’Ouest.' },
   ];
   let discT = 0;
@@ -7746,7 +7822,7 @@ const gx = !HD ? null : (() => {
     if (LM.titanLights) LM.titanLights.color.setRGB((performance.now() / 700 | 0) % 2 ? 8 * n + 0.6 : 0.4, 0.3, 0.2);
   }
   { const el = $('ammo'); if (el) { el.style.pointerEvents = 'auto'; el.style.cursor = 'pointer'; el.addEventListener('pointerdown', e => { e.preventDefault(); if (locals[0]) cycleWeapon(locals[0]); }); } }
-  const api = { netIn, dj, cycleWeapon, hearShot, quickChat, chatIn, step: gameStep, world, landmarkTick, tick, start: startHook, cars: () => npcs.concat(extras), copsOn, shieldHit, spots: SPOTS, unlocked, postcards, acts: () => (actsBuild(), acts), actRun: () => run, startAct, hearCars: carsHearShot, traffic: TF, Fences, lightState, roadRules, makeNpc, placeOnGraph, nextNode, spawnPatrol, npcs: () => npcs, damage: damageNpc, addHeat, say, peds: () => peds, stars, special, startMission, renderCampaign, cleanupMission, MISSIONS,
+  const api = { netIn, dj, cycleWeapon, hearShot, quickChat, chatIn, step: gameStep, world, landmarkTick, tick, start: startHook, cars: () => npcs.concat(extras), copsOn, shieldHit, policeHQ: HQ, hqNode, spots: SPOTS, unlocked, postcards, acts: () => (actsBuild(), acts), actRun: () => run, startAct, hearCars: carsHearShot, traffic: TF, Fences, lightState, roadRules, makeNpc, placeOnGraph, nextNode, spawnPatrol, npcs: () => npcs, damage: damageNpc, addHeat, say, peds: () => peds, stars, special, startMission, renderCampaign, cleanupMission, MISSIONS,
     get gmode() { return gm ? gm.kind : 0; }, mines: () => mines, customers: () => customers, teamScores: modeTeamScores, goalText, rematch: rematchMode,
     get blocking() { return blocking; }, get mission() { return mission; }, foes: () => extras.filter(c => c.alive && c.team === 1), saveBank, pus: () => pus, furniture: () => furniture, garage: GARAGE, garages: GARAGES,
     get onGarage() { return gx_onGarage; },

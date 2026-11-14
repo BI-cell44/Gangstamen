@@ -41,6 +41,7 @@ function shoot(from, targets, dmg, range, spread, enemy) {
     const perp = Math.abs(px * dz - pz * dx);
     if (perp < 1.9) { best = along; hitCar = t; }
   }
+  if (!hitCar && gx && gx.Fences) best = gx.Fences.shoot(ox, oz, dx, dz, best, from, dmg); // a fence in the way takes the bullet (and breaks)
   const ex = ox + dx * best, ez = oz + dz * best;
   tracer(ox, oy, oz, ex, tracerEnd(ox, oy, oz, ex, ez, hitCar), ez, enemy, dx, dz);
   sfx.gun(enemy);

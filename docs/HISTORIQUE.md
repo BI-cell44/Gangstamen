@@ -18,6 +18,7 @@ Ce qui a été construit, dans l'ordre. Le détail de chaque changement est dans
 | 14 nov. 2026 | Carte agrandie (Sainte-Anne, quai de la Fosse), tram ligne 1, barrières, église et escalier Sainte-Anne, garages réels ; radio Pin-pon selon la vraie voiture, terrasses, mort en mission, message de KO, changement d'arme | `main` f20574b |
 | 14 nov. 2026 | Branche `ultra` : audit, feuille de route, réorganisation de la documentation (`CLAUDE.md`, `docs/`), artifact Gangstamen Ultra | `ultra` |
 | 14 nov. 2026 | Ultra : sources découpées par système (D-12), sorties identiques à l'octet | `ultra` |
+| 14 nov. 2026 | Ultra : phares des voitures posés au sol, commissariat réel comme base de la police, clôtures cassées par les tirs et les explosions ; `main` : corrections d'Ultra reportées (eau, piétons, bouclier, radio, bots hors carte), artifacts classique et HD republiés | `ultra`, `main`, `server` |
 | 14 nov. 2026 | Ultra, cycle 14 (monde ouvert) : 10 cartes postales à découvrir, déblocages (coupé sport, voiture de police, défi police) ; fin de la feuille de route des phases 0 à 3 | `ultra` |
 | 14 nov. 2026 | Ultra, cycle 13 (véhicules) : coupé sport, utilitaire et voiture de police jouables, chacun avec sa conduite, son son, sa résistance et sa masse | `ultra` |
 | 14 nov. 2026 | Ultra, cycle 12 (garage) : ateliers ouverts où l'on entre pour ouvrir le menu, voitures à acheter et à garder, réglages par voiture (boîte, pneus, freins), couleur libre, jantes, vitres teintées, aileron | `ultra` |

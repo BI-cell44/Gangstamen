@@ -9,13 +9,40 @@
     if (stars(L) > before) { flashFor(L, '★'.repeat(stars(L)) + ' POLICE', stars(L) === 1 ? 'Les flics ont vu ça' : stars(L) >= 4 ? 'Toutes les patrouilles sur vous' : 'Renforts en route'); if (gx.dj) gx.dj('police', stars(L)); }
   }
   function policeOn() { return !(mission && mission.noPolice); }
+  // (user request) the real police station near the town hall (OpenStreetMap amenity=police, « Police nationale ») is
+  // the base: patrols and reinforcements leave from its door when it is not right under the player's nose
+  const HQ = { x: 170, z: -343, node: -1, built: false };
+  function hqNode(minD = 70, maxD = 520) {
+    if (HQ.node < 0) { let bd = 1e18; for (let i = 0; i < G.x.length; i++) { if (!nodeOk(i) || !G.out[i].length) continue; const d = (G.x[i] - HQ.x) ** 2 + (G.z[i] - HQ.z) ** 2; if (d < bd) { bd = d; HQ.node = i; } } }
+    const d = minPlayerDist(G.x[HQ.node], G.z[HQ.node]);
+    return d > minD && d < maxD && !npcs.some(o => near(o, G.x[HQ.node], G.z[HQ.node]) < 10) ? HQ.node : -1;
+  }
+  function buildHQ() { // a sign on a post, a blue lamp and two parked police cars in front of the station
+    if (HQ.built || !hd) return; HQ.built = true; hqNode(-1, 1e9);
+    const nx = G.x[HQ.node], nz = G.z[HQ.node], dx = HQ.x - nx, dz = HQ.z - nz, L = Math.hypot(dx, dz) || 1, ux = dx / L, uz = dz / L; // from the street towards the building
+    const sx = nx + ux * Math.min(L - 3, 7), sz = nz + uz * Math.min(L - 3, 7), y = surfaceH(sx, sz), g = new THREE.Group();
+    const [cv, cg] = canvas(512, 128); cg.fillStyle = '#1b2f8a'; cg.fillRect(0, 0, 512, 128); cg.strokeStyle = '#ffffff'; cg.lineWidth = 6; cg.strokeRect(6, 6, 500, 116);
+    cg.fillStyle = '#ffffff'; cg.font = 'bold 54px Arial, sans-serif'; cg.textAlign = 'center'; cg.textBaseline = 'middle'; cg.fillText('POLICE', 256, 46); cg.font = 'bold 30px Arial, sans-serif'; cg.fillText('NATIONALE', 256, 96);
+    const tx = new THREE.CanvasTexture(cv); tx.encoding = THREE.sRGBEncoding;
+    const post = new THREE.MeshStandardMaterial({ color: hd.lin(0x2a2a2e), roughness: 0.5, metalness: 0.6 }), sm = new THREE.MeshStandardMaterial({ map: tx, emissive: 0xffffff, emissiveMap: tx, emissiveIntensity: 0.35, roughness: 0.5 });
+    const sign = new THREE.Mesh(new THREE.BoxGeometry(3, 0.75, 0.1), [post, post, post, post, sm, sm]); sign.position.y = 3.2; g.add(sign);
+    const pl = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 3.2, 8), post); pl.position.y = 1.6; pl.castShadow = true; g.add(pl);
+    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.4, 0.6, 4) })); lamp.position.y = 3.75; g.add(lamp);
+    g.position.set(sx, y, sz); g.rotation.y = Math.atan2(-ux, -uz); g.traverse(o => { o.userData.hdLinear = true; }); scene.add(g);
+    gridAdd([sx - 0.1, sz, sx + 0.1, sz], 0.4);
+    for (const k of [-1, 1]) { // parked along the kerb, nose to tail
+      const m = makeCar(0xeef0f2, 0x1b2f8a, false, 'saloon', { guns: false, police: true }), px = nx + ux * 4.2 + uz * k * 3.2, pz = nz + uz * 4.2 - ux * k * 3.2;
+      m.position.set(px, surfaceH(px, pz) + 0.34, pz); m.rotation.y = Math.atan2(uz, -ux); scene.add(m);
+      gridAdd([px - uz * 2, pz + ux * 2, px + uz * 2, pz - ux * 2], 3.5);
+    }
+  }
   function spawnCop(L) {
-    const n = spawnNode(110, 220); if (n < 0) return;
+    let n = R() < 0.6 ? hqNode() : -1; if (n < 0) n = spawnNode(110, 220); if (n < 0) return; // from the station when possible
     const c = makeNpc('cop'); placeOnGraph(c, n); c.ai = { mode: 'hunt' }; c.chase = L; c.lost = 0; c.fireCd = 1; npcs.push(c);
   }
   // patrol: a police car that drives like the traffic until it sees a Rapace (or the player gets wanted)
   function spawnPatrol() {
-    const n = spawnNode(120, 240); if (n < 0) return;
+    let n = R() < 0.6 ? hqNode(90, 600) : -1; if (n < 0) n = spawnNode(120, 240); if (n < 0) return;
     const c = makeNpc('cop'); placeOnGraph(c, n); c.lost = 0; c.fireCd = 1; c.lookT = 0; npcs.push(c);
   }
   function patrolLook(c, dt) {

@@ -334,5 +334,19 @@
   "simMs": 1,
   "loadS": 5,
   "failed": 0
+ },
+ {
+  "date": "2026-11-14T18:27",
+  "label": "retours du soir : phares, tirs sur clôtures, commissariat",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 557,
+  "trianglesK": 929,
+  "meshes": 2248,
+  "geometries": 1838,
+  "materials": 405,
+  "heapMB": 242,
+  "simMs": 6.3,
+  "loadS": 21,
+  "failed": 0
  }
 ]

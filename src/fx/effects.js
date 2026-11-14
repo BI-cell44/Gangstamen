@@ -23,6 +23,7 @@ function updateFx(dt) {
   }
 }
 function explode(x, z) {
+  if (gx && gx.Fences) gx.Fences.blast(x, z, 7);
   if (HD) return hd.explode(x, z);
   for (let i = 0; i < 10; i++) spawnFx(x + (Math.random() - .5) * 3, 1 + Math.random() * 2, z + (Math.random() - .5) * 3, 1.2 + Math.random(), i % 2 ? 0xffb03a : 0xff5a1f, 0.7, 3, 2.5);
   for (let i = 0; i < 8; i++) spawnFx(x, 2, z, 1.5, 0x2a2228, 2.2, 4, 3);

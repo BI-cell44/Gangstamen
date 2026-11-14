@@ -137,6 +137,7 @@
   }
   function removeNpc(c) { // free what belongs to this car only (wheels and common materials are shared)
     const i = npcs.indexOf(c); if (i >= 0) npcs.splice(i, 1); scene.remove(c.mesh);
+    if (c._hl) { scene.remove(c._hl); c._hl.geometry.dispose(); c._hl = null; } // headlight pool (cycle 8, laid on the ground)
     c.mesh.traverse(o => {
       if (o.geometry && !o.geometry.userData.shared) o.geometry.dispose();
       for (const m of [].concat(o.material || [])) if (!m.userData.shared) { if (m.map) m.map.dispose(); m.dispose(); }

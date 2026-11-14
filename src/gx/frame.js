@@ -4,7 +4,7 @@
     shoutCd -= dt;
     const B = budget();
     // traffic: top up, remove the far ones and the wrecks
-    trafficSetup(); lightsTick(dt); busTick(dt);
+    trafficSetup(); buildHQ(); lightsTick(dt); busTick(dt);
     const civs = npcs.filter(c => c.npc === 'civ' && !c.bus).length;
     if (civs < Math.round(B.civ * densityNow()) && R() < dt * 4) spawnCiv();
     // a police patrol now and then (it goes for the Rapaces it sees; cycle 7)
@@ -54,20 +54,37 @@
   }
   function pedsByHour() { const h = Soundscape.hourNow(); return h < 6 ? 0.25 : h < 8 ? 0.6 : h < 20 ? 1 : h < 23 ? 0.75 : 0.45; }
   function terraceFill() { const h = Soundscape.hourNow(); return h < 7 ? 0 : h < 11 ? 0.3 : h < 15 ? 0.85 : h < 19 ? 0.45 : h < 24 ? 1 : 0; }
-  // at night every car lights the road in front of it (a soft pool under the headlights; the players' cars have a real light)
-  let hlMat = null, hlGeo = null;
+  // at night every car lights the road in front of it: a soft pool that lies on the ground. (It used to be a flat
+  // rectangle fixed to the car, which tilted with it and cut into the road; user feedback.) The pool is a small grid in
+  // world space, laid on the relief in front of the car, trapezoid-shaped like a headlight beam.
+  let hlMat = null; const HLX = 4, HLZ = 7;
+  function hlGeo() {
+    const g = new THREE.BufferGeometry(), n = (HLX + 1) * (HLZ + 1), uv = new Float32Array(n * 2), idx = [];
+    for (let j = 0; j <= HLZ; j++) for (let i = 0; i <= HLX; i++) { const k = j * (HLX + 1) + i; uv[k * 2] = i / HLX; uv[k * 2 + 1] = j / HLZ; }
+    for (let j = 0; j < HLZ; j++) for (let i = 0; i < HLX; i++) { const k = j * (HLX + 1) + i; idx.push(k, k + HLX + 1, k + 1, k + 1, k + HLX + 1, k + HLX + 2); }
+    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3)); g.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); g.setIndex(idx);
+    return g;
+  }
+  function layPool(c) {
+    const p = c._hl.geometry.attributes.position, a = p.array, [fx, fz] = c.fwd, rx = -fz, rz = fx;
+    for (let j = 0; j <= HLZ; j++) { const along = 2.4 + 11 * j / HLZ, half = 1.1 + 1.6 * j / HLZ;
+      for (let i = 0; i <= HLX; i++) { const k = (j * (HLX + 1) + i) * 3, side = (i / HLX - 0.5) * 2 * half, x = c.x + fx * along + rx * side, z = c.z + fz * along + rz * side; a[k] = x; a[k + 1] = surfaceH(x, z) + 0.09; a[k + 2] = z; } }
+    p.needsUpdate = true; c._hl.geometry.computeBoundingSphere();
+  }
   function headlights() {
     const night = hd.amb && hd.amb.t > 1.6;
     if (!hlMat) {
-      const [cv, g] = canvas(64, 128), gr = g.createRadialGradient(32, 18, 2, 32, 40, 70); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.45, 'rgba(255,255,255,0.35)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+      const [cv, g] = canvas(64, 128), gr = g.createRadialGradient(32, 10, 2, 32, 46, 80); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.45, 'rgba(255,255,255,0.35)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
       g.fillStyle = gr; g.fillRect(0, 0, 64, 128);
-      hlMat = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cv), color: new THREE.Color(0.9, 0.8, 0.55), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
-      hlGeo = new THREE.PlaneGeometry(5, 11).rotateX(-Math.PI / 2).translate(0, 0.06, -8.2); hlMat.userData.shared = hlGeo.userData.shared = true;
+      hlMat = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cv), color: new THREE.Color(0.75, 0.66, 0.45), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
+      hlMat.userData.shared = true;
     }
     for (const c of [...rivals, ...npcs, ...extras]) {
       if (!c.mesh) continue;
-      if (!c._hl) { if (!night) continue; c._hl = new THREE.Mesh(hlGeo, hlMat); c._hl.renderOrder = 3; c._hl.userData.hdLinear = true; c.mesh.add(c._hl); }
-      c._hl.visible = night && c.alive && c.mesh.visible && minPlayerDist(c.x, c.z) < 140;
+      const on = night && c.alive && c.mesh.visible && minPlayerDist(c.x, c.z) < 140 && (c.air || 0) < 0.5;
+      if (!c._hl) { if (!on) continue; c._hl = new THREE.Mesh(hlGeo(), hlMat); c._hl.renderOrder = 3; c._hl.userData.hdLinear = true; c._hl.frustumCulled = false; scene.add(c._hl); }
+      c._hl.visible = on; if (on) layPool(c);
+      if (!c.mesh.parent && c._hl.parent) { scene.remove(c._hl); c._hl.geometry.dispose(); c._hl = null; } // the car was removed
     }
   }
   function updateWanted() {

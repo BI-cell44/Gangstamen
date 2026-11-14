@@ -9,6 +9,7 @@
     { id: 'gare', name: 'Gare de Chantenay', x: -322, z: 580, r: 32, text: 'La petite gare du quartier, au bord des voies.' },
     { id: 'maritime', name: 'Gare maritime', x: 1285, z: -440, r: 45, text: 'Les quais, le fleuve et les bateaux d’autrefois.' },
     { id: 'titan', name: 'Grue Titan', x: 1690, z: -430, r: 170, text: 'La grue jaune de 1954, en face, à la pointe de l’île de Nantes.' },
+    { id: 'police', name: 'Commissariat', x: 170, z: -343, r: 30, text: 'Le commissariat de police nationale, près de la mairie : c’est d’ici que partent les patrouilles.' },
     { id: 'temple', name: 'Temple antoiniste', x: 89, z: -374, r: 26, text: 'Un temple antoiniste, une rareté dans l’Ouest.' },
   ];
   let discT = 0;

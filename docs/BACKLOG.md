@@ -141,6 +141,11 @@ Chantiers lourds, où un modèle plus puissant fera nettement mieux : refontes d
 - [ ] **Partie en ligne robuste** : prédiction et correction, synchronisation de la circulation, du tram et des bonus, reprise après déconnexion (aujourd'hui jamais testée à plusieurs).
 - [ ] **Physique réaliste, 2e passe** après les essais de l'utilisateur (suspension, transfert de charge en virage, sensation à la manette).
 - [ ] **Niveau de l'île de Nantes** (voir Phase 4) : modélisation d'un nouveau quartier entier, navettes fluviales et pontons.
+- [ ] **Physique réaliste : la voiture translate sur le côté** (retour du 14 nov. au soir) : glisse latérale parasite, à reprendre dans `src/vehicles/physics.js` (pneus arrière, ESP, transfert de charge).
+- [ ] **Modèles du tram et des bus** trop simples et cubiques (retour du 14 nov.) : vraies formes (tram Alstom de Nantes, bus TAN), vitrages, bogies, portes.
+- [ ] **Modèles des piétons** (retour du 14 nov.) : silhouettes, vêtements, animations (avec la refonte des piétons ci-dessus).
+- [ ] **Bords de carte logiques** (retour du 14 nov.) : remplacer les barrières de chantier par des limites qui ont du sens (rues qui continuent au-delà, quartier esquissé au loin, Loire, voies ferrées, impasses réelles).
+- [ ] **Loire : texture de l'eau et bateaux** (voir plus bas) : à faire avec le niveau de l'île de Nantes.
 
 ## Retours de jeu de l'utilisateur (14 nov. 2026), à traiter
 Décision de l'utilisateur (14 nov.) : chaque point est traité dans le cycle où il est prévu ; les corrections partent aussi dans `main` (classique et HD).
@@ -158,6 +163,11 @@ Captures dans `docs/retours/`.
 - [x] (cycle 12) **Garages ouverts, on entre dedans** (retour du 14 nov.) : chaque garage a une porte ouverte (rideau levé) et un intérieur ; le menu s'ouvre quand la voiture est **à l'intérieur du bâtiment**, plus dans la zone devant. Murs de collision du bâtiment avec une ouverture à la porte (cycle 12, garage et personnalisation, ou avant).
 - [x] **Radio : stations rap, techno (et peut-être funk) presque inaudibles** (retour du 14 nov.) : mesuré hors ligne (`sfx.stationLevels`) : même volume global que la G-funk, mais presque tout sous 220 Hz (basses en sinus, que des haut-parleurs d'ordinateur ou de téléphone ne rendent pas ; acid techno muette les 2 premières mesures). Basses avec harmoniques, accords, caisse claire, gimmick sifflé (rap), clic de grosse caisse, accords, acid dès la 1re mesure (techno), slap à l'octave, clavinet, guitare étouffée, cuivres (funk) : niveau au-dessus de 220 Hz à 85-100 % de la G-funk (vérification automatique). À réécouter.
 - [ ] **Lumières au sol des lampadaires pendant l'intro de nuit** : taches lumineuses mal placées ou mal dessinées ; revoir les bugs d'affichage de lumière.
+
+## Retours du 14 nov. au soir, traités tout de suite
+- [x] **Phares des autres voitures** : la tache de lumière était un rectangle fixé à la voiture, qui penchait avec elle et entrait dans le sol ; c'est maintenant une petite grille posée sur le relief devant la voiture, en forme de faisceau (`src/gx/frame.js`).
+- [x] **Commissariat** : le vrai commissariat de police nationale près de la mairie (OSM `amenity=police`, x 170, z −343) sert de base : renforts et patrouilles en partent quand il n'est pas sous les yeux du joueur ; panneau « POLICE NATIONALE », gyrophare, deux voitures garées ; carte postale « Commissariat ».
+- [x] **Clôtures cassées par les tirs** : une balle s'arrête sur le premier panneau traversé et l'use (bois 6, haie 9, portail 12, muret à grille 16, mur de jardin 45) ; les explosions cassent tout dans un rayon de 7 m (les murs de jardin seulement de près).
 
 ## Backlog hérité (hors cycles, à caser quand c'est pertinent)
 - [ ] Faire jouer l'utilisateur et recueillir ses retours (fluidité, flammes, mines du Vautour, pont, intro avec son).

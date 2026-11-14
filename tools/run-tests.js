@@ -228,10 +228,17 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
         out.ecartSol = +worst.toFixed(3);
         // night: the cars around light the road
         __gm.hd.setTod('night'); __gm.hd.amb.t = 3; c.place(300, 300, 0); for (let i = 0; i < 30; i++) __gm.step(1 / 30);
-        out.phares = X.npcs().filter(o => o._hl && o._hl.visible).length; __gm.hd.setTod('day'); __gm.hd.amb.t = 0;
+        out.phares = X.npcs().filter(o => o._hl && o._hl.visible).length;
+        // the pools lie on the ground (they used to be a tilted rectangle cutting into the road)
+        let worstHl = 0; for (const o of X.npcs()) if (o._hl && o._hl.visible) { const a = o._hl.geometry.attributes.position.array; for (let i = 0; i < a.length; i += 3) worstHl = Math.max(worstHl, Math.abs(a[i + 1] - __gm.surfaceH(a[i], a[i + 2]) - 0.09)); }
+        out.pharesSol = +worstHl.toFixed(3); __gm.hd.setTod('day'); __gm.hd.amb.t = 0;
+        // a wood fence breaks under gunfire; bullets stop on it
+        const pf = F.panels.find(p => p.kind === 0 && !p.broken); c.place(pf.x - pf.sa * 12, pf.z + pf.ca * 12, Math.atan2(-pf.sa, pf.ca)); c.hp = 100;
+        for (let i = 0; i < 6 && !pf.broken; i++) __gm.shoot(c, [], 3, 40, 0, false); out.tir = pf.broken;
+        out.commissariat = X.policeHQ.built;
         return out;
       });
-      expect(r.panneaux > 3000 && r.casse && r.murTient && r.ecartSol < 0.01, JSON.stringify(r)); return r;
+      expect(r.panneaux > 3000 && r.casse && r.murTient && r.ecartSol < 0.01 && r.pharesSol < 0.01 && r.tir && r.commissariat, JSON.stringify(r)); return r;
     });
     await check('détail visuel : eau à sa place, bouclier visible, niveaux de détail', async () => {
       const r = await ev(async () => {
