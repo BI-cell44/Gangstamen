@@ -53,7 +53,7 @@ body { background: var(--ink); color: var(--chalk); font-family: var(--body); ov
 
 #ticker { top: 26%; left: 50%; transform: translateX(-50%); text-align: center; font-family: var(--display); font-size: clamp(22px, 4vw, 42px); color: var(--chalk); text-shadow: 3px 3px 0 var(--magenta), 5px 5px 0 #000; white-space: nowrap; opacity: 0; transition: opacity .25s; }
 #ticker.on { opacity: 1; }
-#ticker small { display: block; font-family: var(--data); font-size: 24px; color: var(--sunset); text-shadow: 2px 2px 0 #000; }
+#ticker small { display: block; font-family: var(--data); font-size: 24px; color: var(--sunset); text-shadow: 2px 2px 0 #000; white-space: normal; width: min(760px, 90vw); margin: 0 auto; line-height: 1.15; }
 #cross { top: 50%; left: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border: 2px solid rgba(255,255,255,.0); }
 
 #help { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); font-family: var(--data); font-size: 17px; letter-spacing: .06em; color: rgba(243,234,216,.75); white-space: nowrap; }
@@ -180,10 +180,12 @@ body.touch.joy #tBrake, body.touch.joy #tGas, body.touch.joy #tPadL { display: n
 #dlg .dlgHint { max-width: 860px; margin: 6px auto 0; text-align: right; font-family: var(--data); font-size: 16px; color: rgba(243,234,216,.6); }
 #objective { top: calc(12px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); min-width: min(440px, 70vw); max-width: 92vw; text-align: center; background: rgba(13,10,20,.78); border: 2px solid var(--chalk); padding: 6px 14px 8px; }
 #objective .oTitle { font-family: var(--display); font-size: 20px; color: var(--sunset); }
-#objective .oText { font-family: var(--data); font-size: 21px; line-height: 1.1; }
+#objective .oText { font-family: var(--data); font-size: 21px; line-height: 1.15; white-space: pre-line; max-width: 640px; margin: 0 auto; }
 #objective .oBar { margin: 6px auto 0; height: 8px; border: 2px solid var(--chalk); position: relative; } #objective .oBar i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, var(--magenta), var(--sunset)); }
 #objective .oDir { font-family: var(--data); font-size: 20px; color: var(--ok); } #objective .oArrow { display: inline-block; transition: transform .1s linear; }
 body.ingame #objective:not([hidden]) ~ #clock { display: none; }
+body:has(#objective:not([hidden])) #clock { display: none; } /* whatever their order in the page */
+body:has(#objective:not([hidden])) #ticker { top: 44%; } /* the flash lines go under the panel, not across it */
 body.split #objective { top: calc(50% - 30px); transform: translate(-50%, -100%) scale(.82); transform-origin: 50% 100%; min-width: 0; }
 body.split #objective .oDir { display: none; }
 body:not(.ingame) #objective { display: none; }

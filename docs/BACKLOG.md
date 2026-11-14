@@ -169,6 +169,9 @@ Captures dans `docs/retours/`.
 - [x] **Commissariat** : le vrai commissariat de police nationale près de la mairie (OSM `amenity=police`, x 170, z −343) sert de base : renforts et patrouilles en partent quand il n'est pas sous les yeux du joueur ; panneau « POLICE NATIONALE », gyrophare, deux voitures garées ; carte postale « Commissariat ».
 - [x] **Clôtures cassées par les tirs** : une balle s'arrête sur le premier panneau traversé et l'use (bois 6, haie 9, portail 12, muret à grille 16, mur de jardin 45) ; les explosions cassent tout dans un rayon de 7 m (les murs de jardin seulement de près).
 
+- [x] **Textes des courses et défis illisibles, destination pas claire** (retour du 14 nov., 20 h). Cause principale : la fonction d'affichage des activités portait le même nom (`hud`) que celle de la ligne des armes de `campaign.js` et la remplaçait (portée unique, D-12) : le panneau était réécrit à chaque image et la ligne des armes ne se mettait plus à jour. Renommée `actPanel` ; test ajouté. En plus : annonce à l'approche d'une balise (« Arrête-toi dans la balise pour commencer »), **briefing de 7 s** voiture à l'arrêt avec la consigne complète (tir : partir tout de suite), consigne courte gardée à l'écran pendant l'épreuve, flèche et points sur la minicarte (balises de course, adresse de livraison, carrière), deuxième balise plus pâle pour voir où tourne le parcours, résultat affiché 7 s. Messages éclair (cartes postales…) : durée selon la longueur du texte, retour à la ligne.
+- Leçon (D-12) : avant d'ajouter une fonction dans `src/gx/`, vérifier que son nom n'existe pas déjà (`grep -rn "function nom" src`).
+
 ## Backlog hérité (hors cycles, à caser quand c'est pertinent)
 - [ ] Faire jouer l'utilisateur et recueillir ses retours (fluidité, flammes, mines du Vautour, pont, intro avec son).
 - [ ] Partie en ligne à plusieurs (claude.ai et serveur), puis corrections.

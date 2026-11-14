@@ -3,11 +3,11 @@ let tickT = 0;
 function flash(big, small) {
   const t = $('ticker'); t.innerHTML = ''; t.append(big);
   if (small) { const s = document.createElement('small'); s.textContent = small; t.append(s); }
-  t.classList.add('on'); tickT = 2.2;
+  t.classList.add('on'); tickT = Math.max(2.2, Math.min(9, 1.2 + ((big + (small || '')).length) / 14)); // long lines stay long enough to be read (about 14 characters a second)
 }
 function flashFor(L, big, small) {
   if (locals.length <= 1 || !L || !L.hud) return flash(big, small);
-  L.hud.pt.textContent = big + (small ? ' · ' + small : ''); L.hud.pt.hidden = false; L.tickT = 2.2;
+  L.hud.pt.textContent = big + (small ? ' · ' + small : ''); L.hud.pt.hidden = false; L.tickT = Math.max(2.2, Math.min(9, 1.2 + ((big + (small || '')).length) / 14));
 }
 function flashAll(big, small) { if (locals.length <= 1) flash(big, small); else locals.forEach(L => flashFor(L, big, small)); }
 function feed(text) {

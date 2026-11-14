@@ -17,6 +17,7 @@ Ce qui a été construit, dans l'ordre. Le détail de chaque changement est dans
 | 13 nov. 2026 | Fusion dans `main` et `server` ; dossier de passation ; branches figées `passation-2026-11-13` et `passation-2026-11-13-server`, artifacts de référence | voir `git log` |
 | 14 nov. 2026 | Carte agrandie (Sainte-Anne, quai de la Fosse), tram ligne 1, barrières, église et escalier Sainte-Anne, garages réels ; radio Pin-pon selon la vraie voiture, terrasses, mort en mission, message de KO, changement d'arme | `main` f20574b |
 | 14 nov. 2026 | Branche `ultra` : audit, feuille de route, réorganisation de la documentation (`CLAUDE.md`, `docs/`), artifact Gangstamen Ultra | `ultra` |
+| 14 nov. 2026 | Ultra : courses et défis lisibles (collision de nom `hud` corrigée, briefing de 7 s, consigne permanente, flèche et minicarte, résultat affiché 7 s), messages éclair plus longs | `ultra` |
 | 14 nov. 2026 | Ultra : sources découpées par système (D-12), sorties identiques à l'octet | `ultra` |
 | 14 nov. 2026 | Ultra : phares des voitures posés au sol, commissariat réel comme base de la police, clôtures cassées par les tirs et les explosions ; `main` : corrections d'Ultra reportées (eau, piétons, bouclier, radio, bots hors carte), artifacts classique et HD republiés | `ultra`, `main`, `server` |
 | 14 nov. 2026 | Ultra, cycle 14 (monde ouvert) : 10 cartes postales à découvrir, déblocages (coupé sport, voiture de police, défi police) ; fin de la feuille de route des phases 0 à 3 | `ultra` |
