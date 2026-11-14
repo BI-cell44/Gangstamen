@@ -35,7 +35,7 @@ Le bac à sable n'atteint ni OSM, ni Overpass, ni l'IGN. Les requêtes (`tools/f
 ## D-11 Pas de streaming du monde tant que la carte fait 2 km (en vigueur)
 À cette taille, tout tient en mémoire (≈ 200 Mo de tas JavaScript). Le vrai problème mesuré est le **rendu** de toute la ville à chaque image (bâtiments fusionnés sur toute la carte, donc jamais écartés hors champ). On commence par le **rendu par tuiles** (cycle 2) : écartement hors champ et niveaux de détail par tuile. Le chargement et déchargement de tuiles (streaming) viendra en phase 4, si la carte grandit, sur cette même grille de tuiles.
 
-## D-12 Découpage des sources en modules (proposée : accord de l'utilisateur requis)
+## D-12 Découpage des sources en modules (en vigueur : accord de l'utilisateur le 14 nov. 2026, fait le même jour, sorties identiques à l'octet)
 **Contexte** : `template.html` (3 450 lignes), `hd.js` et `gx.js` forment une seule portée ; les dépendances entre systèmes sont implicites, ce qui ralentit chaque évolution et rend les régressions plus probables.
 **Proposition** : garder un seul fichier HTML en sortie, sans bundler (D-01), mais découper les sources en fichiers par système, assemblés dans l'ordre par `build.sh` (même portée qu'aujourd'hui) :
 `core/` (rendu, textures, aléatoire, collision), `world/` (ville, bords, tram, lieux), `vehicles/` (modèles, physique, dégâts), `audio/`, `input/`, `net/`, `ui/` (HUD, menus, intro), `game/` (équipes, modes, combat, IA, campagne), `hd/` (rendu HD).

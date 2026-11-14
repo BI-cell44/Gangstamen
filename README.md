@@ -22,7 +22,7 @@ En HD, les façades sans photo exploitable sont dessinées en haute résolution 
 
 **Façades adaptées à chaque bâtiment (HD)** : chaque pan de mur montre un nombre entier de travées de fenêtres, à la largeur propre au bâtiment (mesurée dans les photos Panoramax quand une façade large et dégagée le permet : `data/facade_hints.json`, 27 bâtiments ; tirée au sort dans une plage réaliste sinon). Chaque style existe en plusieurs variantes (volets d'une couleur par maison, portes-fenêtres, maisons sans volets, immeubles à balcons ou à allèges colorées). Les portes et les garages ne sont dessinés que côté rue.
 
-**Mairie de Chantenay (HD)** : la mairie de 1903 a son propre modèle (`townHall` dans `src/hd.js`), d'après ses photos Panoramax : pierre blanche en assises, hautes fenêtres à balustres à l'étage, porche à quatre colonnes sous un balcon, fronton à horloge éclairée la nuit, toit d'ardoise à lucarnes, grandes cheminées, drapeau. Les ailes accolées sont en bardage métallique bleu.
+**Mairie de Chantenay (HD)** : la mairie de 1903 a son propre modèle (`townHall` dans `src/hd/town-hall.js`), d'après ses photos Panoramax : pierre blanche en assises, hautes fenêtres à balustres à l'étage, porche à quatre colonnes sous un balcon, fronton à horloge éclairée la nuit, toit d'ardoise à lucarnes, grandes cheminées, drapeau. Les ailes accolées sont en bardage métallique bleu.
 
 **Photo aérienne (HD)** : `data/ortho/ortho_raw.jpg` est la BD ORTHO de l'IGN (25 cm par pixel, service WMS de la Géoplateforme) ; `src/make_ortho.py` en tire `data/ortho/ortho.jpg`. Elle donne aux toits leurs vraies couleurs (ardoise, tuile, toits plats) et indique où sont les jardins. Elle n'est pas plaquée telle quelle au sol, car les toits et les arbres y débordent sur les trottoirs.
 
@@ -59,9 +59,9 @@ En HD, les façades sans photo exploitable sont dessinées en haute résolution 
 - *Son et options* : ombres (non, auto, toujours), distance de vue, densité de circulation. La distance de vue baisse d'elle-même à 3 ou 4 écrans.
 - **Mobile** : joystick virtuel (direction, gaz, frein) et boutons tir, frein à main et arme spéciale.
 
-Le code de ces nouveautés est dans `src/gx.js` (inséré par `build.sh` comme `src/hd.js`), l'ambiance et les dégâts visibles dans `src/hd.js`. La version classique n'est pas modifiée, à part le dérapage au frein à main.
+Le code de ces nouveautés est dans `src/gx/` (assemblé et inséré par `build.sh`, comme `src/hd/`), l'ambiance et les dégâts visibles dans `src/hd/`. La version classique n'est pas modifiée, à part le dérapage au frein à main.
 
-Les règles, les commandes et le jeu en ligne sont identiques. Le moteur HD est dans `src/hd.js` ; il est activé par `const HD = true`, que `build.sh` positionne pour le second fichier.
+Les règles, les commandes et le jeu en ligne sont identiques. Le moteur HD est dans `src/hd/` ; il est activé par `const HD = true`, que `build.sh` positionne pour le second fichier.
 
 ## Branches
 

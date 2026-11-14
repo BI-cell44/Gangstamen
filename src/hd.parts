@@ -1,0 +1,18 @@
+# assembled in this order by build.sh (see docs/DECISIONS_TECHNIQUES.md, D-12)
+hd/00-module.js
+hd/colour.js
+hd/post.js
+hd/sky.js
+hd/time-weather.js
+hd/particles.js
+hd/impact-fx.js
+hd/damage.js
+hd/car-fx.js
+hd/frame.js
+hd/world-upgrades.js
+hd/facades.js
+hd/shops.js
+hd/ground.js
+hd/ortho.js
+hd/town-hall.js
+hd/cars.js

@@ -1,0 +1,380 @@
+<title>Gangstamen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=VT323&family=Chakra+Petch:wght@400;600;700&display=swap">
+<style>
+/* Layout: full-bleed 3D canvas, HUD pinned to the four corners like a 1996 arcade cabinet. Single dark look by design. */
+:root {
+  --ink: #0d0a14;          /* night asphalt */
+  --panel: rgba(13, 10, 20, .72);
+  --chalk: #f3ead8;        /* tuffeau stone */
+  --sunset: #ff8a3d;       /* Loire sunset */
+  --magenta: #e2337a;      /* 90s neon */
+  --enamel: #1f3f91;       /* Nantes street plate */
+  --danger: #ff3b3b;
+  --ok: #7be07b;
+  --display: "Permanent Marker", "Marker Felt", "Comic Sans MS", cursive;
+  --data: "VT323", "Courier New", monospace;
+  --body: "Chakra Petch", "Trebuchet MS", system-ui, sans-serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+[hidden] { display: none !important; }
+body { background: var(--ink); color: var(--chalk); font-family: var(--body); overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+#view { position: fixed; inset: 0; }
+#view canvas { width: 100% !important; height: 100% !important; display: block; }
+#view.retro canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
+#scan { position: fixed; inset: 0; pointer-events: none; background: repeating-linear-gradient(to bottom, rgba(0,0,0,.0) 0 2px, rgba(0,0,0,.13) 2px 3px); mix-blend-mode: multiply; }
+#scan.off { display: none; }
+
+.hud { position: fixed; pointer-events: none; z-index: 5; }
+#logo { top: calc(12px + env(safe-area-inset-top, 0px)); left: max(16px, env(safe-area-inset-left, 0px)); font-family: var(--display); font-size: clamp(22px, 3.2vw, 34px); color: var(--chalk); letter-spacing: .02em; text-shadow: 3px 3px 0 var(--magenta), 6px 6px 0 rgba(0,0,0,.6); transform: rotate(-3deg); transform-origin: left top; }
+#logo small { display: block; font-family: var(--data); font-size: 18px; letter-spacing: .12em; color: var(--sunset); text-shadow: 2px 2px 0 #000; transform: rotate(3deg); margin-top: 2px; }
+
+#stats { top: calc(14px + env(safe-area-inset-top, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+#minimap { width: 168px; height: 168px; border-radius: 50%; border: 3px solid var(--chalk); box-shadow: 0 0 0 3px #000, 6px 6px 0 rgba(0,0,0,.5); background: #151020; }
+.chip { font-family: var(--data); font-size: 22px; line-height: 1; padding: 4px 10px; background: var(--panel); border: 2px solid var(--chalk); letter-spacing: .06em; font-variant-numeric: tabular-nums; }
+.chip b { color: var(--sunset); font-weight: normal; }
+.chip.wanted { border-color: #3a6aff; animation: blueflash .5s steps(2, jump-none) infinite; }
+.chip.wanted b { color: #9fb8ff; letter-spacing: .1em; }
+@keyframes blueflash { from { box-shadow: 0 0 0 3px #3a6aff; } to { box-shadow: 0 0 0 3px #ff3b3b; } }
+
+#plate { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); left: max(16px, env(safe-area-inset-left, 0px)); max-width: min(62vw, 420px); }
+#plate .sign { background: var(--enamel); border: 3px solid #fff; outline: 3px solid var(--enamel); border-radius: 6px; padding: 6px 14px 8px; box-shadow: 5px 5px 0 rgba(0,0,0,.55); }
+#plate .quarter { font-family: var(--body); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: #cfe0ff; }
+#plate .street { font-family: var(--body); font-weight: 700; font-size: clamp(15px, 2.1vw, 21px); color: #fff; text-transform: uppercase; letter-spacing: .03em; line-height: 1.15; text-wrap: balance; }
+
+#dash { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+#speed { font-family: var(--data); font-size: 64px; line-height: .8; color: var(--chalk); text-shadow: 3px 3px 0 var(--magenta); font-variant-numeric: tabular-nums; }
+#speed span { font-size: 22px; color: var(--sunset); text-shadow: none; margin-left: 4px; }
+.bar { width: 200px; height: 14px; border: 2px solid var(--chalk); background: rgba(0,0,0,.6); position: relative; }
+.bar i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, var(--magenta), var(--sunset)); }
+.bar-label { font-family: var(--data); font-size: 16px; letter-spacing: .12em; color: var(--chalk); }
+
+#ticker { top: 26%; left: 50%; transform: translateX(-50%); text-align: center; font-family: var(--display); font-size: clamp(22px, 4vw, 42px); color: var(--chalk); text-shadow: 3px 3px 0 var(--magenta), 5px 5px 0 #000; white-space: nowrap; opacity: 0; transition: opacity .25s; }
+#ticker.on { opacity: 1; }
+#ticker small { display: block; font-family: var(--data); font-size: 24px; color: var(--sunset); text-shadow: 2px 2px 0 #000; }
+#cross { top: 50%; left: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border: 2px solid rgba(255,255,255,.0); }
+
+#help { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); font-family: var(--data); font-size: 17px; letter-spacing: .06em; color: rgba(243,234,216,.75); white-space: nowrap; }
+#credit { position: fixed; z-index: 6; bottom: calc(2px + env(safe-area-inset-bottom, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); font-size: 10px; color: rgba(243,234,216,.6); font-family: var(--body); }
+#credit a { color: inherit; }
+
+/* Title screen */
+#title { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding-block: 24px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); background: radial-gradient(ellipse at 50% 120%, rgba(255,138,61,.55), rgba(226,51,122,.25) 40%, rgba(13,10,20,.92) 75%); overflow-y: auto; }
+#title .card { max-width: 640px; width: 100%; display: flex; flex-direction: column; gap: 18px; }
+#title h1 { margin: 0; font-family: var(--display); font-weight: normal; font-size: clamp(52px, 12vw, 112px); line-height: .9; color: var(--chalk); text-shadow: 5px 5px 0 var(--magenta), 10px 10px 0 #000; transform: rotate(-4deg); text-wrap: balance; }
+#title .tag { font-family: var(--data); font-size: clamp(20px, 3vw, 26px); color: var(--sunset); letter-spacing: .14em; text-transform: uppercase; }
+#title p { margin: 0; font-size: 16px; line-height: 1.55; max-width: 60ch; }
+#title .keys { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 6px 18px; font-family: var(--data); font-size: 20px; }
+#title kbd { display: inline-block; min-width: 1.6em; text-align: center; padding: 0 5px; border: 2px solid var(--chalk); border-bottom-width: 4px; border-radius: 4px; margin-right: 6px; font-family: var(--data); font-size: 18px; background: rgba(0,0,0,.4); }
+#title .fine { font-size: 12px; color: rgba(243,234,216,.7); }
+#title .fine a { color: var(--chalk); }
+
+#title h2 { margin: 0; font-family: var(--display); font-weight: normal; font-size: 30px; color: var(--sunset); text-shadow: 3px 3px 0 #000; }
+.view { display: flex; flex-direction: column; gap: 14px; }
+.menu { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.mbtn { font-family: var(--body); font-weight: 700; font-size: 17px; color: var(--chalk); background: var(--panel); border: 2px solid var(--chalk); padding: 8px 16px; cursor: pointer; text-align: left; }
+.mbtn:hover, .mbtn:focus, .mbtn.sel { background: var(--magenta); outline: none; }
+.mbtn.on { background: var(--sunset); color: var(--ink); }
+.big { align-self: flex-start; font-family: var(--display); font-size: 26px; color: var(--ink); background: var(--sunset); border: 3px solid #000; padding: 10px 26px; box-shadow: 6px 6px 0 var(--magenta); cursor: pointer; transform: rotate(-1.5deg); }
+.big:hover, .big:focus-visible { background: var(--chalk); outline: 3px dashed var(--chalk); outline-offset: 4px; }
+.big[disabled] { opacity: .6; cursor: wait; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.lab { min-width: 9em; font-family: var(--data); font-size: 21px; letter-spacing: .04em; }
+.seg { display: flex; gap: 6px; }
+.slots { display: flex; flex-direction: column; gap: 8px; }
+.slot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.slot .lab { min-width: 5.2em; }
+.chipc { width: 18px; height: 18px; border: 2px solid #000; box-shadow: 2px 2px 0 rgba(0,0,0,.5); }
+.cycle { display: flex; align-items: center; gap: 6px; }
+.seg.wrap { flex-wrap: wrap; }
+.mbtn.swatch { width: 44px; height: 34px; padding: 0; border-width: 3px; }
+.mbtn.swatch.on { outline: 3px solid var(--sunset); outline-offset: 2px; }
+#feed .qc { border-left-color: var(--ok); font-size: 20px; }
+.cycle output { min-width: 11em; text-align: center; font-family: var(--data); font-size: 20px; padding: 4px 8px; border: 2px solid var(--chalk); background: rgba(0,0,0,.4); }
+.cycle output.ok { border-color: var(--ok); }
+.ctable { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; font-family: var(--data); font-size: 18px; }
+.ctable div { border: 2px solid rgba(243,234,216,.4); padding: 8px 10px; background: rgba(0,0,0,.35); }
+.ctable b { color: var(--sunset); font-weight: normal; display: block; font-size: 20px; }
+input[type=range] { width: min(260px, 50vw); accent-color: var(--magenta); }
+input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--magenta); }
+#nick { font-family: var(--data); font-size: 22px; padding: 4px 8px; background: rgba(0,0,0,.45); color: var(--chalk); border: 2px solid var(--chalk); width: 12em; }
+.netstatus { font-family: var(--data); font-size: 19px; color: var(--sunset); }
+.games { display: flex; flex-direction: column; gap: 8px; }
+.games .empty { font-family: var(--data); font-size: 19px; opacity: .75; }
+#board { top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(13,10,20,.88); border: 3px solid var(--chalk); padding: 14px 18px; font-family: var(--data); font-size: 21px; min-width: min(420px, 90vw); z-index: 9; }
+#teambar { top: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 0; font-family: var(--data); font-size: 22px; border: 3px solid #000; box-shadow: 3px 3px 0 rgba(0,0,0,.5); z-index: 6; white-space: nowrap; }
+#teambar span { padding: 2px 12px; color: #000; }
+#teambar .t0 { background: #c8202f; color: #f3ead8; }
+#teambar .t1 { background: #f2c81e; }
+#teambar b { font-weight: normal; padding: 2px 10px; background: #000; color: var(--chalk); }
+body:not(.ingame) #teambar { display: none; }
+body.split #teambar { top: 50%; transform: translate(-50%, -50%); }
+body:not(.split).ingame #teambar { top: 64px; }
+.teambtn { min-width: 10em; padding-left: 6px; padding-right: 6px; }
+.teambtn.t0 { background: #c8202f; color: #f3ead8; }
+.teambtn.t1 { background: #f2c81e; color: #000; }
+#board .tsum td { color: var(--sunset); padding-top: 8px; }
+#clock { left: 50%; top: 12px; transform: translateX(-50%); font-family: var(--data); font-size: 22px; background: rgba(13,10,20,.8); color: var(--chalk); border: 2px solid var(--chalk); padding: 1px 12px; z-index: 6; white-space: nowrap; font-variant-numeric: tabular-nums; }
+#clock.hurry { color: #ff5a4a; border-color: #ff5a4a; }
+body.teams:not(.split) #clock { top: 102px; }
+body.split #clock { top: calc(50% + 24px); }
+body.split.teams #clock { top: calc(50% + 40px); }
+body:not(.ingame) #clock { display: none; }
+#results { position: fixed; inset: 0; z-index: 25; display: grid; place-items: center; background: rgba(13,10,20,.72); }
+#results .card { min-width: min(460px, 92vw); max-height: 92vh; overflow: auto; background: rgba(13,10,20,.94); border: 3px solid var(--chalk); box-shadow: 6px 6px 0 var(--magenta); padding: 20px 24px; }
+#results h2 { margin: 0; font-family: var(--display); font-weight: normal; font-size: clamp(30px, 6vw, 48px); color: var(--chalk); text-shadow: 3px 3px 0 var(--magenta); }
+#results p { margin: 6px 0 12px; font-family: var(--data); font-size: 22px; color: var(--sunset); }
+#resTable table { border-collapse: collapse; width: 100%; font-family: var(--data); font-size: 20px; font-variant-numeric: tabular-nums; color: var(--chalk); }
+#resTable td, #resTable th { padding: 2px 10px; text-align: left; }
+#resTable th { color: var(--sunset); font-weight: normal; }
+#resTable .tsum td { padding-top: 8px; }
+#results .menu { margin-top: 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+#board table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+#board td, #board th { padding: 2px 10px; text-align: left; }
+#board th { color: var(--sunset); font-weight: normal; }
+#feed { top: calc(130px + env(safe-area-inset-top, 0px)); left: max(16px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 4px; font-family: var(--data); font-size: 18px; }
+#feed div { background: var(--panel); padding: 2px 8px; border-left: 4px solid var(--magenta); }
+#phuds { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+.phud { position: absolute; font-family: var(--data); color: var(--chalk); text-shadow: 2px 2px 0 #000; }
+.phud .pn { position: absolute; left: 10px; top: 8px; font-size: 22px; padding: 0 8px; border: 2px solid #000; color: #000; text-shadow: none; }
+.phud .pr { position: absolute; left: 10px; top: 40px; font-size: 18px; }
+.phud .ps { position: absolute; right: 12px; bottom: 26px; font-size: 40px; line-height: 1; }
+.phud .ps span { font-size: 16px; color: var(--sunset); }
+.phud .pb { position: absolute; right: 12px; bottom: 10px; width: 120px; height: 10px; border: 2px solid var(--chalk); background: rgba(0,0,0,.6); }
+.phud .pb i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, var(--magenta), var(--sunset)); }
+.phud .pt { position: absolute; left: 50%; top: 30%; transform: translateX(-50%); font-family: var(--display); font-size: 26px; white-space: nowrap; text-shadow: 3px 3px 0 var(--magenta), 4px 4px 0 #000; }
+.phud canvas { position: absolute; right: 10px; top: 8px; width: 96px; height: 96px; border-radius: 50%; border: 2px solid var(--chalk); background: #151020; }
+.phud .pst { position: absolute; left: 10px; bottom: 10px; font-family: var(--body); font-weight: 700; font-size: 13px; background: var(--enamel); color: #fff; border: 2px solid #fff; padding: 2px 8px; text-transform: uppercase; text-shadow: none; max-width: 55%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vline { position: absolute; background: #000; }
+body.split #stats, body.split #plate, body.split #dash, body.split #help, body.split #ticker, body.split #logo { display: none; }
+body:not(.ingame) #stats, body:not(.ingame) #plate, body:not(.ingame) #dash, body:not(.ingame) #help, body:not(.ingame) #phuds { display: none; }
+/* Touch controls */
+#touch { position: fixed; inset: auto 0 0 0; z-index: 7; display: none; justify-content: space-between; padding: 0 max(16px, env(safe-area-inset-right, 0px)) calc(70px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); pointer-events: none; }
+body.touch #touch { display: flex; }
+body.touch #help { display: none; }
+body.touch #dash { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
+body.touch #plate { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
+#touch .grp { display: flex; gap: 10px; pointer-events: auto; }
+#touch button { width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--chalk); background: var(--panel); color: var(--chalk); font-family: var(--data); font-size: 20px; touch-action: none; }
+#touch button.on { background: var(--magenta); }
+#joy { pointer-events: auto; position: relative; width: 150px; height: 150px; border-radius: 50%; border: 3px solid rgba(243,234,216,.7); background: radial-gradient(circle, rgba(13,10,20,.35), rgba(13,10,20,.65)); touch-action: none; margin-bottom: -40px; }
+#joyKnob { position: absolute; left: 50%; top: 50%; width: 62px; height: 62px; margin: -31px 0 0 -31px; border-radius: 50%; background: var(--magenta); border: 3px solid var(--chalk); box-shadow: 0 0 12px rgba(226,51,122,.6); }
+body.touch.joy #tBrake, body.touch.joy #tGas, body.touch.joy #tPadL { display: none; }
+@media (max-width: 560px) {
+  #minimap { width: 112px; height: 112px; }
+  #speed { font-size: 46px; }
+  .bar { width: 140px; }
+  #logo small { font-size: 15px; }
+}
+@media (max-width: 1100px) { #help { display: none; } }
+@media (prefers-reduced-motion: reduce) { #ticker { transition: none; } }
+/* Campaign: dialogue box, objective, garage, mission result */
+#dlg { position: fixed; left: 0; right: 0; bottom: 0; z-index: 28; padding: 0 max(16px, env(safe-area-inset-left, 0px)) calc(18px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(to top, rgba(13,10,20,.92), rgba(13,10,20,.0)); padding-top: 60px; cursor: pointer; }
+#dlg .dlgBox { max-width: 860px; margin: 0 auto; display: flex; gap: 16px; align-items: flex-start; background: rgba(13,10,20,.9); border: 3px solid var(--chalk); box-shadow: 6px 6px 0 var(--magenta); padding: 14px 18px; }
+#dlg .dlgFace { flex: none; width: 64px; height: 64px; display: grid; place-items: center; font-family: var(--display); font-size: 28px; color: #000; border: 3px solid #000; box-shadow: 3px 3px 0 rgba(0,0,0,.6); transform: rotate(-3deg); }
+#dlg .dlgWho b { font-family: var(--display); font-weight: normal; font-size: 24px; color: var(--sunset); margin-right: 10px; }
+#dlg .dlgWho span { font-family: var(--data); font-size: 18px; color: rgba(243,234,216,.7); }
+#dlg .dlgTxt { margin-top: 4px; font-size: clamp(16px, 2.2vw, 20px); line-height: 1.45; min-height: 2.9em; }
+#dlg .dlgHint { max-width: 860px; margin: 6px auto 0; text-align: right; font-family: var(--data); font-size: 16px; color: rgba(243,234,216,.6); }
+#objective { top: calc(12px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); min-width: min(440px, 70vw); max-width: 92vw; text-align: center; background: rgba(13,10,20,.78); border: 2px solid var(--chalk); padding: 6px 14px 8px; }
+#objective .oTitle { font-family: var(--display); font-size: 20px; color: var(--sunset); }
+#objective .oText { font-family: var(--data); font-size: 21px; line-height: 1.1; }
+#objective .oBar { margin: 6px auto 0; height: 8px; border: 2px solid var(--chalk); position: relative; } #objective .oBar i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, var(--magenta), var(--sunset)); }
+#objective .oDir { font-family: var(--data); font-size: 20px; color: var(--ok); } #objective .oArrow { display: inline-block; transition: transform .1s linear; }
+body.ingame #objective:not([hidden]) ~ #clock { display: none; }
+body.split #objective { top: calc(50% - 30px); transform: translate(-50%, -100%) scale(.82); transform-origin: 50% 100%; min-width: 0; }
+body.split #objective .oDir { display: none; }
+body:not(.ingame) #objective { display: none; }
+#garage, #mres { position: fixed; inset: 0; z-index: 27; display: grid; place-items: center; background: rgba(13,10,20,.7); padding: 16px; }
+#garage .card, #mres .card { width: min(560px, 100%); max-height: 92vh; overflow: auto; background: rgba(13,10,20,.95); border: 3px solid var(--chalk); box-shadow: 6px 6px 0 #1f3f91; padding: 18px 22px; display: flex; flex-direction: column; gap: 10px; }
+#garage h2, #mres h2 { margin: 0; font-family: var(--display); font-weight: normal; font-size: clamp(28px, 5vw, 40px); color: var(--chalk); text-shadow: 3px 3px 0 #1f3f91; }
+#mres h2 { text-shadow: 3px 3px 0 var(--magenta); }
+#garage .gWallet, #mres p { margin: 0; font-family: var(--data); font-size: 21px; color: var(--sunset); }
+#garage .gList { display: flex; flex-direction: column; gap: 6px; }
+.gItem { display: grid; grid-template-columns: 1fr auto; gap: 0 12px; width: 100%; }
+.gItem b { font-weight: 700; } .gItem span { grid-column: 1; font-weight: 400; font-size: 14px; opacity: .8; } .gItem em { grid-row: 1 / span 2; grid-column: 2; align-self: center; font-style: normal; font-family: var(--data); font-size: 20px; color: var(--sunset); }
+.gItem[disabled] { opacity: .45; cursor: not-allowed; }
+.camp { display: flex; flex-direction: column; gap: 8px; }
+.campBtn { display: flex; flex-direction: column; gap: 2px; min-width: min(420px, 100%); } .campBtn span { font-weight: 400; font-size: 14px; opacity: .8; } .campBtn[disabled] { opacity: .45; }
+#ammo { font-size: 20px; }
+@media (max-width: 560px) { #dlg .dlgFace { width: 44px; height: 44px; font-size: 20px; } #objective { top: 56px; } }
+
+/* Intro cinematic: letterbox bars, captions, gang cards, title */
+#intro { position: fixed; inset: 0; z-index: 30; overflow: hidden; cursor: pointer; }
+#intro > * { position: absolute; pointer-events: none; }
+.ibar { left: 0; right: 0; height: 12vh; background: #000; transition: transform .7s ease; }
+.ibar.t { top: 0; transform: translateY(-100%); } .ibar.b { bottom: 0; transform: translateY(100%); }
+#intro.play .ibar { transform: none; }
+#iCap { left: 5vw; right: 5vw; bottom: calc(12vh + 22px); }
+#iCap1 { font-family: var(--data); font-size: clamp(26px, 4.2vw, 46px); line-height: 1; letter-spacing: .14em; text-transform: uppercase; color: var(--sunset); text-shadow: 3px 3px 0 #000; min-height: 1em; }
+#iCap2 { margin-top: 6px; font-family: var(--body); font-weight: 600; font-size: clamp(16px, 2.1vw, 24px); color: var(--chalk); text-shadow: 2px 2px 0 #000, 0 0 12px rgba(0,0,0,.8); opacity: 0; max-width: 46ch; text-wrap: balance; }
+#iCap2.on { animation: capIn .7s .9s both; }
+@keyframes capIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+#iGang { left: 5vw; right: 5vw; bottom: calc(12vh + 22px); display: none; flex-direction: column; align-items: flex-start; gap: 8px; --gc: #c8202f; --gt: #f3ead8; }
+#iGang.on { display: flex; animation: gangIn .35s cubic-bezier(.2, .9, .3, 1.2) both; }
+#iGang b { font-family: var(--display); font-weight: normal; font-size: clamp(34px, 7.4vw, 92px); line-height: .95; color: var(--chalk); text-shadow: 4px 4px 0 var(--gc), 8px 8px 0 #000; transform: rotate(-2deg); transform-origin: left bottom; }
+#iGang span { font-family: var(--data); font-size: clamp(19px, 2.4vw, 27px); letter-spacing: .05em; background: var(--gc); color: var(--gt); padding: 1px 12px; border: 2px solid #000; box-shadow: 4px 4px 0 #000; }
+@keyframes gangIn { from { opacity: 0; transform: translateX(-60px) skewX(-8deg); } to { opacity: 1; transform: none; } }
+#iTitle { inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+#iTitle.on { display: flex; }
+#iTitle h1, #iSplash h1 { margin: 0; font-family: var(--display); font-weight: normal; line-height: .9; color: var(--chalk); text-shadow: 6px 6px 0 var(--magenta), 12px 12px 0 #000; }
+#iTitle h1 { font-size: clamp(58px, 15vw, 190px); transform: rotate(-3deg); }
+#iTitle.on h1 { animation: slam .32s cubic-bezier(.2, .8, .3, 1.15) both; }
+#iTitle p { margin: 18px 0 0; font-family: var(--data); font-size: clamp(22px, 3.4vw, 40px); letter-spacing: .2em; text-transform: uppercase; color: var(--sunset); text-shadow: 3px 3px 0 #000; }
+#iTitle.on p { animation: capIn .6s .9s both; }
+@keyframes slam { from { opacity: 0; transform: rotate(-3deg) scale(3.4); } to { opacity: 1; transform: rotate(-3deg) scale(1); } }
+#iFlash, #iFade { inset: 0; opacity: 0; }
+#iFlash { background: #fff3d6; } #iFade { background: #000; }
+#intro.out { pointer-events: none; }
+#intro.out > :not(#iFade) { display: none; }
+#intro.out #iFade { transition: opacity .6s; }
+#iSkip { top: 0; right: max(16px, env(safe-area-inset-right, 0px)); height: 12vh; display: none; align-items: center; font-family: var(--data); font-size: 18px; letter-spacing: .1em; color: rgba(243,234,216,.55); }
+#intro.play #iSkip { display: flex; }
+#iSplash { inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 26px; text-align: center; background: radial-gradient(ellipse at center, rgba(13,10,20,.55), rgba(13,10,20,.94)); }
+#intro.splash #iSplash { display: flex; }
+#iSplash h1 { font-size: clamp(46px, 11vw, 120px); transform: rotate(-3deg); }
+#iSplash p { margin: 0; font-family: var(--data); font-size: clamp(20px, 3vw, 30px); letter-spacing: .14em; text-transform: uppercase; color: var(--sunset); text-shadow: 2px 2px 0 #000; animation: blink 1.1s steps(2, jump-none) infinite; }
+@keyframes blink { from { opacity: 1; } to { opacity: .25; } }
+body.cine #logo, body.cine #credit { display: none; }
+@media (prefers-reduced-motion: reduce) { #iGang.on, #iTitle.on h1, #iTitle.on p, #iCap2.on, #iSplash p { animation: none; opacity: 1; } .ibar { transition: none; } }
+</style>
+
+<div id="view" class="retro"></div>
+<div id="scan"></div>
+
+<div id="logo" class="hud">GANGSTAMEN<small>Chantenay · 1996</small></div>
+<div id="stats" class="hud">
+  <canvas id="minimap" width="336" height="336" aria-label="Plan du quartier"></canvas>
+  <div class="chip">RESPECT <b id="respect">0</b></div>
+  <div class="chip"><span id="killsLab">RAPACES</span> <b id="kills">0</b></div>
+  <div class="chip wanted" hidden>POLICE <b id="wanted"></b></div>
+  <div class="chip" id="ammo" hidden></div>
+</div>
+<div id="plate" class="hud"><div class="sign"><div class="quarter">Nantes · Chantenay</div><div class="street" id="street">…</div></div></div>
+<div id="dash" class="hud">
+  <div id="speed">0<span>KM/H</span></div>
+  <div class="bar-label">CARROSSERIE</div>
+  <div class="bar"><i id="hp" style="width:100%"></i></div>
+</div>
+<div id="ticker" class="hud"></div>
+<div id="help" class="hud">ZQSD conduire · Espace tir · E arme spéciale · A changer d’arme · Maj frein à main · C caméra · N moment · B météo · Échap menu</div>
+<div id="credit">Carte © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">contributeurs OpenStreetMap</a> · Hauteurs et relief © IGN · Façades © contributeurs Panoramax</div>
+
+<div id="touch">
+  <div class="grp" id="tPadL"><button id="tLeft" aria-label="Gauche">◀</button><button id="tRight" aria-label="Droite">▶</button></div>
+  <div id="joy" hidden aria-label="Joystick : direction, gaz et frein"><div id="joyKnob"></div></div>
+  <div class="grp"><button id="tSpec" aria-label="Arme spéciale" hidden>SPÉ</button><button id="tHb" aria-label="Frein à main" hidden>F.M.</button><button id="tFire" aria-label="Tirer">FEU</button><button id="tBrake" aria-label="Frein">FREIN</button><button id="tGas" aria-label="Accélérer">GAZ</button></div>
+</div>
+
+<div id="title">
+  <div class="card">
+    <div class="tag">Nantes · Chantenay · été 1996</div>
+    <h1>Gangstamen</h1>
+
+    <section id="vMain" class="view">
+      <p>Les Rapaces de la Butte ont pris le quartier. Six caisses noires tournent entre la place Jean-Macé et les quais de Loire. Reprends les rues de Chantenay : rentre-leur dedans, arrose-les, et ramasse les clés à molette pour réparer ta caisse.</p>
+      <div class="menu">
+        <button id="start" class="big" disabled>Chargement du quartier…</button>
+        <button class="mbtn hdOnly" data-go="vCamp" hidden>Campagne · 7 missions</button>
+        <button class="mbtn" data-go="vSplit">Écran partagé · 2 à 4 joueurs</button>
+        <button class="mbtn" data-go="vOnline">En ligne · jusqu'à 12 joueurs</button>
+        <button class="mbtn hdOnly" data-go="vCar" hidden>Ta voiture</button>
+        <button class="mbtn" data-go="vCtrl">Commandes</button>
+        <button class="mbtn" data-go="vOpt">Son et options</button>
+      </div>
+      <div class="fine">Prototype. Rues et emprises des bâtiments : <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© contributeurs OpenStreetMap</a> (ODbL). Hauteurs des bâtiments et relief : IGN, BD TOPO® et RGE ALTI® (Licence Ouverte 2.0). Façades du boulevard de la Liberté et de la rue de la Marseillaise : photos 360° <a href="https://panoramax.fr" target="_blank" rel="noopener">Panoramax</a> de Carto'Cité, Koreller, ludovelo44 (CC BY-SA 4.0) et immergis (Licence Ouverte), redressées ; ces textures sont diffusées sous CC BY-SA 4.0. Personnages, gangs et histoire sont fictifs.</div>
+    </section>
+
+    <section id="vSplit" class="view" hidden>
+      <h2>Écran partagé</h2>
+      <div class="row"><span class="lab">Joueurs</span><div class="seg" id="nSeg"><button class="mbtn" data-n="2">2</button><button class="mbtn" data-n="3">3</button><button class="mbtn" data-n="4">4</button></div></div>
+      <div class="row"><span class="lab">Mode</span><div class="seg wrap" id="mSeg"><button class="mbtn" data-m="0">Chacun pour soi</button><button class="mbtn" data-m="1">Par équipes</button><button class="mbtn hdOnly" data-m="2" hidden>Drapeau</button><button class="mbtn hdOnly" data-m="3" hidden>Roi de la colline</button><button class="mbtn hdOnly" data-m="4" hidden>Course</button></div></div>
+      <div class="row"><span class="lab">Fin de partie</span><div class="seg goalSeg"><button class="mbtn" data-g="10">10 KO</button><button class="mbtn" data-g="20">20 KO</button><button class="mbtn" data-g="30">30 KO</button><button class="mbtn" data-g="0">Sans</button></div></div>
+      <div class="row"><span class="lab">Durée</span><div class="seg limitSeg"><button class="mbtn" data-l="5">5 min</button><button class="mbtn" data-l="10">10 min</button><button class="mbtn" data-l="15">15 min</button><button class="mbtn" data-l="0">Sans</button></div></div>
+      <div id="slots" class="slots"></div>
+      <p class="fine" id="splitHint"></p>
+      <p class="fine">Branchez les manettes et appuyez sur un de leurs boutons pour qu'elles soient détectées.</p>
+      <div class="menu"><button id="splitGo" class="big">Démarrer</button><button class="mbtn" data-go="vMain">Retour</button></div>
+    </section>
+
+    <section id="vCamp" class="view" hidden>
+      <h2>Campagne · Chantenay 1996</h2>
+      <p>Un an après ton départ, les Rapaces de la Butte tiennent le quartier. Dédé le garagiste et Nadia, la cheffe des Chantenaysiens, comptent sur toi pour reprendre les rues, mission après mission.</p>
+      <div id="campList" class="camp"></div>
+      <p class="fine" id="campProg"></p>
+      <div class="menu"><button class="mbtn" data-go="vMain">Retour</button></div>
+    </section>
+
+    <section id="vCar" class="view" hidden>
+      <h2>Ta voiture</h2>
+      <div class="row"><span class="lab">Joueur</span><div class="seg" id="carSlot"><button class="mbtn" data-i="0">J1</button><button class="mbtn" data-i="1">J2</button><button class="mbtn" data-i="2">J3</button><button class="mbtn" data-i="3">J4</button></div></div>
+      <div class="row"><span class="lab">Modèle</span><div class="seg wrap" id="carStyle"></div></div>
+      <p class="fine" id="carDesc"></p>
+      <div class="row"><span class="lab">Couleurs</span><div class="seg wrap" id="carPaint"></div></div>
+      <p class="fine">J1 conduit aussi en solo et en ligne. En partie par équipes, la carrosserie prend la couleur de la bande.</p>
+      <div class="menu"><button class="mbtn" data-go="vMain">Retour</button></div>
+    </section>
+
+    <section id="vCtrl" class="view" hidden>
+      <h2>Commandes</h2>
+      <div class="row"><span class="lab">Joueur 1 (solo / en ligne)</span><div class="cycle" id="soloCtl"></div></div>
+      <div class="ctable" id="ctable"></div>
+      <p class="fine">Les touches correspondent à des positions du clavier : sur un clavier AZERTY, le joueur 1 joue avec Z Q S D. En HD, la touche spéciale (E pour le joueur 1, B à la manette) lance les roquettes, pose les mines ou déclenche la nitro ramassées sur la carte ; A pour le joueur 1 (RB à la manette, ou un appui sur le compteur d’armes) passe à l’arme suivante. Touches communes : N jour/nuit (HD : moment de la journée) · B météo (HD) · M musique · P pixels · Tab classement en ligne · Échap menu.</p>
+      <div class="menu"><button class="mbtn" data-go="vMain">Retour</button></div>
+    </section>
+
+    <section id="vOpt" class="view" hidden>
+      <h2>Son et options</h2>
+      <div class="row"><label class="lab" for="volMusic">Musique</label><input id="volMusic" type="range" min="0" max="100" step="5"><output id="volMusicV"></output></div>
+      <div class="row"><label class="lab" for="volFx">Effets</label><input id="volFx" type="range" min="0" max="100" step="5"><output id="volFxV"></output></div>
+      <div class="row"><span class="lab">Fin (solo)</span><div class="seg goalSeg"><button class="mbtn" data-g="10">10 KO</button><button class="mbtn" data-g="20">20 KO</button><button class="mbtn" data-g="30">30 KO</button><button class="mbtn" data-g="0">Sans</button></div></div>
+      <div class="row"><span class="lab">Durée</span><div class="seg limitSeg"><button class="mbtn" data-l="5">5 min</button><button class="mbtn" data-l="10">10 min</button><button class="mbtn" data-l="15">15 min</button><button class="mbtn" data-l="0">Sans</button></div></div>
+      <div class="row"><label class="lab" for="optRumble">Vibrations manette</label><input id="optRumble" type="checkbox"></div>
+      <div class="row" id="retroRow"><label class="lab" for="optRetro">Pixels rétro</label><input id="optRetro" type="checkbox"></div>
+      <div class="row hdOnly" hidden><span class="lab">Moment</span><div class="seg" id="todSeg"><button class="mbtn" data-v="day">Jour</button><button class="mbtn" data-v="sunset">Coucher</button><button class="mbtn" data-v="night">Nuit</button><button class="mbtn" data-v="cycle">Cycle</button></div></div>
+      <div class="row hdOnly" hidden><span class="lab">Météo</span><div class="seg" id="rainSeg"><button class="mbtn" data-v="0">Sec</button><button class="mbtn" data-v="0.6">Pluie</button><button class="mbtn" data-v="1">Orage</button><button class="mbtn" data-v="auto">Variable</button></div></div>
+      <div class="row hdOnly" hidden><span class="lab">Ombres</span><div class="seg" id="shSeg"><button class="mbtn" data-v="0">Non</button><button class="mbtn" data-v="1">Auto</button><button class="mbtn" data-v="2">Toujours</button></div></div>
+      <div class="row hdOnly" hidden><span class="lab">Distance de vue</span><div class="seg" id="distSeg"><button class="mbtn" data-v="0">Courte</button><button class="mbtn" data-v="1">Moyenne</button><button class="mbtn" data-v="2">Longue</button></div></div>
+      <div class="row hdOnly" hidden><span class="lab">Circulation</span><div class="seg" id="trafSeg"><button class="mbtn" data-v="0">Aucune</button><button class="mbtn" data-v="1">Calme</button><button class="mbtn" data-v="2">Normale</button></div></div>
+      <div class="row hdOnly" hidden><label class="lab" for="optVoices">Voix (radio, dialogues)</label><input id="optVoices" type="checkbox"></div>
+      <div class="row" id="hdRow" hidden><span class="lab">Qualité graphique</span><div class="seg" id="hdSeg"><button class="mbtn" data-q="0">Basse</button><button class="mbtn" data-q="1">Moyenne</button><button class="mbtn" data-q="2">Haute</button><button class="mbtn" data-q="3">Ultra</button></div></div>
+      <div class="row hdOnly" hidden><label class="lab" for="optAutoQ">Qualité automatique (baisse si la machine ne suit pas)</label><input id="optAutoQ" type="checkbox"></div>
+      <div class="row"><label class="lab" for="optIntro">Intro au lancement</label><input id="optIntro" type="checkbox"><button class="mbtn" id="introPlay">Revoir l'intro</button></div>
+      <div class="menu"><button class="mbtn" data-go="vMain">Retour</button></div>
+    </section>
+
+    <section id="vOnline" class="view" hidden>
+      <h2>En ligne</h2>
+      <div class="row"><label class="lab" for="nick">Pseudo</label><input id="nick" maxlength="14" autocomplete="off"></div>
+      <div class="row"><span class="lab">Équipe</span><div class="seg" id="tSeg"><button class="mbtn" data-t="-1">Auto</button><button class="mbtn" data-t="0">Rapaces</button><button class="mbtn" data-t="1">Chantenaysiens</button></div></div>
+      <div id="netStatus" class="netstatus">Connexion…</div>
+      <div id="games" class="games"></div>
+      <div class="row"><span class="lab">Nouvelle partie</span><div class="seg wrap" id="oSeg"><button class="mbtn" data-m="0">Chacun pour soi</button><button class="mbtn" data-m="1">Par équipes</button><button class="mbtn hdOnly" data-m="3" hidden>Roi de la colline</button><button class="mbtn hdOnly" data-m="4" hidden>Course</button></div></div>
+      <div class="row"><span class="lab">Fin de partie</span><div class="seg goalSeg"><button class="mbtn" data-g="10">10 KO</button><button class="mbtn" data-g="20">20 KO</button><button class="mbtn" data-g="30">30 KO</button><button class="mbtn" data-g="0">Sans</button></div></div>
+      <div class="row"><span class="lab">Durée</span><div class="seg limitSeg"><button class="mbtn" data-l="5">5 min</button><button class="mbtn" data-l="10">10 min</button><button class="mbtn" data-l="15">15 min</button><button class="mbtn" data-l="0">Sans</button></div></div>
+      <div class="menu"><button id="create" class="big">Créer une partie</button><button class="mbtn" data-go="vMain">Retour</button></div>
+      <p class="fine">Version claude.ai : les autres joueurs doivent être connectés et avoir accès à cette page avec le droit de participer (Contributeur ou plus), sinon ils voient les voitures mais leurs tirs ne comptent pas. Chacun conduit sa voiture sans attendre l'hôte ; l'hôte fait rouler les voitures du quartier. L'équipe ne sert que dans les parties « Par équipes » (choisie par le créateur).</p>
+    </section>
+  </div>
+</div>
+<div id="intro" hidden>
+  <div class="ibar t"></div><div class="ibar b"></div>
+  <div id="iCap"><div id="iCap1"></div><div id="iCap2"></div></div>
+  <div id="iGang"><b></b><span></span></div>
+  <div id="iTitle"><h1>Gangstamen</h1><p>Chantenay · 1996</p></div>
+  <div id="iFlash"></div><div id="iFade"></div>
+  <div id="iSkip">Échap · passer</div>
+  <div id="iSplash"><h1>Gangstamen</h1><p>Clique ou appuie sur une touche</p></div>
+</div>
+<div id="board" class="hud" hidden></div>
+<div id="teambar" class="hud" hidden></div>
+<div id="clock" class="hud" hidden></div>
+<div id="results" hidden><div class="card"><h2 id="resTitle"></h2><p id="resSub"></p><div id="resTable"></div><div class="menu"><button class="big" id="resAgain">Revanche</button><span id="resWait" class="fine" hidden>En attente de l’hôte pour la revanche…</span><button class="mbtn" id="resQuit">Quitter vers le menu</button></div></div></div>
+<div id="feed" class="hud"></div>
+<div id="phuds"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script id="world" type="application/json">/*WORLD*/</script>
+<script>

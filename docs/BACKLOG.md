@@ -30,7 +30,7 @@
 - Construire la ville pendant que le menu est affiché ; ne compiler que les shaders utiles.
 - Objectif : divisé par deux en rendu logiciel, menu jouable avant la fin des tâches non essentielles.
 
-**Décision à prendre avant le cycle 4 (accord de l'utilisateur requis)** : découpage des sources en modules (voir `DECISIONS_TECHNIQUES.md`, proposition D-12).
+**Découpage des sources en modules** (D-12) : fait le 14 novembre 2026, avant le cycle 2. Étape suivante, au fil des cycles : chaque système déclare en tête de fichier ce qu'il utilise des autres.
 
 ## Phase 1 : le ressenti de conduite (cycles 4 à 6)
 

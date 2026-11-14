@@ -35,12 +35,17 @@ Trois sorties, construites depuis le même code (`sh build.sh`) :
 ### Sources
 | Fichier | Lignes | Contenu |
 |---|---|---|
-| `src/template.html` | 3 450 | Moteur commun : rendu, textures, grille de collision, ville, voitures (modèles et conduite), effets, son, réglages, entrées, équipes, HUD, fin de partie, combat, IA des bots, réseau, menus, intro, boucle, bords de carte et tram |
-| `src/hd.js` | 1 490 | Rendu HD (injecté à `/*@HD_MODULE@*/`) : post-traitement, ciel, météo, particules, dégâts visibles, façades dessinées, enseignes, sol, photo aérienne, mairie, voitures lissées, qualité adaptative |
-| `src/gx.js` | 1 700 | Jeu HD (injecté à `/*@GX_MODULE@*/`) : circulation, police, foule, terrasses, voix, dialogues, garages, bonus, armes spéciales, campagne, lieux emblématiques (église Saint-Martin, Sainte-Anne, quais, grue Titan), radio, discussion rapide |
+| `src/template.parts` → `shell/page.html` | 380 | Page : styles, menus et écrans en HTML, chargement de three.js |
+| `core/` | | `prelude.js` (lecture du monde `W`, constantes), `random.js`, `renderer.js` (drapeaux `HD`, `ULTRA`, scène, caméras, soleil), `textures.js` (contient le marqueur `/*@HD_MODULE@*/`), `collision.js` (grille des murs), `geometry.js`, `settings.js` (réglages et sauvegarde), `boot.js` (amorçage, crochet `__gm`, fin de page) |
+| `world/` | | `city.js` (bâtiments, routes, sol, arbres, eau, rails : 560 lignes), `edges-tram.js` (murs et barrières de bord, tram) |
+| `vehicles/`, `fx/`, `audio/`, `input/` | | `cars.js` (modèles, `class Car`, `drive`), `effects.js`, `sound.js` (`sfx`, musique, radio), `input.js` (claviers, manettes, tactile) |
+| `game/` | | `state.js`, `teams.js`, `match-end.js`, `combat.js`, `start.js`, `loop.js` (boucle, caméras, superposition F3) |
+| `ui/`, `ai/`, `net/` | | `hud.js`, `day-night-pause.js`, `menus.js`, `intro.js` (contient le marqueur `/*@GX_MODULE@*/`) ; `bots.js` ; `network.js` |
+| `src/hd.parts` → `hd/` | 1 490 | Rendu HD : `colour.js`, `post.js`, `sky.js`, `time-weather.js`, `particles.js`, `impact-fx.js`, `damage.js`, `car-fx.js`, `frame.js` (rendu, qualité adaptative), `world-upgrades.js`, `facades.js`, `shops.js`, `ground.js`, `ortho.js`, `town-hall.js`, `cars.js` |
+| `src/gx.parts` → `gx/` | 1 700 | Jeu HD : `traffic.js`, `police.js`, `pedestrians.js`, `crowd.js`, `terraces.js`, `voices.js`, `frame.js` (pas de jeu), `dialogue.js`, `mission-hud.js`, `garages.js`, `pickups-weapons.js`, `furniture.js`, `campaign.js`, `radio.js`, `quick-chat.js`, `modes.js`, `landmarks.js` (Saint-Martin, Sainte-Anne, quais, Titan), `zz-world-api.js` (construction et interface publique `gx`) |
 | `src/*.py` | 900 | Chaîne de données : `convert.py` (OSM et IGN → `world_raw.json`), `carve.py` (profils de routes, ponts, relief → `world.json`), `make_street_data.py`, `make_furniture.py`, `make_ortho.py`, scripts des façades Panoramax |
 
-Les trois fichiers JavaScript partagent **une seule portée** (une fonction englobante) : tout est visible de partout. C'est simple mais rend les dépendances implicites (voir l'audit).
+`build.sh` assemble chaque manifeste dans l'ordre, puis insère le rendu HD et le jeu HD à leurs marqueurs : le résultat est le même texte qu'avant le découpage (vérifié à l'octet le 14 novembre 2026). Tout partage **une seule portée** (une fonction englobante) : tout est visible de partout, les dépendances restent implicites.
 
 ### Concepts du moteur
 - **Couleurs** : écrites en sRGB ; en HD, converties une seule fois en linéaire (`linearize`, `linMat`, `hd.lin`).

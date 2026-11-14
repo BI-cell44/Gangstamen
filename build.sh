@@ -5,12 +5,15 @@ set -e
 cd "$(dirname "$0")"
 mkdir -p build && cd build
 cp ../data/world_raw.json ../data/facades2.json ../data/shops.json ../data/facade_hints.json ../data/furniture.json .
-# the HD renderer lives in its own file and is inlined into the template
+# the sources are split by system (src/*.parts list the files in order); the HD renderer and the HD game layer are
+# assembled the same way and inlined into the template at their markers
 python3 - <<'PY'
-t = open('../src/template.html', encoding='utf-8').read()
-assert '/*@HD_MODULE@*/' in t
-assert '/*@GX_MODULE@*/' in t
-t = t.replace('/*@HD_MODULE@*/', open('../src/hd.js', encoding='utf-8').read()).replace('/*@GX_MODULE@*/', open('../src/gx.js', encoding='utf-8').read())
+def assemble(manifest):
+    parts = [l.strip() for l in open('../src/' + manifest, encoding='utf-8') if l.strip() and not l.startswith('#')]
+    return ''.join(open('../src/' + p, encoding='utf-8').read() for p in parts)
+t = assemble('template.parts')
+assert t.count('/*@HD_MODULE@*/') == 1 and t.count('/*@GX_MODULE@*/') == 1
+t = t.replace('/*@HD_MODULE@*/', assemble('hd.parts')).replace('/*@GX_MODULE@*/', assemble('gx.parts'))
 open('template.html', 'w', encoding='utf-8').write(t)
 PY
 python3 ../src/carve.py                                   # smooth road profiles, bridges, finer terrain -> world.json

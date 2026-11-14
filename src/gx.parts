@@ -1,0 +1,20 @@
+# assembled in this order by build.sh (see docs/DECISIONS_TECHNIQUES.md, D-12)
+gx/00-module.js
+gx/traffic.js
+gx/police.js
+gx/pedestrians.js
+gx/crowd.js
+gx/terraces.js
+gx/voices.js
+gx/frame.js
+gx/dialogue.js
+gx/mission-hud.js
+gx/garages.js
+gx/pickups-weapons.js
+gx/furniture.js
+gx/campaign.js
+gx/radio.js
+gx/quick-chat.js
+gx/modes.js
+gx/landmarks.js
+gx/zz-world-api.js

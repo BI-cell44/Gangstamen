@@ -1,0 +1,288 @@
+// ---------- cars: low-poly 90s saloons and hatchbacks built from extruded side profiles ----------
+const CAR_STYLES = {
+  // s = metres along the car (front positive), y = height. Body and greenhouse silhouettes.
+  saloon: {
+    L: 4.45, W: 1.74, wb: 1.36, wr: 0.32,
+    body: [[2.24, 0.34], ['arcF'], ['arcR'], [-2.22, 0.34], [-2.27, 0.58], [-2.2, 0.98], [-1.32, 1.03], [0.92, 1.01], [2.0, 0.88], [2.27, 0.74]],
+    cabin: [[-1.3, 1.0], [-0.72, 1.43], [0.32, 1.45], [0.94, 0.99]],
+    spoiler: false,
+  },
+  hatch: {
+    L: 3.95, W: 1.7, wb: 1.24, wr: 0.31,
+    body: [[1.98, 0.34], ['arcF'], ['arcR'], [-1.9, 0.34], [-1.97, 0.62], [-1.93, 1.0], [-1.7, 1.04], [0.72, 1.0], [1.78, 0.86], [2.0, 0.72]],
+    cabin: [[-1.88, 1.0], [-1.62, 1.46], [0.12, 1.48], [0.74, 0.99]],
+    spoiler: true,
+  },
+  // street traffic of 1996 (HD bodies in hd.js; the classic build reuses the hatch silhouette)
+  r5: { L: 3.52, W: 1.53, wb: 1.2, wr: 0.29, body: [[1.74, 0.34], ['arcF'], ['arcR'], [-1.7, 0.34], [-1.76, 0.6], [-1.74, 0.99], [-1.5, 1.0], [0.6, 0.97], [1.55, 0.84], [1.76, 0.7]],
+    cabin: [[-1.68, 0.99], [-1.5, 1.44], [0.05, 1.47], [0.62, 0.97]], spoiler: false },
+  p205: { L: 3.7, W: 1.57, wb: 1.21, wr: 0.3, body: [[1.83, 0.34], ['arcF'], ['arcR'], [-1.8, 0.34], [-1.85, 0.6], [-1.8, 0.97], [-1.55, 1.0], [0.65, 0.96], [1.62, 0.82], [1.85, 0.68]],
+    cabin: [[-1.74, 0.97], [-1.35, 1.42], [0.1, 1.45], [0.72, 0.96]], spoiler: false },
+  twingo: { L: 3.43, W: 1.63, wb: 1.17, wr: 0.3, body: [[1.69, 0.34], ['arcF'], ['arcR'], [-1.66, 0.34], [-1.71, 0.6], [-1.68, 1.0], [-1.4, 1.02], [0.9, 0.98], [1.5, 0.86], [1.71, 0.72]],
+    cabin: [[-1.62, 1.0], [-1.45, 1.62], [-0.2, 1.68], [0.3, 1.62], [1.2, 1.0]], spoiler: false },
+};
+function plateTexture(text, rear) {
+  const [c, g] = canvas(128, 32);
+  g.fillStyle = rear ? '#f2c230' : '#f4f1e8'; g.fillRect(0, 0, 128, 32);
+  g.strokeStyle = '#111'; g.lineWidth = 3; g.strokeRect(1.5, 1.5, 125, 29);
+  g.fillStyle = '#111'; g.font = 'bold 21px "Arial Narrow", Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(text, 64, 17);
+  const t = new THREE.CanvasTexture(c); t.anisotropy = 4; return t;
+}
+// paint + panel lines for the body sides (shape UVs are metres along / up the car)
+function paintTexture(st, paint, stripe, trim) {
+  const PX = 96, Wd = Math.round(st.L * PX) + 40, Hd = Math.round(1.6 * PX);
+  const [c, g] = canvas(Wd, Hd);
+  const X = s => (s + st.L / 2 + 0.2) * PX, Y = y => Hd - y * PX;
+  g.fillStyle = paint; g.fillRect(0, 0, Wd, Hd);
+  // light gradient: darker sills, lighter shoulder line
+  const lg = g.createLinearGradient(0, Y(1.05), 0, Y(0.3)); lg.addColorStop(0, 'rgba(255,255,255,.18)'); lg.addColorStop(0.45, 'rgba(255,255,255,0)'); lg.addColorStop(1, 'rgba(0,0,0,.35)');
+  g.fillStyle = lg; g.fillRect(0, 0, Wd, Hd);
+  if (stripe) { g.fillStyle = stripe; g.fillRect(0, Y(0.86), Wd, 0.07 * PX); g.fillRect(0, Y(0.76), Wd, 0.025 * PX); }
+  // rubbing strip
+  g.fillStyle = trim; g.fillRect(0, Y(0.62), Wd, 0.06 * PX);
+  // door seams
+  g.strokeStyle = 'rgba(0,0,0,.55)'; g.lineWidth = 2;
+  const doors = st.L > 4.2 ? [0.9, -0.28, -1.32] : [0.72, -0.9];
+  for (const s of doors) { g.beginPath(); g.moveTo(X(s), Y(1.0)); g.lineTo(X(s - 0.04), Y(0.38)); g.stroke(); }
+  g.beginPath(); g.moveTo(X(doors[0]), Y(0.38)); g.lineTo(X(doors[doors.length - 1]), Y(0.38)); g.stroke();
+  // handles
+  g.fillStyle = 'rgba(20,20,24,.85)';
+  for (let i = 0; i < doors.length - 1; i++) g.fillRect(X(doors[i + 1]) + 0.12 * PX, Y(0.9), 0.16 * PX, 0.035 * PX);
+  // fuel cap
+  g.beginPath(); g.arc(X(-st.L / 2 + 0.75), Y(0.84), 0.06 * PX, 0, 7); g.stroke();
+  const t = new THREE.CanvasTexture(c);
+  t.repeat.set(1 / (Wd / PX), 1 / (Hd / PX)); t.offset.set((st.L / 2 + 0.2) / (Wd / PX), 0);
+  t.anisotropy = 4;
+  return t;
+}
+function profileShape(pts, st) {
+  const sh = new THREE.Shape();
+  pts.forEach((p, i) => {
+    if (p[0] === 'arcF' || p[0] === 'arcR') {
+      const cx = p[0] === 'arcF' ? st.wb : -st.wb, r = st.wr + 0.1;
+      sh.lineTo(cx + r, 0.34); sh.absarc(cx, 0.34, r, 0, Math.PI, false); sh.lineTo(cx - r, 0.34);
+    } else if (i === 0) sh.moveTo(p[0], p[1]); else sh.lineTo(p[0], p[1]);
+  });
+  sh.closePath();
+  return sh;
+}
+function extrudeSide(shape, width, bevel) {
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: width - 2 * bevel, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 2, curveSegments: 10 });
+  geo.rotateY(Math.PI / 2);                 // shape s -> -z (front of the car is -z), extrusion -> x
+  geo.translate(-(width - 2 * bevel) / 2, 0, 0);
+  return geo;
+}
+let plateNo = 0;
+function makeCar(paint, stripe, isPlayer, styleName, opts) {
+  if (HD) return hd.makeCar(paint, stripe, isPlayer, styleName, opts);
+  const st = CAR_STYLES[styleName || (isPlayer ? 'saloon' : 'hatch')];
+  const g = new THREE.Group();
+  const hex = '#' + new THREE.Color(paint).getHexString();
+  const sideTex = paintTexture(st, hex, stripe ? '#' + new THREE.Color(stripe).getHexString() : null, '#1d1b20');
+  const mSide = new THREE.MeshPhongMaterial({ map: sideTex, shininess: 70, specular: 0x666666 });
+  const mPaint = new THREE.MeshPhongMaterial({ color: paint, shininess: 70, specular: 0x666666 });
+  const mGlass = new THREE.MeshPhongMaterial({ color: 0x1b2433, shininess: 120, specular: 0xaaaaaa, emissive: 0x05080d });
+  const mBlack = new THREE.MeshLambertMaterial({ color: 0x141317 });
+  const mTrim = new THREE.MeshPhongMaterial({ color: 0x2a2a2e, shininess: 20 });
+  const mChrome = new THREE.MeshPhongMaterial({ color: 0xc9cbd0, shininess: 120, specular: 0xffffff });
+  const mHead = new THREE.MeshPhongMaterial({ color: 0xfff6d8, emissive: 0x8a8060, shininess: 90 });
+  const mTail = new THREE.MeshPhongMaterial({ color: 0xb01818, emissive: 0x400000, shininess: 60 });
+  const mInd = new THREE.MeshPhongMaterial({ color: 0xff9a1f, emissive: 0x301500 });
+  const add = (geo, m, x, y, z, cast = true) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = cast; g.add(o); return o; };
+  const box = (w, h, d, m, x, y, z) => add(new THREE.BoxGeometry(w, h, d), m, x, y, z);
+  const L = st.L, W = st.W, hl = L / 2;
+  const fz = -Math.max(...st.body.filter(p => typeof p[0] === 'number').map(p => p[0])) - 0.012;
+  const rz = -Math.min(...st.body.filter(p => typeof p[0] === 'number').map(p => p[0])) + 0.012;
+
+  // body shell: side panels get the painted texture, top/bottom surfaces the plain paint
+  const body = new THREE.Mesh(extrudeSide(profileShape(st.body, st), W, 0.07), [mSide, mPaint]);
+  body.castShadow = true; g.add(body);
+  // greenhouse: glass sides, painted roof and pillars
+  const cabW = W * 0.86;
+  const cab = new THREE.Mesh(extrudeSide(profileShape(st.cabin, st), cabW, 0.05), [mGlass, mPaint]);
+  cab.castShadow = true; g.add(cab);
+  // windscreen and rear window panes laid on the sloped faces
+  const cp = st.cabin;
+  const mPane = new THREE.MeshPhongMaterial({ color: 0x1e2a3c, shininess: 140, specular: 0xbbbbbb, emissive: 0x06090f, side: THREE.DoubleSide });
+  const cs = (cp[0][0] + cp[2][0]) / 2, cyy = (cp[0][1] + cp[2][1]) / 2;
+  const pane = (a, b) => { // quad on a sloped greenhouse face, nudged outwards
+    const [s1, y1] = a, [s2, y2] = b, hw = cabW / 2 - 0.06;
+    let nz = -(y2 - y1), ny = s2 - s1; // perpendicular in the (s, y) plane
+    const nl = Math.hypot(nz, ny) || 1; nz /= nl; ny /= nl;
+    const ms = (s1 + s2) / 2, my = (y1 + y2) / 2;
+    if ((ms + nz * 0.1 - cs) ** 2 + (my + ny * 0.1 - cyy) ** 2 < (ms - cs) ** 2 + (my - cyy) ** 2) { nz = -nz; ny = -ny; }
+    const o = 0.025, P = (s, y, x) => [x, y + ny * o, -(s + nz * o)];
+    const geo = new THREE.BufferGeometry();
+    const v = [...P(s1, y1, -hw), ...P(s1, y1, hw), ...P(s2, y2, hw), ...P(s1, y1, -hw), ...P(s2, y2, hw), ...P(s2, y2, -hw)];
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(v, 3)); geo.computeVertexNormals();
+    g.add(new THREE.Mesh(geo, mPane));
+  };
+  pane(cp[3], cp[2]); pane(cp[0], cp[1]);
+  // B-pillar
+  const bp = st.L > 4.2 ? -0.22 : -0.62;
+  box(cabW + 0.01, 0.42, 0.08, mPaint, 0, 1.22, -bp);
+  // chassis between the wheel arches (hides the see-through arch cut-outs)
+  box(W - 0.42, 0.42, L - 0.5, mBlack, 0, 0.5, 0);
+  // bumpers wrapping the ends
+  box(W + 0.04, 0.2, 0.18, mTrim, 0, 0.47, -hl - 0.02);
+  box(W + 0.04, 0.2, 0.18, mTrim, 0, 0.47, hl + 0.02);
+  // grille + headlights + indicators
+  box(W * 0.46, 0.13, 0.04, mBlack, 0, 0.7, fz + 0.005);
+  box(W * 0.48, 0.02, 0.05, mChrome, 0, 0.775, fz + 0.005);
+  const heads = [];
+  for (const sx of [-1, 1]) {
+    heads.push(box(0.36, 0.13, 0.04, mHead, sx * (W / 2 - 0.27), 0.7, fz));
+    box(0.1, 0.13, 0.04, mInd, sx * (W / 2 - 0.06), 0.7, fz + 0.01);
+  }
+  // tail lights: wide red bar with a dark centre panel, and reversing lights
+  const tails = [];
+  for (const sx of [-1, 1]) tails.push(box(0.5, 0.15, 0.04, mTail, sx * (W / 2 - 0.3), 0.8, rz));
+  box(W - 1.1, 0.15, 0.04, mBlack, 0, 0.8, rz + 0.002);
+  // plates (French 1996: white front, yellow rear)
+  const pn = (isPlayer ? '1996 GS 44' : (4100 + (plateNo++) * 37) + ' RB 44');
+  add(new THREE.PlaneGeometry(0.52, 0.12), new THREE.MeshLambertMaterial({ map: plateTexture(pn, false) }), 0, 0.5, -hl - 0.12, false).rotation.y = Math.PI;
+  add(new THREE.PlaneGeometry(0.52, 0.12), new THREE.MeshLambertMaterial({ map: plateTexture(pn, true) }), 0, 0.64, rz + 0.01, false);
+  // mirrors, exhaust, aerial
+  for (const sx of [-1, 1]) { box(0.16, 0.1, 0.07, mTrim, sx * (W / 2 + 0.06), 1.07, -(cp[3][0] - 0.12)); }
+  add(new THREE.CylinderGeometry(0.04, 0.04, 0.22, 8).rotateX(Math.PI / 2), mChrome, W / 2 - 0.35, 0.3, hl + 0.06);
+  add(new THREE.CylinderGeometry(0.008, 0.008, 0.7, 4), mBlack, -W / 2 + 0.2, 1.35, hl - 0.6);
+  if (st.spoiler) { box(cabW, 0.05, 0.28, mPaint, 0, cp[1][1] + 0.03, -cp[1][0] + 0.12); }
+  // wheels: tyre, alloy rim with spokes, hub; front ones steer
+  const wheels = [], steer = [];
+  const tyreG = new THREE.CylinderGeometry(st.wr, st.wr, 0.22, 16).rotateZ(Math.PI / 2);
+  const rimG = new THREE.CylinderGeometry(st.wr * 0.64, st.wr * 0.64, 0.23, 12).rotateZ(Math.PI / 2);
+  const spokeG = new THREE.BoxGeometry(0.235, st.wr * 1.15, 0.05);
+  const mRim = new THREE.MeshPhongMaterial({ color: isPlayer ? 0xd9b25a : 0x9da1a8, shininess: 90, specular: 0xffffff });
+  for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+    const pivot = new THREE.Group(); pivot.position.set(sx * (W / 2 - 0.13), st.wr, sz * st.wb); g.add(pivot);
+    const spin = new THREE.Group(); pivot.add(spin);
+    const tyre = new THREE.Mesh(tyreG, mBlack); tyre.castShadow = true; spin.add(tyre);
+    spin.add(new THREE.Mesh(rimG, mRim));
+    for (let k = 0; k < 5; k++) { const sp = new THREE.Mesh(spokeG, mRim); sp.rotation.x = k * Math.PI * 2 / 5; spin.add(sp); }
+    wheels.push(spin); if (sz < 0) steer.push(pivot);
+  }
+  // twin machine guns on the bonnet
+  const gunM = new THREE.MeshPhongMaterial({ color: 0x2b2b2b, shininess: 40 });
+  const muzzles = [];
+  for (const sx of [-0.42, 0.42]) {
+    const gz = -(st.body[st.body.length - 3][0] + 0.45);
+    box(0.16, 0.12, 0.42, gunM, sx, 1.03, gz);
+    add(new THREE.CylinderGeometry(0.035, 0.035, 0.8, 8).rotateX(Math.PI / 2), gunM, sx, 1.05, gz - 0.55);
+    const mz = new THREE.Object3D(); mz.position.set(sx, 1.05, gz - 0.97); g.add(mz); muzzles.push(mz);
+  }
+  g.userData.muzzles = muzzles;
+  if (isPlayer) {
+    const spot = new THREE.SpotLight(0xfff0c8, 0, 90, 0.5, 0.5, 1.2);
+    spot.position.set(0, 0.9, -hl); spot.target.position.set(0, 0, -20);
+    g.add(spot, spot.target); g.userData.spot = spot;
+  }
+  g.userData.wheels = wheels; g.userData.steer = steer; g.userData.mBody = mSide; g.userData.mPaint = mPaint;
+  g.userData.base = 0xffffff; g.userData.paint = paint; g.userData.tail = mTail; g.userData.head = mHead;
+  scene.add(g);
+  return g;
+}
+
+const R_CAR = 2.0;
+class Car {
+  constructor(mesh, player) {
+    Object.assign(this, { mesh, player, x: 0, z: 0, h: 0, vx: 0, vz: 0, hp: 100, alive: true, steer: 0, wreck: 0, fireCd: 0, ai: null });
+  }
+  get speed() { return Math.hypot(this.vx, this.vz); }
+  get fwd() { return [-Math.sin(this.h), -Math.cos(this.h)]; }
+  place(x, z, h) { this.x = x; this.z = z; this.h = h; this.vx = this.vz = 0; this.yb = undefined; this.yv = 0; this.air = 0; this.nitro = 0; this.sync(); }
+  sync() {
+    const [fx, fz] = this.fwd, rx = -fz, rz = fx;
+    const hf = surfaceH(this.x + fx * 1.7, this.z + fz * 1.7), hb = surfaceH(this.x - fx * 1.7, this.z - fz * 1.7);
+    const hr = surfaceH(this.x + rx * 0.9, this.z + rz * 0.9), hl = surfaceH(this.x - rx * 0.9, this.z - rz * 0.9);
+    this.mesh.position.set(this.x, Math.max(surfaceH(this.x, this.z), (hf + hb) / 2) + 0.34 + (this.air || 0), this.z);
+    if (this.air > 0.2) { this._ap = (this._ap ?? Math.atan2(hf - hb, 3.4)) - 0.35 * (1 / 60); this.mesh.rotation.set(Math.max(-0.5, this._ap), this.h, this.mesh.rotation.z * 0.98, 'YXZ'); return; }
+    this._ap = undefined;
+    this.mesh.rotation.set(Math.atan2(hf - hb, 3.4), this.h, Math.atan2(hr - hl, 1.8), 'YXZ');
+  }
+}
+
+function drive(c, inp, dt) {
+  let MAX = c.maxV || (c.player ? 44 : (c.ai && c.ai.mode === 'hunt' ? 36 : 15));
+  const boost = c.nitro > 0 ? 1.6 : 1; MAX *= c.nitro > 0 ? 1.3 : 1;
+  const grip = c.air > 0.25 ? 0.08 : 1; // airborne: no traction
+  const [fx, fz] = c.fwd, rx = -fz, rz = fx; // right vector
+  let vf = c.vx * fx + c.vz * fz, vr = c.vx * rx + c.vz * rz;
+  const acc = (c.accK || 1) * boost * grip;
+  if (inp.t > 0) { if (vf < MAX) vf += inp.t * (vf < 0 ? 26 : Math.max(2, 15 - vf * 0.12 * 44 / MAX)) * acc * dt; }
+  else if (inp.t < 0) { if (vf > 0.5) vf -= 30 * grip * dt; else if (vf > -13) vf += inp.t * 11 * grip * dt; }
+  else vf -= vf * 0.45 * grip * dt;
+  if (c.nitro > 0 && vf < MAX) vf += 9 * dt;
+  vf -= vf * Math.abs(vf) * 0.0011 * dt * 10 * (44 / Math.max(44, MAX));
+  // handbrake: the rear lets go; keep the slide going a moment after release if the throttle is held (drift)
+  if (inp.hb && Math.abs(vf) > 7) c.drift = 0.8; else c.drift = Math.max(0, (c.drift || 0) - dt * (inp.t > 0 ? 0.7 : 2.5));
+  if (inp.hb) vf -= vf * 0.55 * dt;
+  vr *= Math.exp(-(inp.hb ? 1.0 : c.drift > 0 ? 2.4 : 9) * grip * dt);
+  // gravity along the slope of the Chantenay hills
+  const slope = (surfaceH(c.x + fx * 1.7, c.z + fz * 1.7) - surfaceH(c.x - fx * 1.7, c.z - fz * 1.7)) / 3.4;
+  vf -= 9.81 * slope * 0.75 * dt;
+  c.steer += (inp.s - c.steer) * Math.min(1, dt * 8);
+  const yaw = c.steer * Math.max(-1, Math.min(1, vf / 6)) * (2.1 / (1 + Math.abs(vf) / 30)) * (inp.hb ? 1.9 : c.drift > 0 ? 1.35 : 1) * (grip < 1 ? 0.25 : 1);
+  c.h += yaw * dt;
+  const [nfx, nfz] = c.fwd, nrx = -nfz, nrz = nfx;
+  c.vx = nfx * vf + nrx * vr; c.vz = nfz * vf + nrz * vr;
+  const ox = c.x, oz = c.z;
+  c.x += c.vx * dt; c.z += c.vz * dt;
+  if (groundH(c.x, c.z) < WATER_Y + 0.9) { // the Loire is not drivable
+    c.x = ox; c.z = oz; c.vx *= -0.3; c.vz *= -0.3;
+    if (c.player && Math.random() < 0.3) spawnFx(c.x, 0.5, c.z, 0.6, 0x9fc4d8, 0.4, 3, 2);
+  }
+  if (HD) { // vertical motion: crests and bridge ramps throw the car in the air at speed
+    const g = surfaceH(c.x, c.z);
+    if (c.yb === undefined || Math.abs(c.yb - g) > 8) { c.yb = g; c.yv = 0; c.air = 0; }
+    const ny = c.yb + (c.yv || 0) * dt - 11 * dt * dt;
+    if (ny > g + 0.14) { c.yv -= 22 * dt; c.yb = ny; c.air = c.yb - g; }
+    else {
+      if (c.air > 0.4 && c.yv < -6) { spawnFx(c.x, 0.3, c.z, 0.5, 0xffe28a, 0.2, 2, 2); if (c.local) { sfx.hit(); rumbleFor(c.owner, 0.5, 0.5, 150); } if (c.yv < -12) damage(c, (-c.yv - 12) * 1.5); }
+      c.yv = Math.max(-14, Math.min(14, (g - c.yb) / Math.max(dt, 1e-3))); c.yb = g; c.air = 0;
+    }
+  }
+  let impact = 0;
+  for (let it = 0; it < 2; it++) impact = Math.max(impact, collideWalls(c));
+  c.x = Math.max(CX - HX - 30, Math.min(CX + HX + 30, c.x));
+  c.z = Math.max(CZ - HZ - 30, Math.min(CZ + HZ + 21, c.z));
+  return impact;
+}
+function collideWalls(c) {
+  // the car is about 4.4 m by 1.8 m: three circles along its length (front, middle, rear) rather than one big
+  // circle, so it fits through any gap a little wider than itself
+  const segs = cellOf(c.x, c.z); if (!segs) return 0;
+  const [fx, fz] = c.fwd, half = c.mesh && c.mesh.userData.hl ? Math.max(1, c.mesh.userData.hl - 1.0) : 1.25;
+  let impact = 0;
+  for (const [k, r] of [[half, 1.0], [0, 1.0], [-half, 1.0]]) {
+    for (const [ax, az, bx, bz] of segs) {
+      const cx = c.x + fx * k, cz = c.z + fz * k;
+      const dx = bx - ax, dz = bz - az, L2 = dx * dx + dz * dz || 1e-6;
+      let t = ((cx - ax) * dx + (cz - az) * dz) / L2; t = Math.max(0, Math.min(1, t));
+      const px = ax + dx * t, pz = az + dz * t;
+      let nx = cx - px, nz = cz - pz; const d = Math.hypot(nx, nz);
+      if (d >= r) continue;
+      if (d < 1e-4) { nx = -dz; nz = dx; } const l = Math.hypot(nx, nz) || 1; nx /= l; nz /= l;
+      c.x += nx * (r - d); c.z += nz * (r - d);
+      const vn = c.vx * nx + c.vz * nz;
+      if (vn < 0) { impact = Math.max(impact, -vn); c.vx -= 1.25 * vn * nx; c.vz -= 1.25 * vn * nz; c.vx *= 0.9; c.vz *= 0.9; }
+    }
+  }
+  return impact;
+}
+function segHit(ox, oz, dx, dz, maxT) { // ray vs walls, returns distance
+  let best = maxT; const seen = new Set();
+  for (let s = 0; s <= maxT; s += CELL * 0.5) {
+    const segs = cellOf(ox + dx * s, oz + dz * s); if (!segs) continue;
+    for (const sg of segs) {
+      if (seen.has(sg)) continue; seen.add(sg);
+      const [ax, az, bx, bz] = sg, ex = bx - ax, ez = bz - az;
+      const den = dx * ez - dz * ex; if (Math.abs(den) < 1e-9) continue;
+      const t = ((ax - ox) * ez - (az - oz) * ex) / den, u = ((ax - ox) * dz - (az - oz) * dx) / den;
+      if (t > 0 && t < best && u >= 0 && u <= 1) best = t;
+    }
+    if (best < s) break;
+  }
+  return best;
+}
+
