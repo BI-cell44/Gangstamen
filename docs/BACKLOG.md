@@ -15,7 +15,7 @@
 - [x] Lanceur de tests unique `node tools/run-tests.js <fichier>` : chargement, partie solo, missions, garages, tram, bords, combat, sauvegarde ; rapport lisible et code de sortie.
 - [x] Mesures de performance enregistrées à chaque cycle (appels de dessin, triangles, maillages, mémoire, temps de simulation, temps de chargement par étape) dans `docs/perf.json`, pour comparer les versions.
 - [x] Superposition de performance en jeu (touche F3) : images par seconde, ms par image, appels de dessin, triangles.
-- [x] **Qualité automatique** : délai de grâce de 15 s au démarrage et après un chargement, case pour la désactiver, mesure sur la médiane plutôt que la moyenne.
+- [x] **Qualité automatique** : case pour la désactiver. *La variante médiane + délai de grâce de 15 s a été retirée le 14 novembre à la demande de l'utilisateur : l'ancienne règle (moyenne sur 5 s, baisse sous 25 images par seconde) marchait mieux chez lui.*
 - Critère d'acceptation : tous les tests passent sur les trois sorties ; le message de baisse de qualité ne s'affiche plus pendant le chargement.
 
 ### Cycle 2 : fluidité ★★★ (fait le 14 nov. 2026 : appels de dessin −64 %, triangles −62 % en HD)

@@ -98,7 +98,7 @@ Le chargement de la HD (×11 par rapport au classique) vient des étapes propres
 Performances réelles, son (intro, radio, voix, cloche du tram), vibrations, ressenti de conduite, équilibre des missions, parties en ligne à plusieurs.
 
 ## 4. Bugs et limites connus
-- ~~Qualité graphique réduite à tort au lancement de la HD~~ : corrigé sur `ultra` (cycle 1), à confirmer par l'utilisateur sur sa machine.
+- Qualité automatique : l'ancienne règle (moyenne sur 5 s, baisse sous 25 images par seconde) est rétablie à la demande de l'utilisateur, qui la trouvait meilleure ; seule la case pour la couper reste du cycle 1.
 - Mines du Vautour et bout de pont près de Jean-Macé : corrigés, **non revérifiés par l'utilisateur**.
 - Escalier Sainte-Anne : les volées du bas dépassent un peu du terrain.
 - Le Vautour fuit « vers le quai de la Fosse » alors que le quai est dans la carte.

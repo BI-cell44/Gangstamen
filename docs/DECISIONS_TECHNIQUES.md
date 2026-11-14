@@ -43,6 +43,9 @@ Le bac à sable n'atteint ni OSM, ni Overpass, ni l'IGN. Les requêtes (`tools/f
 **Bénéfice** : évolutions plus rapides et plus sûres pour toutes les phases suivantes. **Risque** : faible (contrôlé par la comparaison à l'octet), mais tous les numéros de ligne des documents changent.
 **Alternative écartée** : modules ES avec bundler (Vite, esbuild) : contraire à D-01 pour un gain modeste ici.
 
+## D-15 Qualité automatique : la règle d'origine (en vigueur, 14 nov. 2026)
+Baisse d'un cran quand la moyenne sur 5 s passe sous 25 images par seconde pendant le jeu. Une variante (médiane, délai de grâce de 15 s, deux fenêtres lentes) a été essayée au cycle 1 puis retirée : chez l'utilisateur, l'ancienne marchait mieux. Ne pas la remplacer sans son accord. La case *Qualité automatique* permet de la couper.
+
 ## D-14 Moins d'appels de dessin : instances, fusion, tuiles (en vigueur, 14 nov. 2026)
 Mobilier répété dessiné en `InstancedMesh` (`gx/batch.js`), regroupé par tuile de 250 m ; l'objet renversé redevient un vrai groupe le temps de l'animation. Pièces fixes de chaque voiture fusionnées par matériau (géométries de roues fusionnées et partagées). Grands maillages coupés en tuiles de 300 m après la construction (`world/tiles.js`). **Piège** : en r128, `InstancedMesh` désactive le culling (`frustumCulled = false`) et l'écartement utilise les bornes de la géométrie seule ; on calcule des bornes qui couvrent toutes les instances et on réactive le culling. On ne coupe que ce qu'aucun autre code ne garde en référence.
 

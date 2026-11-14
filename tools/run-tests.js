@@ -74,10 +74,10 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
     expect(r.avance > 5 && r.pv < 100 && r.pv > 40 && r.horsVoie >= 2.4, JSON.stringify(r)); return r;
   });
   if (HD) {
-    await check('qualité automatique : délai de grâce puis baisse', async () => {
+    await check('qualité automatique : baisse sous 25 im/s, case respectée', async () => {
       const r = await ev(() => { const h = __gm.hd; h.setQuality(2); __gm.settings.autoQ = true; let t = performance.now() + 1000; const run = ms => { for (let k = 0; k < ms / 100; k++) { t += 100; h.perf(t); } };
-        run(600); run(10000); const inGrace = h.quality; run(20000); const after = h.quality; __gm.settings.autoQ = false; h.setQuality(2); run(12000); const off = h.quality; __gm.settings.autoQ = true; h.setQuality(0); return { inGrace, after, off }; });
-      expect(r.inGrace === 2 && r.after === 1 && r.off === 2, JSON.stringify(r) + ' started=' + await ev(() => __gm.started) + ' paused=' + await ev(() => __gm.paused) + ' intro=' + await ev(() => __gm.Intro.state)); return r;
+        run(600); run(6000); const after = h.quality; __gm.settings.autoQ = false; h.setQuality(2); run(12000); const off = h.quality; __gm.settings.autoQ = true; h.setQuality(0); return { after, off }; });
+      expect(r.after === 1 && r.off === 2, JSON.stringify(r)); return r;
     });
     await check('garages réels', async () => {
       const r = await ev(() => __gm.gx.garages.map(g => g.name)); expect(r.length >= 3, 'garages : ' + r.join(', '));
