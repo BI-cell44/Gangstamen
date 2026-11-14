@@ -65,6 +65,47 @@ function buildEdges() {
   lamp.count = nl;
   for (const o of [panel, low, foot, post, lamp]) { o.castShadow = o !== lamp; o.userData.hdLinear = true; scene.add(o); }
   edges.barriers = N; edges.lamps = lampM; edges.rows = rows;
+  edgeWalls(rows);
+}
+// (Fable 5.2, user feedback: edges that make sense.) The west, south and east edges were an invisible wall across
+// gardens and waste ground. They are now a real wall you can see: old stone garden walls between the houses, with the
+// town carrying on behind (src/make_belt.py). Streets that cross the edge are closed by roadworks: the barriers, a
+// "ROUTE BARRÉE" sign, and a trench with its heaps of earth behind.
+function edgeWalls(rows) {
+  const m = 1.5, { x0, x1, z0, z1 } = EDGE, STEP = 2.5, spots = [];
+  const near = buildingPolys.filter(b => { const p = b.p || b; let o = false; for (let i = 0; i < p.length && !o; i += 2) o = p[i] < x0 + 30 || p[i] > x1 - 30 || p[i + 1] > z1 - 30; return o; });
+  const blocked = (x, z) => groundH(x, z) < WATER_Y + 0.7 || roadEdge(x, z)[0] < 1.2 || rows.some(r => Math.hypot(r[0] - x, r[1] - z) < r[3] / 2 + 3) || near.some(b => pointInPoly(x, z, b.p || b));
+  const north = x => (TRAM ? tramWall(x) : z0);
+  for (const [ax, az, bx, bz] of [[x0 + m, z1 - m, x0 + m, north(x0 + m)], [x0 + m, z1 - m, x1 - m, z1 - m], [x1 - m, z1 - m, x1 - m, north(x1 - m)]]) {
+    const L = Math.hypot(bx - ax, bz - az), n = Math.floor(L / STEP), ry = Math.abs(bx - ax) > 1 ? 0 : Math.PI / 2;
+    for (let k = 0; k < n; k++) { const x = ax + (bx - ax) * (k + 0.5) / n, z = az + (bz - az) * (k + 0.5) / n; if (!blocked(x, z)) spots.push([x, z, ry]); }
+  }
+  edges.walls = spots.length; if (!spots.length) return;
+  const [wc, wg] = canvas(128, 128); wg.fillStyle = '#b9ae9c'; wg.fillRect(0, 0, 128, 128);
+  for (let j = 0; j < 8; j++) for (let i = 0; i < 5; i++) { const sh = 150 + ((i * 37 + j * 91) % 60); wg.fillStyle = 'rgb(' + sh + ',' + (sh - 8) + ',' + (sh - 22) + ')'; wg.fillRect(i * 26 + (j % 2) * 13 - 13 + 1, j * 16 + 1, 24, 14); }
+  const wt = new THREE.CanvasTexture(wc); if (HD) wt.encoding = THREE.sRGBEncoding;
+  const wallM = edgeMat(0xffffff, { r: 0.9, x: { map: wt } }), capM = edgeMat(0x8d8478, { r: 0.8 });
+  const wall = new THREE.InstancedMesh(new THREE.BoxGeometry(STEP + 0.04, 2.4, 0.34).translate(0, 0.9, 0), wallM, spots.length);
+  const cap = new THREE.InstancedMesh(new THREE.BoxGeometry(STEP + 0.04, 0.12, 0.46).translate(0, 2.16, 0), capM, spots.length);
+  const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), Y = new THREE.Vector3(0, 1, 0), one = new THREE.Vector3(1, 1, 1), v = new THREE.Vector3();
+  spots.forEach(([x, z, ry], i) => { q.setFromAxisAngle(Y, ry); m4.compose(v.set(x, surfaceH(x, z), z), q, one); wall.setMatrixAt(i, m4); cap.setMatrixAt(i, m4); });
+  for (const o of [wall, cap]) { o.castShadow = true; o.receiveShadow = true; o.userData.hdLinear = true; scene.add(o); }
+  // roadworks behind each barrier row: the sign, a trench, heaps of earth
+  const [sc, sg] = canvas(256, 96); sg.fillStyle = '#f4f1ea'; sg.fillRect(0, 0, 256, 96); sg.strokeStyle = '#c8201a'; sg.lineWidth = 8; sg.strokeRect(4, 4, 248, 88);
+  sg.fillStyle = '#c8201a'; sg.font = 'bold 40px Arial, sans-serif'; sg.textAlign = 'center'; sg.textBaseline = 'middle'; sg.fillText('ROUTE BARRÉE', 128, 50);
+  const st = new THREE.CanvasTexture(sc); if (HD) st.encoding = THREE.sRGBEncoding;
+  const signM = edgeMat(0xffffff, { r: 0.5, x: { map: st } }), postM = edgeMat(0x55585e, { r: 0.5, m: 0.5 }), earthM = edgeMat(0x6b5138, { r: 1 }), pitM = edgeMat(0x231c15, { r: 1 });
+  for (const [px, pz, axis, w] of rows) {
+    if (axis === 2) continue;
+    const ox = axis === 0 ? (px < (x0 + x1) / 2 ? -1 : 1) : 0, oz = axis === 1 ? 1 : 0; // outwards
+    const g = new THREE.Group(), add = (geo, mt, x, y, z) => { const o = new THREE.Mesh(geo, mt); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
+    // local frame: +z outwards, x along the barrier row
+    const sign = add(new THREE.BoxGeometry(1.6, 0.6, 0.04), [postM, postM, postM, postM, postM, signM], 0, 1.5, 0.9);
+    for (const s of [-0.6, 0.6]) add(new THREE.BoxGeometry(0.05, 1.5, 0.05), postM, s, 0.75, 0.92);
+    const tw = Math.min(w - 1, 5); add(new THREE.BoxGeometry(tw, 0.06, 2.2), pitM, 0, 0.04, 3.4);
+    for (const [hx, hz, hr] of [[-tw / 2 - 0.9, 3.2, 1.1], [tw / 2 + 0.7, 3.9, 0.9], [0.4, 5.6, 1.3]]) { const h = add(new THREE.ConeGeometry(hr, hr * 0.8, 7), earthM, hx, hr * 0.38, hz); h.rotation.y = hx; }
+    g.position.set(px, surfaceH(px, pz), pz); g.rotation.y = Math.atan2(ox, oz); g.traverse(o => { o.userData.hdLinear = true; }); scene.add(g);
+  }
 }
 const edges = { barriers: 0 };
 

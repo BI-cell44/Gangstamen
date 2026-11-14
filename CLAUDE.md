@@ -25,6 +25,8 @@ Jeu de combat de voitures en 3D dans les vraies rues de Chantenay (Nantes), un f
 - Nouveau réglage : valeur par défaut dans `settings`, enregistrement par `saveSettings()`.
 - Nouveau sujet réseau : l'ajouter à la capacité `room` de **chaque** artifact (`hit`, `hb`, `ko`, `bko`, `qc`, `rk`, `bl` aujourd'hui), sinon il devient muet pour les autres joueurs.
 - Libérer géométries et matériaux des objets retirés, sauf `userData.shared`. Les tirs partent de `muzzleOf(c)`. Arbres et lampadaires passent par `roadEdge` / `offRoad`.
+- Avant d'ajouter une fonction dans `src/gx/` ou ailleurs, vérifier que son nom est libre (`grep -rn "function nom" src`) : tout est dans une seule portée, un doublon remplace l'autre sans erreur.
+- Shader maison : inclure `<common>` et les morceaux `logdepthbuf` (D-19). Bâtiments et rues inventés au-delà des bords : `src/make_belt.py`, marqués `x: 1`.
 - L'intro remplace temporairement six voitures : `Intro.reset()` doit toujours rétablir l'état.
 - Données : jamais d'image Google / Street View ni de photo de personne réelle ; tenir `DATA-LICENSES.md` à jour. Les sites de données (OSM, IGN) ne sont joignables que par le navigateur de l'utilisateur : `tools/fetch_data_browser.js`.
 

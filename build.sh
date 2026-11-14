@@ -17,6 +17,7 @@ t = t.replace('/*@HD_MODULE@*/', assemble('hd.parts')).replace('/*@GX_MODULE@*/'
 open('template.html', 'w', encoding='utf-8').write(t)
 PY
 python3 ../src/carve.py                                   # smooth road profiles, bridges, finer terrain -> world.json
+python3 ../src/make_belt.py                               # the town carries on past the edges (invented backdrop) -> world.json
 # data/facades_curated is made from data/facades by src/curate_facades.py (needs Pillow + numpy); it is committed
 python3 ../src/build_photos.py ../data/facades_curated gangstamen_facades2   # embed data + Panoramax facades -> gangstamen.html
 # HD variant: same code with the HD flag, drawn facades only (no photo atlas) and the IGN aerial photo for ground and roofs

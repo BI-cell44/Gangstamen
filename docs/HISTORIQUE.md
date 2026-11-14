@@ -17,6 +17,7 @@ Ce qui a été construit, dans l'ordre. Le détail de chaque changement est dans
 | 13 nov. 2026 | Fusion dans `main` et `server` ; dossier de passation ; branches figées `passation-2026-11-13` et `passation-2026-11-13-server`, artifacts de référence | voir `git log` |
 | 14 nov. 2026 | Carte agrandie (Sainte-Anne, quai de la Fosse), tram ligne 1, barrières, église et escalier Sainte-Anne, garages réels ; radio Pin-pon selon la vraie voiture, terrasses, mort en mission, message de KO, changement d'arme | `main` f20574b |
 | 14 nov. 2026 | Branche `ultra` : audit, feuille de route, réorganisation de la documentation (`CLAUDE.md`, `docs/`), artifact Gangstamen Ultra | `ultra` |
+| 15 nov. 2026 | Ultra (Fable 5.2) : bords de carte logiques (ville prolongée de 250 m par `make_belt.py`, murs de pierre visibles, rues fermées par un chantier) | `ultra` |
 | 14 nov. 2026 | Ultra (Fable 5.2) : piétons remodelés (formes arrondies, corpulences, coiffures, vestes, sacs, enfants, personnes âgées) | `ultra` |
 | 14 nov. 2026 | Ultra (Fable 5.2) : tram et bus remodelés en carrosseries arrondies (`world/loft.js`) | `ultra` |
 | 14 nov. 2026 | Ultra (Fable 5.2) : physique réaliste, fin de la glisse de côté (signe de l'angle de dérive en marche arrière, répartition de freinage) | `ultra` |

@@ -404,5 +404,33 @@
   "simMs": 5.41,
   "loadS": 23,
   "failed": 0
+ },
+ {
+  "date": "2026-11-14T23:22",
+  "label": "Fable : bords de carte",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 718,
+  "trianglesK": 886,
+  "meshes": 2631,
+  "geometries": 2290,
+  "materials": 420,
+  "heapMB": 273,
+  "simMs": 4.43,
+  "loadS": 20,
+  "failed": 0
+ },
+ {
+  "date": "2026-11-14T23:22",
+  "label": "Fable : bords de carte",
+  "build": "gangstamen.html",
+  "drawCalls": 376,
+  "trianglesK": 486,
+  "meshes": 1100,
+  "geometries": 920,
+  "materials": 155,
+  "heapMB": 117,
+  "simMs": 1.04,
+  "loadS": 5,
+  "failed": 0
  }
 ]

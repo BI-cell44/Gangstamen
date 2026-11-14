@@ -1,6 +1,6 @@
 # État du projet
 
-Mis à jour le 14 novembre 2026 (branche `ultra`, cycles 0 à 14 faits (feuille de route des phases 0 à 3 terminée), sources découpées ; chantiers Fable 5.2 en cours : faits : glisse de côté en réaliste, tram et bus, modèles des piétons ; prochains : bords de carte logiques, refonte des piétons (trottoirs), Loire et bateaux ; phase 4 sur accord ; l'utilisateur a demandé d'enchaîner jusqu'au cycle 14). À relire en premier avec `CLAUDE.md`.
+Mis à jour le 15 novembre 2026 (branche `ultra`, cycles 0 à 14 faits (feuille de route des phases 0 à 3 terminée), sources découpées ; chantiers Fable 5.2 en cours : faits : glisse de côté en réaliste, tram et bus, modèles des piétons, bords de carte ; prochains : refonte des piétons (trottoirs), Loire et bateaux, conduite des IA par voies ; phase 4 sur accord ; l'utilisateur a demandé d'enchaîner jusqu'au cycle 14). À relire en premier avec `CLAUDE.md`.
 
 ## 1. Le jeu aujourd'hui
 
@@ -14,7 +14,7 @@ Trois sorties, construites depuis le même code (`sh build.sh`) :
 | `gangstamen-hd.html` | Version HD : rendu HDR, météo, campagne, vie de quartier (5,3 Mo) |
 | `gangstamen-ultra.html` | Branche `ultra` uniquement : la HD qui reçoit les évolutions de la feuille de route (`docs/BACKLOG.md`) |
 
-**La carte** : 2 037 m sur 1 532 m (x de −372,5 à 1 664, z de −845 à 686,5 ; origine fixe 47,2025° N, −1,590005° E, x vers l'est, z vers le sud), du boulevard de la Liberté à la butte Sainte-Anne et au quai de la Fosse. Au nord, la ligne 1 du tram ferme la carte ; ailleurs, des barrières de chantier. Environ 4 800 bâtiments, 1 800 rues et chemins, relief IGN, Loire.
+**La carte** : 2 037 m sur 1 532 m (x de −372,5 à 1 664, z de −845 à 686,5 ; origine fixe 47,2025° N, −1,590005° E, x vers l'est, z vers le sud), du boulevard de la Liberté à la butte Sainte-Anne et au quai de la Fosse. Au nord, la ligne 1 du tram ferme la carte ; ailleurs, des murs de pierre et des rues fermées par un chantier, avec une ville inventée qui continue 250 m au-delà (`src/make_belt.py`). Environ 4 800 bâtiments, 1 800 rues et chemins, relief IGN, Loire.
 
 **Ce que le joueur peut faire**
 - Combat libre contre les bots (KO, chrono, équipes), colline, course, capture du drapeau.

@@ -134,6 +134,14 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
     });
     expect(r.schema && r.capture && r.code === 'GSTM2-' && r.slot2Vide && r.importErr && r.importOk && r.retour && r.stocke, JSON.stringify(r)); return r;
   });
+  await check('bords de carte : murs visibles, ville au-delà, rien de jouable dehors', async () => {
+    const r = await ev(() => {
+      const W = __gm.W, G = __gm.G, E = __gm.EDGE, out = { murs: __gm.edges.walls, maisons: W.buildings.filter(b => b.x).length, rues: W.roads.filter(r => r.x).length };
+      let far = 0; for (let i = 0; i < G.x.length; i++) if (G.adj[i].length && (G.x[i] < E.x0 - 30 || G.x[i] > E.x1 + 30 || G.z[i] > E.z1 + 30)) far++;
+      out.noeudsDehors = far; return out;
+    });
+    expect(r.murs > 300 && r.maisons > 800 && r.rues > 10 && r.noeudsDehors === 0, JSON.stringify(r)); return r;
+  });
   await check('mur du tram (nord)', async () => {
     const r = await ev(() => { const c = __gm.locals()[0].car, x = 600, w = __gm.tramWall(x); c.place(x, w + 8, Math.PI); c.hp = 100; for (let i = 0; i < 60; i++) { c.vx = 0; c.vz = -8; __gm.step(1 / 30); } return +(c.z - w).toFixed(2); });
     expect(r > 0, 'la voiture a franchi les voies (' + r + ')'); return { marge: r };
