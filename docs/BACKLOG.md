@@ -64,10 +64,12 @@
 
 ## Phase 2 : un monde vivant (cycles 7 à 9)
 
-### Cycle 7 : circulation v2 ★★★
-- Voies, intersections avec priorités, **feux tricolores** aux vrais carrefours (nœuds OSM `traffic_signals`), passages piétons, respect du tram.
-- Comportements : clignotants, dépassement, embouteillages, réaction au danger (fuite, coups de klaxon), bus TAN sur leur ligne.
-- Densité selon l'heure du jour.
+### Cycle 7 : circulation v2 ★★★ (fait le 14 nov. 2026 ; captures : `docs/captures/cycle7-*.png`)
+- [x] Données (`src/convert.py` → `W.traffic`, sens uniques `o` sur les rues) : 11 carrefours à **feux** réels (nœuds `traffic_signals` regroupés), 133 stops et cédez-le-passage, 292 passages piétons, 24 tronçons de **lignes de bus TAN** (relations `route=bus`), 39 arrêts.
+- [x] `src/gx/traffic.js` : graphe orienté (`G.out`, sens uniques respectés), rues larges préférées aux chemins, voie de droite à la largeur de la rue ; feux (cycle de 39 s, deux axes, feux visibles en instances), arrêt au stop, cédez-le-passage (attente de 8 s au plus), arrêt pour un piéton sur le passage ou devant la voiture ; clignotants avant les virages ; dépassement d'une voiture immobile hors file d'attente, si personne n'arrive en face ; panique et klaxon aux coups de feu (les feux sont alors grillés) ; densité selon l'heure (30 % la nuit, 125 % aux heures de pointe).
+- [x] Bus TAN (forme simple, blanc et vert) sur leurs vraies lignes, arrêt de 10 s aux arrêts, collision sur toute leur longueur.
+- [x] Tram : les rues s'arrêtent avant les voies (données), les nœuds du graphe au nord du mur du tram sont exclus.
+- [x] **Retours de jeu traités** : police contre Rapaces (patrouilles qui prennent en chasse un Rapace vu à moins de 75 m, et le Rapace riposte) ; véhicules bloqués (cibles hors carte ou derrière les barrières exclues, chemins étroits évités, voiture qui recule trois fois en 15 s remise sur une rue proche hors de vue) : marches arrière divisées par plus de deux en simulation.
 
 ### Cycle 8 : ambiance et vie ★★
 - Piétons selon les lieux et l'heure (marché de la butte, sorties d'école, quais le soir), terrasses qui se remplissent le soir.
@@ -99,17 +101,27 @@
 - Découvertes (lieux emblématiques à trouver, « cartes postales »), activités réparties sur la carte, progression qui débloque garages, voitures et défis.
 
 ## Phase 4 : élargir (après la phase 3)
+- **Idée de l'utilisateur (14 nov.) : navettes fluviales vers l'île de Nantes.** Des bateaux font la navette sur la Loire (comme le Navibus) ; on peut sauter dessus avec la voiture depuis un ponton, pour un niveau en plus au bout de l'île de Nantes, avec l'éléphant mécanique et le carrousel des mondes marins. Attention : le Grand Éléphant et le Carrousel des Mondes Marins (Machines de l'île) sont des œuvres protégées. Les modéliser fidèlement serait une reproduction ; on ferait des machines originales dans le même esprit (grand animal mécanique, manège à créatures marines), à valider avec l'utilisateur. C'est un agrandissement du monde : accord de l'utilisateur avant de commencer.
 - Streaming du monde par tuiles (chargement et déchargement) une fois le rendu par tuiles en place.
 - Nouveaux quartiers : Bas-Chantenay industriel, île de Nantes par un pont.
 - Synchronisation en ligne des bonus, de la circulation et du tram ; capture du drapeau en ligne.
 
+## À confier à Claude Fable 5.2 (demande de l'utilisateur, 14 nov. 2026)
+Chantiers où un modèle plus fort apporterait le plus : gros morceaux de code à repenser d'un bloc, ou réglages fins difficiles à juger sans voir, entendre ni jouer.
+- **Refonte des piétons** (`src/gx/pedestrians.js`, `crowd.js`, `terraces.js`) : navigation sur les trottoirs qui respecte vraiment les murs (aujourd'hui la fuite les fait traverser les bâtiments), traversées aux passages piétons, groupes, animations plus riches, réactions (fuite, panique, regard), foule qui change selon le lieu et l'heure. C'est le plus gros chantier de la liste.
+- **IA de conduite** (bots Rapaces, police, circulation) : planification de trajets, poursuites et interceptions, évitement entre voitures, manœuvres de déblocage propres au lieu d'une marche arrière à l'aveugle.
+- **Physique réaliste** : ressenti au clavier et à la manette, glisse, aide au pilotage, dégâts de la carrosserie.
+- **Bugs de rendu difficiles** : herbe qui recouvre la route selon l'angle (mairie), eau de la Loire sur la terre près du pont, taches de lumière des lampadaires dans l'intro.
+- **Multijoueur en ligne** : synchronisation de la circulation, du tram et des bonus, latence, reprise après déconnexion.
+- **Architecture** : chaque système déclare ce qu'il utilise des autres (suite de D-12), pour pouvoir confier un module à part.
+
 ## Retours de jeu de l'utilisateur (14 nov. 2026), à traiter
 Décision de l'utilisateur (14 nov.) : chaque point est traité dans le cycle où il est prévu ; les corrections partent aussi dans `main` (classique et HD).
 Captures dans `docs/retours/`.
-- [ ] **Police contre Rapaces** : la police doit aussi s'en prendre aux Rapaces (cycle 7 ou avant).
+- [x] **Police contre Rapaces** : fait au cycle 7 (patrouilles, riposte des Rapaces).
 - [ ] **Piétons qui traversent les murs en fuyant** : la fuite (voiture qui arrive) les décale sans tenir compte des bâtiments ; les garder sur le trottoir ou les arrêter aux murs (cycle 8, ou correctif rapide).
 - [x] **Dégâts des gros sauts** : faits au cycle 4 (arcade : au-delà de 12 m/s à la réception ; réaliste : au-delà de 8 m/s, deux fois plus forts) ; à régler après essai.
-- [ ] **Véhicules bloqués**, surtout près du pont de la place Jean-Macé : revoir les déplacements de la circulation et des bots (cycle 7, ou correctif rapide).
+- [x] **Véhicules bloqués**, surtout près du pont de la place Jean-Macé : fait au cycle 7. Cause trouvée en simulation : voitures envoyées vers des nœuds hors carte (barrières) et dans les chemins étroits (chemin des Vignes du Bourg, place Jean-Macé, 4 m de large). À revérifier en jeu.
 - [ ] **Bug d'affichage d'étage dans la carrière Misery** (bâtiment mal posé sur la pente ?).
 - [ ] **Près de la mairie, de l'herbe apparaît selon l'angle de la caméra** : `2026-11-14-boulevard.png` et `2026-11-14-mairie-herbe.png` montrent le **même endroit** (boulevard de la Liberté devant la mairie) sous deux angles ; sur l'une la chaussée et le trottoir sont normaux, sur l'autre une pelouse les recouvre. Piste : conflit de profondeur entre la surface verte (parc ou pelouse OSM, ou sol HD selon la photo aérienne) et la route, qui dépend de la distance et de l'angle ; ou ordre de dessin des tuiles.
 - [ ] **Eau de la Loire visible sur la terre ferme près d'un pont** (`2026-11-14-eau-pont.png` : nappes bleues sur le pavé, tablier du pont qui flotte) : le relief y descend sous le niveau de l'eau.

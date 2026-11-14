@@ -377,14 +377,22 @@ function offRoad(x, z, margin) {
 }
 
 // road graph for AI
-const G = { x: [], z: [], adj: [], idx: new Map() };
+// adj: both ways (bots, police); out: the legal direction (one-way streets) for the civil traffic; ew: width of the street
+const G = { x: [], z: [], adj: [], out: [], ew: new Map(), idx: new Map() };
 function gnode(x, z) {
   const k = Math.round(x * 2) + ',' + Math.round(z * 2);
   let id = G.idx.get(k);
-  if (id === undefined) { id = G.x.length; G.idx.set(k, id); G.x.push(x); G.z.push(z); G.adj.push([]); }
+  if (id === undefined) { id = G.x.length; G.idx.set(k, id); G.x.push(x); G.z.push(z); G.adj.push([]); G.out.push([]); }
   return id;
 }
-function glink(a, b) { if (a !== b && !G.adj[a].includes(b)) { G.adj[a].push(b); G.adj[b].push(a); } }
+function glink(a, b, w = 6.5, o = 0) {
+  if (a === b) return;
+  if (!G.adj[a].includes(b)) { G.adj[a].push(b); G.adj[b].push(a); }
+  if (o !== -1 && !G.out[a].includes(b)) G.out[a].push(b);
+  if (o !== 1 && !G.out[b].includes(a)) G.out[b].push(a);
+  const k1 = a * 65536 + b, k2 = b * 65536 + a; G.ew.set(k1, Math.max(G.ew.get(k1) || 0, w)); G.ew.set(k2, Math.max(G.ew.get(k2) || 0, w));
+}
+const edgeW = (a, b) => G.ew.get(a * 65536 + b) || 6.5;
 
 function buildGround() {
   // Terrain from the IGN ground model (12.5 m grid), extended past the data edge
@@ -428,7 +436,7 @@ function buildGround() {
     if (r.b) { // bridge: deck built below; still part of the road network
       if (r.d) {
         let prev = -1; const n = p.length / 2;
-        for (let i = 0; i < n; i++) { const id = gnode(p[2 * i], p[2 * i + 1]); if (prev >= 0) glink(prev, id); prev = id; }
+        for (let i = 0; i < n; i++) { const id = gnode(p[2 * i], p[2 * i + 1]); if (prev >= 0) glink(prev, id, r.w, r.o || 0); prev = id; }
         for (let i = 0; i < n - 1; i++) roadSegAdd(p[2 * i], p[2 * i + 1], p[2 * i + 2], p[2 * i + 3], r.w, r.n);
       }
       return;
@@ -456,7 +464,7 @@ function buildGround() {
       for (let i = 0; i < n; i++) {
         const x = p[2 * i], z = p[2 * i + 1];
         if (Math.abs(x - CX) > HX + 25 || Math.abs(z - CZ) > HZ + 15) { prev = -1; continue; }
-        const id = gnode(x, z); if (prev >= 0) glink(prev, id); prev = id;
+        const id = gnode(x, z); if (prev >= 0) glink(prev, id, r.w, r.o || 0); prev = id;
       }
       for (let i = 0; i < n - 1; i++) roadSegAdd(p[2 * i], p[2 * i + 1], p[2 * i + 2], p[2 * i + 3], r.w, r.n);
     } else {

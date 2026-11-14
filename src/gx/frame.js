@@ -4,16 +4,20 @@
     shoutCd -= dt;
     const B = budget();
     // traffic: top up, remove the far ones and the wrecks
-    const civs = npcs.filter(c => c.npc === 'civ').length;
-    if (civs < B.civ && R() < dt * 4) spawnCiv();
+    trafficSetup(); lightsTick(dt); busTick(dt);
+    const civs = npcs.filter(c => c.npc === 'civ' && !c.bus).length;
+    if (civs < Math.round(B.civ * densityNow()) && R() < dt * 4) spawnCiv();
+    // a police patrol now and then (it goes for the Rapaces it sees; cycle 7)
+    if (policeOn() && !npcs.some(c => c.npc === 'cop' && !c.chase) && R() < dt * 0.05) spawnPatrol();
     for (const c of npcs.slice()) {
       const d = minPlayerDist(c.x, c.z);
       if (!c.alive) { c.dead += dt; c.vx *= 0.95; c.vz *= 0.95; c.x += c.vx * dt; c.z += c.vz * dt; if (c.dead > 12 || d > 300) removeNpc(c); continue; }
-      if (d > 340 || (c.npc === 'cop' && !c.chase && d > 200)) { removeNpc(c); continue; }
-      const inp = c.npc === 'cop' && c.chase ? copInput(c, dt) : civInput(c, dt);
+      if (d > 340 || (c.npc === 'cop' && !c.chase && !c.prey && d > 260)) { removeNpc(c); continue; }
+      if (c.npc === 'cop' && !c.chase) patrolLook(c, dt);
+      const inp = c.bus ? busInput(c, dt) : c.npc === 'cop' && (c.chase || c.prey) ? copInput(c, dt) : civInput(c, dt);
       drive(c, inp, dt);
       if (c.npc === 'cop' && c.mesh.userData.siren) { // blue lights, alternating
-        const on = !!c.chase, ph = (performance.now() / 1000 * 3.4) % 1;
+        const on = !!(c.chase || c.prey), ph = (performance.now() / 1000 * 3.4) % 1;
         c.mesh.userData.siren[0].emissiveIntensity = on ? (ph < 0.5 ? 14 : 0.3) : 0.3; c.mesh.userData.siren[1].emissiveIntensity = on ? (ph >= 0.5 ? 14 : 0.3) : 0.3;
         if (on && ph < 0.05 && R() < 0.5) hd.flashAt(c.x, c.mesh.position.y + 2.2, c.z, 0.15, 0.3, 1.2, 6, 0.12);
       }

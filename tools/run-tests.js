@@ -168,6 +168,34 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
       const bad = Object.entries(r).filter(([k, [t100, beta, hb]]) => !(t100 > 1.8 && t100 < 4.5 && beta < 20 && hb > 60));
       expect(!bad.length, 'hors limites : ' + JSON.stringify(bad)); return r;
     });
+    await check('circulation v2 : feux, sens unique, police contre Rapaces, bus', async () => {
+      const r = await ev(() => {
+        const X = __gm.gx, T = X.traffic, out = {}; for (let i = 0; i < 3; i++) __gm.step(1 / 30);
+        out.feux = T.lights.length; out.stops = T.stops.length; out.lignes = T.busLines.length;
+        // a car 30 m before a junction: must stop on red, may go on green
+        const j = T.lights[0], c = X.makeNpc('civ'), h = j.ax; c.place(j.x + Math.sin(h) * 30, j.z + Math.cos(h) * 30, h); c.nav = { stopDone: -1, hold: 0 };
+        let red = -1, green = -1; for (let t = 0; t < 39; t += 0.5) { T.t = t - j.ph; const st = X.lightState(j, h); const s = X.roadRules(c, 8).stopAt; if (st === 'r' && red < 0) red = s; if (st === 'g' && green < 0) green = s; }
+        out.rouge = Math.round(red); out.vert = green > 1e8 ? 'libre' : Math.round(green); __gm.scene.remove(c.mesh);
+        // one-way streets: the legal direction only
+        const G = __gm.G; let ow = 0, bad = 0;
+        for (let a = 0; a < G.x.length; a++) { if (!__gm.nodeOk(a)) continue; for (const b of G.adj[a]) if (!G.out[a].includes(b)) ow++;
+          for (const p of G.adj[a]) { if (!G.out[a].some(n => n !== p && __gm.nodeOk(n))) continue; for (let k = 0; k < 6; k++) { const n = X.nextNode(p, a); if (!G.out[a].includes(n)) bad++; } } }
+        out.sensUniques = ow; out.contreSens = bad;
+        // a police patrol that sees a Rapace goes after it, and the Rapace fights back
+        const rv = __gm.rivals().find(o => o.alive) || __gm.rivals()[0]; rv.alive = true; rv.gone = false; rv.proxy = false;
+        let na = -1, nb = -1; for (let a = 0; a < G.x.length && na < 0; a++) { if (!__gm.nodeOk(a)) continue; for (const b of G.adj[a]) { const d = Math.hypot(G.x[b] - G.x[a], G.z[b] - G.z[a]); if (d > 25 && d < 45 && __gm.nodeOk(b) && Math.hypot(G.x[a] - 400, G.z[a] - 300) < 300) { na = a; nb = b; break; } } }
+        rv.place(G.x[nb], G.z[nb], 0); rv.hp = 100;
+        const pc = __gm.locals()[0].car; pc.place(G.x[na] + 160, G.z[na] + 160, 0);
+        for (let k = 0; k < 10 && !X.npcs().some(o => o.npc === 'cop' && !o.chase); k++) X.spawnPatrol();
+        const cop = X.npcs().filter(o => o.npc === 'cop' && !o.chase).pop();
+        if (cop) { cop.place(G.x[na], G.z[na], Math.atan2(-(G.x[nb] - G.x[na]), -(G.z[nb] - G.z[na]))); for (let i = 0; i < 40; i++) __gm.step(1 / 30); out.proie = cop.prey === rv || (cop.prey && cop.prey.ai !== undefined); out.riposte = X.copsOn(rv).length; }
+        return out;
+      });
+      expect(r.feux >= 5 && r.rouge >= 15 && r.rouge <= 22 && r.vert === 'libre', 'feux ' + JSON.stringify(r));
+      expect(r.sensUniques > 50 && r.contreSens === 0, 'sens unique ' + JSON.stringify(r));
+      expect(r.proie && r.riposte >= 1 && r.lignes > 5, JSON.stringify(r));
+      return r;
+    });
     await check('garages réels', async () => {
       const r = await ev(() => __gm.gx.garages.map(g => g.name)); expect(r.length >= 3, 'garages : ' + r.join(', '));
       await ev(() => { const g = __gm.gx.garages[1], L = __gm.locals()[0]; L.car.place(g.x + 1, g.z + 1, 0); L.car.vx = L.car.vz = 0; for (let i = 0; i < 8; i++) __gm.step(1 / 30); });

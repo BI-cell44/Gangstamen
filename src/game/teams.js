@@ -72,7 +72,7 @@ let mode = 'solo', night = false, started = false, paused = false;
 
 function nearestNode(x, z) {
   let best = 0, bd = 1e18;
-  for (let i = 0; i < G.x.length; i++) { const d = (G.x[i] - x) ** 2 + (G.z[i] - z) ** 2; if (d < bd && G.adj[i].length) { bd = d; best = i; } }
+  for (let i = 0; i < G.x.length; i++) { const d = (G.x[i] - x) ** 2 + (G.z[i] - z) ** 2; if (d < bd && G.adj[i].length && nodeOk(i)) { bd = d; best = i; } }
   return best;
 }
 function farNode(fromX, fromZ, minD) {

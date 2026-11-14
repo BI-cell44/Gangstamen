@@ -166,5 +166,19 @@
   "simMs": 4.93,
   "loadS": 18,
   "failed": 0
+ },
+ {
+  "date": "2026-11-14T13:01",
+  "label": "cycle 7 : circulation v2",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 468,
+  "trianglesK": 568,
+  "meshes": 1868,
+  "geometries": 1560,
+  "materials": 316,
+  "heapMB": 190,
+  "simMs": 6.07,
+  "loadS": 18,
+  "failed": 0
  }
 ]

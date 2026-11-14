@@ -24,6 +24,7 @@
   function hearShot(x, z, ex = x, ez = z, loud = 1) {
     const now = performance.now(); if (now - shotLast < 120 && loud <= 1) return; shotLast = now; // a burst counts once per 0.12 s
     const R1 = 48 * loud, R2 = 16 * loud;
+    carsHearShot(x, z, loud);
     for (const p of peds) {
       if (!p.on || p.state === 'down' || !walks) continue;
       const dS = Math.hypot(p.x - x, p.z - z), dI = Math.hypot(p.x - ex, p.z - ez);

@@ -5,6 +5,7 @@
     police: ['Les gyrophares s’allument du côté de Chantenay, prudence au volant.', 'Avis aux auditeurs : la police a sorti les grands moyens.', 'Ça sent le barrage de police, mes amis.'],
     civko: ['Une pensée pour le propriétaire de cette pauvre voiture.', 'Hé, doucement avec les voitures des honnêtes gens !'],
     copko: ['Une voiture de police en flammes… ça va faire du bruit au commissariat.'],
+    copRap: ['La police est sur les traces d’une voiture des Rapaces, ça chauffe du côté de la butte !', 'Les flics coursent un Rapace, ils n’ont qu’à bien se tenir.'],
     station: [],
   };
   function dj(kind, arg) {

@@ -173,6 +173,11 @@ for wid, (pts, tg) in ways.items():
         cob = tg.get('surface') in ('sett', 'cobblestone', 'unhewn_cobblestone', 'paving_stones')
         for run in clip_line(pts, MARGIN):
             rd = {'w': w, 'd': 1 if hw in DRIVE else 0, 'n': name_idx[nm], 'b': layer, 'p': flat(run)}
+            ow = tg.get('oneway')
+            if hw in DRIVE and (ow in ('yes', 'true', '1') or (tg.get('junction') in ('roundabout', 'circular') and ow != 'no')):
+                rd['o'] = 1  # one way, in the order of the points
+            elif hw in DRIVE and ow == '-1':
+                rd['o'] = -1
             if cob:
                 rd['s'] = 1  # cobbles (pavés): rumble under the tyres
             roads.append(rd)
@@ -396,12 +401,69 @@ if BD:
             bd['k'] = 0 if (a < 260 and levels <= 3) else 1
     print('BD TOPO match', stats)
 
+# ---- traffic (cycle 7): lights, stops, give way, crossings on the drivable streets; bus lines and stops ----
+TAGN = {}
+for n in root.iter('node'):
+    t = {x.get('k'): x.get('v') for x in n.findall('tag')}
+    if t: TAGN[n.get('id')] = t
+cell = {}
+for rd in roads:
+    if not rd['d']: continue
+    p = rd['p']
+    for i in range(0, len(p) - 2, 2):
+        ax, az, bx, bz = p[i], p[i + 1], p[i + 2], p[i + 3]
+        for gx in range(int(min(ax, bx) // 20) - 1, int(max(ax, bx) // 20) + 2):
+            for gz in range(int(min(az, bz) // 20) - 1, int(max(az, bz) // 20) + 2):
+                cell.setdefault((gx, gz), []).append((ax, az, bx, bz))
+def on_drive(x, z, r=4.0):
+    for s in cell.get((int(x // 20), int(z // 20)), []):
+        ax, az, bx, bz = s; dx, dz = bx - ax, bz - az; L2 = dx * dx + dz * dz or 1e-9
+        u = max(0.0, min(1.0, ((x - ax) * dx + (z - az) * dz) / L2))
+        if math.hypot(ax + dx * u - x, az + dz * u - z) < r: return True
+    return False
+KIND = {'traffic_signals': 0, 'stop': 1, 'give_way': 2, 'crossing': 3}
+signals = []
+for nid, t in TAGN.items():
+    k = KIND.get(t.get('highway'))
+    if k is None and t.get('crossing') == 'traffic_signals': k = 0
+    if k is None or nid not in nodes: continue
+    x, z = nodes[nid]
+    if not inside((x, z), -3) or not south_of_tram(x, z, 2) or not on_drive(x, z): continue
+    signals.append([r1(x), r1(z), k])
+bus, stops = [], []
+for rel in root.iter('relation'):
+    tg = tags(rel)
+    if tg.get('route') != 'bus': continue
+    chain = []
+    for m in rel.findall('member'):
+        if m.get('type') != 'way' or m.get('role') not in ('', 'forward', 'backward'): continue
+        pts = ways.get(m.get('ref'), ([], {}))[0]
+        if len(pts) < 2: continue
+        pts = list(pts)
+        if chain:
+            e = chain[-1]
+            if math.dist(e, pts[-1]) < math.dist(e, pts[0]): pts.reverse()
+            if math.dist(e, pts[0]) > 30:  # the first way may need turning round too
+                if len(chain) and math.dist(chain[0], pts[0]) < 1: chain.reverse()
+                elif math.dist(chain[0], pts[-1]) < 1: chain.reverse(); pts.reverse()
+        chain += pts if not chain else pts[1:]
+    if len(chain) < 2: continue
+    for run in clip_line(chain, -8):
+        run = [q for q in run if south_of_tram(q[0], q[1], 3)]
+        L = sum(math.dist(run[i], run[i + 1]) for i in range(len(run) - 1))
+        if len(run) >= 2 and L > 250: bus.append({'ref': tg.get('ref', ''), 'p': flat(run)})
+for nid, t in TAGN.items():
+    if (t.get('highway') == 'bus_stop' or (t.get('public_transport') in ('platform', 'stop_position') and t.get('bus') == 'yes')) and nid in nodes:
+        x, z = nodes[nid]
+        if inside((x, z), -3) and south_of_tram(x, z, 2) and not any(math.hypot(x - s[0], z - s[1]) < 15 for s in stops): stops.append([r1(x), r1(z)])
+print('traffic', len(signals), 'signals', sum(1 for s in signals if s[2] == 0), 'lights', len(bus), 'bus runs', len(stops), 'stops')
+
 out = {
     'meta': {'hx': r1(HX), 'hz': r1(HZ), 'cx': r1(CX), 'cz': r1(CZ), 'x0': X0, 'x1': X1, 'z0': Z0, 'z1': Z1, 'lat0': lat0, 'lon0': lon0,
              'src': '© OpenStreetMap contributors (ODbL); IGN BD TOPO & RGE ALTI (Licence Ouverte)'},
     'tram': {'x0': X0, 'step': TSTEP, 's': [r1(v) for v in tS], 'n': [r1(v) for v in tN]},
     'names': names, 'buildings': buildings, 'roads': roads, 'rails': rails,
-    'greens': greens, 'trees': trees,
+    'greens': greens, 'trees': trees, 'traffic': {'signals': signals, 'bus': bus, 'stops': stops},
     'dem': ({'nx': BD['dem']['nx'], 'nz': BD['dem']['nz'], 'step': BD['dem']['STEP'], 'x0': BD['dem']['X0'], 'z0': BD['dem']['Z0'], 'h': BD['dem']['h']} if BD else None),
 }
 with open(dst, 'w', encoding='utf-8') as f:
