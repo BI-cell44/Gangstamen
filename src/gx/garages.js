@@ -148,6 +148,7 @@
     for (const ch of CAR_CHOICES) {
       if (ch.k === ac.s) continue;
       const has = own.find(o => o.s === ch.k);
+      if (!has && !unlocked(ch.k)) { list.push({ k: 'lock_' + ch.k, name: ch.name + ' (verrouillée)', desc: 'Se débloque avec : ' + LOCK_TXT[ch.k], cost: () => 0, max: 1, lvl: () => 1 }); continue; }
       list.push({ k: 'car_' + ch.k, name: (has ? 'Prendre la ' : 'Acheter la ') + ch.name, desc: has ? 'Dans ton garage · ' + ch.d : ch.d, cost: () => (has ? 0 : CAR_PRICE[ch.k] || 600),
         act: () => { keepActive(); const o = owned(), c = o.find(x => x.s === ch.k) || { s: ch.k, p: ac.p ?? 0 }; if (!o.includes(c)) o.push(c); settings.cars[0] = JSON.parse(JSON.stringify(c)); rebuildCar(L); applyUpgrades(L); } });
     }

@@ -29,7 +29,7 @@
     }
   }
   function actMarkers() { // start markers (re-added when a mission cleared them)
-    for (const a of acts) if (!a.mk || !markers.includes(a.mk)) a.mk = addMarker(a.start[0], a.start[1], 6, a.kind === 'race' ? 0x3ac8ff : 0xff9a2a);
+    for (const a of acts) if (unlocked(a.id) && (!a.mk || !markers.includes(a.mk))) a.mk = addMarker(a.start[0], a.start[1], 6, a.kind === 'race' ? 0x3ac8ff : 0xff9a2a);
   }
   function actHide() { for (const a of acts || []) if (a.mk) { scene.remove(a.mk.beam, a.mk.ring); const i = markers.indexOf(a.mk); if (i >= 0) markers.splice(i, 1); a.mk = null; } }
   function hud(title, text) { // the mission panel (title, line, arrow to the target)
@@ -84,7 +84,7 @@
     actsBuild(); const L = locals[0], c = L.car;
     if (!run) {
       actMarkers();
-      for (const a of acts) if (c.alive && Math.hypot(a.start[0] - c.x, a.start[1] - c.z) < 6 && c.speed < 8) { startAct(a); break; }
+      for (const a of acts) if (unlocked(a.id) && c.alive && Math.hypot(a.start[0] - c.x, a.start[1] - c.z) < 6 && c.speed < 8) { startAct(a); break; }
       return;
     }
     const a = run.a;
@@ -121,7 +121,7 @@
     hud(a.name, fmtT(Math.max(0, left)) + ' · ' + Math.round(run.score) + unit); objDir(null);
     if (left <= 0) { if (a.kind === 'cops') return endAct(false, 'La police t’a gardé en vue'); endAct(run.score > 0, Math.round(run.score) + unit); }
   }
-  function actMinimap(add) { if (!acts || run || mode !== 'solo' || mission) return; for (const a of acts) add({ x: a.start[0], z: a.start[1] }, a.kind === 'race' ? '#3ac8ff' : '#ff9a2a'); }
+  function actMinimap(add) { if (!acts || run || mode !== 'solo' || mission) return; for (const a of acts) if (unlocked(a.id)) add({ x: a.start[0], z: a.start[1] }, a.kind === 'race' ? '#3ac8ff' : '#ff9a2a'); }
   function actRecords() { // for the campaign screen
     return ACT_DEF.map(d => { const p = Profile.cur, r = p && (d.kind === 'race' ? p.records['race_' + d.id] : p.records['defi_' + d.id]); return { name: d.name, kind: d.kind, best: r === undefined ? null : d.kind === 'race' ? fmtT(r) : r + (d.kind === 'jump' ? ' m' : d.kind === 'smash' ? ' casses' : d.kind === 'deliv' ? ' pts' : d.kind === 'cops' ? ' s d’avance' : ' pts') }; });
   }

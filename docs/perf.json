@@ -306,5 +306,33 @@
   "simMs": 8.25,
   "loadS": 21,
   "failed": 0
+ },
+ {
+  "date": "2026-11-14T17:05",
+  "label": "cycle 14 : monde ouvert",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 602,
+  "trianglesK": 929,
+  "meshes": 2193,
+  "geometries": 1812,
+  "materials": 385,
+  "heapMB": 242,
+  "simMs": 7.91,
+  "loadS": 20,
+  "failed": 0
+ },
+ {
+  "date": "2026-11-14T17:05",
+  "label": "cycle 14 : monde ouvert",
+  "build": "gangstamen.html",
+  "drawCalls": 282,
+  "trianglesK": 399,
+  "meshes": 829,
+  "geometries": 649,
+  "materials": 127,
+  "heapMB": 242,
+  "simMs": 1,
+  "loadS": 5,
+  "failed": 0
  }
 ]

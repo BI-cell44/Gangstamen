@@ -263,6 +263,17 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
       });
       expect(r.activites === 8 && r.longueur > 250 && r.depart && r.fini && r.record > 0 && r.fantome > 3 && r.defi === 'd_smash' && r.abandon, JSON.stringify(r)); return r;
     });
+    await check('monde ouvert : cartes postales et déblocages', async () => {
+      const r = await ev(() => {
+        const X = __gm.gx, P = __gm.Profile, c = __gm.locals()[0].car, out = { lieux: X.spots.length, sportAvant: X.unlocked('sport') };
+        P.cur.found.length = 0;
+        for (const s of X.spots.slice(0, 5)) { c.place(s.x, s.z, 0); c.hp = 100; for (let i = 0; i < 20; i++) __gm.step(1 / 30); }
+        out.trouves = P.cur.found.length; out.sportApres = X.unlocked('sport'); out.policeVerrou = !X.unlocked('police');
+        out.cartes = X.postcards().filter(p => p.text).length;
+        P.cur.found.length = 0; c.place(61, 276, 0); return out;
+      });
+      expect(r.lieux >= 8 && r.trouves === 5 && r.sportApres && r.cartes === 5, JSON.stringify(r)); return r;
+    });
     await check('garages réels', async () => {
       const r = await ev(() => __gm.gx.garages.map(g => g.name)); expect(r.length >= 3, 'garages : ' + r.join(', '));
       // (cycle 12) the workshops: the forecourt no longer opens the menu, the inside does

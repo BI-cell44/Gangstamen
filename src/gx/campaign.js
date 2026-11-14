@@ -196,6 +196,9 @@
     const rb = document.createElement('div'); rb.className = 'fine'; rb.style.marginTop = '10px';
     rb.innerHTML = '<b>Courses et défis</b> (en partie solo, roule dans une balise bleue ou orange) :<br>' + actRecords().map(r => (r.kind === 'race' ? '🏁 ' : '★ ') + r.name + ' : ' + (r.best || '—')).join('<br>');
     box.append(rb);
+    const pc = postcards(), nf = pc.filter(p => p.text).length, pb = document.createElement('div'); pb.className = 'fine'; pb.style.marginTop = '10px';
+    pb.innerHTML = '<b>Cartes postales</b> : ' + nf + ' / ' + pc.length + ' lieux découverts (roule jusqu’aux lieux emblématiques ; points blancs sur la minicarte quand tu es près)<br>' + pc.map(p => '✉ ' + p.name).join(' · ');
+    box.append(pb);
   }
 
   // =====================================================================================
@@ -212,7 +215,7 @@
   function gameStep(dt) { // inside the world step
     const now = performance.now();
     step(dt);
-    puStep(dt, now); rocketStep(dt); mineStep(dt, now); shieldStep(dt); furnitureStep(dt); Fences.step(dt); actStep(dt);
+    puStep(dt, now); rocketStep(dt); mineStep(dt, now); shieldStep(dt); furnitureStep(dt); Fences.step(dt); actStep(dt); discoverStep(dt);
     for (const L of locals) {
       L.specCd = (L.specCd || 0) - dt;
       const c = L.car;

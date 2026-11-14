@@ -113,8 +113,10 @@
 - [x] Achetables au garage (1 500, 900, 1 200 de respect) et au menu *Ta voiture* ; l'utilitaire roule aussi dans la circulation ; collisions pondérées par la masse.
 - [ ] Deux-roues : non, la physique actuelle ne le permet pas proprement (à voir avec Fable 5.2).
 
-### Cycle 14 : monde ouvert ★★
-- Découvertes (lieux emblématiques à trouver, « cartes postales »), activités réparties sur la carte, progression qui débloque garages, voitures et défis.
+### Cycle 14 : monde ouvert ★★ (fait le 14 nov. 2026)
+- [x] `src/gx/discover.js` : 10 **cartes postales** à découvrir en roulant jusqu'aux lieux emblématiques (églises Sainte-Anne et Saint-Martin, escalier Sainte-Anne, mairie, place Jean-Macé, carrière Misery, gare, gare maritime, vue sur la grue Titan, temple antoiniste) : +50 de respect, points blancs sur la minicarte à proximité, galerie sur l'écran *Campagne*, enregistrées dans la sauvegarde.
+- [x] Activités réparties sur la carte (cycle 11) ; progression qui débloque : coupé sport (5 cartes postales), voiture de police et défi « Semer la police » (mission Pin-pon). Les garages réels restent ouverts dès le départ (demande de l'utilisateur).
+- [ ] Plus tard : plus de lieux, textes relus par l'utilisateur, récompenses visuelles (photos de cartes postales en mode photo).
 
 ## Phase 4 : élargir (après la phase 3)
 - **Idée de l'utilisateur (14 nov.) : navettes fluviales vers l'île de Nantes.** Des bateaux font la navette sur la Loire (comme le Navibus) ; on peut sauter dessus avec la voiture depuis un ponton, pour un niveau en plus au bout de l'île de Nantes, avec l'éléphant mécanique et le carrousel des mondes marins. Attention : le Grand Éléphant et le Carrousel des Mondes Marins (Machines de l'île) sont des œuvres protégées. Les modéliser fidèlement serait une reproduction ; on ferait des machines originales dans le même esprit (grand animal mécanique, manège à créatures marines), à valider avec l'utilisateur. C'est un agrandissement du monde : accord de l'utilisateur avant de commencer.

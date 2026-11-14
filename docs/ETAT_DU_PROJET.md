@@ -1,6 +1,6 @@
 # État du projet
 
-Mis à jour le 14 novembre 2026 (branche `ultra`, cycles 0 à 13 faits, sources découpées ; prochain : cycle 14, monde ouvert ; l'utilisateur a demandé d'enchaîner jusqu'au cycle 14). À relire en premier avec `CLAUDE.md`.
+Mis à jour le 14 novembre 2026 (branche `ultra`, cycles 0 à 14 faits (feuille de route des phases 0 à 3 terminée), sources découpées ; prochain : retours de l'utilisateur, chantiers Fable 5.2, phase 4 sur accord ; l'utilisateur a demandé d'enchaîner jusqu'au cycle 14). À relire en premier avec `CLAUDE.md`.
 
 ## 1. Le jeu aujourd'hui
 

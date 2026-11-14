@@ -6377,6 +6377,7 @@ const gx = !HD ? null : (() => {
     for (const ch of CAR_CHOICES) {
       if (ch.k === ac.s) continue;
       const has = own.find(o => o.s === ch.k);
+      if (!has && !unlocked(ch.k)) { list.push({ k: 'lock_' + ch.k, name: ch.name + ' (verrouillée)', desc: 'Se débloque avec : ' + LOCK_TXT[ch.k], cost: () => 0, max: 1, lvl: () => 1 }); continue; }
       list.push({ k: 'car_' + ch.k, name: (has ? 'Prendre la ' : 'Acheter la ') + ch.name, desc: has ? 'Dans ton garage · ' + ch.d : ch.d, cost: () => (has ? 0 : CAR_PRICE[ch.k] || 600),
         act: () => { keepActive(); const o = owned(), c = o.find(x => x.s === ch.k) || { s: ch.k, p: ac.p ?? 0 }; if (!o.includes(c)) o.push(c); settings.cars[0] = JSON.parse(JSON.stringify(c)); rebuildCar(L); applyUpgrades(L); } });
     }
@@ -7129,6 +7130,9 @@ const gx = !HD ? null : (() => {
     const rb = document.createElement('div'); rb.className = 'fine'; rb.style.marginTop = '10px';
     rb.innerHTML = '<b>Courses et défis</b> (en partie solo, roule dans une balise bleue ou orange) :<br>' + actRecords().map(r => (r.kind === 'race' ? '🏁 ' : '★ ') + r.name + ' : ' + (r.best || '—')).join('<br>');
     box.append(rb);
+    const pc = postcards(), nf = pc.filter(p => p.text).length, pb = document.createElement('div'); pb.className = 'fine'; pb.style.marginTop = '10px';
+    pb.innerHTML = '<b>Cartes postales</b> : ' + nf + ' / ' + pc.length + ' lieux découverts (roule jusqu’aux lieux emblématiques ; points blancs sur la minicarte quand tu es près)<br>' + pc.map(p => '✉ ' + p.name).join(' · ');
+    box.append(pb);
   }
 
   // =====================================================================================
@@ -7145,7 +7149,7 @@ const gx = !HD ? null : (() => {
   function gameStep(dt) { // inside the world step
     const now = performance.now();
     step(dt);
-    puStep(dt, now); rocketStep(dt); mineStep(dt, now); shieldStep(dt); furnitureStep(dt); Fences.step(dt); actStep(dt);
+    puStep(dt, now); rocketStep(dt); mineStep(dt, now); shieldStep(dt); furnitureStep(dt); Fences.step(dt); actStep(dt); discoverStep(dt);
     for (const L of locals) {
       L.specCd = (L.specCd || 0) - dt;
       const c = L.car;
@@ -7357,7 +7361,7 @@ const gx = !HD ? null : (() => {
     }
   }
   function actMarkers() { // start markers (re-added when a mission cleared them)
-    for (const a of acts) if (!a.mk || !markers.includes(a.mk)) a.mk = addMarker(a.start[0], a.start[1], 6, a.kind === 'race' ? 0x3ac8ff : 0xff9a2a);
+    for (const a of acts) if (unlocked(a.id) && (!a.mk || !markers.includes(a.mk))) a.mk = addMarker(a.start[0], a.start[1], 6, a.kind === 'race' ? 0x3ac8ff : 0xff9a2a);
   }
   function actHide() { for (const a of acts || []) if (a.mk) { scene.remove(a.mk.beam, a.mk.ring); const i = markers.indexOf(a.mk); if (i >= 0) markers.splice(i, 1); a.mk = null; } }
   function hud(title, text) { // the mission panel (title, line, arrow to the target)
@@ -7412,7 +7416,7 @@ const gx = !HD ? null : (() => {
     actsBuild(); const L = locals[0], c = L.car;
     if (!run) {
       actMarkers();
-      for (const a of acts) if (c.alive && Math.hypot(a.start[0] - c.x, a.start[1] - c.z) < 6 && c.speed < 8) { startAct(a); break; }
+      for (const a of acts) if (unlocked(a.id) && c.alive && Math.hypot(a.start[0] - c.x, a.start[1] - c.z) < 6 && c.speed < 8) { startAct(a); break; }
       return;
     }
     const a = run.a;
@@ -7449,10 +7453,56 @@ const gx = !HD ? null : (() => {
     hud(a.name, fmtT(Math.max(0, left)) + ' · ' + Math.round(run.score) + unit); objDir(null);
     if (left <= 0) { if (a.kind === 'cops') return endAct(false, 'La police t’a gardé en vue'); endAct(run.score > 0, Math.round(run.score) + unit); }
   }
-  function actMinimap(add) { if (!acts || run || mode !== 'solo' || mission) return; for (const a of acts) add({ x: a.start[0], z: a.start[1] }, a.kind === 'race' ? '#3ac8ff' : '#ff9a2a'); }
+  function actMinimap(add) { if (!acts || run || mode !== 'solo' || mission) return; for (const a of acts) if (unlocked(a.id)) add({ x: a.start[0], z: a.start[1] }, a.kind === 'race' ? '#3ac8ff' : '#ff9a2a'); }
   function actRecords() { // for the campaign screen
     return ACT_DEF.map(d => { const p = Profile.cur, r = p && (d.kind === 'race' ? p.records['race_' + d.id] : p.records['defi_' + d.id]); return { name: d.name, kind: d.kind, best: r === undefined ? null : d.kind === 'race' ? fmtT(r) : r + (d.kind === 'jump' ? ' m' : d.kind === 'smash' ? ' casses' : d.kind === 'deliv' ? ' pts' : d.kind === 'cops' ? ' s d’avance' : ' pts') }; });
   }
+  // ---------- open world: places to discover ("cartes postales") and what the progression unlocks (cycle 14) ----------
+  const SPOTS = [
+    { id: 'stAnne', name: 'Église Sainte-Anne', x: 781, z: -46, r: 35, text: 'Bâtie de 1846 à 1872 au sommet de la butte, elle domine la Loire.' },
+    { id: 'escalier', name: 'Escalier Sainte-Anne', x: 955, z: 120, r: 28, text: 'La double volée de 1851 descend de la statue jusqu’au quai.' },
+    { id: 'mairie', name: 'Mairie de Chantenay', x: 123, z: -445, r: 32, text: 'La mairie de 1903, du temps où Chantenay était une commune à part.' },
+    { id: 'stMartin', name: 'Église Saint-Martin', x: -204, z: 347, r: 32, text: 'Le vieux bourg de Chantenay, autour de son clocher.' },
+    { id: 'jeanMace', name: 'Place Jean-Macé', x: 45, z: 283, r: 28, text: 'Le cœur du quartier : commerces, terrasses et le boulevard.' },
+    { id: 'misery', name: 'Carrière Misery', x: 670, z: 262, r: 45, text: 'L’ancienne carrière, creusée au pied de la butte.' },
+    { id: 'gare', name: 'Gare de Chantenay', x: -322, z: 580, r: 32, text: 'La petite gare du quartier, au bord des voies.' },
+    { id: 'maritime', name: 'Gare maritime', x: 1285, z: -440, r: 45, text: 'Les quais, le fleuve et les bateaux d’autrefois.' },
+    { id: 'titan', name: 'Grue Titan', x: 1690, z: -430, r: 170, text: 'La grue jaune de 1954, en face, à la pointe de l’île de Nantes.' },
+    { id: 'temple', name: 'Temple antoiniste', x: 89, z: -374, r: 26, text: 'Un temple antoiniste, une rareté dans l’Ouest.' },
+  ];
+  let discT = 0;
+  const found = () => (Profile.cur ? Profile.cur.found : []);
+  function discoverStep(dt) {
+    if (mode !== 'solo' || !locals.length || (discT -= dt) > 0) return; discT = 0.5;
+    const c = locals[0].car; if (!c.alive || !Profile.cur) return;
+    for (const s of SPOTS) {
+      if (found().includes(s.id) || Math.hypot(s.x - c.x, s.z - c.z) > s.r) continue;
+      Profile.cur.found.push(s.id); locals[0].respect += 50; saveBank(locals[0]); Profile.capture(); sfx.pick();
+      flashFor(locals[0], 'Carte postale : ' + s.name, s.text + ' (' + found().length + ' / ' + SPOTS.length + ', +50 respect)');
+      const un = unlockNews(); if (un) setTimeout(() => flashFor(locals[0], 'Débloqué', un), 3500);
+    }
+  }
+  // what the progression opens: the sports coupé (5 postcards), the police car and the "lose the police" challenge
+  // (mission Pin-pon). The real garages stay open from the start (asked by the user).
+  const missionDone = id => !!(settings.camp && settings.camp.done.includes(id));
+  function unlocked(what) {
+    if (what === 'sport') return found().length >= 5;
+    if (what === 'police' || what === 'd_cops') return missionDone('police');
+    return true;
+  }
+  const LOCK_TXT = { sport: '5 cartes postales', police: 'mission Pin-pon', d_cops: 'mission Pin-pon' };
+  let lastUnl = null;
+  function unlockNews() {
+    const now = ['sport', 'police'].filter(unlocked).join(); if (lastUnl === null) { lastUnl = now; return null; }
+    if (now === lastUnl) return null; const prev = lastUnl.split(','); lastUnl = now;
+    const nw = now.split(',').filter(x => x && !prev.includes(x));
+    return nw.length ? nw.map(x => ({ sport: 'le coupé sport au garage', police: 'la voiture de police au garage'}[x])).join(', ') : null;
+  }
+  function discMinimap(add) { // nearby postcards not found yet show as white dots
+    if (mode !== 'solo' || !locals.length) return; const c = locals[0].car;
+    for (const s of SPOTS) if (!found().includes(s.id) && Math.hypot(s.x - c.x, s.z - c.z) < 220) add({ x: s.x, z: s.z }, '#ffffff');
+  }
+  function postcards() { return SPOTS.map(s => ({ name: found().includes(s.id) ? s.name : '???', text: found().includes(s.id) ? s.text : '' })); }
   // =====================================================================================
   // hand-made landmarks: Saint-Martin's bell tower, the Loire quays, the Misery quarry, the yellow Titan crane
   // =====================================================================================
@@ -7696,11 +7746,11 @@ const gx = !HD ? null : (() => {
     if (LM.titanLights) LM.titanLights.color.setRGB((performance.now() / 700 | 0) % 2 ? 8 * n + 0.6 : 0.4, 0.3, 0.2);
   }
   { const el = $('ammo'); if (el) { el.style.pointerEvents = 'auto'; el.style.cursor = 'pointer'; el.addEventListener('pointerdown', e => { e.preventDefault(); if (locals[0]) cycleWeapon(locals[0]); }); } }
-  const api = { netIn, dj, cycleWeapon, hearShot, quickChat, chatIn, step: gameStep, world, landmarkTick, tick, start: startHook, cars: () => npcs.concat(extras), copsOn, shieldHit, acts: () => (actsBuild(), acts), actRun: () => run, startAct, hearCars: carsHearShot, traffic: TF, Fences, lightState, roadRules, makeNpc, placeOnGraph, nextNode, spawnPatrol, npcs: () => npcs, damage: damageNpc, addHeat, say, peds: () => peds, stars, special, startMission, renderCampaign, cleanupMission, MISSIONS,
+  const api = { netIn, dj, cycleWeapon, hearShot, quickChat, chatIn, step: gameStep, world, landmarkTick, tick, start: startHook, cars: () => npcs.concat(extras), copsOn, shieldHit, spots: SPOTS, unlocked, postcards, acts: () => (actsBuild(), acts), actRun: () => run, startAct, hearCars: carsHearShot, traffic: TF, Fences, lightState, roadRules, makeNpc, placeOnGraph, nextNode, spawnPatrol, npcs: () => npcs, damage: damageNpc, addHeat, say, peds: () => peds, stars, special, startMission, renderCampaign, cleanupMission, MISSIONS,
     get gmode() { return gm ? gm.kind : 0; }, mines: () => mines, customers: () => customers, teamScores: modeTeamScores, goalText, rematch: rematchMode,
     get blocking() { return blocking; }, get mission() { return mission; }, foes: () => extras.filter(c => c.alive && c.team === 1), saveBank, pus: () => pus, furniture: () => furniture, garage: GARAGE, garages: GARAGES,
     get onGarage() { return gx_onGarage; },
-    minimap(me, add) { minimap(me, add); actMinimap(add); for (const pu of pus) if (pu.on) add(pu, '#' + new THREE.Color(PU_COL[pu.kind]).getHexString()); for (const c of extras) if (c.alive) add(c, c.friendly ? '#f2c81e' : '#ff3b3b'); for (const m of markers) add(m, '#ffffff'); if (GARAGE.pad && mode === 'solo') for (const G of GARAGES) add(G, '#3a8aff'); } };
+    minimap(me, add) { minimap(me, add); actMinimap(add); discMinimap(add); for (const pu of pus) if (pu.on) add(pu, '#' + new THREE.Color(PU_COL[pu.kind]).getHexString()); for (const c of extras) if (c.alive) add(c, c.friendly ? '#f2c81e' : '#ff3b3b'); for (const m of markers) add(m, '#ffffff'); if (GARAGE.pad && mode === 'solo') for (const G of GARAGES) add(G, '#3a8aff'); } };
   return api;
 })();
 // <<< GAMEPLAY MODULE
