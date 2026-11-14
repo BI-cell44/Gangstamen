@@ -28,5 +28,12 @@ t, n = re.subn(r'<script>window\.PHOTO_ATLAS=\[.*?\];</script>', lambda m: pre, 
 assert n == 1
 open('gangstamen-hd.html', 'w', encoding='utf-8').write(t)
 PY
-cp gangstamen.html gangstamen-hd.html ..
-echo "gangstamen.html and gangstamen-hd.html rebuilt"
+# Ultra variant (branch ultra): the HD build with the ULTRA flag, for the features of docs/BACKLOG.md
+python3 - <<'PY'
+t = open('gangstamen-hd.html', encoding='utf-8').read()
+assert t.count('const ULTRA = false;') == 1 and t.count('<title>Gangstamen HD</title>') == 1
+t = t.replace('const ULTRA = false;', 'const ULTRA = true;').replace('<title>Gangstamen HD</title>', '<title>Gangstamen Ultra</title>')
+open('gangstamen-ultra.html', 'w', encoding='utf-8').write(t)
+PY
+cp gangstamen.html gangstamen-hd.html gangstamen-ultra.html ..
+echo "gangstamen.html, gangstamen-hd.html and gangstamen-ultra.html rebuilt"

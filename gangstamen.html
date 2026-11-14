@@ -340,6 +340,7 @@ body.cine #logo, body.cine #credit { display: none; }
       <div class="row hdOnly" hidden><span class="lab">Circulation</span><div class="seg" id="trafSeg"><button class="mbtn" data-v="0">Aucune</button><button class="mbtn" data-v="1">Calme</button><button class="mbtn" data-v="2">Normale</button></div></div>
       <div class="row hdOnly" hidden><label class="lab" for="optVoices">Voix (radio, dialogues)</label><input id="optVoices" type="checkbox"></div>
       <div class="row" id="hdRow" hidden><span class="lab">Qualité graphique</span><div class="seg" id="hdSeg"><button class="mbtn" data-q="0">Basse</button><button class="mbtn" data-q="1">Moyenne</button><button class="mbtn" data-q="2">Haute</button><button class="mbtn" data-q="3">Ultra</button></div></div>
+      <div class="row hdOnly" hidden><label class="lab" for="optAutoQ">Qualité automatique (baisse si la machine ne suit pas)</label><input id="optAutoQ" type="checkbox"></div>
       <div class="row"><label class="lab" for="optIntro">Intro au lancement</label><input id="optIntro" type="checkbox"><button class="mbtn" id="introPlay">Revoir l'intro</button></div>
       <div class="menu"><button class="mbtn" data-go="vMain">Retour</button></div>
     </section>
@@ -437,6 +438,7 @@ const hash = n => { let x = Math.sin(n * 12.9898) * 43758.5453; return x - Math.
 
 // ---------- renderer / scene ----------
 const HD = false; // build flag: build.sh writes gangstamen-hd.html with this set to true
+const ULTRA = false; // build flag (branch ultra): gangstamen-ultra.html, the HD build that gets the docs/BACKLOG.md cycles
 const view = $('view');
 const renderer = new THREE.WebGLRenderer({ antialias: false, logarithmicDepthBuffer: true, powerPreference: 'high-performance' });
 let retro = !HD;
@@ -1957,16 +1959,32 @@ const hd = !HD ? null : (() => {
   }
 
   function world() { buildLamps(); linearize(scene); }
-  // drop one quality level when the machine cannot hold ~25 images per second
-  let pfN = 0, pfT = 0, pfLast = 0;
+  // drop one quality level when the machine cannot hold ~25 images per second. Measured on the median frame of
+  // 5 s windows (loading hitches and shader compiles are single long frames: they do not move the median), only
+  // during play, after a 15 s grace period at every start, resume and quality change, and only after two slow windows
+  // in a row. The player can switch it off (settings.autoQ).
+  let pfLast = 0, pfT = 0, pfGrace = 0, pfSlow = 0, pfWasOn = false; const pfD = [];
+  const stats = { fps: 0, ms: 0, worst: 0 };
   function perf(now) {
     if (!pfLast) { pfLast = now; return; }
-    const d = now - pfLast; pfLast = now; if (d > 500) return; // tab was hidden
-    pfN++; pfT += d;
-    if (pfT > 5000) { const fps = pfN * 1000 / pfT; pfN = 0; pfT = 0; if (fps < 25 && qi > 0 && started && !paused) { setQuality(qi - 1); feed('Qualité graphique réduite : ' + q.name); const b = document.querySelectorAll('#hdSeg button'); b.forEach(x => x.classList.toggle('on', +x.dataset.q === qi)); } }
+    const d = now - pfLast; pfLast = now; if (d > 500) { pfD.length = 0; pfT = 0; return; } // tab was hidden
+    const on = started && !paused && !(typeof Intro !== 'undefined' && Intro.state !== 'off');
+    if (on && !pfWasOn) pfGrace = now + 15000; pfWasOn = on;
+    pfD.push(d); pfT += d;
+    if (pfT < 5000) return;
+    const s = pfD.slice().sort((a, b) => a - b), med = s[s.length >> 1];
+    stats.fps = Math.round(1000 / med); stats.ms = +med.toFixed(1); stats.worst = Math.round(s[s.length - 1]);
+    pfD.length = 0; pfT = 0;
+    if (!on || now < pfGrace || settings.autoQ === false) { pfSlow = 0; return; }
+    pfSlow = stats.fps < 25 ? pfSlow + 1 : 0;
+    if (pfSlow >= 2 && qi > 0) {
+      setQuality(qi - 1); pfSlow = 0; pfGrace = now + 15000; settings.hdq = qi; saveSettings();
+      feed('Qualité graphique réduite : ' + q.name + ' (réglable dans Son et options)');
+      document.querySelectorAll('#hdSeg button').forEach(x => x.classList.toggle('on', +x.dataset.q === qi));
+    }
   }
   addEventListener('resize', resize);
-  return { QUAL, setQuality, perf, get quality() { return qi; }, render, frame, setTime, setTod, setRain, setDistance, amb, wetPatch, emit, smoke, spark, fire, flashAt, world, linearize, makeCar, fx, explode: explodeAt, muzzle, roadMat, waterMat, crownGeo, wallMat, wallSet, shopSet, townHall, groundMat, footMat, roofMat, shake, lin, linHex, get floatRT() { return floatRT; } };
+  return { QUAL, setQuality, perf, perfStats: stats, get quality() { return qi; }, render, frame, setTime, setTod, setRain, setDistance, amb, wetPatch, emit, smoke, spark, fire, flashAt, world, linearize, makeCar, fx, explode: explodeAt, muzzle, roadMat, waterMat, crownGeo, wallMat, wallSet, shopSet, townHall, groundMat, footMat, roofMat, shake, lin, linHex, get floatRT() { return floatRT; } };
 })();
 // <<< HD MODULE
 
@@ -3170,7 +3188,7 @@ const SETTINGS_KEY = 'gangstamen.settings.v1';
 const settings = Object.assign({
   ctl: ['kb1', 'kb2', 'kb3', 'kb4'], soloCtl: 'kb1+pad0', nPlayers: 2,
   music: 0.7, fx: 0.8, rumble: true, retro: true, nick: '',
-  hdq: 2, tod: 'sunset', rain: '0', traffic: 2, voices: true, shadows: 1, dist: 2, intro: true, teams: false, team: [0, 1, 0, 1], netTeams: false, netTeam: -1, goal: 20, limit: 10,
+  hdq: 2, autoQ: true, tod: 'sunset', rain: '0', traffic: 2, voices: true, shadows: 1, dist: 2, intro: true, teams: false, team: [0, 1, 0, 1], netTeams: false, netTeam: -1, goal: 20, limit: 10,
 }, (() => { try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); } catch (e) { return {}; } })());
 function saveSettings() { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { } }
 sfx.setVolume('music', settings.music); sfx.setVolume('fx', settings.fx);
@@ -4290,11 +4308,12 @@ function initOptions() {
     const segOpt = (id, key, after) => { const bs = document.querySelectorAll('#' + id + ' button'), show = () => bs.forEach(b => b.classList.toggle('on', +b.dataset.v === +settings[key]));
       bs.forEach(b => b.addEventListener('click', () => { settings[key] = +b.dataset.v; saveSettings(); show(); if (after) after(); })); show(); };
     segOpt('shSeg', 'shadows', applyPerf); segOpt('distSeg', 'dist', applyPerf); segOpt('trafSeg', 'traffic');
+    $('optAutoQ').checked = settings.autoQ !== false; $('optAutoQ').addEventListener('change', e => { settings.autoQ = e.target.checked; saveSettings(); });
     $('optVoices').checked = settings.voices !== false; $('optVoices').addEventListener('change', e => { settings.voices = e.target.checked; saveSettings(); try { if (!e.target.checked) speechSynthesis.cancel(); } catch (x) { } });
     const seg = document.querySelectorAll('#hdSeg button'), show = () => seg.forEach(b => b.classList.toggle('on', +b.dataset.q === hd.quality));
     seg.forEach(b => b.addEventListener('click', () => { hd.setQuality(+b.dataset.q); settings.hdq = hd.quality; saveSettings(); show(); }));
     show();
-    document.querySelector('#title h1').insertAdjacentHTML('beforeend', ' <span style="font-family:var(--data);font-size:.3em;vertical-align:top;color:var(--sunset);text-shadow:2px 2px 0 #000">HD</span>');
+    document.querySelector('#title h1').insertAdjacentHTML('beforeend', ' <span style="font-family:var(--data);font-size:.3em;vertical-align:top;color:var(--sunset);text-shadow:2px 2px 0 #000">' + (ULTRA ? 'ULTRA' : 'HD') + '</span>');
   }
   show();
 }
@@ -6309,18 +6328,48 @@ function startGame(kind) {
 // ---------- loop ----------
 const camPos = new THREE.Vector3(), camLook = new THREE.Vector3();
 let last = performance.now(), boardAcc = 0;
+// performance overlay (F3): frame time, draw calls and triangles of the whole frame (every pass), scene size
+const PerfHud = (() => {
+  let el = null, on = false, acc = 0, n = 0, worst = 0, sim = 0, simN = 0, tLast = 0;
+  const show = v => {
+    on = v; renderer.info.autoReset = !on;
+    if (on && !el) { el = document.createElement('pre'); el.id = 'perfHud'; el.style.cssText = 'position:fixed;left:8px;top:76px;z-index:60;margin:0;padding:6px 8px;background:rgba(0,0,0,.72);color:#9f9;font:12px/1.35 monospace;pointer-events:none;white-space:pre'; document.body.appendChild(el); }
+    if (el) el.style.display = on ? 'block' : 'none'; tLast = 0;
+  };
+  addEventListener('keydown', e => { if (e.code === 'F3' && !e.repeat) { e.preventDefault(); show(!on); } });
+  return {
+    get on() { return on; }, show,
+    begin() { if (on) renderer.info.reset(); },
+    sim(ms) { if (on) { sim += ms; simN++; } },
+    end() { // real elapsed time (the game step is capped at 50 ms, the overlay must show the true frame rate)
+      if (!on) return; const t = performance.now(), dt = tLast ? Math.min(2, (t - tLast) / 1000) : 0; tLast = t; if (!dt) return;
+      acc += dt; n++; worst = Math.max(worst, dt);
+      if (acc < 0.5) return;
+      const i = renderer.info, mem = performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) + ' Mo' : '?';
+      el.textContent = (ULTRA ? 'ULTRA' : HD ? 'HD' : 'classique') + (HD ? ' · qualité ' + hd.QUAL[hd.quality].name : '') + '\n' +
+        Math.round(n / acc) + ' im/s · ' + (acc / n * 1000).toFixed(1) + ' ms (pire ' + (worst * 1000).toFixed(0) + ')\n' +
+        'simulation ' + (simN ? (sim / simN).toFixed(2) : '0') + ' ms\n' +
+        'appels de dessin ' + i.render.calls + ' · triangles ' + Math.round(i.render.triangles / 1000) + ' k\n' +
+        'géométries ' + i.memory.geometries + ' · textures ' + i.memory.textures + ' · programmes ' + (i.programs ? i.programs.length : '?') + '\n' +
+        'mémoire JS ' + mem;
+      acc = 0; n = 0; worst = 0; sim = 0; simN = 0;
+    },
+  };
+})();
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  PerfHud.begin();
   pollPads();
   if (Intro.state !== 'off') { if (pads.some(P => P.press && (P.press[0] || P.press[9]))) Intro.key(null); } else if (!(gx && gx.blocking)) menuPadNav(dt);
   if (gx) gx.tick(dt);
   Intro.update(dt);
   if (HD) hd.perf(now);
   if (gx) gx.landmarkTick();
-  if (started && (!paused || mode === 'online')) step(dt, now);
+  if (started && (!paused || mode === 'online')) { const t0 = performance.now(); step(dt, now); PerfHud.sim(performance.now() - t0); }
   if (started && mode === 'online') netTick(dt, now);
   render(dt);
+  PerfHud.end();
 }
 function render(dt) {
   if (HD) {
@@ -6633,6 +6682,6 @@ $('splitGo').addEventListener('click', () => startGame('split'));
 $('create').addEventListener('click', () => startOnline(null, true));
 netInit();
 if (settings.intro !== false && !window.__noIntro) Intro.splash();
-window.__gm = { Intro, hd, gx, settings, trams, edges, tramS, tramWall, EDGE, cellOf, collideWalls, muzzleOf, shoot, damage, applyHit, locals: () => locals, rivals: () => rivals, Net, Match, step: s => step(s, performance.now()), start: k => startGame(k || 'solo'), codes };
+window.__gm = { get paused() { return paused; }, get started() { return started; }, renderer, scene, camera, PerfHud, Intro, hd, gx, settings, trams, edges, tramS, tramWall, EDGE, cellOf, collideWalls, muzzleOf, shoot, damage, applyHit, locals: () => locals, rivals: () => rivals, Net, Match, step: s => step(s, performance.now()), start: k => startGame(k || 'solo'), codes };
 })();
 </script>

@@ -1472,15 +1472,31 @@ const hd = !HD ? null : (() => {
   }
 
   function world() { buildLamps(); linearize(scene); }
-  // drop one quality level when the machine cannot hold ~25 images per second
-  let pfN = 0, pfT = 0, pfLast = 0;
+  // drop one quality level when the machine cannot hold ~25 images per second. Measured on the median frame of
+  // 5 s windows (loading hitches and shader compiles are single long frames: they do not move the median), only
+  // during play, after a 15 s grace period at every start, resume and quality change, and only after two slow windows
+  // in a row. The player can switch it off (settings.autoQ).
+  let pfLast = 0, pfT = 0, pfGrace = 0, pfSlow = 0, pfWasOn = false; const pfD = [];
+  const stats = { fps: 0, ms: 0, worst: 0 };
   function perf(now) {
     if (!pfLast) { pfLast = now; return; }
-    const d = now - pfLast; pfLast = now; if (d > 500) return; // tab was hidden
-    pfN++; pfT += d;
-    if (pfT > 5000) { const fps = pfN * 1000 / pfT; pfN = 0; pfT = 0; if (fps < 25 && qi > 0 && started && !paused) { setQuality(qi - 1); feed('Qualité graphique réduite : ' + q.name); const b = document.querySelectorAll('#hdSeg button'); b.forEach(x => x.classList.toggle('on', +x.dataset.q === qi)); } }
+    const d = now - pfLast; pfLast = now; if (d > 500) { pfD.length = 0; pfT = 0; return; } // tab was hidden
+    const on = started && !paused && !(typeof Intro !== 'undefined' && Intro.state !== 'off');
+    if (on && !pfWasOn) pfGrace = now + 15000; pfWasOn = on;
+    pfD.push(d); pfT += d;
+    if (pfT < 5000) return;
+    const s = pfD.slice().sort((a, b) => a - b), med = s[s.length >> 1];
+    stats.fps = Math.round(1000 / med); stats.ms = +med.toFixed(1); stats.worst = Math.round(s[s.length - 1]);
+    pfD.length = 0; pfT = 0;
+    if (!on || now < pfGrace || settings.autoQ === false) { pfSlow = 0; return; }
+    pfSlow = stats.fps < 25 ? pfSlow + 1 : 0;
+    if (pfSlow >= 2 && qi > 0) {
+      setQuality(qi - 1); pfSlow = 0; pfGrace = now + 15000; settings.hdq = qi; saveSettings();
+      feed('Qualité graphique réduite : ' + q.name + ' (réglable dans Son et options)');
+      document.querySelectorAll('#hdSeg button').forEach(x => x.classList.toggle('on', +x.dataset.q === qi));
+    }
   }
   addEventListener('resize', resize);
-  return { QUAL, setQuality, perf, get quality() { return qi; }, render, frame, setTime, setTod, setRain, setDistance, amb, wetPatch, emit, smoke, spark, fire, flashAt, world, linearize, makeCar, fx, explode: explodeAt, muzzle, roadMat, waterMat, crownGeo, wallMat, wallSet, shopSet, townHall, groundMat, footMat, roofMat, shake, lin, linHex, get floatRT() { return floatRT; } };
+  return { QUAL, setQuality, perf, perfStats: stats, get quality() { return qi; }, render, frame, setTime, setTod, setRain, setDistance, amb, wetPatch, emit, smoke, spark, fire, flashAt, world, linearize, makeCar, fx, explode: explodeAt, muzzle, roadMat, waterMat, crownGeo, wallMat, wallSet, shopSet, townHall, groundMat, footMat, roofMat, shake, lin, linHex, get floatRT() { return floatRT; } };
 })();
 // <<< HD MODULE

@@ -36,3 +36,7 @@ Les autres scripts testent chacun une fonction (équipes, fin de partie, tirs au
 - `nov14_shot2.js` : captures avec caméra libre `[x, y, z, visée x, y, z]` (y absolu : viser au-dessus du relief, la butte monte à 40 m).
 
 `fetch_data_browser.js` : les requêtes qui ont téléchargé les données de la carte agrandie (à lancer dans la console d'un navigateur).
+
+## Lanceur de tests (cycle 1 Ultra)
+
+`node tools/run-tests.js gangstamen-ultra.html [--record docs/perf.json --label "texte"]` : charge la sortie, lance les vérifications qui la concernent (12 en HD et Ultra, 6 en classique : partie solo, murs du tram et de l'ouest, tram, qualité automatique, garages, changement d'arme, message de KO, 7 missions, mort en mission, erreurs de page) et mesure la scène (appels de dessin, triangles, maillages, mémoire, simulation, chargement). Code de sortie 1 en cas d'échec. Avec `--record`, ajoute les mesures à `docs/perf.json`. Lancer depuis un dossier où `playwright` et `three@0.128.0` sont installés (ou avec `NODE_PATH`).

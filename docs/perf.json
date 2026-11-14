@@ -1,0 +1,44 @@
+[
+ {
+  "date": "2026-11-14T09:00",
+  "label": "cycle 0 (audit, avant optimisation)",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 1439,
+  "trianglesK": 2216,
+  "meshes": 3733,
+  "geometries": 3286,
+  "materials": 319,
+  "heapMB": 215,
+  "simMs": 0,
+  "loadS": 90,
+  "failed": 2
+ },
+ {
+  "date": "2026-11-14T09:16",
+  "label": "cycle 1 : référence avant optimisation",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 1340,
+  "trianglesK": 2264,
+  "meshes": 4388,
+  "geometries": 3547,
+  "materials": 362,
+  "heapMB": 190,
+  "simMs": 5.38,
+  "loadS": 92,
+  "failed": 0
+ },
+ {
+  "date": "2026-11-14T09:17",
+  "label": "cycle 1 : référence avant optimisation",
+  "build": "gangstamen.html",
+  "drawCalls": 221,
+  "trianglesK": 1252,
+  "meshes": 510,
+  "geometries": 330,
+  "materials": 127,
+  "heapMB": 117,
+  "simMs": 1.37,
+  "loadS": 8,
+  "failed": 0
+ }
+]

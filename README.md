@@ -12,7 +12,7 @@ Un seul fichier, `gangstamen.html`, qui tourne dans tout navigateur récent avec
 Le même code source produit deux fichiers :
 
 - **`gangstamen.html`** : la version classique, au rendu rétro (pixels, modèles simples), légère.
-- **`gangstamen-hd.html`** : la version HD. Rendu HDR avec bloom et tone mapping filmique, anti-crénelage, ciel procédural avec nuages et reflets sur les carrosseries, ombres douces, voitures aux formes lissées avec peinture vernie, phares et feux lumineux, fumée de pneus et d'échappement, traces de freinage, flammes et fumée selon les dégâts, explosions avec débris, onde de choc et marque au sol, lampadaires au sodium la nuit (touche N). Le réglage *Qualité graphique* (Basse à Ultra) est dans *Son et options* ; la qualité baisse d'un cran toute seule si la machine ne suit pas.
+- **`gangstamen-hd.html`** : la version HD. Rendu HDR avec bloom et tone mapping filmique, anti-crénelage, ciel procédural avec nuages et reflets sur les carrosseries, ombres douces, voitures aux formes lissées avec peinture vernie, phares et feux lumineux, fumée de pneus et d'échappement, traces de freinage, flammes et fumée selon les dégâts, explosions avec débris, onde de choc et marque au sol, lampadaires au sodium la nuit (touche N). Le réglage *Qualité graphique* (Basse à Ultra) est dans *Son et options* ; la qualité baisse d'un cran toute seule si la machine ne suit pas durablement pendant le jeu (jamais pendant le chargement), sauf si la case *Qualité automatique* est décochée.
 
 En HD, les façades sans photo exploitable sont dessinées en haute résolution (volets, balcons, appuis de fenêtre, relief, vitres qui reflètent le ciel) et le sol est refait (dallage, herbe, bitume avec relief).
 
@@ -93,7 +93,7 @@ En écran partagé et en ligne, on choisit entre deux règles :
 | Clavier 4 | Pavé 8 / 5 | Pavé 4 / 6 | Pavé 0 | Entrée du pavé | Pavé 9 | Pavé . | Pavé + | Pavé − |
 | Manette | RT / LT | stick gauche ou croix | A (et RB en classique) | B | RB | X | Y | LB |
 
-Touches communes : N jour/nuit (HD : moment de la journée) · B météo (HD) · M musique (HD : station suivante) · P pixels rétro · Tab classement · 1 à 6 discussion rapide · Échap (ou Start) pause.
+Touches communes : F3 mesures de performance (images par seconde, appels de dessin) · N jour/nuit (HD : moment de la journée) · B météo (HD) · M musique (HD : station suivante) · P pixels rétro · Tab classement · 1 à 6 discussion rapide · Échap (ou Start) pause.
 Les manettes vibrent aux chocs, aux tirs reçus et aux explosions (désactivable dans *Son et options*, où se règlent aussi les volumes musique et effets séparément).
 
 ## Jeu en ligne : comment ça marche

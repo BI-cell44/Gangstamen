@@ -1,0 +1,104 @@
+# Feuille de route et backlog : Gangstamen Ultra
+
+Établie le 14 novembre 2026 après l'audit (`ETAT_DU_PROJET.md`, section 3). Travail sur la branche `ultra`, publié sur l'artifact « Gangstamen Ultra ». `main` (classique et HD) ne reçoit que des corrections, ou un cycle Ultra terminé et validé par l'utilisateur.
+
+## Principes
+- **Profondeur avant étendue** : la carte actuelle (2 km sur 1,5 km) suffit pour plusieurs phases. On ne l'agrandit qu'une fois le rendu par tuiles et le chargement maîtrisés (phase 4).
+- **Chaque cycle livre une version meilleure que la précédente**, testée, mesurée, documentée, poussée. Pas de fonctionnalité pour la liste.
+- **Le joueur d'abord** : fluidité et ressenti de conduite passent avant le contenu, car tout le reste en dépend.
+- Pas de remplacement de technologie sans gain démontré (voir `DECISIONS_TECHNIQUES.md`).
+- Note de valeur : ★★★ très visible pour le joueur, ★★ visible, ★ fondation (invisible mais nécessaire).
+
+## Phase 0 : fondations (cycles 1 à 3)
+
+### Cycle 1 : banc de mesure, tests automatisés, qualité automatique ★ / ★★ (fait le 14 nov. 2026, sauf les temps de chargement par étape, reportés au cycle 3)
+- [x] Lanceur de tests unique `node tools/run-tests.js <fichier>` : chargement, partie solo, missions, garages, tram, bords, combat, sauvegarde ; rapport lisible et code de sortie.
+- [x] Mesures de performance enregistrées à chaque cycle (appels de dessin, triangles, maillages, mémoire, temps de simulation, temps de chargement par étape) dans `docs/perf.json`, pour comparer les versions.
+- [x] Superposition de performance en jeu (touche F3) : images par seconde, ms par image, appels de dessin, triangles.
+- [x] **Qualité automatique** : délai de grâce de 15 s au démarrage et après un chargement, case pour la désactiver, mesure sur la médiane plutôt que la moyenne.
+- Critère d'acceptation : tous les tests passent sur les trois sorties ; le message de baisse de qualité ne s'affiche plus pendant le chargement.
+
+### Cycle 2 : fluidité ★★★
+- **Instanciation** du mobilier répété (tables, chaises, parasols des terrasses, bornes, lampadaires) : environ 1 400 maillages ramenés à une vingtaine.
+- **Voitures** : fusion des pièces fixes par matériau (75 maillages ramenés à environ 8 par voiture, roues et pièces animées à part) ; niveau de détail simplifié au-delà de 120 m.
+- **Ville par tuiles** de 200 à 250 m : les bâtiments, toits et sols fusionnés par tuile et par matériau, pour que les tuiles hors champ ne soient plus dessinées (ni dans la passe d'ombre).
+- Distance d'affichage du petit mobilier, de la foule et des terrasses selon la qualité.
+- Objectif mesuré : moins de 450 appels de dessin et 40 % de triangles en moins par image, même rendu à l'œil (captures avant / après).
+
+### Cycle 3 : chargement ★★
+- Mesurer chaque étape du démarrage ; générer les façades et l'atlas progressivement avec une barre de chargement honnête.
+- Construire la ville pendant que le menu est affiché ; ne compiler que les shaders utiles.
+- Objectif : divisé par deux en rendu logiciel, menu jouable avant la fin des tâches non essentielles.
+
+**Décision à prendre avant le cycle 4 (accord de l'utilisateur requis)** : découpage des sources en modules (voir `DECISIONS_TECHNIQUES.md`, proposition D-12).
+
+## Phase 1 : le ressenti de conduite (cycles 4 à 6)
+
+### Cycle 4 : physique automobile v2 ★★★
+- Modèle « bicyclette » avec pneus (force latérale selon l'angle de glissement, adhérence qui sature), transfert de masse à l'accélération et au freinage, sous-virage et survirage, frein à main qui bloque l'arrière.
+- Moteur et boîte automatique : courbe de couple, régime, rapports (et passages visibles au compteur).
+- Paramètres par véhicule dans un tableau de données (masse, puissance, adhérence, centre de gravité, traînée) : base des catégories de véhicules.
+- Surfaces : bitume, pavés, herbe, mouillé (pluie) avec adhérence différente.
+- Réglage « Conduite : arcade / réaliste » le temps de valider le ressenti ; réseau inchangé (chaque client simule sa voiture).
+
+### Cycle 5 : son v2 ★★★
+- Bus audio : général, musique, effets, ambiance, voix ; atténuation de la musique sous les dialogues.
+- Moteur synthétisé selon le régime et la charge (harmoniques, admission, échappement), passages de rapport, pétarades, turbo pour les sportives.
+- Crissements selon le glissement réel des pneus, roulement sur pavés, chocs selon la force, effet Doppler des autres voitures.
+- Ambiance par lieu : Loire et goélands sur les quais, cloches de Sainte-Anne à l'heure, tram (roulement, cloche, freins), place animée.
+
+### Cycle 6 : caméras ★★
+- Gestionnaire de caméras : poursuite à ressort qui suit la vitesse, caméra capot et pare-chocs, caméra cinématique, retour arrière ; la caméra évite les murs dans les rues étroites.
+- Mode photo (caméra libre, pause, réglages d'exposition et de profondeur de champ en HD).
+
+## Phase 2 : un monde vivant (cycles 7 à 9)
+
+### Cycle 7 : circulation v2 ★★★
+- Voies, intersections avec priorités, **feux tricolores** aux vrais carrefours (nœuds OSM `traffic_signals`), passages piétons, respect du tram.
+- Comportements : clignotants, dépassement, embouteillages, réaction au danger (fuite, coups de klaxon), bus TAN sur leur ligne.
+- Densité selon l'heure du jour.
+
+### Cycle 8 : ambiance et vie ★★
+- Piétons selon les lieux et l'heure (marché de la butte, sorties d'école, quais le soir), terrasses qui se remplissent le soir.
+- Lumières de ville la nuit (fenêtres, enseignes, phares qui éclairent vraiment la chaussée), reflets sur le mouillé.
+
+### Cycle 9 : détail visuel ★★
+- Niveaux de détail des arbres, mobilier, bâtiments lointains ; brouillard et atmosphère selon la météo ; meilleurs toits et rez-de-chaussée.
+
+## Phase 3 : progression et contenu (cycles 10 à 14)
+
+### Cycle 10 : sauvegarde v2 ★★
+- Profil versionné (schéma `gangstamen.save.v2`) : respect, garage (voitures possédées, réglages et apparence par voiture), statistiques, records, missions, découvertes ; migration depuis `settings.v1`.
+- 3 emplacements ; export et import par code à copier (les artifacts ne peuvent pas télécharger de fichier) ; sauvegarde automatique aux moments clés.
+
+### Cycle 11 : courses et défis ★★★
+- Courses chronométrées dans les vraies rues (Sainte-Anne → quai de la Fosse, tour de la Butte…), points de passage, fantôme du meilleur temps, médailles.
+- Défis : dérapage, saut, livraison à l'heure, semer la police, destruction ; tableau des records local.
+- Icônes sur la carte et la minicarte pour lancer une activité en roulant (monde ouvert).
+
+### Cycle 12 : garage et personnalisation v2 ★★★
+- Plusieurs voitures possédées ; réglages par voiture (moteur, boîte, suspensions, pneus, freins) branchés sur la physique v2.
+- Apparence : couleur libre, jantes, vitres teintées, aileron, autocollants années 90 ; présentation en vitrine avec caméra tournante.
+
+### Cycle 13 : catégories de véhicules ★★★
+- Utilitaire, sportive des années 90, camionnette, voiture de police jouable ; deux-roues seulement si la physique le permet proprement.
+- Chaque catégorie avec sa conduite, son son et ses limites (combat, courses).
+
+### Cycle 14 : monde ouvert ★★
+- Découvertes (lieux emblématiques à trouver, « cartes postales »), activités réparties sur la carte, progression qui débloque garages, voitures et défis.
+
+## Phase 4 : élargir (après la phase 3)
+- Streaming du monde par tuiles (chargement et déchargement) une fois le rendu par tuiles en place.
+- Nouveaux quartiers : Bas-Chantenay industriel, île de Nantes par un pont.
+- Synchronisation en ligne des bonus, de la circulation et du tram ; capture du drapeau en ligne.
+
+## Backlog hérité (hors cycles, à caser quand c'est pertinent)
+- [ ] Faire jouer l'utilisateur et recueillir ses retours (fluidité, flammes, mines du Vautour, pont, intro avec son).
+- [ ] Partie en ligne à plusieurs (claude.ai et serveur), puis corrections.
+- [ ] Régler la difficulté de la campagne (mines, Vautour, roquettes du Grand Duc, chrono de l'orage).
+- [ ] Mission du Vautour : la fuite « vers le quai de la Fosse » est à revoir, le quai est maintenant dans la carte ; missions possibles à l'escalier Sainte-Anne et au tram.
+- [ ] Escalier Sainte-Anne : volées du bas à caler sur le terrain.
+- [ ] Façades Panoramax pour la nouvelle zone.
+- [ ] Mairie (fronton, dos et côtés), toits, jardins, enseignes nationales.
+- [ ] Intro : sous-titres et rythme après un vrai visionnage ; version courte pour les relances.
+- [ ] Nettoyer les fichiers `*.tmp` du dossier Téléchargements de l'utilisateur (à faire par lui).
