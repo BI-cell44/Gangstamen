@@ -62,3 +62,18 @@ async function ortho() {
   }
   save(await cv.convertToBlob({ type: 'image/jpeg', quality: 0.9 }), 'gangstamen_ortho.jpg');
 }
+
+// 4. IGN cadastre parcels (Parcellaire Express) -> data/cadastre.json, coordinates in game decimetres.
+// Run on a page of https://data.geopf.fr/ (if that page is XML, create the link with createElementNS('http://www.w3.org/1999/xhtml', 'a')).
+async function cadastre() {
+  const P = c => { const [lo, la] = c[1] > 40 ? c : [c[1], c[0]]; return [Math.round((lo - lon0) * KX * 10), Math.round(-(la - lat0) * KZ * 10)]; };
+  const base = 'https://data.geopf.fr/wfs/ows?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=CADASTRALPARCELS.PARCELLAIRE_EXPRESS:parcelle&SRSNAME=EPSG:4326&outputFormat=application/json&BBOX=47.1950,-1.5960,47.2115,-1.5670,urn:ogc:def:crs:EPSG::4326&COUNT=1000&STARTINDEX=';
+  const parcels = [];
+  for (let s = 0; ; s += 1000) {
+    const j = await fetch(base + s).then(r => r.json());
+    for (const ft of j.features) { if (!ft.geometry) continue; const g = ft.geometry;
+      for (const poly of g.type === 'MultiPolygon' ? g.coordinates : [g.coordinates]) parcels.push([ft.properties.idu, ft.properties.contenance, poly[0].map(P).flat()]); }
+    if (j.features.length < 1000) break;
+  }
+  save(JSON.stringify({ unit: 0.1, origin: [lat0, lon0], source: 'IGN Parcellaire Express (PCI), Etalab 2.0', parcels }), 'gangstamen_cadastre.json', 'application/json');
+}
