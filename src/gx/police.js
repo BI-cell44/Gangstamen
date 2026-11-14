@@ -4,6 +4,7 @@
   function addHeat(by, amount, why) {
     const L = by && by.local ? by.owner : null; if (!L || mode === 'online' && false) return;
     if (!policeOn()) return;
+    if (L.car && L.car.style === 'police') amount *= 0.5; // (cycle 13) in a police car, the others look away more often
     const before = stars(L); L.heat = Math.min(5.99, heat(L) + amount); L.calm = 0;
     if (stars(L) > before) { flashFor(L, '★'.repeat(stars(L)) + ' POLICE', stars(L) === 1 ? 'Les flics ont vu ça' : stars(L) >= 4 ? 'Toutes les patrouilles sur vous' : 'Renforts en route'); if (gx.dj) gx.dj('police', stars(L)); }
   }

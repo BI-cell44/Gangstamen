@@ -18,9 +18,15 @@ const CAR_STYLES = {
     cabin: [[-1.68, 0.99], [-1.5, 1.44], [0.05, 1.47], [0.62, 0.97]], spoiler: false },
   p205: { L: 3.7, W: 1.57, wb: 1.21, wr: 0.3, body: [[1.83, 0.34], ['arcF'], ['arcR'], [-1.8, 0.34], [-1.85, 0.6], [-1.8, 0.97], [-1.55, 1.0], [0.65, 0.96], [1.62, 0.82], [1.85, 0.68]],
     cabin: [[-1.74, 0.97], [-1.35, 1.42], [0.1, 1.45], [0.72, 0.96]], spoiler: false },
+  // (cycle 13) new categories: a 90s sports coupé (an original design), a tall utility van, the police saloon
+  sport: { L: 4.3, W: 1.78, wb: 1.3, wr: 0.32, body: [[2.13, 0.32], ['arcF'], ['arcR'], [-2.1, 0.32], [-2.15, 0.55], [-2.1, 0.86], [-1.2, 0.9], [0.9, 0.86], [1.95, 0.68], [2.15, 0.58]],
+    cabin: [[-1.45, 0.88], [-0.55, 1.26], [0.25, 1.27], [1.0, 0.87]], spoiler: true },
+  van: { L: 4.6, W: 1.84, wb: 1.45, wr: 0.33, body: [[2.28, 0.36], ['arcF'], ['arcR'], [-2.25, 0.36], [-2.3, 0.6], [-2.3, 1.1], [-2.0, 1.12], [1.3, 1.1], [2.05, 0.94], [2.3, 0.78]],
+    cabin: [[-2.28, 1.1], [-2.25, 1.97], [1.2, 1.98], [1.9, 1.1]], spoiler: false },
   twingo: { L: 3.43, W: 1.63, wb: 1.17, wr: 0.3, body: [[1.69, 0.34], ['arcF'], ['arcR'], [-1.66, 0.34], [-1.71, 0.6], [-1.68, 1.0], [-1.4, 1.02], [0.9, 0.98], [1.5, 0.86], [1.71, 0.72]],
     cabin: [[-1.62, 1.0], [-1.45, 1.62], [-0.2, 1.68], [0.3, 1.62], [1.2, 1.0]], spoiler: false },
 };
+CAR_STYLES.police = CAR_STYLES.saloon; // the police saloon: same body, its own livery
 function plateTexture(text, rear) {
   const [c, g] = canvas(128, 32);
   g.fillStyle = rear ? '#f2c230' : '#f4f1e8'; g.fillRect(0, 0, 128, 32);

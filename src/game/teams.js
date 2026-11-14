@@ -122,7 +122,11 @@ const CAR_CHOICES = [
   { k: 'hatch', name: 'Compacte', v: 0.96, a: 1.06, d: 'Avec aileron' },
   { k: 'r5', name: 'R5', v: 0.93, a: 1.14, d: 'Petite et vive' },
   { k: 'twingo', name: 'Twingo', v: 0.91, a: 1.1, d: 'Bouille de 1993' },
+  { k: 'sport', name: 'Coupé sport', v: 1.08, a: 1.16, d: 'Années 90, turbo, rapide mais fragile' },
+  { k: 'van', name: 'Utilitaire', v: 0.82, a: 0.85, d: 'Lourd et lent, encaisse les coups et pousse les autres' },
+  { k: 'police', name: 'Voiture de police', v: 1, a: 1.02, d: 'Réformée : les flics te cherchent moins' },
 ];
+const CAT_DMG = { van: 0.65, sport: 1.25 }, CAT_MASS = { van: 1.7, sport: 0.9 }; // damage and push by category (cycle 13)
 const CAR_PAINTS = [[0x5b2ba6, 0xf2c14e], [0xb3121f, 0xf3ead8], [0x0f5d8c, 0xf2c14e], [0x1d1d22, 0xd8a43c], [0xf2f2ee, 0x1b2f8a], [0x2b6b3a, 0xf3ead8], [0xe86a1a, 0x161616], [0xd8b23a, 0x161616], [0x1f8a8a, 0xf3ead8], [0xc23b6e, 0xf3ead8]];
 function carChoice(slot) { const c = (settings.cars || [])[slot] || {}; return { style: CAR_CHOICES.find(o => o.k === c.s) || CAR_CHOICES[0], paint: CAR_PAINTS[c.p ?? [0, 8, 6, 5][slot]] || CAR_PAINTS[0] }; }
 function makeLocal(slot, ctl, paint, team = -1) {

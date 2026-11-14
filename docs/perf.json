@@ -292,5 +292,19 @@
   "simMs": 6.16,
   "loadS": 21,
   "failed": 0
+ },
+ {
+  "date": "2026-11-14T17:00",
+  "label": "cycle 13 : catégories de véhicules",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 630,
+  "trianglesK": 947,
+  "meshes": 2199,
+  "geometries": 1816,
+  "materials": 391,
+  "heapMB": 228,
+  "simMs": 8.25,
+  "loadS": 21,
+  "failed": 0
  }
 ]

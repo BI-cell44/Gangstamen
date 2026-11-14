@@ -1,6 +1,6 @@
 # État du projet
 
-Mis à jour le 14 novembre 2026 (branche `ultra`, cycles 0 à 12 faits, sources découpées ; prochain : cycle 13, catégories de véhicules ; l'utilisateur a demandé d'enchaîner jusqu'au cycle 14). À relire en premier avec `CLAUDE.md`.
+Mis à jour le 14 novembre 2026 (branche `ultra`, cycles 0 à 13 faits, sources découpées ; prochain : cycle 14, monde ouvert ; l'utilisateur a demandé d'enchaîner jusqu'au cycle 14). À relire en premier avec `CLAUDE.md`.
 
 ## 1. Le jeu aujourd'hui
 
@@ -23,7 +23,7 @@ Trois sorties, construites depuis le même code (`sh build.sh`) :
 - HD : météo et cycle jour-nuit, circulation civile, police avec niveau de recherche, piétons et terrasses, bonus (nitro, mines, roquettes, bouclier, clé), radio à 4 stations, tram, église et escalier Sainte-Anne.
 - Circulation v2 (cycle 7) : feux tricolores réels, stops, sens uniques, clignotants, dépassements, bus TAN sur leurs lignes, patrouilles de police qui chassent les Rapaces.
 - Son synthétisé (cycle 5) : moteur selon régime et charge, pneus, pavés, chocs, Doppler des voitures proches, ambiance par lieu (Loire, goélands, cloches de Sainte-Anne, tram, foule).
-- 5 modèles de voiture (berline, 205, compacte, R5, Twingo), 10 peintures ; 6 caméras, regard arrière, mode photo (F2).
+- 8 modèles (berline, 205, compacte, R5, Twingo, coupé sport, utilitaire, voiture de police), 10 peintures ; 6 caméras, regard arrière, mode photo (F2).
 
 ## 2. Architecture technique
 

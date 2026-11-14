@@ -9,8 +9,11 @@ const VEHICLES = {
   p205:   { m: 900,  a: 1.00, b: 1.42, h: 0.50, T: 280, drive: 'F', mu: 1.18, cda: 0.62, gears: [3.3, 2.0, 1.44, 1.10, 0.86], fd: 4.1 },
   hatch:  { m: 1000, a: 1.05, b: 1.45, h: 0.51, T: 280, drive: 'F', mu: 1.15, cda: 0.66, gears: [3.3, 2.0, 1.44, 1.10, 0.86], fd: 4.0 },
   r5:     { m: 850,  a: 0.98, b: 1.43, h: 0.49, T: 265, drive: 'F', mu: 1.16, cda: 0.62, gears: [3.4, 2.1, 1.48, 1.12, 0.88], fd: 4.2 },
+  sport:  { m: 1050, a: 1.10, b: 1.40, h: 0.45, T: 360, drive: 'R', mu: 1.26, cda: 0.58, gears: [3.2, 2.0, 1.42, 1.1, 0.88], fd: 3.8, turbo: true, pitch: 1.15 },
+  van:    { m: 1500, a: 1.30, b: 1.60, h: 0.78, T: 300, drive: 'F', mu: 1.00, cda: 0.95, gears: [3.8, 2.2, 1.45, 1.05, 0.82], fd: 4.3, pitch: 0.72 },
   twingo: { m: 800,  a: 0.95, b: 1.40, h: 0.55, T: 200, drive: 'F', mu: 1.10, cda: 0.68, gears: [3.6, 2.2, 1.5, 1.12, 0.86], fd: 4.2 },
 };
+VEHICLES.police = VEHICLES.saloon;
 // gripK and torqueK: game factors over the real figures (14 Nov.: a strictly real setting was unplayable in town: too slow
 // off the line, unable to turn). The model keeps its behaviour (weight, slides, gears), at arcade-like pace.
 const PHYS = { g: 9.81, rw: 0.30, idle: 900, red: 6800, up: 6300, down: 2600, eff: 0.85, roll: 0.015, airG: 1.35, gripK: 2.3, torqueK: 2.2, steer: 0.62, steerV: 20 };
@@ -124,10 +127,11 @@ function engineState(c, thr) {
   const es = c._es || (c._es = { rpm: PHYS.idle, gear: 1, load: 0, shift: 0 });
   thr = Math.max(0, Math.min(1, thr || 0));
   if (c.phys && useRealPhysics(c)) {
-    es.rpm = c.phys.rpm; es.shift = c.phys.shift || 0; es.gear = c.phys.gear;
+    es.rpm = c.phys.rpm; es.shift = c.phys.shift || 0; es.gear = c.phys.gear; es.pitch = vehOf(c).pitch || 1;
     es.load += ((es.shift > 0 ? 0.2 : thr) - es.load) * 0.3;
     return es;
   }
+  es.pitch = (VEHICLES[c.style] && VEHICLES[c.style].pitch) || 1; // diesel van lower, sports coupé higher
   const v = Math.abs(c.speed || Math.hypot(c.vx || 0, c.vz || 0));
   let g = es.gear;
   while (g < ARC_GEARS.length - 2 && v > ARC_GEARS[g]) g++;

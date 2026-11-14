@@ -144,7 +144,7 @@ const sfx = (() => {
   }
   // rpm, load 0..1, gear, gear change running (s), turbo; k = extra gain (distance), f = pitch factor (Doppler)
   function driveEngine(e, s, on, k = 1, f = 1, turbo = false) {
-    const t = ac.currentTime, rpmN = Math.max(0, Math.min(1, (s.rpm - 900) / 5900)), fr = s.rpm / 30 * f;
+    const t = ac.currentTime, rpmN = Math.max(0, Math.min(1, (s.rpm - 900) / 5900)), fr = s.rpm / 30 * f * (s.pitch || 1);
     e.o1.frequency.setTargetAtTime(fr, t, 0.025); e.o2.frequency.setTargetAtTime(fr / 2, t, 0.025);
     e.lp.frequency.setTargetAtTime(220 + fr * (2.2 + 4 * s.load) + 700 * s.load, t, 0.04);
     let g = on ? (0.032 + 0.05 * s.load + 0.028 * rpmN) * k : 0;

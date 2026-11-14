@@ -28,6 +28,20 @@
       y0: [[-1.85, 0.3], [-1.7, 0.22], [-1.5, 0.2], [1.5, 0.2], [1.7, 0.22], [1.85, 0.3]],
       glass: [-1.35, 0.66], pillar: [[-0.5, -0.4]], ramps: [[-1.72, -1.35], [0.1, 0.72]], doors: [0.65, -0.48],
     },
+    sport: { // a low 90s coupé with pop-up-lamp nose (original design, no real model)
+      yb: [[-2.15, 0.82], [-2.05, 0.86], [-1.2, 0.9], [0.9, 0.86], [1.9, 0.7], [2.12, 0.62], [2.15, 0.6]],
+      hc: [[-1.6, 0], [-1.45, 0.02], [-0.55, 0.36], [0.25, 0.37], [1.0, 0.02], [1.15, 0]],
+      wb: [[-2.15, 0.8], [-2.0, 0.86], [-0.9, 0.89], [0.9, 0.89], [1.85, 0.86], [2.1, 0.8], [2.15, 0.76]],
+      y0: [[-2.15, 0.28], [-2.0, 0.2], [-1.8, 0.18], [1.8, 0.18], [2.0, 0.2], [2.15, 0.28]],
+      glass: [-1.4, 0.95], pillar: [[-0.15, -0.08]], ramps: [[-1.45, -0.55], [0.25, 1.0]], doors: [0.95, -0.3],
+    },
+    van: { // a tall utility van: box body, glazed cab, panel sides at the back
+      yb: [[-2.3, 1.05], [-2.25, 1.1], [-2.0, 1.12], [1.3, 1.1], [2.0, 0.95], [2.25, 0.85], [2.3, 0.8]],
+      hc: [[-2.3, 0], [-2.26, 0.84], [1.2, 0.87], [1.55, 0.5], [1.9, 0.02], [2.0, 0]],
+      wb: [[-2.3, 0.88], [-2.2, 0.92], [1.5, 0.92], [2.0, 0.88], [2.25, 0.82], [2.3, 0.78]],
+      y0: [[-2.3, 0.36], [-2.15, 0.26], [-1.9, 0.24], [1.9, 0.24], [2.15, 0.26], [2.3, 0.36]],
+      glass: [0.55, 1.6], pillar: [[0.9, 0.98]], ramps: [[-2.3, -2.26], [1.2, 1.9]], doors: [1.5, 0.5],
+    },
     twingo: { // Renault Twingo (1993): one-box, tall rounded roof, stubby nose
       yb: [[-1.71, 0.95], [-1.65, 1.0], [-1.4, 1.02], [0.9, 0.98], [1.5, 0.86], [1.68, 0.78], [1.71, 0.74]],
       hc: [[-1.68, 0], [-1.6, 0.05], [-1.45, 0.6], [-0.2, 0.66], [0.3, 0.6], [1.2, 0.04], [1.35, 0]],
@@ -158,7 +172,8 @@
     }
   }
   function makeCar(paint, stripe, isPlayer, styleName, opts = {}) {
-    const style = styleName || (isPlayer ? 'saloon' : 'hatch'), st = CAR_STYLES[style], M = sharedMats();
+    let style = styleName || (isPlayer ? 'saloon' : 'hatch'); if (style === 'police') { style = 'saloon'; opts = Object.assign({}, opts, { police: true }); } // playable police car (cycle 13)
+    const st = CAR_STYLES[style], M = sharedMats();
     const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
     const paintC = lin(paint), stripeC = stripe ? lin(stripe) : null;
     const { g: shell, S, C, s0, s1 } = shellGeo(style, st, paintC, stripeC);

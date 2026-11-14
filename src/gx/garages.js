@@ -120,7 +120,7 @@
     { k: 'paint', name: 'Peinture neuve', desc: 'Nouvelle couleur · la police perd ta trace', cost: () => 150 },
   ];
   // (cycle 12) the full list: services, then this car's settings and looks, then the cars you own or can buy
-  const CAR_PRICE = { saloon: 800, p205: 600, hatch: 700, r5: 500, twingo: 400 };
+  const CAR_PRICE = { saloon: 800, p205: 600, hatch: 700, r5: 500, twingo: 400, sport: 1500, van: 900, police: 1200 };
   const RIMS = [null, 0xd8a43c, 0x1d1d22, 0xf2f2ee, 0xb3121f];
   const activeCar = () => { settings.cars = settings.cars || []; return settings.cars[0] || (settings.cars[0] = { s: locals[0] ? locals[0].car.style || 'saloon' : 'saloon', p: 0 }); };
   const owned = () => { if (!settings.owned || !settings.owned.length) settings.owned = [JSON.parse(JSON.stringify(activeCar()))]; return settings.owned; };

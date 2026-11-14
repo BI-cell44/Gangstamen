@@ -75,15 +75,16 @@ function carVsCar(a, b) {
   // a car simulated on another machine does not move here: only our side reacts
   const aFix = !!(a.remote || a.proxy), bFix = !!(b.remote || b.proxy);
   if (aFix && bFix) return;
-  const push = (min - d) / (aFix || bFix ? 1 : 2);
-  if (!aFix) { a.x -= nx * push; a.z -= nz * push; }
-  if (!bFix) { b.x += nx * push; b.z += nz * push; }
+  const ma = CAT_MASS[a.style] || (a.long ? 2.5 : 1), mb = CAT_MASS[b.style] || (b.long ? 2.5 : 1), ka = aFix ? 0 : bFix ? 1 : mb / (ma + mb), kb = bFix ? 0 : aFix ? 1 : ma / (ma + mb); // heavier pushes harder
+  const push = min - d;
+  if (!aFix) { a.x -= nx * push * ka; a.z -= nz * push * ka; }
+  if (!bFix) { b.x += nx * push * kb; b.z += nz * push * kb; }
   const rv = (b.vx - a.vx) * nx + (b.vz - a.vz) * nz;
   if (rv < 0) {
     const j = -rv * 0.8;
     if (-rv > 2.5 && locals[0] && (a === locals[0].car || b === locals[0].car)) sfx.impact(-rv); // crash under the player's ears
-    if (!aFix) { a.vx -= nx * j; a.vz -= nz * j; }
-    if (!bFix) { b.vx += nx * j; b.vz += nz * j; }
+    if (!aFix) { a.vx -= nx * j * 2 * ka; a.vz -= nz * j * 2 * ka; }
+    if (!bFix) { b.vx += nx * j * 2 * kb; b.vz += nz * j * 2 * kb; }
     if (-rv > 6 && enemies(a, b)) {
       spawnFx(a.x + nx * R_CAR, 1, a.z + nz * R_CAR, 0.5, 0xffe28a, 0.2, 2, 2);
       const dmg = (-rv - 4) * 1.6;

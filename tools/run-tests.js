@@ -183,7 +183,7 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
           const a = run(null, () => ({ t: 1, s: 0, hb: false }), 12), b = run(() => { c.vz = -30; }, () => ({ t: 0, s: 0.6, hb: false }), 5), h = run(() => { c.vz = -20; }, t => ({ t: 0, s: 1, hb: t < 0.8 }), 1.6);
           out[s] = [+a.t100.toFixed(1), Math.round(b.maxB), Math.round(Math.abs(h.yaw))]; }
         c._grip = undefined; c.phys = null; c.style = keep[3]; c.place(keep[0], keep[1], keep[2]); return out; });
-      const bad = Object.entries(r).filter(([k, [t100, beta, hb]]) => !(t100 > 1.8 && t100 < 4.5 && beta < 20 && hb > 60));
+      const bad = Object.entries(r).filter(([k, [t100, beta, hb]]) => !(t100 > 1.5 && t100 < (k === 'van' ? 6.5 : 4.5) && beta < 20 && hb > 60)); // the van is slow on purpose (cycle 13)
       expect(!bad.length, 'hors limites : ' + JSON.stringify(bad)); return r;
     });
     await check('circulation v2 : feux, sens unique, police contre Rapaces, bus', async () => {

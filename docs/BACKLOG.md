@@ -108,9 +108,10 @@
 - [x] Apparence : couleur au choix (sélecteur de couleur), jantes (5 teintes), vitres teintées, aileron.
 - [ ] Plus tard : autocollants années 90, vitrine tournante dans l'atelier, réglage de suspension.
 
-### Cycle 13 : catégories de véhicules ★★★
-- Utilitaire, sportive des années 90, camionnette, voiture de police jouable ; deux-roues seulement si la physique le permet proprement.
-- Chaque catégorie avec sa conduite, son son et ses limites (combat, courses).
+### Cycle 13 : catégories de véhicules ★★★ (fait le 14 nov. 2026 ; capture : `docs/captures/cycle13-vehicules.png`)
+- [x] Trois nouvelles catégories, en version classique et HD (silhouettes et carrosseries lissées) : **coupé sport** années 90 (dessin original, propulsion, turbo, 0 à 100 en 1,8 s en réaliste, fragile : dégâts ×1,25, léger), **utilitaire** (grand fourgon, lourd et lent, encaisse : dégâts ×0,65, pousse les autres ×1,7, son de diesel plus grave), **voiture de police** jouable (berline à gyrophares ; la police te recherche deux fois moins vite).
+- [x] Achetables au garage (1 500, 900, 1 200 de respect) et au menu *Ta voiture* ; l'utilitaire roule aussi dans la circulation ; collisions pondérées par la masse.
+- [ ] Deux-roues : non, la physique actuelle ne le permet pas proprement (à voir avec Fable 5.2).
 
 ### Cycle 14 : monde ouvert ★★
 - Découvertes (lieux emblématiques à trouver, « cartes postales »), activités réparties sur la carte, progression qui débloque garages, voitures et défis.

@@ -1820,6 +1820,20 @@ const hd = !HD ? null : (() => {
       y0: [[-1.85, 0.3], [-1.7, 0.22], [-1.5, 0.2], [1.5, 0.2], [1.7, 0.22], [1.85, 0.3]],
       glass: [-1.35, 0.66], pillar: [[-0.5, -0.4]], ramps: [[-1.72, -1.35], [0.1, 0.72]], doors: [0.65, -0.48],
     },
+    sport: { // a low 90s coupé with pop-up-lamp nose (original design, no real model)
+      yb: [[-2.15, 0.82], [-2.05, 0.86], [-1.2, 0.9], [0.9, 0.86], [1.9, 0.7], [2.12, 0.62], [2.15, 0.6]],
+      hc: [[-1.6, 0], [-1.45, 0.02], [-0.55, 0.36], [0.25, 0.37], [1.0, 0.02], [1.15, 0]],
+      wb: [[-2.15, 0.8], [-2.0, 0.86], [-0.9, 0.89], [0.9, 0.89], [1.85, 0.86], [2.1, 0.8], [2.15, 0.76]],
+      y0: [[-2.15, 0.28], [-2.0, 0.2], [-1.8, 0.18], [1.8, 0.18], [2.0, 0.2], [2.15, 0.28]],
+      glass: [-1.4, 0.95], pillar: [[-0.15, -0.08]], ramps: [[-1.45, -0.55], [0.25, 1.0]], doors: [0.95, -0.3],
+    },
+    van: { // a tall utility van: box body, glazed cab, panel sides at the back
+      yb: [[-2.3, 1.05], [-2.25, 1.1], [-2.0, 1.12], [1.3, 1.1], [2.0, 0.95], [2.25, 0.85], [2.3, 0.8]],
+      hc: [[-2.3, 0], [-2.26, 0.84], [1.2, 0.87], [1.55, 0.5], [1.9, 0.02], [2.0, 0]],
+      wb: [[-2.3, 0.88], [-2.2, 0.92], [1.5, 0.92], [2.0, 0.88], [2.25, 0.82], [2.3, 0.78]],
+      y0: [[-2.3, 0.36], [-2.15, 0.26], [-1.9, 0.24], [1.9, 0.24], [2.15, 0.26], [2.3, 0.36]],
+      glass: [0.55, 1.6], pillar: [[0.9, 0.98]], ramps: [[-2.3, -2.26], [1.2, 1.9]], doors: [1.5, 0.5],
+    },
     twingo: { // Renault Twingo (1993): one-box, tall rounded roof, stubby nose
       yb: [[-1.71, 0.95], [-1.65, 1.0], [-1.4, 1.02], [0.9, 0.98], [1.5, 0.86], [1.68, 0.78], [1.71, 0.74]],
       hc: [[-1.68, 0], [-1.6, 0.05], [-1.45, 0.6], [-0.2, 0.66], [0.3, 0.6], [1.2, 0.04], [1.35, 0]],
@@ -1950,7 +1964,8 @@ const hd = !HD ? null : (() => {
     }
   }
   function makeCar(paint, stripe, isPlayer, styleName, opts = {}) {
-    const style = styleName || (isPlayer ? 'saloon' : 'hatch'), st = CAR_STYLES[style], M = sharedMats();
+    let style = styleName || (isPlayer ? 'saloon' : 'hatch'); if (style === 'police') { style = 'saloon'; opts = Object.assign({}, opts, { police: true }); } // playable police car (cycle 13)
+    const st = CAR_STYLES[style], M = sharedMats();
     const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
     const paintC = lin(paint), stripeC = stripe ? lin(stripe) : null;
     const { g: shell, S, C, s0, s1 } = shellGeo(style, st, paintC, stripeC);
@@ -2789,9 +2804,15 @@ const CAR_STYLES = {
     cabin: [[-1.68, 0.99], [-1.5, 1.44], [0.05, 1.47], [0.62, 0.97]], spoiler: false },
   p205: { L: 3.7, W: 1.57, wb: 1.21, wr: 0.3, body: [[1.83, 0.34], ['arcF'], ['arcR'], [-1.8, 0.34], [-1.85, 0.6], [-1.8, 0.97], [-1.55, 1.0], [0.65, 0.96], [1.62, 0.82], [1.85, 0.68]],
     cabin: [[-1.74, 0.97], [-1.35, 1.42], [0.1, 1.45], [0.72, 0.96]], spoiler: false },
+  // (cycle 13) new categories: a 90s sports coupé (an original design), a tall utility van, the police saloon
+  sport: { L: 4.3, W: 1.78, wb: 1.3, wr: 0.32, body: [[2.13, 0.32], ['arcF'], ['arcR'], [-2.1, 0.32], [-2.15, 0.55], [-2.1, 0.86], [-1.2, 0.9], [0.9, 0.86], [1.95, 0.68], [2.15, 0.58]],
+    cabin: [[-1.45, 0.88], [-0.55, 1.26], [0.25, 1.27], [1.0, 0.87]], spoiler: true },
+  van: { L: 4.6, W: 1.84, wb: 1.45, wr: 0.33, body: [[2.28, 0.36], ['arcF'], ['arcR'], [-2.25, 0.36], [-2.3, 0.6], [-2.3, 1.1], [-2.0, 1.12], [1.3, 1.1], [2.05, 0.94], [2.3, 0.78]],
+    cabin: [[-2.28, 1.1], [-2.25, 1.97], [1.2, 1.98], [1.9, 1.1]], spoiler: false },
   twingo: { L: 3.43, W: 1.63, wb: 1.17, wr: 0.3, body: [[1.69, 0.34], ['arcF'], ['arcR'], [-1.66, 0.34], [-1.71, 0.6], [-1.68, 1.0], [-1.4, 1.02], [0.9, 0.98], [1.5, 0.86], [1.71, 0.72]],
     cabin: [[-1.62, 1.0], [-1.45, 1.62], [-0.2, 1.68], [0.3, 1.62], [1.2, 1.0]], spoiler: false },
 };
+CAR_STYLES.police = CAR_STYLES.saloon; // the police saloon: same body, its own livery
 function plateTexture(text, rear) {
   const [c, g] = canvas(128, 32);
   g.fillStyle = rear ? '#f2c230' : '#f4f1e8'; g.fillRect(0, 0, 128, 32);
@@ -3078,8 +3099,11 @@ const VEHICLES = {
   p205:   { m: 900,  a: 1.00, b: 1.42, h: 0.50, T: 280, drive: 'F', mu: 1.18, cda: 0.62, gears: [3.3, 2.0, 1.44, 1.10, 0.86], fd: 4.1 },
   hatch:  { m: 1000, a: 1.05, b: 1.45, h: 0.51, T: 280, drive: 'F', mu: 1.15, cda: 0.66, gears: [3.3, 2.0, 1.44, 1.10, 0.86], fd: 4.0 },
   r5:     { m: 850,  a: 0.98, b: 1.43, h: 0.49, T: 265, drive: 'F', mu: 1.16, cda: 0.62, gears: [3.4, 2.1, 1.48, 1.12, 0.88], fd: 4.2 },
+  sport:  { m: 1050, a: 1.10, b: 1.40, h: 0.45, T: 360, drive: 'R', mu: 1.26, cda: 0.58, gears: [3.2, 2.0, 1.42, 1.1, 0.88], fd: 3.8, turbo: true, pitch: 1.15 },
+  van:    { m: 1500, a: 1.30, b: 1.60, h: 0.78, T: 300, drive: 'F', mu: 1.00, cda: 0.95, gears: [3.8, 2.2, 1.45, 1.05, 0.82], fd: 4.3, pitch: 0.72 },
   twingo: { m: 800,  a: 0.95, b: 1.40, h: 0.55, T: 200, drive: 'F', mu: 1.10, cda: 0.68, gears: [3.6, 2.2, 1.5, 1.12, 0.86], fd: 4.2 },
 };
+VEHICLES.police = VEHICLES.saloon;
 // gripK and torqueK: game factors over the real figures (14 Nov.: a strictly real setting was unplayable in town: too slow
 // off the line, unable to turn). The model keeps its behaviour (weight, slides, gears), at arcade-like pace.
 const PHYS = { g: 9.81, rw: 0.30, idle: 900, red: 6800, up: 6300, down: 2600, eff: 0.85, roll: 0.015, airG: 1.35, gripK: 2.3, torqueK: 2.2, steer: 0.62, steerV: 20 };
@@ -3193,10 +3217,11 @@ function engineState(c, thr) {
   const es = c._es || (c._es = { rpm: PHYS.idle, gear: 1, load: 0, shift: 0 });
   thr = Math.max(0, Math.min(1, thr || 0));
   if (c.phys && useRealPhysics(c)) {
-    es.rpm = c.phys.rpm; es.shift = c.phys.shift || 0; es.gear = c.phys.gear;
+    es.rpm = c.phys.rpm; es.shift = c.phys.shift || 0; es.gear = c.phys.gear; es.pitch = vehOf(c).pitch || 1;
     es.load += ((es.shift > 0 ? 0.2 : thr) - es.load) * 0.3;
     return es;
   }
+  es.pitch = (VEHICLES[c.style] && VEHICLES[c.style].pitch) || 1; // diesel van lower, sports coupé higher
   const v = Math.abs(c.speed || Math.hypot(c.vx || 0, c.vz || 0));
   let g = es.gear;
   while (g < ARC_GEARS.length - 2 && v > ARC_GEARS[g]) g++;
@@ -3418,7 +3443,7 @@ const sfx = (() => {
   }
   // rpm, load 0..1, gear, gear change running (s), turbo; k = extra gain (distance), f = pitch factor (Doppler)
   function driveEngine(e, s, on, k = 1, f = 1, turbo = false) {
-    const t = ac.currentTime, rpmN = Math.max(0, Math.min(1, (s.rpm - 900) / 5900)), fr = s.rpm / 30 * f;
+    const t = ac.currentTime, rpmN = Math.max(0, Math.min(1, (s.rpm - 900) / 5900)), fr = s.rpm / 30 * f * (s.pitch || 1);
     e.o1.frequency.setTargetAtTime(fr, t, 0.025); e.o2.frequency.setTargetAtTime(fr / 2, t, 0.025);
     e.lp.frequency.setTargetAtTime(220 + fr * (2.2 + 4 * s.load) + 700 * s.load, t, 0.04);
     let g = on ? (0.032 + 0.05 * s.load + 0.028 * rpmN) * k : 0;
@@ -4040,7 +4065,11 @@ const CAR_CHOICES = [
   { k: 'hatch', name: 'Compacte', v: 0.96, a: 1.06, d: 'Avec aileron' },
   { k: 'r5', name: 'R5', v: 0.93, a: 1.14, d: 'Petite et vive' },
   { k: 'twingo', name: 'Twingo', v: 0.91, a: 1.1, d: 'Bouille de 1993' },
+  { k: 'sport', name: 'Coupé sport', v: 1.08, a: 1.16, d: 'Années 90, turbo, rapide mais fragile' },
+  { k: 'van', name: 'Utilitaire', v: 0.82, a: 0.85, d: 'Lourd et lent, encaisse les coups et pousse les autres' },
+  { k: 'police', name: 'Voiture de police', v: 1, a: 1.02, d: 'Réformée : les flics te cherchent moins' },
 ];
+const CAT_DMG = { van: 0.65, sport: 1.25 }, CAT_MASS = { van: 1.7, sport: 0.9 }; // damage and push by category (cycle 13)
 const CAR_PAINTS = [[0x5b2ba6, 0xf2c14e], [0xb3121f, 0xf3ead8], [0x0f5d8c, 0xf2c14e], [0x1d1d22, 0xd8a43c], [0xf2f2ee, 0x1b2f8a], [0x2b6b3a, 0xf3ead8], [0xe86a1a, 0x161616], [0xd8b23a, 0x161616], [0x1f8a8a, 0xf3ead8], [0xc23b6e, 0xf3ead8]];
 function carChoice(slot) { const c = (settings.cars || [])[slot] || {}; return { style: CAR_CHOICES.find(o => o.k === c.s) || CAR_CHOICES[0], paint: CAR_PAINTS[c.p ?? [0, 8, 6, 5][slot]] || CAR_PAINTS[0] }; }
 function makeLocal(slot, ctl, paint, team = -1) {
@@ -4476,7 +4505,7 @@ function damage(c, d, by) {
   if (c.alive && c.shield > 0 && gx && gx.shieldHit) gx.shieldHit(c, by && by.x !== undefined ? by : null);
   if (!c.alive || c.shield > 0) return;
   markFight(c, by); if (by && by.local) markFight(by, c);
-  c.hp -= d * (c.armor || 1);
+  c.hp -= d * (c.armor || 1) * (CAT_DMG[c.style] || 1); // (cycle 13) the van takes less, the coupé more
   if (c.local) { sfx.hit(); rumbleFor(c.owner, 0.35, 0.6, 90); }
   if (c.hp > 0) return;
   c.alive = false; c.hp = 0; explode(c.x, c.z);
@@ -4575,15 +4604,16 @@ function carVsCar(a, b) {
   // a car simulated on another machine does not move here: only our side reacts
   const aFix = !!(a.remote || a.proxy), bFix = !!(b.remote || b.proxy);
   if (aFix && bFix) return;
-  const push = (min - d) / (aFix || bFix ? 1 : 2);
-  if (!aFix) { a.x -= nx * push; a.z -= nz * push; }
-  if (!bFix) { b.x += nx * push; b.z += nz * push; }
+  const ma = CAT_MASS[a.style] || (a.long ? 2.5 : 1), mb = CAT_MASS[b.style] || (b.long ? 2.5 : 1), ka = aFix ? 0 : bFix ? 1 : mb / (ma + mb), kb = bFix ? 0 : aFix ? 1 : ma / (ma + mb); // heavier pushes harder
+  const push = min - d;
+  if (!aFix) { a.x -= nx * push * ka; a.z -= nz * push * ka; }
+  if (!bFix) { b.x += nx * push * kb; b.z += nz * push * kb; }
   const rv = (b.vx - a.vx) * nx + (b.vz - a.vz) * nz;
   if (rv < 0) {
     const j = -rv * 0.8;
     if (-rv > 2.5 && locals[0] && (a === locals[0].car || b === locals[0].car)) sfx.impact(-rv); // crash under the player's ears
-    if (!aFix) { a.vx -= nx * j; a.vz -= nz * j; }
-    if (!bFix) { b.vx += nx * j; b.vz += nz * j; }
+    if (!aFix) { a.vx -= nx * j * 2 * ka; a.vz -= nz * j * 2 * ka; }
+    if (!bFix) { b.vx += nx * j * 2 * kb; b.vz += nz * j * 2 * kb; }
     if (-rv > 6 && enemies(a, b)) {
       spawnFx(a.x + nx * R_CAR, 1, a.z + nz * R_CAR, 0.5, 0xffe28a, 0.2, 2, 2);
       const dmg = (-rv - 4) * 1.6;
@@ -5253,7 +5283,7 @@ const gx = !HD ? null : (() => {
   const heading = (ax, az, bx, bz) => Math.atan2(-(bx - ax), -(bz - az));
   const wrapA = a => Math.atan2(Math.sin(a), Math.cos(a));
   const CIV_PAINT = [0xc8c8c4, 0xa31d1d, 0x1d3f8a, 0xe8e0c8, 0x2b6b3a, 0xd8a400, 0x6a6a72, 0x8a1d4a, 0x2a2a2e, 0x4fa0c8, 0xe86a1a, 0x9ab84a];
-  const CIV_STYLES = ['r5', 'p205', 'twingo', 'r5', 'p205', 'twingo', 'hatch'];
+  const CIV_STYLES = ['r5', 'p205', 'twingo', 'r5', 'p205', 'twingo', 'hatch', 'van'];
   // limits scale with the number of screens
   const budget = () => { const n = Math.max(1, locals.length), k = settings.traffic === 1 ? 0.5 : 1; return { civ: Math.round([14, 10, 8, 7][n - 1] * k), peds: Math.round([64, 44, 34, 26][n - 1] * k) }; };
 
@@ -5541,6 +5571,7 @@ const gx = !HD ? null : (() => {
   function addHeat(by, amount, why) {
     const L = by && by.local ? by.owner : null; if (!L || mode === 'online' && false) return;
     if (!policeOn()) return;
+    if (L.car && L.car.style === 'police') amount *= 0.5; // (cycle 13) in a police car, the others look away more often
     const before = stars(L); L.heat = Math.min(5.99, heat(L) + amount); L.calm = 0;
     if (stars(L) > before) { flashFor(L, '★'.repeat(stars(L)) + ' POLICE', stars(L) === 1 ? 'Les flics ont vu ça' : stars(L) >= 4 ? 'Toutes les patrouilles sur vous' : 'Renforts en route'); if (gx.dj) gx.dj('police', stars(L)); }
   }
@@ -6318,7 +6349,7 @@ const gx = !HD ? null : (() => {
     { k: 'paint', name: 'Peinture neuve', desc: 'Nouvelle couleur · la police perd ta trace', cost: () => 150 },
   ];
   // (cycle 12) the full list: services, then this car's settings and looks, then the cars you own or can buy
-  const CAR_PRICE = { saloon: 800, p205: 600, hatch: 700, r5: 500, twingo: 400 };
+  const CAR_PRICE = { saloon: 800, p205: 600, hatch: 700, r5: 500, twingo: 400, sport: 1500, van: 900, police: 1200 };
   const RIMS = [null, 0xd8a43c, 0x1d1d22, 0xf2f2ee, 0xb3121f];
   const activeCar = () => { settings.cars = settings.cars || []; return settings.cars[0] || (settings.cars[0] = { s: locals[0] ? locals[0].car.style || 'saloon' : 'saloon', p: 0 }); };
   const owned = () => { if (!settings.owned || !settings.owned.length) settings.owned = [JSON.parse(JSON.stringify(activeCar()))]; return settings.owned; };
@@ -8303,6 +8334,6 @@ const paintNow = () => new Promise(r => { let done = false; const go = () => { i
   netInit();
   if (settings.intro !== false && !window.__noIntro) Intro.splash();
 })();
-window.__gm = { get paused() { return paused; }, get started() { return started; }, renderer, scene, camera, PerfHud, Tiles, W, BOOT, planarReal, planarArcade, VEHICLES, engineState, Soundscape, sfx, PhotoMode, updateCamera, CAM_MODES, G, nodeOk, groundH, Profile, saveSettingsHook: () => saveSettings(), surfaceH, Intro, hd, gx, settings, trams, edges, tramS, tramWall, EDGE, cellOf, collideWalls, muzzleOf, shoot, damage, applyHit, locals: () => locals, rivals: () => rivals, Net, Match, step: s => step(s, performance.now()), start: k => startGame(k || 'solo'), codes };
+window.__gm = { get paused() { return paused; }, get started() { return started; }, renderer, scene, camera, PerfHud, Tiles, W, BOOT, planarReal, planarArcade, VEHICLES, engineState, Soundscape, sfx, PhotoMode, updateCamera, CAM_MODES, G, nodeOk, groundH, Profile, makeCar, saveSettingsHook: () => saveSettings(), surfaceH, Intro, hd, gx, settings, trams, edges, tramS, tramWall, EDGE, cellOf, collideWalls, muzzleOf, shoot, damage, applyHit, locals: () => locals, rivals: () => rivals, Net, Match, step: s => step(s, performance.now()), start: k => startGame(k || 'solo'), codes };
 })();
 </script>
