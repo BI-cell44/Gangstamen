@@ -146,7 +146,7 @@
     if (topic === 'bl') explode(d.x, d.z);
   }
   function blast(x, z, by, dmg, r) {
-    explode(x, z);
+    explode(x, z); hearShot(x, z, x, z, 1.8);
     for (const c of [...allPlayerCars(), ...rivals, ...npcs, ...extras]) {
       if (!c.alive || c === by && dmg < 0) continue;
       const d = Math.hypot(c.x - x, c.z - z); if (d > r) continue;

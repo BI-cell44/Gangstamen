@@ -44,6 +44,7 @@ function shoot(from, targets, dmg, range, spread, enemy) {
   const ex = ox + dx * best, ez = oz + dz * best;
   tracer(ox, oy, oz, ex, tracerEnd(ox, oy, oz, ex, ez, hitCar), ez, enemy, dx, dz);
   sfx.gun(enemy);
+  if (gx) gx.hearShot(ox, oz, ex, ez);
   if (hitCar) applyHit(from, hitCar, dmg, ex, ez);
   else if (best < range) spawnFx(ex, 1.2, ez, 0.25, 0xcbbfae, 0.25, 1, 2);
 }
@@ -52,6 +53,7 @@ function ghostShot(from, enemy) {
   const [fx, fz] = from.fwd, [ox, oy, oz] = muzzleOf(from);
   const d = segHit(ox, oz, fx, fz, 95), ex = ox + fx * d, ez = oz + fz * d;
   tracer(ox, oy, oz, ex, tracerEnd(ox, oy, oz, ex, ez, null), ez, enemy, fx, fz);
+  if (gx) gx.hearShot(ox, oz, ex, ez);
   const L0 = locals[0]; if (L0 && Math.hypot(L0.car.x - from.x, L0.car.z - from.z) < 70) sfx.gun(true);
 }
 function credit(by, points, text) {

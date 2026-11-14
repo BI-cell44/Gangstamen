@@ -79,6 +79,20 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
         run(600); run(6000); const after = h.quality; __gm.settings.autoQ = false; h.setQuality(2); run(12000); const off = h.quality; __gm.settings.autoQ = true; h.setQuality(0); return { after, off }; });
       expect(r.after === 1 && r.off === 2, JSON.stringify(r)); return r;
     });
+    await check('piétons et clients fuient au coup de feu', async () => {
+      const r = await ev(() => { const peds = __gm.gx.peds().filter(p => p.on && p.state !== 'down'); if (!peds.length) return { peds: 0 };
+        const p = peds[0], L = __gm.locals()[0]; L.car.place(p.x + 8, p.z + 8, 0); L.car.vx = L.car.vz = 0;
+        __gm.shoot(L.car, [], 1, 95, 0.05, false); const s1 = p.state, t0 = p.t;
+        for (let i = 0; i < 20; i++) __gm.step(1 / 30); return { peds: peds.length, state: s1, moved: +Math.abs(p.t - t0).toFixed(2), later: p.state }; });
+      expect(r.peds > 0 && r.state === 'panic' && r.moved > 0, JSON.stringify(r)); return r;
+    });
+    await check('saut : la voiture passe au-dessus d’un arbre', async () => {
+      const r = await ev(() => { const T = __gm.W.trees, c = __gm.locals()[0].car; let tx = null, tz = null;
+        for (let i = 0; i < T.length && tx === null; i += 2) { const s = __gm.cellOf(T[i], T[i + 1]); if (s && s.some(q => q.length === 5) && s.every(q => q.length === 5)) { tx = T[i]; tz = T[i + 1]; } }
+        const res = {}; for (const air of [0, 4]) { c.place(tx - 12, tz, -Math.PI / 2); c.hp = 100; c.shield = 0; __gm.step(1 / 60); if (air) { c.yb += air; c.yv = 3; }
+          for (let i = 0; i < 70; i++) { if (i < 30) { c.vx = 20; c.vz = 0; } __gm.step(1 / 60); } res['h' + air] = Math.round(c.x - tx); } return res; });
+      expect(r.h0 < 0 && r.h4 > 3, JSON.stringify(r)); return r;
+    });
     await check('garages réels', async () => {
       const r = await ev(() => __gm.gx.garages.map(g => g.name)); expect(r.length >= 3, 'garages : ' + r.join(', '));
       await ev(() => { const g = __gm.gx.garages[1], L = __gm.locals()[0]; L.car.place(g.x + 1, g.z + 1, 0); L.car.vx = L.car.vz = 0; for (let i = 0; i < 8; i++) __gm.step(1 / 30); });

@@ -234,7 +234,7 @@ function drive(c, inp, dt) {
   }
   if (HD) { // vertical motion: crests and bridge ramps throw the car in the air at speed
     const g = surfaceH(c.x, c.z);
-    if (c.yb === undefined || Math.abs(c.yb - g) > 8) { c.yb = g; c.yv = 0; c.air = 0; }
+    if (c.yb === undefined || c.yb < g - 8) { c.yb = g; c.yv = 0; c.air = 0; } // (only when it ends up under the ground: a car flying off the quarry stays in the air)
     const ny = c.yb + (c.yv || 0) * dt - 11 * dt * dt;
     if (ny > g + 0.14) { c.yv -= 22 * dt; c.yb = ny; c.air = c.yb - g; }
     else {
@@ -255,7 +255,8 @@ function collideWalls(c) {
   const [fx, fz] = c.fwd, half = c.mesh && c.mesh.userData.hl ? Math.max(1, c.mesh.userData.hl - 1.0) : 1.25;
   let impact = 0;
   for (const [k, r] of [[half, 1.0], [0, 1.0], [-half, 1.0]]) {
-    for (const [ax, az, bx, bz] of segs) {
+    for (const [ax, az, bx, bz, top] of segs) {
+      if (top !== undefined && (c.air || 0) > top) continue; // flying over a low obstacle (tree trunk, lamp post)
       const cx = c.x + fx * k, cz = c.z + fz * k;
       const dx = bx - ax, dz = bz - az, L2 = dx * dx + dz * dz || 1e-6;
       let t = ((cx - ax) * dx + (cz - az) * dz) / L2; t = Math.max(0, Math.min(1, t));

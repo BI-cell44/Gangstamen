@@ -18,6 +18,7 @@ Ce qui a été construit, dans l'ordre. Le détail de chaque changement est dans
 | 14 nov. 2026 | Carte agrandie (Sainte-Anne, quai de la Fosse), tram ligne 1, barrières, église et escalier Sainte-Anne, garages réels ; radio Pin-pon selon la vraie voiture, terrasses, mort en mission, message de KO, changement d'arme | `main` f20574b |
 | 14 nov. 2026 | Branche `ultra` : audit, feuille de route, réorganisation de la documentation (`CLAUDE.md`, `docs/`), artifact Gangstamen Ultra | `ultra` |
 | 14 nov. 2026 | Ultra : sources découpées par système (D-12), sorties identiques à l'octet | `ultra` |
+| 14 nov. 2026 | Ultra : les piétons et les clients des terrasses fuient aux coups de feu et aux explosions (course sur le trottoir, mains sur la tête) ; une voiture en l'air passe au-dessus des troncs et des lampadaires ; plus de recollage au sol quand elle vole à plus de 8 m au-dessus du terrain | `ultra` |
 | 14 nov. 2026 | Ultra : retour à l'ancienne règle de qualité automatique (demande de l'utilisateur), la case pour la couper reste | `ultra` |
 | 14 nov. 2026 | Ultra, cycle 2 : mobilier et terrasses instanciés (`gx/batch.js`), pièces fixes des voitures fusionnées, ville par tuiles (`world/tiles.js`), culling réactivé sur les maillages instanciés | `ultra` |
 | 14 nov. 2026 | Ultra, cycle 1 : lanceur de tests (`tools/run-tests.js`, 12 vérifications), mesures dans `docs/perf.json`, superposition F3, qualité automatique corrigée (médiane, délai de grâce de 15 s, deux fenêtres lentes, case pour la couper) | `ultra` |

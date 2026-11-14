@@ -2,7 +2,7 @@
 const CELL = 12;
 const grid = new Map();
 const key = (i, j) => i * 100003 + j;
-function gridAdd(seg, pad) {
+function gridAdd(seg, pad) { // seg = [ax, az, bx, bz] or [ax, az, bx, bz, height]: a car flying higher than height passes over
   const [ax, az, bx, bz] = seg;
   const i0 = Math.floor((Math.min(ax, bx) - pad) / CELL), i1 = Math.floor((Math.max(ax, bx) + pad) / CELL);
   const j0 = Math.floor((Math.min(az, bz) - pad) / CELL), j1 = Math.floor((Math.max(az, bz) + pad) / CELL);

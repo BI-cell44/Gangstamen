@@ -111,6 +111,12 @@
       if (p.timer <= 0) p.state = 'walk';
     } else if (p.state === 'down') {
       p.timer -= dt; if (p.timer <= 0) { p.state = 'walk'; }
+    } else if (p.state === 'panic') { // gunfire: runs off along the pavement, away from the shooter, arms over the head
+      p.t += p.dir * p.run * dt / L; moving = p.run;
+      if (p.t <= 0) { p.t = 0; p.dir = 1; } if (p.t >= n - 1) { p.t = n - 1.001; p.dir = -1; }
+      const ol = Math.hypot(p.ox, p.oz); if (ol > 0.01) { const k = Math.min(ol, dt * 2) / ol; p.ox -= p.ox * k; p.oz -= p.oz * k; }
+      p.h += wrapA(Math.atan2(hx, hz) - p.h) * Math.min(1, dt * 10);
+      p.timer -= dt; if (p.timer <= 0) { p.state = 'idle'; p.timer = 1.5 + R() * 2; p.lookTo = (R() - 0.5) * 2; }
     }
     p.x = ax + (bx - ax) * f + p.ox; p.z = az + (bz - az) * f + p.oz;
     // watch out for cars
@@ -139,9 +145,10 @@
     else if (p.state === 'idle') { const t = performance.now() / 1000 + p.phase; P = P0(); P.sway = Math.sin(t * 0.9) * 0.04; P.thigh = [Math.sin(t * 0.9) * 0.05, -0.05]; P.arm = [0.05, -0.05]; P.look = p.look_ * 1.4; }
     else {
       p.phase += dt * (moving > 3 ? moving * 2.1 : moving * 4.2);
-      const run = p.state === 'flee', A = run ? 1.25 : Math.min(1, 0.55 + p.speed * 0.3);
+      const run = p.state === 'flee' || p.state === 'panic', A = run ? 1.25 : Math.min(1, 0.55 + p.speed * 0.3);
       P = walkPose(p.phase, A, run); P.look = p.look_;
-      if (run) { P.arm = [-2.5 + Math.sin(p.phase * 2) * 0.3, -2.5 - Math.sin(p.phase * 2) * 0.3]; P.armOut = [0.4, 0.4]; P.elbow = [-0.3, -0.3]; }
+      if (p.state === 'panic') { P.arm = [-2.9, -2.9]; P.elbow = [-1.6, -1.6]; P.armOut = [0.25, 0.25]; P.lean = 0.18; P.look = Math.sin(p.phase * 0.7) * 0.6; } // hands over the head, ducking
+      else if (run) { P.arm = [-2.5 + Math.sin(p.phase * 2) * 0.3, -2.5 - Math.sin(p.phase * 2) * 0.3]; P.armOut = [0.4, 0.4]; P.elbow = [-0.3, -0.3]; }
     }
     p.pose = P;
   }

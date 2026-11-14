@@ -76,6 +76,7 @@ Mesures dans Chrome sans tête, rendu logiciel, HD, partie solo au départ (`too
 ### Code et architecture
 - **Forces** : un seul code pour trois sorties ; données réelles soignées ; chaîne de données reproductible ; build reproductible à l'octet ; beaucoup de systèmes déjà présents (météo, police, campagne, réseau sans latence, intro).
 - **Portée unique** : `template.html` mêle moteur, jeu, interface et réseau ; `gx.js` dépend de dizaines de variables du template (`rivals`, `locals`, `sfx`, `W`, `G`…) sans liste explicite. Ajouter un système demande de connaître tout le fichier.
+- **Collisions** : grille de segments 2D ; depuis le 14 nov., un segment peut porter une hauteur (5e valeur) au-dessus de laquelle une voiture en l'air passe (arbres, lampadaires).
 - **Conduite** : modèle arcade à un corps (vitesse avant, vitesse latérale amortie), pas de boîte de vitesses, pas de transfert de masse, pas de régime moteur ; les 5 modèles ne diffèrent que par l'apparence et quelques coefficients. Bon pour le combat, trop pauvre pour plusieurs catégories de véhicules et des courses.
 - **Son moteur** : un oscillateur et un filtre suivant la vitesse ; pas de régime, de charge, de passage de rapport ni de crissement lié au glissement.
 - **Caméras** : 3 modes fixes (poursuite proche, haute, capot) ; pas de gestion de collision avec les murs, pas de caméra libre ou photo.

@@ -206,7 +206,7 @@
       const sx = (surfaceH(hx + 3, hz) - surfaceH(hx - 3, hz)) / 6, sz = (surfaceH(hx, hz + 3) - surfaceH(hx, hz - 3)) / 6;
       qt.setFromEuler(e.set(Math.atan(sz), 0, -Math.atan(sx))); m4.compose(v.set(hx, py, hz), qt, s.set(20, 1, 20)); lampPools.setMatrixAt(i, m4);
       qt.setFromEuler(e.set(-Math.PI / 2, 0, 0)); m4.compose(v.set(hx, gy + 6.86, hz), qt, s.set(2.6, 2.6, 2.6)); lampGlow.setMatrixAt(i, m4);
-      gridAdd([x - 0.12, z, x + 0.12, z], 3.5); gridAdd([x, z - 0.12, x, z + 0.12], 3.5);
+      gridAdd([x - 0.12, z, x + 0.12, z, 6.5], 3.5); gridAdd([x, z - 0.12, x, z + 0.12, 6.5], 3.5); // lamp post: 6.5 m high
     });
     { // reflections of the lamps stretched towards the viewer on the wet road: a long soft streak under each lamp
       const [sc, sg] = canvas(32, 128), lg = sg.createLinearGradient(0, 0, 0, 128);

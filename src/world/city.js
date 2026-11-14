@@ -550,7 +550,7 @@ function buildGround() {
     m4.compose(v.set(x, gy + 3 * k + 1.4, z), q, s.set(k, k * 1.15, k)); crowns.setMatrixAt(i, m4);
     cc.setHSL(0.22 + hash(i + 2) * 0.08, 0.45, 0.28 + hash(i + 3) * 0.1); crowns.setColorAt(i, cc);
     m4.compose(v.set(x, gy + 1.5 * k, z), q, s.set(k, k, k)); trunks.setMatrixAt(i, m4);
-    gridAdd([x - 0.4, z, x + 0.4, z], 3.5); gridAdd([x, z - 0.4, x, z + 0.4], 3.5);
+    gridAdd([x - 0.4, z, x + 0.4, z, 2.2 * k], 3.5); gridAdd([x, z - 0.4, x, z + 0.4, 2.2 * k], 3.5); // 5th value: height of the trunk (a car flying higher goes over, through the leaves)
   }
   crowns.castShadow = trunks.castShadow = true;
   scene.add(crowns, trunks);

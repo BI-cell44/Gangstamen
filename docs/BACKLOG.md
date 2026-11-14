@@ -40,6 +40,7 @@
 - Moteur et boîte automatique : courbe de couple, régime, rapports (et passages visibles au compteur).
 - Paramètres par véhicule dans un tableau de données (masse, puissance, adhérence, centre de gravité, traînée) : base des catégories de véhicules.
 - Surfaces : bitume, pavés, herbe, mouillé (pluie) avec adhérence différente.
+- Sauts et collisions en hauteur (retour de l'utilisateur, 14 nov.) : une première correction est faite (les obstacles bas ont une hauteur : troncs 2,2 m environ, lampadaires 6,5 m ; une voiture plus haute passe au-dessus). À reprendre ici : vraie gravité, tangage et roulis en l'air, réception sur les suspensions, collisions par hauteur pour tout le mobilier.
 - Réglage « Conduite : arcade / réaliste » le temps de valider le ressenti ; réseau inchangé (chaque client simule sa voiture).
 
 ### Cycle 5 : son v2 ★★★
