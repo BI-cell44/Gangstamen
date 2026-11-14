@@ -14,7 +14,10 @@
       for (const ox of [0, S, -S]) for (const oy of [0, SH, -SH]) {
         const rg = g.createRadialGradient(x + ox, y + oy, 0, x + ox, y + oy, r);
         rg.addColorStop(0, d ? `rgba(60,50,40,${0.02 + R() * 0.035})` : `rgba(255,255,255,${0.03 + R() * 0.05})`); rg.addColorStop(1, 'rgba(0,0,0,0)');
-        g.fillStyle = rg; g.fillRect(0, 0, S, SH);
+        // only the square around the blotch: outside its radius the gradient is transparent (same picture, ~30x faster:
+        // painting the whole canvas 2 300 times per texture was 50 s of the HD start-up in software rendering)
+        const x0 = Math.max(0, Math.floor(x + ox - r)), y0 = Math.max(0, Math.floor(y + oy - r)), x1 = Math.min(S, Math.ceil(x + ox + r)), y1 = Math.min(SH, Math.ceil(y + oy + r));
+        if (x1 > x0 && y1 > y0) { g.fillStyle = rg; g.fillRect(x0, y0, x1 - x0, y1 - y0); }
       }
     }
     if (style === 'brick') {

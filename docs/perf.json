@@ -68,5 +68,33 @@
   "simMs": 1.3,
   "loadS": 6,
   "failed": 0
+ },
+ {
+  "date": "2026-11-14T10:58",
+  "label": "cycle 3 : chargement (façades, étapes, préparation)",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 560,
+  "trianglesK": 892,
+  "meshes": 1808,
+  "geometries": 1555,
+  "materials": 311,
+  "heapMB": 202,
+  "simMs": 5.01,
+  "loadS": 19,
+  "failed": 0
+ },
+ {
+  "date": "2026-11-14T10:58",
+  "label": "cycle 3 : chargement (façades, étapes, préparation)",
+  "build": "gangstamen.html",
+  "drawCalls": 282,
+  "trianglesK": 399,
+  "meshes": 829,
+  "geometries": 649,
+  "materials": 127,
+  "heapMB": 117,
+  "simMs": 1.2,
+  "loadS": 5,
+  "failed": 0
  }
 ]

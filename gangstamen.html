@@ -381,7 +381,10 @@ body.cine #logo, body.cine #credit { display: none; }
 <script>
 (() => {
 'use strict';
+// boot timing (cycle 3): BOOT.mark(name) records the time since the script started; shown by F3 and the tests
+const BOOT = { t0: performance.now(), last: performance.now(), marks: [], mark(n) { const t = performance.now(); this.marks.push([n, Math.round(t - this.last)]); this.last = t; } };
 const W = JSON.parse(document.getElementById('world').textContent);
+BOOT.mark('lecture du monde (JSON)');
 const HX = W.meta.hx, HZ = W.meta.hz, CX = W.meta.cx || 0, CZ = W.meta.cz || 0; // play area: centre (CX, CZ), half sizes (HX, HZ), around the old Chantenay origin
 // IGN RGE ALTI ground model, 12.5 m grid, heights in decimetres
 const DEM = W.dem;
@@ -1187,7 +1190,10 @@ const hd = !HD ? null : (() => {
       for (const ox of [0, S, -S]) for (const oy of [0, SH, -SH]) {
         const rg = g.createRadialGradient(x + ox, y + oy, 0, x + ox, y + oy, r);
         rg.addColorStop(0, d ? `rgba(60,50,40,${0.02 + R() * 0.035})` : `rgba(255,255,255,${0.03 + R() * 0.05})`); rg.addColorStop(1, 'rgba(0,0,0,0)');
-        g.fillStyle = rg; g.fillRect(0, 0, S, SH);
+        // only the square around the blotch: outside its radius the gradient is transparent (same picture, ~30x faster:
+        // painting the whole canvas 2 300 times per texture was 50 s of the HD start-up in software rendering)
+        const x0 = Math.max(0, Math.floor(x + ox - r)), y0 = Math.max(0, Math.floor(y + oy - r)), x1 = Math.min(S, Math.ceil(x + ox + r)), y1 = Math.min(SH, Math.ceil(y + oy + r));
+        if (x1 > x0 && y1 > y0) { g.fillStyle = rg; g.fillRect(x0, y0, x1 - x0, y1 - y0); }
       }
     }
     if (style === 'brick') {
@@ -2141,11 +2147,14 @@ const WALL_TINTS = [
   ['#d4cab4', '#cbbfa6'],
 ];
 const ROOF_TINTS = ['#4a5263', '#6c6964', '#7b8187', '#6b5b4b', '#58484a', '#6c6964', '#3f4655'];
+BOOT.mark('moteur et modules');
 const facadeTex = HD ? [] : FACADES.map(facade);
 const HDW = HD ? hd.wallSet(FACADES) : null; // HD: every style in a few variants, upper floors and street level
 const wallMats = HD ? [].concat(...HDW.upper, ...HDW.ground) : facadeTex.map(([t, te]) => new THREE.MeshLambertMaterial({ map: t, vertexColors: true, emissive: 0xffffff, emissiveMap: te, emissiveIntensity: 0 }));
 const roofMat = HD ? hd.roofMat() : new THREE.MeshLambertMaterial({ vertexColors: true });
+BOOT.mark('textures de façades');
 const shopSet = HD && W.shops ? hd.shopSet(W.shops) : null; // HD: the real shops of the district (OpenStreetMap)
+BOOT.mark('enseignes des commerces');
 if (shopSet) wallMats.push(shopSet.mat); // lit like the windows at night
 const HINTS = new Map(); if (W.hints) for (const [bi, bay] of W.hints) HINTS.set(bi, bay); // window spacing measured in street photos
 // each real shop goes on the nearest wall long enough to hold it: "building:edge" -> [{s0, s1, si}]
@@ -6838,25 +6847,48 @@ const Tiles = (() => {
 })();
 
 // ---------- boot ----------
-buildCity();
-buildGround();
-try { buildEdges(); buildTrams(); } catch (e) { console.warn('edges', e); }
-buildMinimap();
-setupWorldActors();
-if (HD) hd.world();
-if (gx) gx.world();
-try { Tiles.run(); } catch (e) { console.warn('tiles', e); }
-if (HD) applyAmbience(); else setNight(false);
-renderSlots(); renderCtlTable(); initOptions();
-requestAnimationFrame(frame);
+// The steps hand control back to the browser between them, so the start button can show where the loading is
+// (the facade textures are made before this point, while the code itself loads: 1 to 2 s since cycle 3).
+BOOT.mark('reste du code');
 const startBtn = $('start');
-startBtn.disabled = false; startBtn.textContent = 'Solo · prendre le volant';
-startBtn.focus();
-startBtn.addEventListener('click', () => startGame('solo'));
-$('splitGo').addEventListener('click', () => startGame('split'));
-$('create').addEventListener('click', () => startOnline(null, true));
-netInit();
-if (settings.intro !== false && !window.__noIntro) Intro.splash();
-window.__gm = { get paused() { return paused; }, get started() { return started; }, renderer, scene, camera, PerfHud, Tiles, W, Intro, hd, gx, settings, trams, edges, tramS, tramWall, EDGE, cellOf, collideWalls, muzzleOf, shoot, damage, applyHit, locals: () => locals, rivals: () => rivals, Net, Match, step: s => step(s, performance.now()), start: k => startGame(k || 'solo'), codes };
+const BOOT_STEPS = [
+  ['bâtiments', () => buildCity()],
+  ['sol, routes et arbres', () => buildGround()],
+  ['bords de carte et tram', () => { buildEdges(); buildTrams(); }],
+  ['minicarte', () => buildMinimap()],
+  ['voitures', () => setupWorldActors()],
+  ['lampadaires', () => { if (HD) hd.world(); }],
+  ['lieux, mobilier et garages', () => { if (gx) gx.world(); }],
+  ['découpage en tuiles', () => Tiles.run()],
+  ['ambiance et menus', () => { if (HD) applyAmbience(); else setNight(false); renderSlots(); renderCtlTable(); initOptions(); }],
+  ['préparation des shaders', () => { try { renderer.compile(scene, camera); } catch (e) { } }], // compiled now rather than at the first image
+  ['envoi des textures', () => { const seen = new Set(); scene.traverse(o => { for (const m of [].concat(o.material || [])) for (const k of ['map', 'emissiveMap', 'normalMap', 'roughnessMap', 'alphaMap']) { const t = m[k]; if (t && !seen.has(t)) { seen.add(t); try { renderer.initTexture(t); } catch (e) { } } } }); }],
+  ['première image', () => { // shadow maps, post-processing: the long first image happens here, behind the progress bar
+    try { render(1 / 60); const gl = renderer.getContext(); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4)); } catch (e) { console.warn('first render', e); } // WebGL is asynchronous: reading a pixel waits for the work (shader linking) to finish
+  }],
+];
+const paintNow = () => new Promise(r => { let done = false; const go = () => { if (!done) { done = true; setTimeout(r, 0); } }; requestAnimationFrame(go); setTimeout(go, 60); }); // a hidden tab gets no animation frames
+(async () => {
+  const held = [...document.querySelectorAll('#title button, #title input, #title select')].filter(b => !b.disabled && b !== startBtn); // nothing to click before the world exists
+  held.forEach(b => { b.disabled = true; });
+  for (let i = 0; i < BOOT_STEPS.length; i++) {
+    const [label, fn] = BOOT_STEPS[i];
+    startBtn.textContent = 'Chargement ' + Math.round(i / BOOT_STEPS.length * 100) + ' % · ' + label + '…';
+    await paintNow();
+    try { fn(); } catch (e) { console.warn(label, e); }
+    BOOT.mark(label);
+  }
+  requestAnimationFrame(t => { BOOT.mark('attente de la première image'); requestAnimationFrame(() => { BOOT.mark('première image'); BOOT.total = Math.round(performance.now() - BOOT.t0); }); });
+  requestAnimationFrame(frame);
+  held.forEach(b => { b.disabled = false; });
+  startBtn.disabled = false; startBtn.textContent = 'Solo · prendre le volant';
+  startBtn.focus();
+  startBtn.addEventListener('click', () => startGame('solo'));
+  $('splitGo').addEventListener('click', () => startGame('split'));
+  $('create').addEventListener('click', () => startOnline(null, true));
+  netInit();
+  if (settings.intro !== false && !window.__noIntro) Intro.splash();
+})();
+window.__gm = { get paused() { return paused; }, get started() { return started; }, renderer, scene, camera, PerfHud, Tiles, W, BOOT, Intro, hd, gx, settings, trams, edges, tramS, tramWall, EDGE, cellOf, collideWalls, muzzleOf, shoot, damage, applyHit, locals: () => locals, rivals: () => rivals, Net, Match, step: s => step(s, performance.now()), start: k => startGame(k || 'solo'), codes };
 })();
 </script>

@@ -1,6 +1,6 @@
 # État du projet
 
-Mis à jour le 14 novembre 2026 (branche `ultra`, cycles 0, 1 et 2 faits, sources découpées ; prochain : cycle 3, chargement). À relire en premier avec `CLAUDE.md`.
+Mis à jour le 14 novembre 2026 (branche `ultra`, cycles 0 à 3 faits, sources découpées ; prochain : cycle 4, physique automobile v2, puis les retours de jeu notés dans `BACKLOG.md`). À relire en premier avec `CLAUDE.md`.
 
 ## 1. Le jeu aujourd'hui
 
@@ -92,8 +92,10 @@ Mesures dans Chrome sans tête, rendu logiciel, HD, partie solo au départ (`too
 | HD / Ultra (cycle 1) | 92 s | 1 340 | 2,26 M | 4 388 | 190 Mo | 5,4 ms |
 | **Ultra, cycle 2** | 82 s | **485** | **0,86 M** | 1 808 | 202 Mo | 5,0 ms |
 | Classique, cycle 2 | 6 s | 282 | 0,40 M | 829 | 98 Mo | 1,3 ms |
+| **Ultra, cycle 3** | **19 s** | 560 | 0,89 M | 1 808 | 202 Mo | 5,0 ms |
+| Classique, cycle 3 | 5 s | 282 | 0,40 M | 829 | 117 Mo | 1,2 ms |
 
-Le chargement de la HD (×11 par rapport au classique) vient des étapes propres à la HD (façades et enseignes dessinées, sol, photo aérienne, shaders) : c'est le levier du cycle 3. La superposition F3 donne ces chiffres en jeu.
+Le chargement de la HD venait surtout des textures de façades (50 s, corrigé au cycle 3) et de la première image (shaders, textures : maintenant faite pendant la barre de chargement). Le détail par étape est dans `__gm.BOOT.marks`. La superposition F3 donne ces chiffres en jeu.
 
 ### Ce qui n'a jamais pu être vérifié (pas d'écran, de son ni de manette ici)
 Performances réelles, son (intro, radio, voix, cloche du tram), vibrations, ressenti de conduite, équilibre des missions, parties en ligne à plusieurs.

@@ -43,6 +43,9 @@ Le bac à sable n'atteint ni OSM, ni Overpass, ni l'IGN. Les requêtes (`tools/f
 **Bénéfice** : évolutions plus rapides et plus sûres pour toutes les phases suivantes. **Risque** : faible (contrôlé par la comparaison à l'octet), mais tous les numéros de ligne des documents changent.
 **Alternative écartée** : modules ES avec bundler (Vite, esbuild) : contraire à D-01 pour un gain modeste ici.
 
+## D-16 Démarrage par étapes (en vigueur, 14 nov. 2026)
+`core/boot.js` enchaîne des étapes (`BOOT_STEPS`) qui rendent la main au navigateur entre elles pour afficher la progression sur le bouton de départ ; les boutons du menu restent désactivés jusqu'à la fin. Les shaders (`renderer.compile`), l'envoi des textures (`initTexture`) et une première image sont faits pendant le chargement ; une lecture d'un pixel force l'attente de la fin du travail WebGL (asynchrone, sinon le coût retombe sur l'image suivante). Toute nouvelle construction lourde doit devenir une étape de cette liste, avec son repère `BOOT.mark`.
+
 ## D-15 Qualité automatique : la règle d'origine (en vigueur, 14 nov. 2026)
 Baisse d'un cran quand la moyenne sur 5 s passe sous 25 images par seconde pendant le jeu. Une variante (médiane, délai de grâce de 15 s, deux fenêtres lentes) a été essayée au cycle 1 puis retirée : chez l'utilisateur, l'ancienne marchait mieux. Ne pas la remplacer sans son accord. La case *Qualité automatique* permet de la couper.
 

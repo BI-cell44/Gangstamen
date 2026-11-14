@@ -10,11 +10,14 @@ const WALL_TINTS = [
   ['#d4cab4', '#cbbfa6'],
 ];
 const ROOF_TINTS = ['#4a5263', '#6c6964', '#7b8187', '#6b5b4b', '#58484a', '#6c6964', '#3f4655'];
+BOOT.mark('moteur et modules');
 const facadeTex = HD ? [] : FACADES.map(facade);
 const HDW = HD ? hd.wallSet(FACADES) : null; // HD: every style in a few variants, upper floors and street level
 const wallMats = HD ? [].concat(...HDW.upper, ...HDW.ground) : facadeTex.map(([t, te]) => new THREE.MeshLambertMaterial({ map: t, vertexColors: true, emissive: 0xffffff, emissiveMap: te, emissiveIntensity: 0 }));
 const roofMat = HD ? hd.roofMat() : new THREE.MeshLambertMaterial({ vertexColors: true });
+BOOT.mark('textures de façades');
 const shopSet = HD && W.shops ? hd.shopSet(W.shops) : null; // HD: the real shops of the district (OpenStreetMap)
+BOOT.mark('enseignes des commerces');
 if (shopSet) wallMats.push(shopSet.mat); // lit like the windows at night
 const HINTS = new Map(); if (W.hints) for (const [bi, bay] of W.hints) HINTS.set(bi, bay); // window spacing measured in street photos
 // each real shop goes on the nearest wall long enough to hold it: "building:edge" -> [{s0, s1, si}]

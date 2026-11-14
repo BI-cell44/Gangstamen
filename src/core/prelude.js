@@ -1,6 +1,9 @@
 (() => {
 'use strict';
+// boot timing (cycle 3): BOOT.mark(name) records the time since the script started; shown by F3 and the tests
+const BOOT = { t0: performance.now(), last: performance.now(), marks: [], mark(n) { const t = performance.now(); this.marks.push([n, Math.round(t - this.last)]); this.last = t; } };
 const W = JSON.parse(document.getElementById('world').textContent);
+BOOT.mark('lecture du monde (JSON)');
 const HX = W.meta.hx, HZ = W.meta.hz, CX = W.meta.cx || 0, CZ = W.meta.cz || 0; // play area: centre (CX, CZ), half sizes (HX, HZ), around the old Chantenay origin
 // IGN RGE ALTI ground model, 12.5 m grid, heights in decimetres
 const DEM = W.dem;

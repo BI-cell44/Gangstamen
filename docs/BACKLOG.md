@@ -26,10 +26,13 @@
 - [ ] Distance d'affichage du petit mobilier, de la foule et des terrasses selon la qualité (à faire si la vraie machine le demande).
 - Objectif mesuré : moins de 450 appels de dessin et 40 % de triangles en moins par image, même rendu à l'œil (captures avant / après). **Résultat** : 485 appels (passes de post-traitement comprises) au lieu de 1 340, 859 k triangles au lieu de 2,26 M ; captures identiques. Classique : 282 appels (221 avant, les tuiles en ajoutent un peu), 399 k triangles au lieu de 1,25 M.
 
-### Cycle 3 : chargement ★★
-- Mesurer chaque étape du démarrage ; générer les façades et l'atlas progressivement avec une barre de chargement honnête.
-- Construire la ville pendant que le menu est affiché ; ne compiler que les shaders utiles.
-- Objectif : divisé par deux en rendu logiciel, menu jouable avant la fin des tâches non essentielles.
+### Cycle 3 : chargement ★★ (fait le 14 nov. 2026 : HD prête en 19 s au lieu de 92 s en rendu logiciel)
+- [x] Mesurer chaque étape du démarrage (`BOOT.mark`, `__gm.BOOT`) : 50 s sur 67 venaient des textures de façades HD (chaque tache de crépi peinte sur toute la toile, 2 300 fois par texture), 13 s de la première image.
+- [x] Façades : chaque tache n'est plus peinte que sur son carré (même image au pixel près, vérifié) : 50 s → 1,5 s.
+- [x] Barre de chargement honnête : étapes de démarrage qui rendent la main au navigateur, pourcentage et étape sur le bouton de départ ; menu désactivé tant que le monde n'est pas prêt.
+- [x] Shaders, envoi des textures et première image faits pendant le chargement (lecture d'un pixel pour attendre la fin réelle du travail WebGL, asynchrone) : plus de longue attente après le clic.
+- [ ] Reste : environ 5 s de première image du menu en rendu logiciel (autres variantes de shaders) ; réduire le nombre de programmes (64) si la vraie machine le montre.
+- Objectif : divisé par deux en rendu logiciel. **Résultat** : bouton prêt en 19 s au lieu de 92 s (HD, rendu logiciel) ; classique 5 s au lieu de 6.
 
 **Découpage des sources en modules** (D-12) : fait le 14 novembre 2026, avant le cycle 2. Étape suivante, au fil des cycles : chaque système déclare en tête de fichier ce qu'il utilise des autres.
 
@@ -93,6 +96,18 @@
 - Streaming du monde par tuiles (chargement et déchargement) une fois le rendu par tuiles en place.
 - Nouveaux quartiers : Bas-Chantenay industriel, île de Nantes par un pont.
 - Synchronisation en ligne des bonus, de la circulation et du tram ; capture du drapeau en ligne.
+
+## Retours de jeu de l'utilisateur (14 nov. 2026), à traiter
+Captures dans `docs/retours/`.
+- [ ] **Police contre Rapaces** : la police doit aussi s'en prendre aux Rapaces (cycle 7 ou avant).
+- [ ] **Piétons qui traversent les murs en fuyant** : la fuite (voiture qui arrive) les décale sans tenir compte des bâtiments ; les garder sur le trottoir ou les arrêter aux murs (cycle 8, ou correctif rapide).
+- [ ] **Dégâts des gros sauts** : à régler avec la physique v2 (cycle 4), avec un mode arcade et un mode plus réaliste.
+- [ ] **Véhicules bloqués**, surtout près du pont de la place Jean-Macé : revoir les déplacements de la circulation et des bots (cycle 7, ou correctif rapide).
+- [ ] **Bug d'affichage d'étage dans la carrière Misery** (bâtiment mal posé sur la pente ?).
+- [ ] **Près de la mairie, de l'herbe apparaît selon l'angle** (`2026-11-14-mairie-herbe.png` : pelouse qui transparaît sur la chaussée, probablement un conflit de profondeur entre le sol et la route).
+- [ ] **Eau de la Loire visible sur la terre ferme près d'un pont** (`2026-11-14-eau-pont.png` : nappes bleues sur le pavé, tablier du pont qui flotte) : le relief y descend sous le niveau de l'eau.
+- [ ] Capture `2026-11-14-boulevard.png` (boulevard de la Liberté) : à examiner avec l'utilisateur (lampadaire sans crosse ? ombre ?).
+- [ ] **Lumières au sol des lampadaires pendant l'intro de nuit** : taches lumineuses mal placées ou mal dessinées ; revoir les bugs d'affichage de lumière.
 
 ## Backlog hérité (hors cycles, à caser quand c'est pertinent)
 - [ ] Faire jouer l'utilisateur et recueillir ses retours (fluidité, flammes, mines du Vautour, pont, intro avec son).
