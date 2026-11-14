@@ -1,26 +1,43 @@
   // ---------- the crowd: one small rig posed on the CPU, drawn as instanced body parts (a dozen draw calls in all) ----------
   const CROWD_MAX = 160;
   const crowd = (() => {
-    const G_ = {
-      torso: new THREE.BoxGeometry(0.38, 0.56, 0.22).translate(0, 0.28, 0),
-      head: new THREE.SphereGeometry(0.115, 12, 9).translate(0, 0.13, 0.01),
-      hair: new THREE.SphereGeometry(0.125, 12, 7, 0, 6.283, 0, 1.75).translate(0, 0.145, -0.01),
-      cap: new THREE.SphereGeometry(0.125, 12, 6, 0, 6.283, 0, 1.4).translate(0, 0.16, 0).merge ? null : null,
-      upper: new THREE.BoxGeometry(0.1, 0.3, 0.11).translate(0, -0.15, 0),
-      fore: new THREE.BoxGeometry(0.085, 0.27, 0.09).translate(0, -0.135, 0),
-      hand: new THREE.SphereGeometry(0.048, 8, 6).translate(0, -0.3, 0.01),
-      thigh: new THREE.BoxGeometry(0.15, 0.45, 0.16).translate(0, -0.225, 0),
-      shin: new THREE.BoxGeometry(0.12, 0.44, 0.13).translate(0, -0.22, 0),
-      foot: new THREE.BoxGeometry(0.11, 0.08, 0.25).translate(0, -0.04, 0.06),
-      skirt: new THREE.CylinderGeometry(0.17, 0.27, 0.5, 12).translate(0, -0.22, 0),
-      visor: new THREE.BoxGeometry(0.2, 0.025, 0.14).translate(0, 0.19, 0.13),
+    // (Fable 5.2, user feedback: the people were stacks of boxes.) Rounded parts: a torso lofted from the hips to the
+    // shoulders, tapered limbs, a head on a neck with a nose, shoes with a toe, several haircuts, jackets, bags. Each
+    // person also has a build (shoulder width, belly, limb thickness) applied when the part is drawn.
+    const rings = (R_, seg = 10) => { // [y, rx, rz, z offset] rings -> closed tube with smooth normals
+      const pos = [], idx = [];
+      R_.forEach(([y, rx, rz, zo = 0]) => { for (let i = 0; i < seg; i++) { const a = i / seg * 6.2832; pos.push(Math.sin(a) * rx, y, Math.cos(a) * rz + zo); } });
+      for (let r = 0; r + 1 < R_.length; r++) for (let i = 0; i < seg; i++) { const a = r * seg + i, b2 = r * seg + (i + 1) % seg, c = a + seg, d = b2 + seg; idx.push(a, b2, c, b2, d, c); }
+      const cap = (r, up) => { const c0 = pos.length / 3; pos.push(0, R_[r][0], R_[r][3] || 0); for (let i = 0; i < seg; i++) { const a = r * seg + i, b2 = r * seg + (i + 1) % seg; if (up) idx.push(a, b2, c0); else idx.push(b2, a, c0); } };
+      cap(0, true); cap(R_.length - 1, false);
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); return g;
     };
-    G_.cap = new THREE.SphereGeometry(0.125, 12, 6, 0, 6.283, 0, 1.45).translate(0, 0.15, 0);
-    const per = { torso: 1, head: 1, hair: 1, cap: 1, visor: 1, upper: 2, fore: 2, hand: 2, thigh: 2, shin: 2, foot: 2, skirt: 1 };
+    const limb = (r0, r1, len, zs = 1) => rings([[0, r0, r0 * zs], [-len * 0.35, (r0 + r1) / 2 * 1.06, (r0 + r1) / 2 * 1.06 * zs], [-len, r1, r1 * zs]], 8);
+    const G_ = {
+      torso: rings([[0, 0.165, 0.115], [0.1, 0.17, 0.12], [0.24, 0.15, 0.105], [0.4, 0.185, 0.12, 0.005], [0.5, 0.2, 0.11], [0.56, 0.13, 0.085], [0.6, 0.055, 0.055]], 12),
+      head: (() => { const g = rings([[-0.02, 0.05, 0.05], [0.03, 0.085, 0.09, 0.005], [0.11, 0.103, 0.115, 0.008], [0.19, 0.1, 0.112, 0.004], [0.245, 0.06, 0.07]], 12); return g; })(),
+      nose: new THREE.ConeGeometry(0.018, 0.045, 5).rotateX(Math.PI / 2).translate(0, 0.105, 0.125),
+      hair: rings([[0.1, 0.108, 0.118, -0.012], [0.17, 0.112, 0.124, -0.006], [0.235, 0.09, 0.1, -0.004], [0.265, 0.03, 0.035]], 12),
+      hairLong: rings([[-0.16, 0.085, 0.045, -0.085], [-0.02, 0.1, 0.06, -0.075], [0.1, 0.112, 0.12, -0.018], [0.18, 0.113, 0.125, -0.008], [0.24, 0.088, 0.098, -0.004], [0.265, 0.03, 0.035]], 12),
+      bun: new THREE.SphereGeometry(0.055, 8, 6).translate(0, 0.21, -0.12),
+      cap: rings([[0.16, 0.111, 0.122, -0.004], [0.215, 0.105, 0.115], [0.255, 0.07, 0.08], [0.272, 0.02, 0.02]], 12),
+      visor: rings([[0.168, 0.085, 0.075, 0.15], [0.178, 0.085, 0.075, 0.15]], 10),
+      upper: limb(0.058, 0.046, 0.3),
+      fore: limb(0.045, 0.036, 0.27),
+      hand: new THREE.SphereGeometry(0.043, 8, 6).scale(0.85, 1.25, 0.6).translate(0, -0.31, 0.005),
+      thigh: limb(0.088, 0.064, 0.45),
+      shin: limb(0.062, 0.043, 0.44),
+      foot: rings([[-0.085, 0.045, 0.1, 0.055], [-0.03, 0.05, 0.115, 0.05], [0, 0.04, 0.07, 0.02]], 10),
+      skirt: rings([[-0.5, 0.26, 0.2], [-0.25, 0.22, 0.165], [0.02, 0.17, 0.12]], 12),
+      jacket: rings([[-0.06, 0.2, 0.15], [0.12, 0.185, 0.135], [0.3, 0.18, 0.13], [0.42, 0.2, 0.135, 0.005], [0.52, 0.215, 0.125], [0.575, 0.14, 0.095]], 12),
+      pack: rings([[0.16, 0.12, 0.07, -0.17], [0.3, 0.135, 0.085, -0.18], [0.46, 0.12, 0.07, -0.17], [0.5, 0.07, 0.04, -0.16]], 8),
+      bag: rings([[-0.02, 0.035, 0.11, 0], [0.12, 0.04, 0.12, 0], [0.16, 0.02, 0.09, 0]], 8),
+    };
+    const per = { torso: 1, head: 1, nose: 1, hair: 1, hairLong: 1, bun: 1, cap: 1, visor: 1, upper: 2, fore: 2, hand: 2, thigh: 2, shin: 2, foot: 2, skirt: 1, jacket: 1, pack: 1, bag: 1 };
     const M = {};
     for (const k in G_) {
-      const m = new THREE.InstancedMesh(G_[k], new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: k === 'foot' ? 0.5 : 0.85 }), CROWD_MAX * per[k]);
-      m.setColorAt(0, new THREE.Color(1, 1, 1)); m.count = 0; m.castShadow = ['torso', 'thigh', 'shin', 'skirt', 'head'].includes(k);
+      const m = new THREE.InstancedMesh(G_[k], new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: k === 'foot' || k === 'bag' ? 0.5 : k === 'hair' || k === 'hairLong' || k === 'bun' ? 0.6 : 0.85 }), Math.ceil(CROWD_MAX * per[k] * (['hairLong', 'bun', 'cap', 'visor', 'skirt', 'jacket', 'pack', 'bag'].includes(k) ? 0.6 : 1)));
+      m.setColorAt(0, new THREE.Color(1, 1, 1)); m.count = 0; m.castShadow = ['torso', 'thigh', 'shin', 'skirt', 'head', 'jacket'].includes(k);
       m.frustumCulled = false; m.userData.hdLinear = true; scene.add(m); M[k] = m;
     }
     // the rig
@@ -35,7 +52,8 @@
     const tmp = new THREE.Matrix4(), col = new THREE.Color();
     let n = {};
     function begin() { for (const k in M) n[k] = 0; }
-    function put(k, node, c) { const m = M[k]; if (n[k] >= m.instanceMatrix.count) return; m.setMatrixAt(n[k], node.matrixWorld); m.setColorAt(n[k], c); n[k]++; }
+    const sc = new THREE.Matrix4();
+    function put(k, node, c, sx = 1, sz = 1) { const m = M[k]; if (n[k] >= m.instanceMatrix.count) return; if (sx !== 1 || sz !== 1) { tmp.copy(node.matrixWorld).multiply(sc.makeScale(sx, 1, sz)); m.setMatrixAt(n[k], tmp); } else m.setMatrixAt(n[k], node.matrixWorld); m.setColorAt(n[k], c); n[k]++; }
     function end() { for (const k in M) { M[k].count = n[k]; M[k].instanceMatrix.needsUpdate = true; if (M[k].instanceColor) M[k].instanceColor.needsUpdate = true; } }
     // pose: { x, y, z, h, s (scale), lie, hipsY, sway, lean, twist, look, thigh[2], knee[2], arm[2], armOut[2], elbow[2] }
     function draw(p, P, at) {
@@ -46,13 +64,19 @@
         sh[s2].rotation.set(P.arm[s2], 0, (s2 ? -1 : 1) * (P.armOut ? P.armOut[s2] : 0.08)); el[s2].rotation.set(P.elbow[s2], 0, 0);
       }
       root.updateMatrixWorld(true);
-      put('torso', torso, p.cTop); put('head', neck, p.cSkin);
-      if (p.cap) { put('cap', neck, p.cCap); put('visor', neck, p.cCap); } else put('hair', neck, p.cHair);
+      const bw = p.bw || 1, bd = p.bd || 1, lt = p.lt || 1;
+      put('torso', torso, p.cTop, bw, bd); put('head', neck, p.cSkin); put('nose', neck, p.cSkin);
+      if (p.jacket) put('jacket', torso, p.cJacket, bw, bd);
+      if (p.pack) put('pack', torso, p.cBag, 1, bd); 
+      if (p.cap) { put('cap', neck, p.cCap); put('visor', neck, p.cCap); if (p.longHair) put('hairLong', neck, p.cHair); }
+      else if (!p.bald) { put(p.longHair ? 'hairLong' : 'hair', neck, p.cHair); if (p.bun) put('bun', neck, p.cHair); }
       for (let s2 = 0; s2 < 2; s2++) {
-        put('upper', sh[s2], p.cTop); put('fore', el[s2], p.tee ? p.cSkin : p.cTop); put('hand', el[s2], p.cSkin);
-        put('thigh', hp[s2], p.cBot); put('shin', kn[s2], p.shorts ? p.cSkin : p.cBot); put('foot', an[s2], p.cShoe);
+        const sleeve = p.jacket ? p.cJacket : p.cTop;
+        put('upper', sh[s2], sleeve, lt * (p.jacket ? 1.18 : 1), lt * (p.jacket ? 1.18 : 1)); put('fore', el[s2], p.tee && !p.jacket ? p.cSkin : sleeve, lt * (p.jacket ? 1.15 : 1), lt * (p.jacket ? 1.15 : 1)); put('hand', el[s2], p.cSkin);
+        put('thigh', hp[s2], p.skirt ? p.cSkin : p.cBot, lt * bw, lt * bd); put('shin', kn[s2], p.shorts || p.skirt ? p.cSkin : p.cBot, lt, lt); put('foot', an[s2], p.cShoe);
       }
-      if (p.skirt) put('skirt', hips, p.cBot);
+      if (p.bag) put('bag', el[1], p.cBag);
+      if (p.skirt) put('skirt', hips, p.cBot, bw, bd);
     }
     return { begin, end, draw };
   })();
@@ -62,13 +86,20 @@
   const HAIR = [0x1a120a, 0x3a2412, 0x8a6a3a, 0xd8c890, 0x101010, 0x6a3a1a, 0xb0b0b0];
   const SHOES = [0x1a1a1a, 0xf2f2ee, 0x5a3a20, 0x2a2a6a, 0xc81e1e];
   const LC = h => new THREE.Color(hd.lin(h));
-  function look() { // a 90s outfit: shell suits, jeans, caps, t-shirts, skirts
-    const pick = a => a[(R() * a.length) | 0], kid = R() < 0.08, skirt = R() < 0.22;
-    return { s: kid ? 0.62 + R() * 0.1 : 0.9 + R() * 0.17, cTop: LC(pick(TOPS)), cBot: LC(pick(BOTTOMS)), cSkin: LC(pick(SKIN)), cHair: LC(pick(HAIR)), cShoe: LC(pick(SHOES)), cCap: LC(pick(TOPS)),
-      skirt, shorts: !skirt && R() < 0.18, tee: R() < 0.45, cap: !skirt && R() < 0.2, kid };
+  const JACKETS = [0x2a2a3a, 0x5a3a20, 0x1f3f91, 0x7a2a3a, 0x3a5a3a, 0xc8b89a, 0x6a2ad6, 0x1a1a1a, 0xd8d0c0];
+  const BAGS = [0x5a3a20, 0x1a1a1a, 0xc81e1e, 0x2a8ad6, 0xf2c81e, 0x6a2ad6];
+  function look() { // people of 1996: shell suits, jeans and jackets, caps, long hair and buns, satchels, grey heads
+    const pick = a => a[(R() * a.length) | 0], kid = R() < 0.08, old = !kid && R() < 0.16, woman = R() < 0.5, skirt = woman && R() < 0.4;
+    const longHair = woman ? R() < 0.7 : R() < 0.08, jacket = !kid && R() < (old ? 0.7 : 0.4);
+    return { s: kid ? 0.62 + R() * 0.1 : (woman ? 0.87 : 0.93) + R() * 0.14 - (old ? 0.04 : 0), cTop: LC(pick(TOPS)), cBot: LC(pick(BOTTOMS)), cSkin: LC(pick(SKIN)), cHair: LC(old ? pick([0xb0b0b0, 0xd8d8d8, 0x8a8a8a]) : pick(HAIR)), cShoe: LC(pick(SHOES)), cCap: LC(pick(TOPS)),
+      cJacket: LC(pick(JACKETS)), cBag: LC(pick(BAGS)),
+      skirt, shorts: !skirt && !old && R() < 0.18, tee: R() < 0.45, cap: !skirt && !old && R() < 0.2, kid, old, woman, longHair, bun: woman && !longHair && R() < 0.4, bald: !woman && !kid && R() < (old ? 0.35 : 0.06),
+      jacket, pack: kid ? R() < 0.7 : R() < 0.12, bag: !kid && woman && R() < 0.45,
+      bw: (woman ? 0.86 : 1) + R() * 0.16 + (kid ? -0.02 : 0), bd: 0.9 + R() * R() * 0.5 + (old ? 0.1 : 0), lt: 0.88 + R() * 0.24 };
   }
   function makePed() {
-    return Object.assign(look(), { w: 0, t: 0, dir: R() < 0.5 ? 1 : -1, speed: 1.05 + R() * 0.55, ox: 0, oz: 0, fvx: 0, fvz: 0, state: 'walk', timer: 0, phase: R() * 6, x: 0, y: 0, z: 0, h: 0, on: false, idleIn: 6 + R() * 20, look_: 0, lookT: 0 });
+    const lk = look();
+    return Object.assign(lk, { w: 0, t: 0, dir: R() < 0.5 ? 1 : -1, speed: (1.05 + R() * 0.55) * (lk.old ? 0.72 : lk.kid ? 0.9 : 1), ox: 0, oz: 0, fvx: 0, fvz: 0, state: 'walk', timer: 0, phase: R() * 6, x: 0, y: 0, z: 0, h: 0, on: false, idleIn: 6 + R() * 20, look_: 0, lookT: 0 });
   }
   function placePed(p) {
     const ps = players(); if (!ps.length || !walks.length) return false;
@@ -122,6 +153,7 @@
       p.timer -= dt; if (p.timer <= 0) { p.state = 'idle'; p.timer = 1.5 + R() * 2; p.lookTo = (R() - 0.5) * 2; }
     }
     p.x = ax + (bx - ax) * f + p.ox; p.z = az + (bz - az) * f + p.oz;
+    if (p._pin) { p.x = p._pin[0]; p.z = p._pin[1]; p.h = p._pin[2] || 0; } // test hook: line people up for a capture
     // watch out for cars
     if (p.state !== 'down') for (const c of [...allPlayerCars(), ...rivals, ...npcs]) {
       if (!c.alive || c.speed < 3) continue;

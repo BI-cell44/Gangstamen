@@ -390,5 +390,19 @@
   "simMs": 6.18,
   "loadS": 20,
   "failed": 0
+ },
+ {
+  "date": "2026-11-14T19:48",
+  "label": "Fable : piétons remodelés",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 581,
+  "trianglesK": 980,
+  "meshes": 2171,
+  "geometries": 1830,
+  "materials": 394,
+  "heapMB": 228,
+  "simMs": 5.41,
+  "loadS": 23,
+  "failed": 0
  }
 ]
