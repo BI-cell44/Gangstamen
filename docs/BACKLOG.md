@@ -104,9 +104,8 @@ Captures dans `docs/retours/`.
 - [ ] **Dégâts des gros sauts** : à régler avec la physique v2 (cycle 4), avec un mode arcade et un mode plus réaliste.
 - [ ] **Véhicules bloqués**, surtout près du pont de la place Jean-Macé : revoir les déplacements de la circulation et des bots (cycle 7, ou correctif rapide).
 - [ ] **Bug d'affichage d'étage dans la carrière Misery** (bâtiment mal posé sur la pente ?).
-- [ ] **Près de la mairie, de l'herbe apparaît selon l'angle** (`2026-11-14-mairie-herbe.png` : pelouse qui transparaît sur la chaussée, probablement un conflit de profondeur entre le sol et la route).
+- [ ] **Près de la mairie, de l'herbe apparaît selon l'angle de la caméra** : `2026-11-14-boulevard.png` et `2026-11-14-mairie-herbe.png` montrent le **même endroit** (boulevard de la Liberté devant la mairie) sous deux angles ; sur l'une la chaussée et le trottoir sont normaux, sur l'autre une pelouse les recouvre. Piste : conflit de profondeur entre la surface verte (parc ou pelouse OSM, ou sol HD selon la photo aérienne) et la route, qui dépend de la distance et de l'angle ; ou ordre de dessin des tuiles.
 - [ ] **Eau de la Loire visible sur la terre ferme près d'un pont** (`2026-11-14-eau-pont.png` : nappes bleues sur le pavé, tablier du pont qui flotte) : le relief y descend sous le niveau de l'eau.
-- [ ] Capture `2026-11-14-boulevard.png` (boulevard de la Liberté) : à examiner avec l'utilisateur (lampadaire sans crosse ? ombre ?).
 - [ ] **Bulle du bouclier à revoir** : pas très belle (cycle 9, détail visuel, ou avant).
 - [ ] **Barrières, clôtures et portails cassables le long des propriétés** (jardins, cours) : décor qui se brise comme le mobilier (`gx/batch.js` et `breakFurniture` le permettent) ; positions à tirer d'OpenStreetMap (`barrier=fence|wall|gate`) et des limites de parcelles (cycle 8 ou 9).
 - [ ] **Lumières au sol des lampadaires pendant l'intro de nuit** : taches lumineuses mal placées ou mal dessinées ; revoir les bugs d'affichage de lumière.
