@@ -1,7 +1,7 @@
 """Prepare the IGN aerial photo (BD ORTHO, Licence Ouverte) for the HD build.
 
-data/ortho/ortho_raw.jpg covers x -440..440 m, z -760..760 m of the game map at 0.25 m per pixel
-(WMS data.geopf.fr, layer ORTHOIMAGERY.ORTHOPHOTOS). This script resamples it to 0.4 m per pixel,
+data/ortho/ortho_raw.jpg covers x -440..1840 m, z -1000..760 m of the game map at 0.4 m per pixel
+(WMS data.geopf.fr, layer ORTHOIMAGERY.ORTHOPHOTOS). This script resamples it to 0.6 m per pixel (3800 px wide: within WebGL texture limits),
 lifts the baked shadows, adds a little saturation and sharpening, and writes data/ortho/ortho.jpg.
 
 usage: make_ortho.py <ortho_raw.jpg> <ortho.jpg>      (needs Pillow and numpy)
@@ -11,7 +11,7 @@ import numpy as np
 from PIL import Image, ImageFilter, ImageEnhance
 
 im = Image.open(sys.argv[1]).convert('RGB')
-im = im.resize((2200, 3800), Image.LANCZOS)
+im = im.resize((3800, 2933), Image.LANCZOS)
 a = np.asarray(im, dtype=np.float32) / 255
 lum = (0.299 * a[..., 0] + 0.587 * a[..., 1] + 0.114 * a[..., 2])[..., None]
 # lift the shadows: the game casts its own, from its own sun

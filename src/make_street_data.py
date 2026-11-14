@@ -14,7 +14,7 @@ from PIL import Image
 osm, fdir, faces_json, out = sys.argv[1:5]
 lat0, lon0 = 47.2025, -1.5900050000000001
 KX = math.cos(math.radians(lat0)) * 111320.0; KZ = 110540.0
-HX, HZ = 372.5, 686.5
+X0, X1, Z0, Z1 = -372.5, 1664.0, -840.0, 686.5  # play area, see convert.py
 
 KINDS = {  # OSM tag -> sign family
     'shop=bakery': 'bakery', 'shop=pastry': 'bakery', 'amenity=pharmacy': 'pharmacy', 'amenity=cafe': 'cafe', 'amenity=bar': 'cafe', 'amenity=pub': 'cafe',
@@ -44,7 +44,7 @@ for kind, name, refs in found:
     if not pts: continue
     la = sum(p[0] for p in pts) / len(pts); lo = sum(p[1] for p in pts) / len(pts)
     x, z = (lo - lon0) * KX, -(la - lat0) * KZ
-    if abs(x) < HX and abs(z) < HZ:
+    if X0 < x < X1 and Z0 < z < Z1:
         shops.append({'x': round(x, 1), 'z': round(z, 1), 'k': kind, 'n': name})
 json.dump(shops, open(out + '/shops.json', 'w'), ensure_ascii=False, separators=(',', ':'))
 print('shops', len(shops), collections.Counter(s['k'] for s in shops).most_common())

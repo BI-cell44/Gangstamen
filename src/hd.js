@@ -1202,7 +1202,7 @@ const hd = !HD ? null : (() => {
         while (t < l) {
           const side = (alt++ % 2) ? 1 : -1, ux = dx / l, uz = dz / l, off = r.w / 2 + 1.5;
           const x = p[i] + ux * t - uz * off * side, z = p[i + 1] + uz * t + ux * off * side;
-          if (Math.abs(x) < HX - 5 && Math.abs(z) < HZ - 5 && groundH(x, z) > WATER_Y + 1 && roadEdge(x, z)[0] > 0.8 && !buildingPolys.some(b => pointInPoly(x, z, b.p || b))) pts.push([x, z, Math.atan2(-(-uz * -side), -(ux * -side))]);
+          if (Math.abs(x - CX) < HX - 5 && Math.abs(z - CZ) < HZ - 5 && groundH(x, z) > WATER_Y + 1 && roadEdge(x, z)[0] > 0.8 && !buildingPolys.some(b => pointInPoly(x, z, b.p || b))) pts.push([x, z, Math.atan2(-(-uz * -side), -(ux * -side))]);
           t += 36;
         }
         acc = (acc + l) % 36;

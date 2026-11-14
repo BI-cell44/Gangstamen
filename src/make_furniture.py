@@ -9,7 +9,7 @@ import xml.etree.ElementTree as ET
 osm, out = sys.argv[1:3]
 lat0, lon0 = 47.2025, -1.5900050000000001
 KX = math.cos(math.radians(lat0)) * 111320.0; KZ = 110540.0
-HX, HZ = 372.5, 686.5
+X0, X1, Z0, Z1 = -372.5, 1664.0, -840.0, 686.5  # play area, see convert.py
 items = []
 for ev, el in ET.iterparse(osm, events=('end',)):
     if el.tag != 'node': continue
@@ -21,7 +21,7 @@ for ev, el in ET.iterparse(osm, events=('end',)):
     elif t.get('amenity') == 'bench': kind = 'bench'
     if not kind: continue
     x, z = (float(el.get('lon')) - lon0) * KX, -(float(el.get('lat')) - lat0) * KZ
-    if abs(x) < HX and abs(z) < HZ and not any(i['t'] == kind and math.hypot(i['x'] - x, i['z'] - z) < 4 for i in items):
+    if X0 < x < X1 and Z0 < z < Z1 and not any(i['t'] == kind and math.hypot(i['x'] - x, i['z'] - z) < 4 for i in items):
         items.append({'t': kind, 'x': round(x, 1), 'z': round(z, 1)})
     el.clear()
 json.dump(items, open(out, 'w'), separators=(',', ':'))
