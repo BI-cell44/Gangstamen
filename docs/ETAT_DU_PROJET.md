@@ -1,6 +1,6 @@
 # État du projet
 
-Mis à jour le 14 novembre 2026 (branche `ultra`, cycles 0 et 1 faits ; prochain : cycle 2, fluidité). À relire en premier avec `CLAUDE.md`.
+Mis à jour le 14 novembre 2026 (branche `ultra`, cycles 0, 1 et 2 faits, sources découpées ; prochain : cycle 3, chargement). À relire en premier avec `CLAUDE.md`.
 
 ## 1. Le jeu aujourd'hui
 
@@ -88,7 +88,9 @@ Mesures dans Chrome sans tête, rendu logiciel, HD, partie solo au départ (`too
 | Sortie | Chargement (rendu logiciel) | Appels de dessin | Triangles | Maillages | Mémoire JS | Simulation par pas |
 |---|---|---|---|---|---|---|
 | Classique | 8 s | 221 | 1,25 M | 510 | 117 Mo | 1,4 ms |
-| HD / Ultra | 92 s | 1 340 | 2,26 M | 4 388 | 190 Mo | 5,4 ms |
+| HD / Ultra (cycle 1) | 92 s | 1 340 | 2,26 M | 4 388 | 190 Mo | 5,4 ms |
+| **Ultra, cycle 2** | 82 s | **485** | **0,86 M** | 1 808 | 202 Mo | 5,0 ms |
+| Classique, cycle 2 | 6 s | 282 | 0,40 M | 829 | 98 Mo | 1,3 ms |
 
 Le chargement de la HD (×11 par rapport au classique) vient des étapes propres à la HD (façades et enseignes dessinées, sol, photo aérienne, shaders) : c'est le levier du cycle 3. La superposition F3 donne ces chiffres en jeu.
 

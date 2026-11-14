@@ -1857,7 +1857,37 @@ const hd = !HD ? null : (() => {
     for (const g of [tyre, barrel, lip, spoke, hub, disc]) g.userData.shared = true;
     return { tyre, barrel, lip, spoke, hub, disc, w };
   }
-  const wheelCache = {};
+  const wheelCache = {}, mergedWheel = {};
+  // merge static meshes that share a material into one geometry (fewer draw calls: a car went from 75 meshes to ~25)
+  function mergeGeos(items) { // items: [geometry, matrix]; all with the same attributes
+    const parts = items.map(([g, m]) => { const n = g.index ? g.toNonIndexed() : g.clone(); n.applyMatrix4(m); return n; });
+    const names = Object.keys(parts[0].attributes).filter(k => parts.every(p => p.attributes[k] && p.attributes[k].itemSize === parts[0].attributes[k].itemSize));
+    const out = new THREE.BufferGeometry();
+    for (const k of names) {
+      const size = parts[0].attributes[k].itemSize, total = parts.reduce((s, p) => s + p.attributes[k].count, 0), arr = new Float32Array(total * size);
+      let o = 0; for (const p of parts) { arr.set(p.attributes[k].array, o); o += p.attributes[k].array.length; }
+      out.setAttribute(k, new THREE.BufferAttribute(arr, size));
+    }
+    for (const p of parts) p.dispose();
+    out.computeBoundingSphere(); return out;
+  }
+  function mergeChildren(parent, keep, cacheKey) {
+    const groups = new Map();
+    for (const o of parent.children.slice()) {
+      if (!o.isMesh || keep.has(o) || Array.isArray(o.material) || o.children.length) continue;
+      const sig = o.material.uuid + '|' + Object.keys(o.geometry.attributes).sort().join(',');
+      if (!groups.has(sig)) groups.set(sig, []); groups.get(sig).push(o);
+    }
+    for (const [sig, list] of groups) {
+      if (list.length < 2) continue;
+      const ck = cacheKey && cacheKey + '|' + sig;
+      let geo = ck && mergedWheel[ck];
+      if (!geo) { geo = mergeGeos(list.map(o => { o.updateMatrix(); return [o.geometry, o.matrix]; })); if (ck) { geo.userData.shared = true; mergedWheel[ck] = geo; } }
+      const m = new THREE.Mesh(geo, list[0].material); m.castShadow = list.some(o => o.castShadow); m.receiveShadow = list.some(o => o.receiveShadow); m.userData.hdLinear = true;
+      for (const o of list) { parent.remove(o); if (!o.geometry.userData.shared) o.geometry.dispose(); }
+      parent.add(m);
+    }
+  }
   function makeCar(paint, stripe, isPlayer, styleName, opts = {}) {
     const style = styleName || (isPlayer ? 'saloon' : 'hatch'), st = CAR_STYLES[style], M = sharedMats();
     const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
@@ -1950,6 +1980,8 @@ const hd = !HD ? null : (() => {
       spot.color.convertSRGBToLinear(); spot.position.set(0, 0.85, -hl); spot.target.position.set(0, -0.6, -24);
       g.add(spot, spot.target); g.userData.spot = spot;
     }
+    mergeChildren(body, new Set([sm]));
+    for (let i = 0; i < 4; i++) mergeChildren(wheels[i], new Set(), 'w' + st.wr + '|' + (i % 2 ? 1 : -1) + '|' + rimM.uuid);
     const noop = { emissive: { setHex() { } } };
     Object.assign(g.userData, { wheels, steer, mBody: mPaint, mPaint: { color: { setHex() { } } }, base: 0xffffff, paint, tail: noop, head: noop,
       tailM, headM, bodyG: body, muzzles, wb: st.wb, hw: W_ / 2 - 0.13, hl, hdLinear: true, shell, shellPos0, shellNrm0, s0, s1, dent: 0, flat: -1 });
@@ -4885,11 +4917,54 @@ const gx = !HD ? null : (() => {
     }
     p.pose = P;
   }
+  // ---------- batching: many identical small objects drawn as instances, per 250 m tile ----------
+  // Batch.add(group): the group stays out of the scene, each of its meshes becomes one instance of an InstancedMesh
+  // (one per geometry shape, material and tile, so the tiles out of view are skipped, in the shadow pass too).
+  // Batch.hide(group) puts the real group back in the scene (to animate it: furniture knocked over) and hides its
+  // instances; Batch.show(group) does the reverse. Batch.build() once everything is added.
+  const Batch = (() => {
+    const TILE = 250, entries = new Map(), Z = new THREE.Matrix4().makeScale(0, 0, 0);
+    const gkey = g => g.type + ':' + JSON.stringify(g.parameters || {});
+    function add(group) {
+      group.updateMatrixWorld(true);
+      const refs = [], tile = Math.floor(group.position.x / TILE) + ',' + Math.floor(group.position.z / TILE);
+      group.traverse(o => {
+        if (!o.isMesh || Array.isArray(o.material)) return;
+        const k = gkey(o.geometry) + '|' + o.material.uuid + '|' + tile + '|' + (o.castShadow ? 1 : 0);
+        let e = entries.get(k); if (!e) entries.set(k, e = { geo: o.geometry, mat: o.material, cast: o.castShadow, m: [], im: null });
+        refs.push([e, e.m.length]); e.m.push(o.matrixWorld.clone());
+      });
+      group.userData.batch = refs;
+    }
+    function build() {
+      const gb = new THREE.Box3();
+      for (const e of entries.values()) {
+        if (e.im) continue;
+        const geo = e.geo.clone(), im = new THREE.InstancedMesh(geo, e.mat, e.m.length);
+        e.m.forEach((m, i) => im.setMatrixAt(i, m));
+        geo.computeBoundingBox(); const box = new THREE.Box3(); for (const m of e.m) box.union(gb.copy(e.geo.boundingBox || (e.geo.computeBoundingBox(), e.geo.boundingBox)).applyMatrix4(m));
+        geo.boundingBox = box; geo.boundingSphere = box.getBoundingSphere(new THREE.Sphere()); // r128 culls instanced meshes on the geometry bounds: make them cover every instance
+        im.frustumCulled = true; // r128 InstancedMesh turns culling off by default (it has no instance bounds); ours are set just above
+        im.castShadow = e.cast; im.receiveShadow = true; im.userData.hdLinear = true; scene.add(im); e.im = im;
+      }
+    }
+    function set(group, hidden) {
+      const refs = group.userData.batch; if (!refs) return false;
+      for (const [e, i] of refs) { if (!e.im) continue; e.im.setMatrixAt(i, hidden ? Z : e.m[i]); e.im.instanceMatrix.needsUpdate = true; }
+      return true;
+    }
+    return {
+      add, build,
+      hide(group) { if (set(group, true) && !group.parent) scene.add(group); },
+      show(group) { if (set(group, false)) scene.remove(group); },
+      get count() { let n = 0; for (const e of entries.values()) if (e.im) n++; return n; },
+    };
+  })();
   // ---------- café terraces: tables, chairs, parasols and their customers ----------
   const customers = [];
   function buildTerraces() {
     if (!W.shops) return;
-    const tableM = stdM2(0xe8e2d0, 0.5, 0.2), metal = stdM2(0x2a2a2e, 0.5, 0.6), chairM = stdM2(0x8a5a32, 0.7);
+    const tableM = stdM2(0xe8e2d0, 0.5, 0.2), metal = stdM2(0x2a2a2e, 0.5, 0.6), chairM = stdM2(0x8a5a32, 0.7), cupM = stdM2(0xf3ead8, 0.3);
     const PARA = [[0xc8202f, 0xf3ead8], [0x1f3f91, 0xf3ead8], [0x2b6b3a, 0xf2c81e], [0xe86a1a, 0xf3ead8]];
     const paraMats = PARA.map(([a, b]) => { const [c, g] = canvas(256, 16); for (let k = 0; k < 16; k++) { g.fillStyle = '#' + new THREE.Color(k % 2 ? b : a).getHexString(); g.fillRect(k * 16, 0, 16, 16); }
       const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return new THREE.MeshStandardMaterial({ map: t, roughness: 0.8, side: THREE.DoubleSide }); });
@@ -4905,7 +4980,7 @@ const gx = !HD ? null : (() => {
         const g = new THREE.Group(), parts = [];
         const add = (geo, m, px, py, pz) => { const o = new THREE.Mesh(geo, m); o.position.set(px, py, pz); o.castShadow = true; g.add(o); parts.push(o); return o; };
         add(new THREE.CylinderGeometry(0.38, 0.38, 0.04, 16), tableM, 0, 0.74, 0); add(new THREE.CylinderGeometry(0.04, 0.04, 0.72, 6), metal, 0, 0.36, 0); add(new THREE.CylinderGeometry(0.22, 0.22, 0.03, 12), metal, 0, 0.02, 0);
-        const cup = add(new THREE.CylinderGeometry(0.04, 0.035, 0.08, 8), stdM2(0xf3ead8, 0.3), 0.12, 0.8, 0.05);
+        const cup = add(new THREE.CylinderGeometry(0.04, 0.035, 0.08, 8), cupM, 0.12, 0.8, 0.05);
         add(new THREE.CylinderGeometry(0.035, 0.035, 2.3, 6), metal, 0, 1.15, 0);
         const para = add(new THREE.ConeGeometry(1.25, 0.5, 16, 1, true), pm, 0, 2.35, 0); para.castShadow = true;
         const seats = [];
@@ -4917,7 +4992,7 @@ const gx = !HD ? null : (() => {
         }
         const a = Math.atan2(ux, uz); // table row along the facade; chairs on either side along it
         g.position.set(x, surfaceH(x, z) + 0.2, z); g.rotation.y = a - Math.PI / 2;
-        g.traverse(o => { o.userData.hdLinear = true; }); hd.linearize(g); scene.add(g);
+        g.traverse(o => { o.userData.hdLinear = true; }); hd.linearize(g); Batch.add(g); // drawn as instances until knocked over
         const f = { g, parts, x, z, r: 0.9, broken: false, t: 0, kind: 'table' }; furniture.push(f);
         // one or two customers, facing the table
         for (const side of seats) {
@@ -5619,12 +5694,12 @@ const gx = !HD ? null : (() => {
       }
       if (f.a === undefined) { const [, nx, nz] = roadEdge(f.x, f.z); f.a = Math.atan2(-nx, -nz); } // open side towards the street
       g.position.set(f.x, surfaceH(f.x, f.z) + 0.2, f.z); g.rotation.y = f.a;
-      g.traverse(o => { o.userData.hdLinear = true; }); hd.linearize(g); scene.add(g);
+      g.traverse(o => { o.userData.hdLinear = true; }); hd.linearize(g); Batch.add(g); // drawn as instances until knocked over
       furniture.push({ g, parts, x: f.x, z: f.z, r: f.t === 'shelter' ? 2 : f.t === 'bench' ? 1.1 : 0.6, broken: false, t: 0, kind: f.t });
     }
   }
   function breakFurniture(f, fromX, fromZ, speed = 12) {
-    f.broken = true; f.t = 0;
+    f.broken = true; f.t = 0; Batch.hide(f.g); // the real pieces take over for the fall
     for (const o of f.parts) { const a = Math.atan2(f.z - fromZ, f.x - fromX) + (R() - 0.5) * 1.2, s = speed * (0.4 + R() * 0.6);
       o.userData.v = [Math.cos(a) * s, 3 + R() * 5, Math.sin(a) * s, (R() - 0.5) * 10, (R() - 0.5) * 10]; }
     if (f.kind === 'shelter') { for (let i = 0; i < 20 * 1; i++) hd.spark(f.x, surfaceH(f.x, f.z) + 1.5, f.z, (R() - 0.5) * 8, 2 + R() * 4, (R() - 0.5) * 8, 0.6); }
@@ -5644,10 +5719,11 @@ const gx = !HD ? null : (() => {
       if (f.t < 4) for (const o of f.parts) { const v = o.userData.v; v[1] -= 20 * dt; o.position.x += v[0] * dt * Math.cos(-f.g.rotation.y) - v[2] * dt * Math.sin(-f.g.rotation.y); o.position.z += v[0] * dt * Math.sin(-f.g.rotation.y) + v[2] * dt * Math.cos(-f.g.rotation.y); o.position.y = Math.max(0.05, o.position.y + v[1] * dt); if (o.position.y <= 0.05) { v[0] *= 0.8; v[2] *= 0.8; v[1] = Math.abs(v[1]) * 0.2; } o.rotation.x += v[3] * dt * (o.position.y > 0.1 ? 1 : 0); o.rotation.z += v[4] * dt * (o.position.y > 0.1 ? 1 : 0); }
       if (f.t > 40) { // the council puts it back
         let clear = true; for (const c of players()) if (Math.hypot(c.x - f.x, c.z - f.z) < 60) clear = false;
-        if (clear) { f.broken = false; f.parts.forEach(o => { o.position.copy(o.userData.p0); o.rotation.set(0, 0, 0); }); }
+        if (clear) { f.broken = false; f.parts.forEach(o => { o.position.copy(o.userData.p0); o.rotation.set(0, 0, 0); }); Batch.show(f.g); }
       }
     }
   }
+  function finishFurniture() { furnitureBuilt = true; for (const f of furniture) f.parts.forEach(o => { o.userData.p0 = o.position.clone(); }); Batch.build(); }
   const L_resp = (c, n) => { if (c.owner && !Match.over) c.owner.respect += n; };
 
 
@@ -5893,7 +5969,7 @@ const gx = !HD ? null : (() => {
   }
   gx_onGarage = () => { if (mission && mission.garage && (curGarage === GARAGE || mission.id === 'police')) { mission.garageVisited = true; mission.painted = mission.paintAt !== undefined && mission.paintAt !== upg().paint; } };
   function startHook(kind) {
-    if (!furnitureBuilt) { buildFurniture(); buildGarage(); furnitureBuilt = true; for (const f of furniture) f.parts.forEach(o => { o.userData.p0 = o.position.clone(); }); }
+    if (!furnitureBuilt) { buildFurniture(); buildGarage(); finishFurniture(); }
     start(kind);
     for (const pk of pickups) { pk.on = false; pk.mesh.visible = false; }
     if (!pus.length) for (let i = 0; i < 12; i++) pus.push(makePu(PU_KINDS[i % PU_KINDS.length]));
@@ -6271,7 +6347,7 @@ const gx = !HD ? null : (() => {
     try { stAnne(); } catch (e) { console.warn('stAnne', e); }
     try { stairs(); } catch (e) { console.warn('stairs', e); }
     // (the Misery quarry used to be a painted cliff past the map edge: the real slope of the butte is in the relief now)
-    buildFurniture(); try { buildTerraces(); } catch (e) { console.warn('terraces', e); } buildGarage(); furnitureBuilt = true; for (const f of furniture) f.parts.forEach(o => { o.userData.p0 = o.position.clone(); });
+    buildFurniture(); try { buildTerraces(); } catch (e) { console.warn('terraces', e); } buildGarage(); finishFurniture();
   }
   function landmarkTick() { // lights that follow the time of day
     const n = hd.amb ? Math.min(1, hd.amb.t / 2.2) : 0;
@@ -6663,6 +6739,75 @@ function tramStep(dt) {
   }
 }
 
+// ---------- world tiles: the big merged meshes (terrain, roads, walls, roofs, trees) cut into square tiles ----------
+// Merged across the whole map, a mesh is drawn every frame even when most of it is behind the camera. Cut into tiles,
+// three.js skips the tiles out of view, in the shadow pass too. Only meshes over MIN triangles are cut (each tile costs
+// a draw call), and nothing that other code holds on to: this runs once, after the world is built.
+const Tiles = (() => {
+  const SIZE = 300, MIN = 20000, info = { split: 0, tiles: 0, inst: 0 };
+  const tileOf = (x, z) => Math.floor(x / SIZE) * 1000 + Math.floor(z / SIZE);
+  function splitMesh(m) {
+    const g = m.geometry, pos = g.attributes.position, idx = g.index ? g.index.array : null, nT = (idx ? idx.length : pos.count) / 3;
+    m.updateMatrixWorld(true); const mw = m.matrixWorld, v = new THREE.Vector3();
+    const byTile = new Map();
+    for (let t = 0; t < nT; t++) {
+      const a = idx ? idx[3 * t] : 3 * t, b = idx ? idx[3 * t + 1] : 3 * t + 1, c = idx ? idx[3 * t + 2] : 3 * t + 2;
+      v.set((pos.getX(a) + pos.getX(b) + pos.getX(c)) / 3, (pos.getY(a) + pos.getY(b) + pos.getY(c)) / 3, (pos.getZ(a) + pos.getZ(b) + pos.getZ(c)) / 3).applyMatrix4(mw);
+      const k = tileOf(v.x, v.z); let l = byTile.get(k); if (!l) byTile.set(k, l = []); l.push(a, b, c);
+    }
+    if (byTile.size < 2) return false;
+    const names = Object.keys(g.attributes);
+    for (const tri of byTile.values()) {
+      const remap = new Map(), order = [], index = new Uint32Array(tri.length);
+      for (let i = 0; i < tri.length; i++) { let n = remap.get(tri[i]); if (n === undefined) { n = order.length; remap.set(tri[i], n); order.push(tri[i]); } index[i] = n; }
+      const ng = new THREE.BufferGeometry();
+      for (const k of names) {
+        const at = g.attributes[k], s = at.itemSize, src = at.array, out = new src.constructor(order.length * s);
+        for (let i = 0; i < order.length; i++) for (let j = 0; j < s; j++) out[i * s + j] = src[order[i] * s + j];
+        ng.setAttribute(k, new THREE.BufferAttribute(out, s, at.normalized));
+      }
+      ng.setIndex(new THREE.BufferAttribute(order.length > 65535 ? index : new Uint16Array(index), 1));
+      ng.computeBoundingSphere(); ng.computeBoundingBox();
+      const t = new THREE.Mesh(ng, m.material);
+      t.position.copy(m.position); t.quaternion.copy(m.quaternion); t.scale.copy(m.scale);
+      t.castShadow = m.castShadow; t.receiveShadow = m.receiveShadow; t.renderOrder = m.renderOrder; t.frustumCulled = m.frustumCulled;
+      Object.assign(t.userData, m.userData); t.onBeforeRender = m.onBeforeRender;
+      m.parent.add(t); info.tiles++;
+    }
+    m.parent.remove(m); g.dispose(); info.split++;
+    return true;
+  }
+  function splitInstanced(m) {
+    const n = m.count, mat = new THREE.Matrix4(), v = new THREE.Vector3(), byTile = new Map(), col = new THREE.Color();
+    for (let i = 0; i < n; i++) { m.getMatrixAt(i, mat); v.setFromMatrixPosition(mat); const k = tileOf(v.x, v.z); let l = byTile.get(k); if (!l) byTile.set(k, l = []); l.push(i); }
+    if (byTile.size < 2) return false;
+    if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
+    const gb = new THREE.Box3();
+    for (const list of byTile.values()) {
+      const geo = m.geometry.clone(), t = new THREE.InstancedMesh(geo, m.material, list.length), box = new THREE.Box3();
+      list.forEach((i, j) => { m.getMatrixAt(i, mat); t.setMatrixAt(j, mat); box.union(gb.copy(m.geometry.boundingBox).applyMatrix4(mat)); if (m.instanceColor) { m.getColorAt(i, col); t.setColorAt(j, col); } });
+      geo.boundingBox = box; geo.boundingSphere = box.getBoundingSphere(new THREE.Sphere()); // r128 culls instanced meshes on the geometry bounds
+      t.frustumCulled = true; // bounds set above (r128 turns culling off for instanced meshes)
+      t.castShadow = m.castShadow; t.receiveShadow = m.receiveShadow; Object.assign(t.userData, m.userData);
+      m.parent.add(t); info.tiles++;
+    }
+    m.parent.remove(m); info.inst++;
+    return true;
+  }
+  function run() {
+    const todo = [];
+    for (const o of scene.children) {
+      if (!o.isMesh || Array.isArray(o.material) || (o.geometry.groups && o.geometry.groups.length) || o.userData.noTile) continue;
+      if (o.isInstancedMesh) { if (o.count >= 400) todo.push(o); continue; }
+      const g = o.geometry; if (!g.attributes.position) continue;
+      if ((g.index ? g.index.count : g.attributes.position.count) / 3 >= MIN) todo.push(o);
+    }
+    for (const o of todo) { try { o.isInstancedMesh ? splitInstanced(o) : splitMesh(o); } catch (e) { console.warn('tiles', e); } }
+    return info;
+  }
+  return { run, info, SIZE };
+})();
+
 // ---------- boot ----------
 buildCity();
 buildGround();
@@ -6671,6 +6816,7 @@ buildMinimap();
 setupWorldActors();
 if (HD) hd.world();
 if (gx) gx.world();
+try { Tiles.run(); } catch (e) { console.warn('tiles', e); }
 if (HD) applyAmbience(); else setNight(false);
 renderSlots(); renderCtlTable(); initOptions();
 requestAnimationFrame(frame);
@@ -6682,6 +6828,6 @@ $('splitGo').addEventListener('click', () => startGame('split'));
 $('create').addEventListener('click', () => startOnline(null, true));
 netInit();
 if (settings.intro !== false && !window.__noIntro) Intro.splash();
-window.__gm = { get paused() { return paused; }, get started() { return started; }, renderer, scene, camera, PerfHud, Intro, hd, gx, settings, trams, edges, tramS, tramWall, EDGE, cellOf, collideWalls, muzzleOf, shoot, damage, applyHit, locals: () => locals, rivals: () => rivals, Net, Match, step: s => step(s, performance.now()), start: k => startGame(k || 'solo'), codes };
+window.__gm = { get paused() { return paused; }, get started() { return started; }, renderer, scene, camera, PerfHud, Tiles, Intro, hd, gx, settings, trams, edges, tramS, tramWall, EDGE, cellOf, collideWalls, muzzleOf, shoot, damage, applyHit, locals: () => locals, rivals: () => rivals, Net, Match, step: s => step(s, performance.now()), start: k => startGame(k || 'solo'), codes };
 })();
 </script>

@@ -240,7 +240,7 @@
   }
   gx_onGarage = () => { if (mission && mission.garage && (curGarage === GARAGE || mission.id === 'police')) { mission.garageVisited = true; mission.painted = mission.paintAt !== undefined && mission.paintAt !== upg().paint; } };
   function startHook(kind) {
-    if (!furnitureBuilt) { buildFurniture(); buildGarage(); furnitureBuilt = true; for (const f of furniture) f.parts.forEach(o => { o.userData.p0 = o.position.clone(); }); }
+    if (!furnitureBuilt) { buildFurniture(); buildGarage(); finishFurniture(); }
     start(kind);
     for (const pk of pickups) { pk.on = false; pk.mesh.visible = false; }
     if (!pus.length) for (let i = 0; i < 12; i++) pus.push(makePu(PU_KINDS[i % PU_KINDS.length]));

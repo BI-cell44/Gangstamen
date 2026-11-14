@@ -40,5 +40,33 @@
   "simMs": 1.37,
   "loadS": 8,
   "failed": 0
+ },
+ {
+  "date": "2026-11-14T10:05",
+  "label": "cycle 2 : instances, voitures fusionnées, tuiles",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 485,
+  "trianglesK": 859,
+  "meshes": 1808,
+  "geometries": 1555,
+  "materials": 311,
+  "heapMB": 202,
+  "simMs": 5.01,
+  "loadS": 82,
+  "failed": 0
+ },
+ {
+  "date": "2026-11-14T10:05",
+  "label": "cycle 2 : instances, voitures fusionnées, tuiles",
+  "build": "gangstamen.html",
+  "drawCalls": 282,
+  "trianglesK": 399,
+  "meshes": 829,
+  "geometries": 649,
+  "materials": 127,
+  "heapMB": 98,
+  "simMs": 1.3,
+  "loadS": 6,
+  "failed": 0
  }
 ]

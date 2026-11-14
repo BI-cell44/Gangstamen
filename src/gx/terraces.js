@@ -2,7 +2,7 @@
   const customers = [];
   function buildTerraces() {
     if (!W.shops) return;
-    const tableM = stdM2(0xe8e2d0, 0.5, 0.2), metal = stdM2(0x2a2a2e, 0.5, 0.6), chairM = stdM2(0x8a5a32, 0.7);
+    const tableM = stdM2(0xe8e2d0, 0.5, 0.2), metal = stdM2(0x2a2a2e, 0.5, 0.6), chairM = stdM2(0x8a5a32, 0.7), cupM = stdM2(0xf3ead8, 0.3);
     const PARA = [[0xc8202f, 0xf3ead8], [0x1f3f91, 0xf3ead8], [0x2b6b3a, 0xf2c81e], [0xe86a1a, 0xf3ead8]];
     const paraMats = PARA.map(([a, b]) => { const [c, g] = canvas(256, 16); for (let k = 0; k < 16; k++) { g.fillStyle = '#' + new THREE.Color(k % 2 ? b : a).getHexString(); g.fillRect(k * 16, 0, 16, 16); }
       const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return new THREE.MeshStandardMaterial({ map: t, roughness: 0.8, side: THREE.DoubleSide }); });
@@ -18,7 +18,7 @@
         const g = new THREE.Group(), parts = [];
         const add = (geo, m, px, py, pz) => { const o = new THREE.Mesh(geo, m); o.position.set(px, py, pz); o.castShadow = true; g.add(o); parts.push(o); return o; };
         add(new THREE.CylinderGeometry(0.38, 0.38, 0.04, 16), tableM, 0, 0.74, 0); add(new THREE.CylinderGeometry(0.04, 0.04, 0.72, 6), metal, 0, 0.36, 0); add(new THREE.CylinderGeometry(0.22, 0.22, 0.03, 12), metal, 0, 0.02, 0);
-        const cup = add(new THREE.CylinderGeometry(0.04, 0.035, 0.08, 8), stdM2(0xf3ead8, 0.3), 0.12, 0.8, 0.05);
+        const cup = add(new THREE.CylinderGeometry(0.04, 0.035, 0.08, 8), cupM, 0.12, 0.8, 0.05);
         add(new THREE.CylinderGeometry(0.035, 0.035, 2.3, 6), metal, 0, 1.15, 0);
         const para = add(new THREE.ConeGeometry(1.25, 0.5, 16, 1, true), pm, 0, 2.35, 0); para.castShadow = true;
         const seats = [];
@@ -30,7 +30,7 @@
         }
         const a = Math.atan2(ux, uz); // table row along the facade; chairs on either side along it
         g.position.set(x, surfaceH(x, z) + 0.2, z); g.rotation.y = a - Math.PI / 2;
-        g.traverse(o => { o.userData.hdLinear = true; }); hd.linearize(g); scene.add(g);
+        g.traverse(o => { o.userData.hdLinear = true; }); hd.linearize(g); Batch.add(g); // drawn as instances until knocked over
         const f = { g, parts, x, z, r: 0.9, broken: false, t: 0, kind: 'table' }; furniture.push(f);
         // one or two customers, facing the table
         for (const side of seats) {

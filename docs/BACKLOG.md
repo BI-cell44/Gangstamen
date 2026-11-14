@@ -18,12 +18,13 @@
 - [x] **Qualité automatique** : délai de grâce de 15 s au démarrage et après un chargement, case pour la désactiver, mesure sur la médiane plutôt que la moyenne.
 - Critère d'acceptation : tous les tests passent sur les trois sorties ; le message de baisse de qualité ne s'affiche plus pendant le chargement.
 
-### Cycle 2 : fluidité ★★★
-- **Instanciation** du mobilier répété (tables, chaises, parasols des terrasses, bornes, lampadaires) : environ 1 400 maillages ramenés à une vingtaine.
-- **Voitures** : fusion des pièces fixes par matériau (75 maillages ramenés à environ 8 par voiture, roues et pièces animées à part) ; niveau de détail simplifié au-delà de 120 m.
-- **Ville par tuiles** de 200 à 250 m : les bâtiments, toits et sols fusionnés par tuile et par matériau, pour que les tuiles hors champ ne soient plus dessinées (ni dans la passe d'ombre).
-- Distance d'affichage du petit mobilier, de la foule et des terrasses selon la qualité.
-- Objectif mesuré : moins de 450 appels de dessin et 40 % de triangles en moins par image, même rendu à l'œil (captures avant / après).
+### Cycle 2 : fluidité ★★★ (fait le 14 nov. 2026 : appels de dessin −64 %, triangles −62 % en HD)
+- [x] **Instanciation** du mobilier répété (tables, chaises, parasols des terrasses, bornes, lampadaires) : environ 1 400 maillages ramenés à une vingtaine.
+- [x] **Voitures** : fusion des pièces fixes par matériau (75 maillages ramenés à 24 par voiture : la coque déformable et chaque roue restent à part).
+- [ ] Niveau de détail simplifié des voitures au-delà de 120 m (reporté : le gain restant est faible, 12 maillages visibles en moyenne).
+- [x] **Ville par tuiles** de 300 m (`world/tiles.js`) : les maillages de plus de 20 000 triangles (relief, routes, murs, toits) et les arbres sont découpés par tuile ; hors champ, ils ne sont plus dessinés, ombres comprises. Le mobilier instancié est groupé par tuile de 250 m.
+- [ ] Distance d'affichage du petit mobilier, de la foule et des terrasses selon la qualité (à faire si la vraie machine le demande).
+- Objectif mesuré : moins de 450 appels de dessin et 40 % de triangles en moins par image, même rendu à l'œil (captures avant / après). **Résultat** : 485 appels (passes de post-traitement comprises) au lieu de 1 340, 859 k triangles au lieu de 2,26 M ; captures identiques. Classique : 282 appels (221 avant, les tuiles en ajoutent un peu), 399 k triangles au lieu de 1,25 M.
 
 ### Cycle 3 : chargement ★★
 - Mesurer chaque étape du démarrage ; générer les façades et l'atlas progressivement avec une barre de chargement honnête.

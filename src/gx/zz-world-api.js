@@ -4,7 +4,7 @@
     try { stAnne(); } catch (e) { console.warn('stAnne', e); }
     try { stairs(); } catch (e) { console.warn('stairs', e); }
     // (the Misery quarry used to be a painted cliff past the map edge: the real slope of the butte is in the relief now)
-    buildFurniture(); try { buildTerraces(); } catch (e) { console.warn('terraces', e); } buildGarage(); furnitureBuilt = true; for (const f of furniture) f.parts.forEach(o => { o.userData.p0 = o.position.clone(); });
+    buildFurniture(); try { buildTerraces(); } catch (e) { console.warn('terraces', e); } buildGarage(); finishFurniture();
   }
   function landmarkTick() { // lights that follow the time of day
     const n = hd.amb ? Math.min(1, hd.amb.t / 2.2) : 0;

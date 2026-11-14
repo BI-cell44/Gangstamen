@@ -45,12 +45,12 @@
       }
       if (f.a === undefined) { const [, nx, nz] = roadEdge(f.x, f.z); f.a = Math.atan2(-nx, -nz); } // open side towards the street
       g.position.set(f.x, surfaceH(f.x, f.z) + 0.2, f.z); g.rotation.y = f.a;
-      g.traverse(o => { o.userData.hdLinear = true; }); hd.linearize(g); scene.add(g);
+      g.traverse(o => { o.userData.hdLinear = true; }); hd.linearize(g); Batch.add(g); // drawn as instances until knocked over
       furniture.push({ g, parts, x: f.x, z: f.z, r: f.t === 'shelter' ? 2 : f.t === 'bench' ? 1.1 : 0.6, broken: false, t: 0, kind: f.t });
     }
   }
   function breakFurniture(f, fromX, fromZ, speed = 12) {
-    f.broken = true; f.t = 0;
+    f.broken = true; f.t = 0; Batch.hide(f.g); // the real pieces take over for the fall
     for (const o of f.parts) { const a = Math.atan2(f.z - fromZ, f.x - fromX) + (R() - 0.5) * 1.2, s = speed * (0.4 + R() * 0.6);
       o.userData.v = [Math.cos(a) * s, 3 + R() * 5, Math.sin(a) * s, (R() - 0.5) * 10, (R() - 0.5) * 10]; }
     if (f.kind === 'shelter') { for (let i = 0; i < 20 * 1; i++) hd.spark(f.x, surfaceH(f.x, f.z) + 1.5, f.z, (R() - 0.5) * 8, 2 + R() * 4, (R() - 0.5) * 8, 0.6); }
@@ -70,10 +70,11 @@
       if (f.t < 4) for (const o of f.parts) { const v = o.userData.v; v[1] -= 20 * dt; o.position.x += v[0] * dt * Math.cos(-f.g.rotation.y) - v[2] * dt * Math.sin(-f.g.rotation.y); o.position.z += v[0] * dt * Math.sin(-f.g.rotation.y) + v[2] * dt * Math.cos(-f.g.rotation.y); o.position.y = Math.max(0.05, o.position.y + v[1] * dt); if (o.position.y <= 0.05) { v[0] *= 0.8; v[2] *= 0.8; v[1] = Math.abs(v[1]) * 0.2; } o.rotation.x += v[3] * dt * (o.position.y > 0.1 ? 1 : 0); o.rotation.z += v[4] * dt * (o.position.y > 0.1 ? 1 : 0); }
       if (f.t > 40) { // the council puts it back
         let clear = true; for (const c of players()) if (Math.hypot(c.x - f.x, c.z - f.z) < 60) clear = false;
-        if (clear) { f.broken = false; f.parts.forEach(o => { o.position.copy(o.userData.p0); o.rotation.set(0, 0, 0); }); }
+        if (clear) { f.broken = false; f.parts.forEach(o => { o.position.copy(o.userData.p0); o.rotation.set(0, 0, 0); }); Batch.show(f.g); }
       }
     }
   }
+  function finishFurniture() { furnitureBuilt = true; for (const f of furniture) f.parts.forEach(o => { o.userData.p0 = o.position.clone(); }); Batch.build(); }
   const L_resp = (c, n) => { if (c.owner && !Match.over) c.owner.respect += n; };
 
 

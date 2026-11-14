@@ -126,7 +126,37 @@
     for (const g of [tyre, barrel, lip, spoke, hub, disc]) g.userData.shared = true;
     return { tyre, barrel, lip, spoke, hub, disc, w };
   }
-  const wheelCache = {};
+  const wheelCache = {}, mergedWheel = {};
+  // merge static meshes that share a material into one geometry (fewer draw calls: a car went from 75 meshes to ~25)
+  function mergeGeos(items) { // items: [geometry, matrix]; all with the same attributes
+    const parts = items.map(([g, m]) => { const n = g.index ? g.toNonIndexed() : g.clone(); n.applyMatrix4(m); return n; });
+    const names = Object.keys(parts[0].attributes).filter(k => parts.every(p => p.attributes[k] && p.attributes[k].itemSize === parts[0].attributes[k].itemSize));
+    const out = new THREE.BufferGeometry();
+    for (const k of names) {
+      const size = parts[0].attributes[k].itemSize, total = parts.reduce((s, p) => s + p.attributes[k].count, 0), arr = new Float32Array(total * size);
+      let o = 0; for (const p of parts) { arr.set(p.attributes[k].array, o); o += p.attributes[k].array.length; }
+      out.setAttribute(k, new THREE.BufferAttribute(arr, size));
+    }
+    for (const p of parts) p.dispose();
+    out.computeBoundingSphere(); return out;
+  }
+  function mergeChildren(parent, keep, cacheKey) {
+    const groups = new Map();
+    for (const o of parent.children.slice()) {
+      if (!o.isMesh || keep.has(o) || Array.isArray(o.material) || o.children.length) continue;
+      const sig = o.material.uuid + '|' + Object.keys(o.geometry.attributes).sort().join(',');
+      if (!groups.has(sig)) groups.set(sig, []); groups.get(sig).push(o);
+    }
+    for (const [sig, list] of groups) {
+      if (list.length < 2) continue;
+      const ck = cacheKey && cacheKey + '|' + sig;
+      let geo = ck && mergedWheel[ck];
+      if (!geo) { geo = mergeGeos(list.map(o => { o.updateMatrix(); return [o.geometry, o.matrix]; })); if (ck) { geo.userData.shared = true; mergedWheel[ck] = geo; } }
+      const m = new THREE.Mesh(geo, list[0].material); m.castShadow = list.some(o => o.castShadow); m.receiveShadow = list.some(o => o.receiveShadow); m.userData.hdLinear = true;
+      for (const o of list) { parent.remove(o); if (!o.geometry.userData.shared) o.geometry.dispose(); }
+      parent.add(m);
+    }
+  }
   function makeCar(paint, stripe, isPlayer, styleName, opts = {}) {
     const style = styleName || (isPlayer ? 'saloon' : 'hatch'), st = CAR_STYLES[style], M = sharedMats();
     const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
@@ -219,6 +249,8 @@
       spot.color.convertSRGBToLinear(); spot.position.set(0, 0.85, -hl); spot.target.position.set(0, -0.6, -24);
       g.add(spot, spot.target); g.userData.spot = spot;
     }
+    mergeChildren(body, new Set([sm]));
+    for (let i = 0; i < 4; i++) mergeChildren(wheels[i], new Set(), 'w' + st.wr + '|' + (i % 2 ? 1 : -1) + '|' + rimM.uuid);
     const noop = { emissive: { setHex() { } } };
     Object.assign(g.userData, { wheels, steer, mBody: mPaint, mPaint: { color: { setHex() { } } }, base: 0xffffff, paint, tail: noop, head: noop,
       tailM, headM, bodyG: body, muzzles, wb: st.wb, hw: W_ / 2 - 0.13, hl, hdLinear: true, shell, shellPos0, shellNrm0, s0, s1, dent: 0, flat: -1 });

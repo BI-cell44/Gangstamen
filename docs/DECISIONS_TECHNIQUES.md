@@ -43,5 +43,8 @@ Le bac à sable n'atteint ni OSM, ni Overpass, ni l'IGN. Les requêtes (`tools/f
 **Bénéfice** : évolutions plus rapides et plus sûres pour toutes les phases suivantes. **Risque** : faible (contrôlé par la comparaison à l'octet), mais tous les numéros de ligne des documents changent.
 **Alternative écartée** : modules ES avec bundler (Vite, esbuild) : contraire à D-01 pour un gain modeste ici.
 
+## D-14 Moins d'appels de dessin : instances, fusion, tuiles (en vigueur, 14 nov. 2026)
+Mobilier répété dessiné en `InstancedMesh` (`gx/batch.js`), regroupé par tuile de 250 m ; l'objet renversé redevient un vrai groupe le temps de l'animation. Pièces fixes de chaque voiture fusionnées par matériau (géométries de roues fusionnées et partagées). Grands maillages coupés en tuiles de 300 m après la construction (`world/tiles.js`). **Piège** : en r128, `InstancedMesh` désactive le culling (`frustumCulled = false`) et l'écartement utilise les bornes de la géométrie seule ; on calcule des bornes qui couvrent toutes les instances et on réactive le culling. On ne coupe que ce qu'aucun autre code ne garde en référence.
+
 ## D-13 Une branche et un artifact pour les évolutions Ultra (en vigueur, 14 nov. 2026)
 Branche `ultra` (partie de `main`), sortie supplémentaire `gangstamen-ultra.html` (la HD avec `const ULTRA = true` et le titre « Gangstamen Ultra »), artifact séparé « Gangstamen Ultra ». `main` reste la version stable jouable ; un cycle Ultra validé peut y être fusionné. Les corrections de `main` sont fusionnées dans `ultra` régulièrement (jamais l'inverse sans validation).
