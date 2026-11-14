@@ -393,12 +393,34 @@ if BD:
             bd['k'] = 0 if (a < 260 and levels <= 3) else 1
     print('BD TOPO match', stats)
 
+# ---- the Loire as an area: rings of the river multipolygon, stitched from its member ways. Ground outside them
+# that dips under the water level is raised by carve.py (the river plane used to show through on the quays) ----
+river = []
+for rel in root.iter('relation'):
+    tg = tags(rel)
+    if not (tg.get('type') == 'multipolygon' and tg.get('natural') == 'water' and tg.get('water') == 'river'): continue
+    for role in ('outer', 'inner'):
+        segs = [list(ways[m.get('ref')][0]) for m in rel.findall('member') if m.get('type') == 'way' and m.get('role') == role and m.get('ref') in ways and len(ways[m.get('ref')][0]) >= 2]
+        while segs:
+            ring = segs.pop(0)
+            grown = True
+            while grown and math.dist(ring[0], ring[-1]) > 0.5:
+                grown = False
+                for i, s in enumerate(segs):
+                    if math.dist(ring[-1], s[0]) < 0.5: ring += s[1:]
+                    elif math.dist(ring[-1], s[-1]) < 0.5: ring += s[::-1][1:]
+                    else: continue
+                    segs.pop(i); grown = True; break
+            if len(ring) >= 4 and math.dist(ring[0], ring[-1]) <= 0.5:
+                river.append({'i': 1 if role == 'inner' else 0, 'p': flat(ring)})
+print('river rings', len(river), sum(len(r['p']) // 2 for r in river), 'points')
+
 out = {
     'meta': {'hx': r1(HX), 'hz': r1(HZ), 'cx': r1(CX), 'cz': r1(CZ), 'x0': X0, 'x1': X1, 'z0': Z0, 'z1': Z1, 'lat0': lat0, 'lon0': lon0,
              'src': '© OpenStreetMap contributors (ODbL); IGN BD TOPO & RGE ALTI (Licence Ouverte)'},
     'tram': {'x0': X0, 'step': TSTEP, 's': [r1(v) for v in tS], 'n': [r1(v) for v in tN]},
     'names': names, 'buildings': buildings, 'roads': roads, 'rails': rails,
-    'greens': greens, 'trees': trees,
+    'greens': greens, 'trees': trees, 'river': river,
     'dem': ({'nx': BD['dem']['nx'], 'nz': BD['dem']['nz'], 'step': BD['dem']['STEP'], 'x0': BD['dem']['X0'], 'z0': BD['dem']['Z0'], 'h': BD['dem']['h']} if BD else None),
 }
 with open(dst, 'w', encoding='utf-8') as f:

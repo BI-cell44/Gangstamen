@@ -102,6 +102,28 @@ for x, z, h, hw, drive in samples:
 for k, (wt, h, _) in best.items():
     G[k] = G[k] * (1 - wt) + h * wt
 
+# 4. dry land stays dry: outside the Loire (OSM multipolygon, even-odd over its rings), ground under the water level is
+# raised just above it, so the river plane no longer shows through on the quays and under the footbridges
+WATER_Y, DRY = 0.4, 1.0
+rings = [[(r['p'][k], r['p'][k + 1]) for k in range(0, len(r['p']), 2)] for r in w.pop('river', [])]
+raised = 0
+if rings:
+    edges = [(a, b) for ring in rings for a, b in zip(ring, ring[1:] + ring[:1])]
+    for j in range(NZ):
+        gz = z0 + j * S; xs = []
+        for (ax, az), (bx, bz) in edges:
+            if (az > gz) != (bz > gz): xs.append(ax + (gz - az) * (bx - ax) / (bz - az))
+        xs.sort()
+        for i in range(NX):
+            k = j * NX + i
+            if G[k] >= DRY: continue
+            gx = x0 + i * S; n = 0
+            for x in xs:
+                if x < gx: n += 1
+                else: break
+            if n % 2 == 0: G[k] = DRY; raised += 1
+print('dry land raised', raised)
+
 D2 = {'nx': NX, 'nz': NZ, 'step': S, 'x0': x0, 'z0': z0, 'h': [round(v * 10) for v in G]}
 w['dem'] = D2
 w['bridges'] = bridges
