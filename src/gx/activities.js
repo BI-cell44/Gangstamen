@@ -3,9 +3,11 @@
   // streets with checkpoints, a ghost of the best run and medals; challenges: drift, jump, delivery, lose the police,
   // destruction. Records go to the save (Profile.record).
   const ACT_DEF = [
-    { id: 'r_anne', kind: 'race', name: 'Sainte-Anne → quai de la Fosse', pts: [[935, 95], [1180, -90], [1450, -320]] },
+    // (15 nov.) longer runs now that the map reaches Sainte-Anne and the quai de la Fosse: new ids, the records of the
+    // old short routes would not compare
+    { id: 'r_anne2', kind: 'race', name: 'Sainte-Anne → quai de la Fosse', pts: [[711, 96], [935, 95], [1180, -90], [1300, -330], [1650, -640]] },
     { id: 'r_butte', kind: 'race', name: 'Tour de la butte', pts: [[700, 120], [880, -60], [1060, 120], [900, 300], [700, 120]] },
-    { id: 'r_lib', kind: 'race', name: 'Sprint du boulevard de la Liberté', pts: [[77, 104], [56, 264], [105, 429]] },
+    { id: 'r_lib2', kind: 'race', name: 'Sprint Liberté – Cardiff', pts: [[160, -440], [77, 104], [56, 264], [105, 429], [450, 380], [760, 300]] },
     { id: 'd_drift', kind: 'drift', name: 'Dérapage', at: [45, 283], time: 60, text: 'Glisse le plus longtemps possible (frein à main) : 60 s' },
     { id: 'd_jump', kind: 'jump', name: 'Sauts de la carrière Misery', at: [640, 300], time: 60, text: 'Décolle et vole le plus loin possible : 60 s' },
     { id: 'd_deliv', kind: 'deliv', name: 'Livraison express', at: [118, -139], text: 'Porte le colis à l’adresse avant la fin du chrono' },
@@ -58,14 +60,15 @@
       if (a.cps.length > 2) { run.cpNext = addMarker(...a.cps[2], 5, a.cps.length === 3 ? 0xffffff : 0x3ac8ff); run.cpNext.beam.material.opacity = 0.1; } // the one after, fainter: shows which way the route turns
       const g = Profile.cur && Profile.cur.records['ghost_' + a.id]; if (g) { run.ghost = g; ghostMesh = makeGhost(c.style); }
     } else if (a.kind === 'deliv') {
-      const shops = (W.shops || []).filter(s => { const d = Math.hypot(s.x - c.x, s.z - c.z); return d > 350 && d < 800 && nodeOk(nearestNode(s.x, s.z)); });
+      const far = (lo, hi) => (W.shops || []).filter(s => { const d = Math.hypot(s.x - c.x, s.z - c.z); return d > lo && d < hi && nodeOk(nearestNode(s.x, s.z)); });
+      let shops = far(900, 1700); if (shops.length < 5) shops = far(500, 1700); // (15 nov.) farther across the town than before (350 to 800 m)
       const s = shops[(R() * shops.length) | 0] || { x: 600, z: 200, n: 'Le quai' }, [tx, tz] = roadPoint(s.x, s.z);
       const len = route(c.x, c.z, tx, tz).reduce((acc, p, i, A) => acc + (i ? Math.hypot(p[0] - A[i - 1][0], p[1] - A[i - 1][1]) : 0), 0);
       run.dest = [tx, tz]; run.destName = s.n || 'le client'; run.limit = Math.round(len / 13 + 12); run.mk = addMarker(tx, tz, 7, 0xffffff);
-    } else if (a.kind === 'cops') { L.heat = 2.5; L.calm = 0; }
+    } else if (a.kind === 'cops') { L.heat = 2.5; L.calm = 0; L.unseen = 0; }
     else if (a.kind === 'smash') run.base = brokenCount();
   }
-  function brokenCount() { let n = 0; for (const f of furniture) if (f.broken) n++; for (const p of Fences.panels) if (p.broken) n++; return n; }
+  function brokenCount() { let n = 0; for (const f of furniture) if (f.broken) n++; for (const p of Fences.panels) if (p.broken) n++; return n + LightPoles.broken; }
   function makeGhost(style) {
     const m = makeCar(0x9ad7ff, null, false, style || 'saloon', { guns: false });
     m.traverse(o => { if (o.material) { o.material = [].concat(o.material).map(x => { const y = x.clone(); y.transparent = true; y.opacity = 0.35; y.depthWrite = false; return y; }); if (o.material.length === 1) o.material = o.material[0]; } });

@@ -2708,6 +2708,23 @@ function buildGround() {
       ribbon(foot, p, r.w, ROAD_Y.foot, cFoot, 3);
     }
   });
+  // (15 nov.) zebra crossings painted on the carriageway at the OpenStreetMap crossings (where the pedestrians cross):
+  // white bands along the street, side by side across its width
+  for (const [cx, cz, k] of (W.traffic && W.traffic.signals) || []) {
+    if (k !== 3) continue;
+    let best = null, bd = 1e9;
+    for (const sg of roadSegs.get(key(Math.floor(cx / RCELL), Math.floor(cz / RCELL))) || []) {
+      const [ax, az, bx, bz, w] = sg, dx = bx - ax, dz = bz - az, L2 = dx * dx + dz * dz || 1e-6, t = Math.max(0, Math.min(1, ((cx - ax) * dx + (cz - az) * dz) / L2));
+      const d = Math.hypot(cx - ax - dx * t, cz - az - dz * t); if (d < w / 2 && -w < bd) { bd = -w; best = sg; } // the widest street through the point
+    }
+    if (!best) continue;
+    const [ax, az, bx, bz, w] = best, L = Math.hypot(bx - ax, bz - az) || 1, ux = (bx - ax) / L, uz = (bz - az) / L, t = (cx - ax) * ux + (cz - az) * uz;
+    const mx = ax + ux * t, mz = az + uz * t, half = w / 2 - 0.5;
+    for (let o = -half + 0.25; o <= half - 0.25 + 1e-6; o += 1.1) {
+      const px = mx - uz * o, pz = mz + ux * o;
+      ribbon(marks, [px - ux * 1.5, pz - uz * 1.5, px + ux * 1.5, pz + uz * 1.5], 0.5, ROAD_Y.mark, cMark, 100);
+    }
+  }
   // bridges over the railway trench: deck, side beams and parapets
   const deck = new Buf(), side = new Buf();
   const cConc = col('#a39a8e'), cPar = col('#b8ae9f');
@@ -3295,6 +3312,7 @@ function updateFx(dt) {
 }
 function explode(x, z) {
   if (gx && gx.Fences) gx.Fences.blast(x, z, 7);
+  if (gx && gx.LightPoles) gx.LightPoles.blast(x, z, 6);
   if (HD) return hd.explode(x, z);
   for (let i = 0; i < 10; i++) spawnFx(x + (Math.random() - .5) * 3, 1 + Math.random() * 2, z + (Math.random() - .5) * 3, 1.2 + Math.random(), i % 2 ? 0xffb03a : 0xff5a1f, 0.7, 3, 2.5);
   for (let i = 0; i < 8; i++) spawnFx(x, 2, z, 1.5, 0x2a2228, 2.2, 4, 3);
@@ -4076,6 +4094,19 @@ function spawnRival(r) {
   r.mesh.userData.mBody.color.setHex(r.mesh.userData.base); r.mesh.userData.mPaint.color.setHex(r.mesh.userData.paint);
   r.ai = { mode: 'cruise', target: nearestNode(r.x, r.z), prev: -1, stuck: 0, back: 0, lost: 0, burst: 0, firing: 0 };
 }
+// (15 nov.) at the start of a game the six Rapaces used to be where the menu left them, one of them always on the
+// player's starting grid, shooting at once: they now start far away and join the hunt one after the other
+function scatterRivals() {
+  const [cx, cz] = playersCentre(); let k = 0;
+  for (const r of rivals) {
+    if (r.proxy || (teamMode && r.team >= 0)) continue;
+    let n = -1; for (let i = 0; i < 300 && n < 0; i++) { const j = (rnd() * G.x.length) | 0; if (nodeOk(j) && Math.hypot(G.x[j] - cx, G.z[j] - cz) > 320) n = j; }
+    if (n < 0) { spawnRival(r); continue; }
+    const nb = G.adj[n][0] ?? n; spawnRival(r);
+    r.place(G.x[n], G.z[n], Math.atan2(-(G.x[nb] - G.x[n]), -(G.z[nb] - G.z[n]))); r.ai.target = nearestNode(r.x, r.z);
+    r.calmT = 12 + 7 * k++; // seconds of cruising before it starts looking for players
+  }
+}
 function spawnPickup(pk) {
   const [cx, cz] = playersCentre();
   const n = farNode(cx, cz, 120);
@@ -4192,6 +4223,9 @@ function buildMinimap() {
   W.buildings.forEach(b => poly(b.p, 'rgba(120,104,150,.9)'));
   mapC.ox = ox; mapC.oz = oz;
 }
+// (15 nov.) direction marks: a navigation chevron (point, two wings, notch at the back) instead of a plain triangle, so
+// the direction it points to cannot be misread. Drawn pointing along +x, centred on the origin.
+function chevronPath(g, s) { g.beginPath(); g.moveTo(s * 0.62, 0); g.lineTo(-s * 0.5, s * 0.58); g.lineTo(-s * 0.18, 0); g.lineTo(-s * 0.5, -s * 0.58); g.closePath(); }
 function drawMinimapOn(cv, me) {
   const mg = cv.getContext('2d'), S = cv.width, R = S / 2, Z = 1.25 * S / 336;
   mg.save(); mg.clearRect(0, 0, S, S);
@@ -4210,7 +4244,7 @@ function drawMinimapOn(cv, me) {
   }
   mg.restore();
   mg.save(); mg.translate(R, R);
-  // enemies beyond the edge of the minimap: a small triangle on the rim pointing at them,
+  // enemies beyond the edge of the minimap: a small chevron on the rim pointing at them,
   // bright and large when close, dimmer, greyer and smaller the further away they are
   const edge = (R - 9) / Z, hx = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
   const off = [...rivals, ...allPlayerCars()].filter(r => r !== me && r.alive && enemies(me, r));
@@ -4224,9 +4258,20 @@ function drawMinimapOn(cv, me) {
     const rr = Math.round(br + (150 - br) * e * 0.8), gg = Math.round(bg + (138 - bg) * e * 0.8), b2 = Math.round(bb + (160 - bb) * e * 0.8);
     const a = Math.atan2(sy, sx), k = S / 336 * 2, size = (11 - 6 * e) * k, rim = R - 4 - size * 0.2;
     mg.save(); mg.translate(Math.cos(a) * rim, Math.sin(a) * rim); mg.rotate(a);
-    mg.beginPath(); mg.moveTo(size * 0.55, 0); mg.lineTo(-size * 0.55, size * 0.55); mg.lineTo(-size * 0.55, -size * 0.55); mg.closePath();
+    chevronPath(mg, size * 1.25); mg.lineJoin = 'round';
     mg.globalAlpha = 1 - e * 0.3; mg.fillStyle = `rgb(${rr},${gg},${b2})`; mg.strokeStyle = 'rgba(0,0,0,.8)'; mg.lineWidth = Math.max(1, k * 0.9);
     mg.fill(); mg.stroke(); mg.restore();
+  }
+  // the mission target (the green arrow of the mission panel): a green chevron on the rim when it is off the minimap
+  const tg = gx && me.owner === locals[0] && gx.objTarget;
+  if (tg) {
+    const dx = tg.x - me.x, dz = tg.z - me.z, c = Math.cos(me.h), s = Math.sin(me.h);
+    const sx = (dx * c - dz * s) * Z, sy = (dx * s + dz * c) * Z;
+    if (Math.hypot(sx, sy) > R - 8) {
+      const a = Math.atan2(sy, sx), k = S / 336 * 2, size = 15 * k, rim = R - 4 - size * 0.25;
+      mg.save(); mg.translate(Math.cos(a) * rim, Math.sin(a) * rim); mg.rotate(a); chevronPath(mg, size); mg.lineJoin = 'round';
+      mg.fillStyle = '#7be07b'; mg.strokeStyle = '#000'; mg.lineWidth = Math.max(1.5, k * 1.2); mg.fill(); mg.stroke(); mg.restore();
+    }
   }
   const k = S / 336 * 2;
   mg.fillStyle = '#f2c14e'; mg.strokeStyle = '#000'; mg.lineWidth = 3;
@@ -4518,6 +4563,7 @@ function shoot(from, targets, dmg, range, spread, enemy) {
     if (perp < 1.9) { best = along; hitCar = t; }
   }
   if (!hitCar && gx && gx.Fences) best = gx.Fences.shoot(ox, oz, dx, dz, best, from, dmg); // a fence in the way takes the bullet (and breaks)
+  if (!hitCar && gx && gx.LightPoles) best = gx.LightPoles.shoot(ox, oz, dx, dz, best, from, dmg); // so does a traffic light pole
   const ex = ox + dx * best, ez = oz + dz * best;
   tracer(ox, oy, oz, ex, tracerEnd(ox, oy, oz, ex, ez, hitCar), ez, enemy, dx, dz);
   sfx.gun(enemy);
@@ -4591,7 +4637,8 @@ function minPlayerSight(c) { let d = 1e9; for (const p of allPlayerCars()) if (p
 function rivalInput(r, dt) {
   const ai = r.ai;
   let target = null, dp = 1e9;
-  const foes = [...allPlayerCars(), ...(teamMode ? rivals : []), ...(gx ? gx.foes() : []), ...(gx && gx.copsOn ? gx.copsOn(r) : [])].filter(c => c.alive && enemies(r, c));
+  if (r.calmT > 0) r.calmT -= dt; // just (re)started far away: cruise, leave the players alone (scatterRivals)
+  const foes = [...(r.calmT > 0 ? [] : allPlayerCars()), ...(teamMode ? rivals : []), ...(gx ? gx.foes() : []), ...(gx && gx.copsOn ? gx.copsOn(r) : [])].filter(c => c.alive && enemies(r, c));
   for (const c of foes) { const d = Math.hypot(c.x - r.x, c.z - r.z); if (d < dp) { dp = d; target = c; } }
   let los = false;
   if (target && dp < 110) los = segHit(r.x, r.z, (target.x - r.x) / dp, (target.z - r.z) / dp, dp) >= dp - 0.5;
@@ -5386,6 +5433,7 @@ const gx = !HD ? null : (() => {
       lampRefs.push(hd_);
     });
     for (const o of [pm, hm, lampIM]) { o.userData.hdLinear = true; o.frustumCulled = false; scene.add(o); }
+    TF.im = { pm, hm, lamps: lampIM, poles }; TF.heads = heads; // pole i carries head i (breakable: lightpoles.js)
     pm.castShadow = true;
   }
   const LAMP = { r: new THREE.Color(5, 0.15, 0.05), a: new THREE.Color(5, 2.2, 0.05), g: new THREE.Color(0.1, 4, 1.2), off: new THREE.Color(0.06, 0.06, 0.06) };
@@ -5393,7 +5441,7 @@ const gx = !HD ? null : (() => {
   function lightsTick(dt) {
     TF.t += dt; lampAcc += dt; if (!lampIM || lampAcc < 0.25) return; lampAcc = 0;
     lampRefs.forEach((hd_, i) => {
-      const st = lightState(hd_.j, hd_.h + Math.PI); // the traffic facing this head drives towards it: heading h + pi
+      const st = hd_.broken ? '' : lightState(hd_.j, hd_.h + Math.PI); // the traffic facing this head drives towards it: heading h + pi
       lampIM.setColorAt(i * 3, st === 'r' ? LAMP.r : LAMP.off); lampIM.setColorAt(i * 3 + 1, st === 'a' ? LAMP.a : LAMP.off); lampIM.setColorAt(i * 3 + 2, st === 'g' ? LAMP.g : LAMP.off);
     });
     lampIM.instanceColor.needsUpdate = true;
@@ -5648,7 +5696,7 @@ const gx = !HD ? null : (() => {
     const L = by && by.local ? by.owner : null; if (!L || mode === 'online' && false) return;
     if (!policeOn()) return;
     if (L.car && L.car.style === 'police') amount *= 0.5; // (cycle 13) in a police car, the others look away more often
-    const before = stars(L); L.heat = Math.min(5.99, heat(L) + amount); L.calm = 0;
+    const before = stars(L); L.heat = Math.min(5.99, heat(L) + amount); L.calm = 0; L.unseen = 0;
     if (stars(L) > before) { flashFor(L, '★'.repeat(stars(L)) + ' POLICE', stars(L) === 1 ? 'Les flics ont vu ça' : stars(L) >= 4 ? 'Toutes les patrouilles sur vous' : 'Renforts en route'); if (gx.dj) gx.dj('police', stars(L)); }
   }
   function policeOn() { return !(mission && mission.noPolice); }
@@ -6289,7 +6337,10 @@ const gx = !HD ? null : (() => {
       if (mine.length < want && R() < dt * 0.6) spawnCop(L);
       const seen = mine.some(c => c.lost < 4);
       L.calm = (L.calm || 0) + dt;
-      if (!seen || L.calm > 12) L.heat = Math.max(0, heat(L) - dt * (seen ? 0.03 : 0.12));
+      // (15 nov.) out of sight, the heat only cools after a grace period: before, with no patrol arrived yet, « unseen »
+      // started at once and one star (heat just over 1) was gone within a second
+      L.unseen = seen ? 0 : (L.unseen || 0) + dt;
+      if (seen ? L.calm > 12 : L.unseen > 5 + 2.5 * stars(L)) L.heat = Math.max(0, heat(L) - dt * (seen ? 0.03 : 0.12));
       if (heat(L) < 1 && L.heat > 0 && L.wasWanted) { L.heat = 0; flashFor(L, 'Semés !', 'La police abandonne'); }
       L.wasWanted = heat(L) >= 1;
       for (const c of mine) { sirenOn = true; sirenD = Math.min(sirenD, near(c, L.car.x, L.car.z)); }
@@ -6484,12 +6535,14 @@ const gx = !HD ? null : (() => {
 
   // ---------- mission HUD ----------
   const objEl = document.createElement('div'); objEl.id = 'objective'; objEl.className = 'hud'; objEl.hidden = true;
-  objEl.innerHTML = '<div class="oTitle"></div><div class="oText"></div><div class="oBar" hidden><i></i></div><div class="oDir"><span class="oArrow">▲</span> <span class="oDist"></span></div>';
+  objEl.innerHTML = '<div class="oTitle"></div><div class="oText"></div><div class="oBar" hidden><i></i></div><div class="oDir"><span class="oArrow" style="vertical-align:-3px;line-height:0"><svg viewBox="-12 -12 24 24" width="22" height="22"><path d="M0 -10 L8 9 L0 4 L-8 9 Z" fill="currentColor" stroke="#000" stroke-width="1.6" stroke-linejoin="round"/></svg></span> <span class="oDist"></span></div>';
   document.body.append(objEl);
   function objective(title, text) { objEl.hidden = false; objEl.querySelector('.oTitle').textContent = title; objEl.querySelector('.oText').textContent = text; }
   function objBar(k) { const b = objEl.querySelector('.oBar'); if (k === null) { b.hidden = true; return; } b.hidden = false; b.firstChild.style.width = Math.round(Math.max(0, Math.min(1, k)) * 100) + '%'; }
+  let objTgt = null; // (15 nov.) the point the arrow shows, also drawn on the rim of the minimap (gx.objTarget)
   function objDir(x, z) { // arrow towards a point, relative to the car's heading
-    const d = objEl.querySelector('.oDir'); if (x === null || !locals[0]) { d.hidden = true; return; }
+    const d = objEl.querySelector('.oDir'); if (x === null || !locals[0]) { d.hidden = true; objTgt = null; return; }
+    objTgt = { x, z };
     const c = locals[0].car, dx = x - c.x, dz = z - c.z, dist = Math.hypot(dx, dz);
     const a = Math.atan2(dx, -dz) + c.h; d.hidden = false;
     d.querySelector('.oArrow').style.transform = 'rotate(' + (a * 180 / Math.PI).toFixed(0) + 'deg)';
@@ -7230,6 +7283,72 @@ const gx = !HD ? null : (() => {
     return { build, step, shoot, blast, get count() { return panels.length; }, get broken() { return panels.filter(p => p.broken).length; }, panels, tiles };
   })();
   // =====================================================================================
+  // (15 nov., user request) breakable traffic lights: a car that hits a pole fast enough knocks it over, shots and
+  // blasts bring it down too. The poles, heads and lamps are the instances built by buildLights (traffic.js, TF.im):
+  // a broken one is tilted about its foot, its lamps go dark, and it stands up again a while later, out of sight.
+  // =====================================================================================
+  const LightPoles = (() => {
+    const CELL = 16, grid = new Map(), m4 = new THREE.Matrix4(), rot = new THREE.Matrix4(), tr = new THREE.Matrix4(), axis = new THREE.Vector3();
+    let ready = false, list = [];
+    function setup() {
+      if (ready || !TF.im) return; ready = true;
+      const { pm, hm, lamps, poles } = TF.im;
+      list = poles.map(([x, z], i) => {
+        const p = { i, x, z, y: surfaceH(x, z), broken: false, hp: 8, t: 0, m0: [] };
+        for (const [im, k] of [[pm, i], [hm, i], [lamps, i * 3], [lamps, i * 3 + 1], [lamps, i * 3 + 2]]) { const m = new THREE.Matrix4(); im.getMatrixAt(k, m); p.m0.push([im, k, m]); }
+        const key = Math.floor(x / CELL) * 10000 + Math.floor(z / CELL); if (!grid.has(key)) grid.set(key, []); grid.get(key).push(p);
+        return p;
+      });
+    }
+    function near(x, z, r, fn) {
+      for (let i = Math.floor((x - r) / CELL); i <= Math.floor((x + r) / CELL); i++) for (let j = Math.floor((z - r) / CELL); j <= Math.floor((z + r) / CELL); j++) {
+        const l = grid.get(i * 10000 + j); if (l) for (const p of l) if (!p.broken) fn(p);
+      }
+    }
+    function topple(p, dx, dz, c) { // falls away from the impact: rotation about the horizontal axis across (dx, dz), at its foot
+      const L = Math.hypot(dx, dz) || 1; dx /= L; dz /= L;
+      p.broken = true; p.t = 0; p.hp = 8;
+      axis.set(dz, 0, -dx); rot.makeRotationAxis(axis, 1.35 + R() * 0.15);
+      const full = new THREE.Matrix4().makeTranslation(p.x, p.y, p.z).multiply(rot).multiply(tr.makeTranslation(-p.x, -p.y, -p.z));
+      for (const [im, k, m] of p.m0) { m4.copy(m).premultiply(full); im.setMatrixAt(k, m4); im.instanceMatrix.needsUpdate = true; }
+      const head = TF.heads && TF.heads[p.i]; if (head) head.broken = true;
+      for (let k = 0; k < 6; k++) hd.spark && hd.spark(p.x, p.y + 1 + R() * 2, p.z, (R() - 0.5) * 4 + dx * 3, 1 + R() * 3, (R() - 0.5) * 4 + dz * 3, 0.35);
+      if (c && c.local) { sfx.impact(7); L_resp(c, 1); addHeat(c, 0.05); }
+    }
+    function restore(p) {
+      p.broken = false; p.hp = 8;
+      for (const [im, k, m] of p.m0) { im.setMatrixAt(k, m); im.instanceMatrix.needsUpdate = true; }
+      const head = TF.heads && TF.heads[p.i]; if (head) head.broken = false;
+    }
+    let visT = 0;
+    function step(dt) {
+      setup(); if (!list.length) return;
+      for (const c of allPlayerCars().concat(rivals, npcs, extras)) {
+        if (!c.alive || c.remote || c.proxy || (c.air || 0) > 1.4 || c.speed < 3) continue;
+        near(c.x, c.z, 2, p => {
+          if (Math.hypot(c.x - p.x, c.z - p.z) > 1.4) return;
+          topple(p, c.vx, c.vz, c); c.vx *= 0.88; c.vz *= 0.88; damage(c, 1 + c.speed * 0.08);
+        });
+      }
+      if ((visT -= dt) > 0) return; visT = 0.5;
+      for (const p of list) if (p.broken && (p.t += 0.5) > 90 && minPlayerDist(p.x, p.z) > 60) restore(p);
+    }
+    function shoot(ox, oz, dx, dz, range, from, dmg) { // a bullet stops on the first pole it meets (thin: 0.35 m)
+      if (!list.length) return range;
+      let best = range, hit = null;
+      for (let s = 0; s <= range + CELL; s += CELL * 0.5) near(ox + dx * s, oz + dz * s, 1, p => {
+        const px = p.x - ox, pz = p.z - oz, t = px * dx + pz * dz; if (t < 0.5 || t > best) return;
+        if (Math.abs(px * dz - pz * dx) < 0.35) { best = t; hit = p; }
+      });
+      if (!hit) return range;
+      hd.spark && hd.spark(ox + dx * best, hit.y + 1.2, oz + dz * best, -dx * 3, 1.5, -dz * 3, 0.25);
+      if ((hit.hp -= dmg) <= 0) topple(hit, dx, dz, from);
+      return best;
+    }
+    function blast(x, z, r, from) { near(x, z, r, p => { const d = Math.hypot(p.x - x, p.z - z); if (d < r) topple(p, p.x - x, p.z - z, from); }); }
+    return { step, shoot, blast, get count() { return list.length; }, get broken() { return list.filter(p => p.broken).length; }, get list() { return list; } };
+  })();
+  // =====================================================================================
   // the campaign: seven missions in the spirit of a 70s/90s car-combat B-movie
   // =====================================================================================
   const P = { // places, in game metres (OpenStreetMap)
@@ -7380,7 +7499,7 @@ const gx = !HD ? null : (() => {
     if (!cur) return;
     clearMarkers(); clearExtras();
     if (cur.savedAmb) { settings.tod = cur.savedAmb[0]; settings.rain = cur.savedAmb[1]; applyAmbience(); }
-    restoreRivals(); objEl.hidden = true; objBar(null);
+    restoreRivals(); objEl.hidden = true; objBar(null); objDir(null);
     cur = null; mission = null;
   }
   const mEl = document.createElement('div'); mEl.id = 'mres'; mEl.hidden = true; document.body.append(mEl);
@@ -7405,7 +7524,7 @@ const gx = !HD ? null : (() => {
     say(win ? 'Mission réussie !' : 'Mission ratée.', { cancel: true, pitch: 1.05 });
     if (win) dialogue(m.outro, show); else if (res === 'dead') setTimeout(show, 600); else show();
   }
-  function freeRoam() { cleanupMission(); for (const r of rivals) spawnRival(r); setupMatch(settings.goal, settings.limit); flash('Chantenay', 'Bac à sable · roule librement'); }
+  function freeRoam() { cleanupMission(); scatterRivals(); setupMatch(settings.goal, settings.limit); flash('Chantenay', 'Bac à sable · roule librement'); }
   function toMenu() { // back to the title screen without reloading
     started = false; paused = false; document.body.classList.remove('ingame', 'split'); $('title').hidden = false; renderCampaign(); showView('vCamp');
     for (const L of locals) scene.remove(L.car.mesh); locals = [];
@@ -7446,7 +7565,7 @@ const gx = !HD ? null : (() => {
   function gameStep(dt) { // inside the world step
     const now = performance.now();
     step(dt);
-    puStep(dt, now); rocketStep(dt); mineStep(dt, now); shieldStep(dt); furnitureStep(dt); Fences.step(dt); actStep(dt); discoverStep(dt);
+    puStep(dt, now); rocketStep(dt); mineStep(dt, now); shieldStep(dt); furnitureStep(dt); Fences.step(dt); LightPoles.step(dt); actStep(dt); discoverStep(dt);
     for (const L of locals) {
       L.specCd = (L.specCd || 0) - dt;
       const c = L.car;
@@ -7632,9 +7751,11 @@ const gx = !HD ? null : (() => {
   // streets with checkpoints, a ghost of the best run and medals; challenges: drift, jump, delivery, lose the police,
   // destruction. Records go to the save (Profile.record).
   const ACT_DEF = [
-    { id: 'r_anne', kind: 'race', name: 'Sainte-Anne → quai de la Fosse', pts: [[935, 95], [1180, -90], [1450, -320]] },
+    // (15 nov.) longer runs now that the map reaches Sainte-Anne and the quai de la Fosse: new ids, the records of the
+    // old short routes would not compare
+    { id: 'r_anne2', kind: 'race', name: 'Sainte-Anne → quai de la Fosse', pts: [[711, 96], [935, 95], [1180, -90], [1300, -330], [1650, -640]] },
     { id: 'r_butte', kind: 'race', name: 'Tour de la butte', pts: [[700, 120], [880, -60], [1060, 120], [900, 300], [700, 120]] },
-    { id: 'r_lib', kind: 'race', name: 'Sprint du boulevard de la Liberté', pts: [[77, 104], [56, 264], [105, 429]] },
+    { id: 'r_lib2', kind: 'race', name: 'Sprint Liberté – Cardiff', pts: [[160, -440], [77, 104], [56, 264], [105, 429], [450, 380], [760, 300]] },
     { id: 'd_drift', kind: 'drift', name: 'Dérapage', at: [45, 283], time: 60, text: 'Glisse le plus longtemps possible (frein à main) : 60 s' },
     { id: 'd_jump', kind: 'jump', name: 'Sauts de la carrière Misery', at: [640, 300], time: 60, text: 'Décolle et vole le plus loin possible : 60 s' },
     { id: 'd_deliv', kind: 'deliv', name: 'Livraison express', at: [118, -139], text: 'Porte le colis à l’adresse avant la fin du chrono' },
@@ -7687,14 +7808,15 @@ const gx = !HD ? null : (() => {
       if (a.cps.length > 2) { run.cpNext = addMarker(...a.cps[2], 5, a.cps.length === 3 ? 0xffffff : 0x3ac8ff); run.cpNext.beam.material.opacity = 0.1; } // the one after, fainter: shows which way the route turns
       const g = Profile.cur && Profile.cur.records['ghost_' + a.id]; if (g) { run.ghost = g; ghostMesh = makeGhost(c.style); }
     } else if (a.kind === 'deliv') {
-      const shops = (W.shops || []).filter(s => { const d = Math.hypot(s.x - c.x, s.z - c.z); return d > 350 && d < 800 && nodeOk(nearestNode(s.x, s.z)); });
+      const far = (lo, hi) => (W.shops || []).filter(s => { const d = Math.hypot(s.x - c.x, s.z - c.z); return d > lo && d < hi && nodeOk(nearestNode(s.x, s.z)); });
+      let shops = far(900, 1700); if (shops.length < 5) shops = far(500, 1700); // (15 nov.) farther across the town than before (350 to 800 m)
       const s = shops[(R() * shops.length) | 0] || { x: 600, z: 200, n: 'Le quai' }, [tx, tz] = roadPoint(s.x, s.z);
       const len = route(c.x, c.z, tx, tz).reduce((acc, p, i, A) => acc + (i ? Math.hypot(p[0] - A[i - 1][0], p[1] - A[i - 1][1]) : 0), 0);
       run.dest = [tx, tz]; run.destName = s.n || 'le client'; run.limit = Math.round(len / 13 + 12); run.mk = addMarker(tx, tz, 7, 0xffffff);
-    } else if (a.kind === 'cops') { L.heat = 2.5; L.calm = 0; }
+    } else if (a.kind === 'cops') { L.heat = 2.5; L.calm = 0; L.unseen = 0; }
     else if (a.kind === 'smash') run.base = brokenCount();
   }
-  function brokenCount() { let n = 0; for (const f of furniture) if (f.broken) n++; for (const p of Fences.panels) if (p.broken) n++; return n; }
+  function brokenCount() { let n = 0; for (const f of furniture) if (f.broken) n++; for (const p of Fences.panels) if (p.broken) n++; return n + LightPoles.broken; }
   function makeGhost(style) {
     const m = makeCar(0x9ad7ff, null, false, style || 'saloon', { guns: false });
     m.traverse(o => { if (o.material) { o.material = [].concat(o.material).map(x => { const y = x.clone(); y.transparent = true; y.opacity = 0.35; y.depthWrite = false; return y; }); if (o.material.length === 1) o.material = o.material[0]; } });
@@ -7940,7 +8062,7 @@ const gx = !HD ? null : (() => {
     [942.4, 98.9, 947.9, 104, 25], [949.3, 105.3, 954.9, 110.5, 25], [956.4, 111.9, 962, 117, 25], [963.4, 118.3, 966.2, 120.9, 15],
     [969.8, 122.1, 972.4, 119.2, 15], [974, 117.5, 976.5, 114.8, 14], [964.9, 127.5, 962.3, 130.3, 15], [960.8, 132, 958.2, 134.7, 14]];
   function stairs() {
-    const st = stoneTex(256, 256, 8, '#c9c0ae'), stepM = stdM(0xffffff, 0.9, 0, { map: st }), wallM = stdM(0xb7ad9b, 0.85), rail = stdM(0x1c1d22, 0.5, 0.7);
+    const st = stoneTex(256, 256, 8, '#c9c0ae'), stepM = stdM(0xffffff, 0.9, 0, { map: st }), wallM = stdM(0xcbc2b0, 0.85), capM = stdM(0xe2dacb, 0.75), rail = stdM(0x1c1d22, 0.5, 0.7);
     const total = STAIRS.reduce((s, f) => s + f[4], 0), steps = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), stepM, total), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0);
     // heights: the flights follow each other down the slope; the terrain sets the top and the quay the bottom
     const top = groundH(940, 100), bot = Math.max(WATER_Y + 1.5, Math.min(groundH(978, 112), groundH(955, 138)));
@@ -7958,10 +8080,37 @@ const gx = !HD ? null : (() => {
       for (const side of [-1, 1]) { // parapet and handrail along the flight
         const ox = -dz * side * (W / 2 + 0.2), oz = dx * side * (W / 2 + 0.2), mx = (ax + bx) / 2 + ox, mz = (az + bz) / 2 + oz, my = (y0 + yEnd) / 2;
         const w = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.0, L / Math.cos(slope) + 0.4), wallM); w.position.set(mx, my + 0.2, mz); w.rotation.set(0, Math.atan2(dx, dz), 0, 'YXZ'); w.rotateX(slope); w.castShadow = w.receiveShadow = true; g.add(w);
+        const cp = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.12, L / Math.cos(slope) + 0.5), capM); cp.position.set(mx, my + 0.76, mz); cp.rotation.set(0, Math.atan2(dx, dz), 0, 'YXZ'); cp.rotateX(slope); g.add(cp); // coping stone
         const r = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, L / Math.cos(slope), 6), rail); r.position.set(mx - ox * 0.5, my + 1.0, mz - oz * 0.5); r.rotation.set(0, Math.atan2(dx, dz), 0, 'YXZ'); r.rotateX(Math.PI / 2 + slope); g.add(r);
       }
     });
     steps.count = k; steps.castShadow = steps.receiveShadow = true; g.add(steps);
+    // (15 nov., the user found the stairs unconvincing) landings between the flights, the terrace where the two upper
+    // flights meet and the side flights start, all on a solid stone base down to the quay, so it reads as one monument
+    const W2 = 2.6, slab = (x0, z0, x1, z1, y, wid, m = stepM, pad = 0.6) => { // a level slab from (x0, z0) to (x1, z1), top at y
+      const L = Math.hypot(x1 - x0, z1 - z0) || 0.01, h = Math.max(0.4, y - (bot - 2));
+      const o = new THREE.Mesh(new THREE.BoxGeometry(wid, h, L + pad), m); o.position.set((x0 + x1) / 2, y - h / 2, (z0 + z1) / 2); o.rotation.y = Math.atan2(x1 - x0, z1 - z0);
+      o.castShadow = o.receiveShadow = true; g.add(o); return o;
+    };
+    const flightEnd = i => flightTop(i) - STAIRS[i][4] * perStep;
+    for (const chain of [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9], [10, 11]]) for (let j = 0; j + 1 < chain.length; j++) {
+      const a = STAIRS[chain[j]], b = STAIRS[chain[j + 1]]; slab(a[2], a[3], b[0], b[1], flightEnd(chain[j]), W2);
+    }
+    for (let i = 0; i < 4; i++) { // the strip between the two upper flights: one wide stair instead of two separate ones
+      const a = STAIRS[i], b = STAIRS[i + 4], y0 = flightTop(i), y1 = flightEnd(i), mx = (a[0] + a[2] + b[0] + b[2]) / 4, mz = (a[1] + a[3] + b[1] + b[3]) / 4;
+      const L = Math.hypot(a[2] - a[0], a[3] - a[1]), dx = (a[2] - a[0]) / L, dz = (a[3] - a[1]) / L, slope = Math.atan2(y0 - y1, L);
+      const c = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.1, L / Math.cos(slope) + 0.6), wallM); c.position.set(mx, (y0 + y1) / 2 + 0.2, mz); c.rotation.set(0, Math.atan2(dx, dz), 0, 'YXZ'); c.rotateX(slope); c.castShadow = true; g.add(c);
+      const cp = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.12, L / Math.cos(slope) + 0.7), capM); cp.position.set(mx, (y0 + y1) / 2 + 0.81, mz); cp.rotation.set(0, Math.atan2(dx, dz), 0, 'YXZ'); cp.rotateX(slope); g.add(cp);
+    }
+    { // terrace at the foot of the upper flights, from which the four side flights leave
+      const ux = 0.733, uz = 0.68, vx = -uz, vz = ux, pts = [STAIRS[3].slice(2, 4), STAIRS[7].slice(2, 4), STAIRS[8].slice(0, 2), STAIRS[10].slice(0, 2)];
+      let u0 = 1e9, u1 = -1e9, v0 = 1e9, v1 = -1e9; for (const [x, z] of pts) { const u = x * ux + z * uz, v = x * vx + z * vz; u0 = Math.min(u0, u); u1 = Math.max(u1, u); v0 = Math.min(v0, v); v1 = Math.max(v1, v); }
+      u0 -= 0.3; u1 += 1.6; v0 -= 1.6; v1 += 1.6; const um = (u0 + u1) / 2, y = flightEnd(3);
+      const p = (u, v) => [u * ux + v * vx, u * uz + v * vz];
+      const [ax, az] = p(um, v0), [bx, bz] = p(um, v1); slab(ax, az, bx, bz, y, u1 - u0, stepM, 0);
+      const [fx, fz] = p(u1 + 0.2, v0), [gx2, gz] = p(u1 + 0.2, v1); slab(fx, fz, gx2, gz, y + 0.95, 0.4, stepM, 0); // parapet on the Loire side, the face of the terrace below it
+      const cp = slab(fx, fz, gx2, gz, y + 1.07, 0.55, capM, 0.1); cp.scale.y = 0.12 / cp.geometry.parameters.height; cp.position.y = y + 1.01;
+    }
     // the statue of Sainte-Anne (Amédée Ménard, 1871) on its column at the top, looking over the Loire
     const sx = 939.6, sz = 99.5, sy = groundH(sx, sz), white = stdM(0xe6dfd0, 0.7), lamp = stdM(0x1c1d22, 0.5, 0.7);
     const add = (geo, m, x, y, z) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
@@ -8218,10 +8367,10 @@ const gx = !HD ? null : (() => {
     if (LM.titanLights) LM.titanLights.color.setRGB((performance.now() / 700 | 0) % 2 ? 8 * n + 0.6 : 0.4, 0.3, 0.2);
   }
   { const el = $('ammo'); if (el) { el.style.pointerEvents = 'auto'; el.style.cursor = 'pointer'; el.addEventListener('pointerdown', e => { e.preventDefault(); if (locals[0]) cycleWeapon(locals[0]); }); } }
-  const api = { netIn, dj, cycleWeapon, hearShot, quickChat, chatIn, step: gameStep, world, landmarkTick, tick: dt => { tick(dt); Boats.step(dt); }, Boats, People, walks: () => { if (!walks) buildWalks(); return walks; }, start: startHook, cars: () => npcs.concat(extras), copsOn, shieldHit, makeBus, policeHQ: HQ, hqNode, spots: SPOTS, unlocked, postcards, acts: () => (actsBuild(), acts), actRun: () => run, startAct, hearCars: carsHearShot, traffic: TF, Fences, lightState, roadRules, makeNpc, placeOnGraph, nextNode, spawnPatrol, npcs: () => npcs, damage: damageNpc, addHeat, say, peds: () => peds, stars, special, startMission, renderCampaign, cleanupMission, MISSIONS,
+  const api = { netIn, dj, cycleWeapon, hearShot, quickChat, chatIn, step: gameStep, world, landmarkTick, tick: dt => { tick(dt); Boats.step(dt); }, Boats, People, walks: () => { if (!walks) buildWalks(); return walks; }, start: startHook, cars: () => npcs.concat(extras), copsOn, shieldHit, makeBus, policeHQ: HQ, hqNode, spots: SPOTS, unlocked, postcards, acts: () => (actsBuild(), acts), actRun: () => run, startAct, hearCars: carsHearShot, traffic: TF, Fences, LightPoles, lightState, roadRules, makeNpc, placeOnGraph, nextNode, spawnPatrol, npcs: () => npcs, damage: damageNpc, addHeat, say, peds: () => peds, stars, special, startMission, renderCampaign, cleanupMission, MISSIONS,
     get gmode() { return gm ? gm.kind : 0; }, mines: () => mines, customers: () => customers, teamScores: modeTeamScores, goalText, rematch: rematchMode,
     get blocking() { return blocking; }, get mission() { return mission; }, foes: () => extras.filter(c => c.alive && c.team === 1), saveBank, pus: () => pus, furniture: () => furniture, garage: GARAGE, garages: GARAGES,
-    get onGarage() { return gx_onGarage; },
+    get onGarage() { return gx_onGarage; }, get objTarget() { return objEl.hidden ? null : objTgt; },
     minimap(me, add) { minimap(me, add); actMinimap(add); discMinimap(add); for (const pu of pus) if (pu.on) add(pu, '#' + new THREE.Color(PU_COL[pu.kind]).getHexString()); for (const c of extras) if (c.alive) add(c, c.friendly ? '#f2c81e' : '#ff3b3b'); for (const m of markers) add(m, '#ffffff'); if (GARAGE.pad && mode === 'solo') for (const G of GARAGES) add(G, '#3a8aff'); } };
   return api;
 })();
@@ -8248,7 +8397,8 @@ function startGame(kind) {
     locals.push(makeLocal(0, settings.soloCtl, playerPaint(0, t, kind === 'online'), t));
   }
   for (const L of locals) if (L.team >= 0) L.colour = TEAMS[L.team].css;
-  if (teamMode) for (const r of rivals) if (!r.proxy) spawnRival(r);
+  if (teamMode) { for (const r of rivals) if (!r.proxy) spawnRival(r); }
+  else if (kind !== 'online' || Net.isHost) scatterRivals();
   updateTeamBar(); $('killsLab').textContent = teamMode ? 'KO' : 'RAPACES';
   player = locals[0].car;
   applyPerf();
