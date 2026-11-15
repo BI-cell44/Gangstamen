@@ -27,7 +27,13 @@
     m.onBeforeCompile = sh => {
       sh.uniforms.grassMap = { value: grass };
       orthoPatch(sh, 'uniform sampler2D grassMap;', `
+        // fixed level of the aerial photo: with a bias on the automatic level, the lawns spread over the pavements when
+        // seen from afar or at a low angle (intro shot by the town hall) and drew back when one came close
+        #if __VERSION__ >= 300
+        vec3 oc = sRGBToLinear(textureLod(orthoMap, ouv, 1.6)).rgb, ol = sRGBToLinear(textureLod(orthoMap, ouv, 5.0)).rgb;
+        #else
         vec3 oc = sRGBToLinear(texture2D(orthoMap, ouv, 1.6)).rgb, ol = sRGBToLinear(texture2D(orthoMap, ouv, 5.0)).rgb;
+        #endif
         float veg = smoothstep(1.1, 1.32, oc.g / (max(oc.r, oc.b) + 0.004)) * inO * (1.0 - smoothstep(0.25, 0.8, vRoad));
         float park = smoothstep(0.0, 0.02, vColor.g - max(vColor.r, vColor.b));
         float isGrass = max(veg, park);

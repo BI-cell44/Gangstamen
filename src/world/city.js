@@ -121,7 +121,7 @@ function buildCity() {
     let gmin = 1e9, cxx = 0, czz = 0;
     for (let i = 0; i < n; i++) { gmin = Math.min(gmin, groundH(p[2 * i], p[2 * i + 1])); cxx += p[2 * i]; czz += p[2 * i + 1]; }
     const base = b.b != null ? b.b : groundH(cxx / n, czz / n);
-    const y0 = Math.min(gmin, base) - 0.6;
+    const y0 = b.u ? Math.max(gmin, base) + b.u : Math.min(gmin, base) - 0.6; // b.u: a building over a street (cars drive under it): walls start that high
     if (HD && /^Mairie/.test(b.n || '')) { // the town hall has its own model
       for (let i = 0; i < n; i++) { const j = (i + 1) % n; gridAdd([p[2 * i], p[2 * i + 1], p[2 * j], p[2 * j + 1]], 3.5); }
       buildingPolys.push(b); hd.townHall(b, base, y0, sa);
@@ -176,7 +176,7 @@ function buildCity() {
           bf.tri(a0, b0, b1, nrm, [ua, va], [ub, va], [ub, vb], c); bf.tri(a0, b1, a1, nrm, [ua, va], [ub, vb], [ua, vb], c);
         };
         const plain = UB[3][0], dark = [tint[0] * 0.72, tint[1] * 0.72, tint[2] * 0.72];
-        const gy = Math.min(h - 0.5, Math.max(groundH(ax, az), groundH(bx, bz)) + 0.3), fy = Math.min(h, gy + 3.2), gv = (fy - gy) / 3.2;
+        const gy = b.u ? y0 : Math.min(h - 0.5, Math.max(groundH(ax, az), groundH(bx, bz)) + 0.3), fy = b.u ? gy : Math.min(h, gy + 3.2), gv = (fy - gy) / 3.2; // over a street: no ground floor
         if (gy > y0 + 0.02) quad(plain, 0, L, y0, gy, u0, u1, 0, (gy - y0) / 12.8, dark);
         const street = roadEdge((ax + bx) / 2 + nrm[0] * 3, (az + bz) / 2 + nrm[2] * 3)[0] < 13 || shopsAt.has(bi + ':' + i);
         const bays = (s0, s1, bf, ya, yb, va, vb, seed) => {
@@ -209,7 +209,7 @@ function buildCity() {
         walls[style].tri(A0, B1, A1, nrm, [u0, v0], [u1, v1], [u0, v1], tint);
       }
       acc += L;
-      gridAdd([ax, az, bx, bz], 3.5);
+      if (!b.u) gridAdd([ax, az, bx, bz], 3.5);
       // eaves / cornice: a short overhang along the top of every wall
       if (L > 1) {
         const ov = kind === 0 || kind === 3 ? 0.45 : 0.3, drop = kind === 0 || kind === 3 ? 0.28 : 0.12;
@@ -221,6 +221,7 @@ function buildCity() {
         roofs.tri(U0, E1, U1, [0, -1, 0], null, null, null, eaveC); roofs.tri(U0, E0, E1, [0, -1, 0], null, null, null, eaveC);
       }
     }
+    if (b.u) { const [pts, tris] = triangulate(p), uc = col('#6a665f'); for (const [i0, i1, i2] of tris) { const A = [pts[i0].x, y0, pts[i0].y], B = [pts[i1].x, y0, pts[i1].y], C = [pts[i2].x, y0, pts[i2].y]; roofs.tri(A, B, C, [0, -1, 0], null, null, null, uc); roofs.tri(A, C, B, [0, -1, 0], null, null, null, uc); } } // underside
     const rc = shade(col(ROOF_TINTS[kind] || ROOF_TINTS[0]), 0.85 + hash(bi + 11) * 0.3);
     // Pitched slate roof on small four-sided buildings (typical faubourg houses)
     if (pitched) {

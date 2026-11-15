@@ -120,5 +120,28 @@ for _ in range(2600):
     if in_belt(x, z) and free(x, z, 3.5): take(x, z, 2.5); new_t += [round(x, 1), round(z, 1)]
 
 w['buildings'] += new_b; w['roads'] += new_r; w['trees'] += new_t   # appended: the indices of the real ones do not move
+# Buildings that span a street (quai Ernest-Renaud: the offices bridge the road, cars drive under): a wide drivable street
+# runs through a small footprint. They get 'u', the clearance in metres: walls start that high and nothing collides.
+def _pip(x, z, p):
+    c = False; n = len(p) // 2; j = n - 1
+    for i in range(n):
+        xi, zi, xj, zj = p[2 * i], p[2 * i + 1], p[2 * j], p[2 * j + 1]
+        if (zi > z) != (zj > z) and x < (xj - xi) * (z - zi) / (zj - zi) + xi: c = not c
+        j = i
+    return c
+_bb = [(min(b['p'][0::2]), max(b['p'][0::2]), min(b['p'][1::2]), max(b['p'][1::2])) for b in w['buildings']]
+_hit = {}
+for r in w['roads']:
+    if not r.get('d') or r.get('x') or r['w'] < 6: continue
+    p = r['p']
+    for i in range(len(p) // 2 - 1):
+        ax, az, bx, bz = p[2 * i], p[2 * i + 1], p[2 * i + 2], p[2 * i + 3]; n = max(1, int(math.hypot(bx - ax, bz - az) / 2))
+        for k in range(n + 1):
+            x = ax + (bx - ax) * k / n; z = az + (bz - az) * k / n
+            for bi, q in enumerate(_bb):
+                if q[0] <= x <= q[1] and q[2] <= z <= q[3] and not w['buildings'][bi].get('x') and _pip(x, z, w['buildings'][bi]['p']): _hit[bi] = _hit.get(bi, 0) + 1
+for bi, n in _hit.items():
+    b = w['buildings'][bi]; pp = b['p']; area = abs(sum(pp[2 * i] * pp[(2 * i + 3) % len(pp)] - pp[(2 * i + 2) % len(pp)] * pp[2 * i + 1] for i in range(len(pp) // 2))) / 2
+    if n >= 3 and area < 800 and b['h'] > 8: b['u'] = 5.4; print('building over a street:', bi, round(area), 'm2')
 json.dump(w, open('world.json', 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
 print('belt:', len(new_b), 'buildings,', len(new_r), 'streets,', len(new_t) // 2, 'trees')

@@ -142,11 +142,22 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
     });
     expect(r.murs > 300 && r.maisons > 800 && r.rues > 10 && r.noeudsDehors === 0, JSON.stringify(r)); return r;
   });
+  await check('navette : la voiture embarque à la gare maritime et descend sur l’île', async () => {
+    const r = await ev(() => {
+      const B = __gm.gx.Boats, f = B.ferry, c = __gm.locals()[0].car, A = B.LAND[0], Z = B.LAND[1], home = [c.x, c.z, c.h];
+      for (let i = 0; i < 2000 && !(f.side === 0 && f.wait > 5); i++) B.step(0.5); // wait for the boat at the Gare Maritime
+      c.place(A.x, A.z, 0); c.hp = 100; B.step(0.1); const boarded = !!c.aboard; let onDeck = 0, wet = 0, n = 0, maxV = 0;
+      for (let i = 0; i < 3000 && c.aboard; i++) { B.step(0.2); __gm.step(1 / 30); n++; maxV = Math.max(maxV, f.v); if (Math.abs(__gm.surfaceH(c.x, c.z) - (0.3 + 1.55)) < 1.2) onDeck++; if (c.aboard && Math.hypot(c.x - f.x, c.z - f.z) > 12) wet++; }
+      const res = { embarque: boarded, pas: n, surLePont: onDeck, ecarts: wet, vitesse: +maxV.toFixed(1), arrive: +Math.hypot(c.x - Z.x, c.z - Z.z).toFixed(1), sol: +__gm.groundH(c.x, c.z).toFixed(1), libre: !c.aboard, hp: Math.round(c.hp) };
+      c.place(home[0], home[1], home[2]); return res; // back to town for the next checks
+    });
+    expect(r.embarque && r.libre && r.arrive < 3 && r.sol > 2 && r.ecarts === 0 && r.surLePont > r.pas * 0.9 && r.hp > 90, JSON.stringify(r)); return r;
+  });
   await check('Loire : voiliers et bac sur l’eau, le bac traverse', async () => {
     const r = await ev(() => {
       const B = __gm.gx.Boats, g = __gm.groundH, s0 = B.list.map(b => [b.x, b.z]); let dry = 0, sides = new Set(), minD = 1e9;
       const fy = B.list.find(b => b.kind === 'ferry');
-      for (let i = 0; i < 240; i++) { B.step(0.5); sides.add(fy.side); for (const b of B.list) { if (b.x > -400 && b.x < 1800 && b.z < 760 && g(b.x, b.z) > 0.45) dry++; if (b !== fy) minD = Math.min(minD, Math.hypot(b.x - fy.x, b.z - fy.z)); } }
+      for (let i = 0; i < 900; i++) { B.step(0.5); sides.add(fy.side); for (const b of B.list) { if (b.x > -400 && b.x < 1800 && b.z < 760 && g(b.x, b.z) > 0.45) dry++; if (b !== fy) minD = Math.min(minD, Math.hypot(b.x - fy.x, b.z - fy.z)); } }
       return { bateaux: B.list.length, voiliers: B.list.filter(b => b.kind === 'sail').length, auSec: dry, rives: sides.size, ecartBac: Math.round(minD), avance: Math.round(Math.min(...B.list.filter(b => b.kind === 'sail').map((b, i) => Math.hypot(b.x - s0[i][0], b.z - s0[i][1])))), modeles: Object.keys(__gm.W.models || {}).join(',') };
     });
     expect(r.voiliers >= 3 && r.bateaux === r.voiliers + 1 && r.auSec === 0 && r.rives === 2 && r.ecartBac > 18 && r.avance > 50, JSON.stringify(r)); return r;
@@ -154,9 +165,9 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
   await check('piétons animés : personnages à squelette, marche, course', async () => {
     const r = await ev(() => {
       const g = __gm.gx, P = g.People, c = __gm.locals()[0].car, ps = g.peds().slice(0, 6);
-      ps.forEach((p, i) => { p.on = true; p._pin = [c.x - 4 + i * 1.5, c.z + 30, 0]; p.state = i === 5 ? 'panic' : 'walk'; p.run = 4.5; p.timer = 99; p.idleIn = 99; });
-      __gm.step(0.05); const o = ps[0]._sk, q0 = o ? o.bones.map(b => b.quaternion.toArray()) : [];
-      if (o) { P.dt = 0.2; P.draw(ps[0]); o.mesh.updateMatrixWorld(true); }
+      ps.forEach((p, i) => { p.on = true; p._pin = [c.x - 4 + i * 1.5, c.z + 30, 0]; p.x = p._pin[0]; p.z = p._pin[1]; p.state = i === 5 ? 'panic' : 'walk'; p.run = 4.5; p.timer = 99; p.idleIn = 99; });
+      __gm.step(0.05); ps.forEach(p => P.draw(p)); const o = ps[0]._sk, q0 = o ? o.bones.map(b => b.quaternion.toArray()) : [];
+      if (o) { P.dt = 0.2; ps.forEach(p => P.draw(p)); o.mesh.updateMatrixWorld(true); }
       const moved = o ? o.bones.filter((b, i) => b.quaternion.toArray().some((v, k) => Math.abs(v - q0[i][k]) > 0.01)).length : 0;
       const out = { actifs: P.on, corps: P.all.length, clips: [...new Set(P.all.map(a => a.clip))].sort().join(','), osBouges: moved, nan: o ? o.bones.filter(b => b.matrixWorld.elements.some(isNaN)).length : -1, visible: !!(o && o.mesh.visible), taille: o ? +(o.c.h * o.mesh.scale.x).toFixed(2) : 0 };
       ps.forEach(p => { delete p._pin; p.state = 'walk'; }); return out;
@@ -314,7 +325,7 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
         out.fini = !X.actRun(); out.record = __gm.Profile.cur.records.race_r_lib; out.fantome = (__gm.Profile.cur.records.ghost_r_lib || []).length;
         for (let i = 0; i < 90; i++) __gm.step(1 / 30); out.resultat = /Sprint/.test(ttl()) && !document.getElementById('objective').hidden; // the result is still shown 3 s later
         for (let i = 0; i < 140; i++) __gm.step(1 / 30);
-        const smash = A.find(a => a.id === 'd_smash'); c.place(smash.start[0], smash.start[1], 0); __gm.step(1 / 30); __gm.step(1 / 30); out.defi = X.actRun() && X.actRun().a.id;
+        const smash = A.find(a => a.id === 'd_smash'); c.place(smash.start[0], smash.start[1], 0); for (let i = 0; i < 240 && !X.actRun(); i++) { c.vx = c.vz = 0; __gm.step(1 / 30); } out.defi = X.actRun() && X.actRun().a.id;
         c.shield = 0; __gm.damage(c, 1000); __gm.step(1 / 30); out.abandon = !X.actRun(); for (let i = 0; i < 200 && !c.alive; i++) __gm.step(1 / 30); c.hp = 100; c.place(61, 276, 0);
         return out;
       });

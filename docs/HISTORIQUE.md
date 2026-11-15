@@ -44,6 +44,7 @@ Ce qui a été construit, dans l'ordre. Le détail de chaque changement est dans
 | 15 nov. 2026 | Fable 5.2 : Loire. Eau refaite (plus de motif répété), quatre voiliers sur le chenal et un bac à voitures qui traverse vers l'île (`src/gx/boats.js`). Premiers modèles CGTrader, allégés par `tools/assets/bake_model.js` vers `data/models/` | ultra |
 | 15 nov. 2026 | Fable 5.2 : piétons animés à squelette (`src/gx/people.js`, pack City People) ; Maillé-Brézé amarré quai de la Fosse ; le bac traverse du quai de Chantenay à la pointe de l'île de Nantes | ultra |
 | 15 nov. 2026 | Fable 5.2 : réseau de trottoirs et de passages piétons (les piétons choisissent leur chemin, attendent et traversent) ; backlog réparti entre Fable 5.2 et Opus 5.5 | ultra |
+| 15 nov. 2026 | Fable 5.2 : navette embarquable Gare Maritime → pointe de l'île de Nantes ; bâtiment-pont du quai Ernest-Renaud ; herbe sur les trottoirs selon l'angle (shader du sol) | ultra |
 
 ## Ce qui a été fait, par domaine
 

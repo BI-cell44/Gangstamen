@@ -33,8 +33,10 @@ function groundH(x, z) {
 });
 const BR_SEGS = [];
 (W.bridges || []).forEach(b => { const p = b.p; for (let i = 0; i < p.length - 3; i += 3) BR_SEGS.push([p[i], p[i + 1], p[i + 2], p[i + 3], p[i + 4], p[i + 5], b.w / 2 + 0.4]); });
+const DECKS = []; // moving decks (the ferry): functions (x, z) -> height or null
 function deckH(x, z) {
   let best = null;
+  for (const f of DECKS) { const y = f(x, z); if (y !== null && (best === null || y > best)) best = y; }
   for (const [ax, az, ay, bx, bz, by, hw] of BR_SEGS) {
     const dx = bx - ax, dz = bz - az, L2 = dx * dx + dz * dz || 1e-6;
     const t = ((x - ax) * dx + (z - az) * dz) / L2; if (t < -0.02 || t > 1.02) continue;
