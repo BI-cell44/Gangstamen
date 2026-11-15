@@ -129,32 +129,7 @@ Les étapes antérieures sont dans `git log`.
 
 ## Reste à faire
 
-### Prioritaire
-- [ ] **Qualité automatique** : ajouter une case pour désactiver la baisse automatique de qualité, et un délai de grâce d'environ 15 secondes au démarrage pour ignorer les saccades de chargement (le message « Qualité graphique réduite » s'est affiché à tort chez l'utilisateur).
-- [ ] Tester la HD en vrai (fluidité, taille des flammes) et la cinématique avec le son.
-- [ ] Vérifier une vraie partie en ligne à plusieurs.
-
-### Suite de la branche HD
-- [ ] Jouer la campagne en vrai et régler la difficulté (dégâts des mines, vitesse du Vautour, roquettes du Grand Duc, chrono de l'orage).
-- [x] Fusionner `hd-ambiance-campagne` dans `main`, puis `main` dans `server` (fait).
-- [x] Agrandir la carte vers la butte Sainte-Anne et le quai de la Fosse (fait le 14 novembre, données passées par le navigateur de l'utilisateur).
-- [ ] Vérifier sur une vraie carte graphique le chargement et la fluidité de la HD avec la carte trois fois plus grande (en rendu logiciel, le chargement passe de 40 s à 100 s).
-- [ ] Missions : le Vautour fuit encore « vers le quai de la Fosse » par le boulevard de Cardiff alors que le quai est maintenant dans la carte ; on pourrait y placer des missions (escalier Sainte-Anne, tram).
-- [ ] Façades Panoramax : la nouvelle zone n'a que des façades dessinées (classique comme HD).
-- [ ] Capture du drapeau en ligne (l'état des drapeaux doit être tenu par l'hôte).
-- [ ] Bonus, circulation et piétons sont propres à chaque joueur en ligne (pas synchronisés).
-- [ ] Vérifier sur une vraie carte graphique le coût de la foule, de la pluie et des terrasses à 4 écrans.
-
-### Améliorations du jeu
-- [ ] Mairie : le fronton à horloge est une supposition ; le dos et les côtés reprennent la face avant.
-- [ ] Bâtiments HD : quelques toits ou rez-de-chaussée étranges possibles ; détection des jardins encore clairsemée. Retouche rue par rue possible sur demande.
-- [ ] Commerces : les enseignes nationales ont un libellé générique ; mettre les vrais noms si on le souhaite.
-- [ ] Intro : sous-titres et rythme à ajuster après un vrai visionnage ; éventuellement une version plus courte pour les relances.
-- [ ] Nettoyage : un fichier temporaire de 5,6 Mo (`*.tmp`, la photo aérienne) traîne dans `C:\Users\SF\Downloads`.
-
-### Idées pour plus tard
-- ~~Nouvelles armes et ramassages, missions, circulation civile, météo et cycle jour-nuit~~ : faits (section 7). Restent : plus de quartiers de Nantes, parcours chronométrés en solo.
-- Répertoire de textures et de sons propres à la ville (enseignes, tram, cloches).
+Le reste à faire n'est plus tenu ici : **un seul backlog, `docs/BACKLOG.md` sur la branche `ultra`** (réparti entre Fable 5.2 et Opus 5.5). Les améliorations se font sur `ultra` ; `main` (classique et HD) et `server` ne reçoivent que des corrections, ou une version Ultra validée par l'auteur.
 
 ## Licences et sources
 

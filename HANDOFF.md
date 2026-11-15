@@ -2,7 +2,7 @@
 
 Dossier écrit le 13 novembre 2026 pour reprendre le développement dans une nouvelle conversation, sans rien perdre. Il complète `LEDGER.md` (journal, à faire, pièges) et `README.md` (description pour joueurs). En cas de doute, le code et `git log` font foi.
 
-**Version figée de référence : branches git `passation-2026-11-13` (copie de `main`) et `passation-2026-11-13-server` (copie de `server`)**, à ne jamais modifier, et deux artifacts « référence » sur claude.ai (voir section 9). Ce sont des branches et non des tags, car le dépôt refuse l'envoi de tags depuis le bac à sable.
+**Version figée de référence : commits `c92a34e` (copie de `main`) et `98ff32e` (copie de `server`)**, anciennement branches `passation-2026-11-13` et `passation-2026-11-13-server`, supprimées le 15 nov. 2026 (le dépôt ne garde que `main`, `ultra` et `server` ; pour les retrouver : `git branch passation-2026-11-13 c92a34e`),, à ne jamais modifier, et deux artifacts « référence » sur claude.ai (voir section 9). Ce sont des branches et non des tags, car le dépôt refuse l'envoi de tags depuis le bac à sable.
 
 ---
 
