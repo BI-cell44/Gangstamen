@@ -78,6 +78,9 @@
           const lx = L.x - az * (L.hw + 1.2), lz = L.z + ax * (L.hw + 1.2), post = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 5, 8), postM); post.position.set(lx, groundH(lx, lz) + 2.5, lz); post.userData.hdLinear = true; scene.add(post);
           L.lamp = new THREE.Mesh(lampG, new THREE.MeshBasicMaterial({ color: 0xff2a1a })); L.lamp.position.set(lx, groundH(lx, lz) + 5.4, lz); L.lamp.userData.hdLinear = true; scene.add(L.lamp);
           gridAdd([lx - 0.3, lz, lx + 0.3, lz], 3.5);
+          // a wooden landing stage beside the ramp (downloaded model), its stem towards the land
+          const pt = modelMesh('ponton'); if (pt) { const S = 1.5, ps = pt.geometry.userData.size, ox = L.bx + az * (L.hw + 9) + ax * 3, oz = L.bz - ax * (L.hw + 9) + az * 3;
+            pt.scale.setScalar(S); pt.position.set(ox, WATER_Y + ps[1] / 2 * S - 0.6, oz); pt.rotation.y = Math.atan2(ax, az); scene.add(pt); }
         });
       }
       // the Maillé-Brézé, museum ship of the quai de la Fosse, moored where OpenStreetMap draws her (132 m, bow upstream)

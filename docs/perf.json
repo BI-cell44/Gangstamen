@@ -628,5 +628,19 @@
   "simMs": 11.71,
   "loadS": 21,
   "failed": 0
+ },
+ {
+  "date": "2026-11-15T21:07",
+  "label": "Fable : grues et pontons (modèles)",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 704,
+  "trianglesK": 1083,
+  "meshes": 3461,
+  "geometries": 3070,
+  "materials": 464,
+  "heapMB": 307,
+  "simMs": 11.75,
+  "loadS": 26,
+  "failed": 1
  }
 ]

@@ -22,6 +22,7 @@ gx/quick-chat.js
 gx/modes.js
 gx/activities.js
 gx/discover.js
+gx/models.js
 gx/landmarks.js
 gx/boats.js
 gx/zz-world-api.js

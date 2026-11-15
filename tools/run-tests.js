@@ -142,6 +142,13 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
     });
     expect(r.murs > 300 && r.maisons > 800 && r.rues > 10 && r.noeudsDehors === 0, JSON.stringify(r)); return r;
   });
+  await check('grues : modèles téléchargés sur les Titan et sur les quais, les pieds au sec', async () => {
+    const r = await ev(() => {
+      const g = __gm.gx, big = o => { let n = 0; o.traverse(m => { if (m.isMesh && m.geometry.index && m.geometry.index.count > 9000) n++; }); return n; };
+      return { quais: g.portCranes.length, auSec: g.portCranes.filter(o => __gm.groundH(o.position.x, o.position.z) > 2).length, jaune: g.LM.titan ? big(g.LM.titan) : -1, grise: g.LM.titanGrise ? big(g.LM.titanGrise) : -1, modeles: Object.keys(__gm.W.models).sort().join(',') };
+    });
+    expect(r.quais >= 4 && r.auSec === r.quais && r.jaune === 1 && r.grise === 1 && /grue_peinte/.test(r.modeles) && /ponton/.test(r.modeles), JSON.stringify(r)); return r;
+  });
   await check('pont Anne-de-Bretagne : on traverse la Loire en voiture jusqu’à l’île', async () => {
     const r = await ev(() => {
       const c = __gm.locals()[0].car, home = [c.x, c.z, c.h], A = [1749, -693], Z = [1836, -571], L = Math.hypot(Z[0] - A[0], Z[1] - A[1]), ux = (Z[0] - A[0]) / L, uz = (Z[1] - A[1]) / L;

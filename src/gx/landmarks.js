@@ -222,6 +222,10 @@
     for (const y of [6, 13, 20, 26]) { add(new THREE.BoxGeometry(11, 0.6, 0.6), yel, 0, y, -5); add(new THREE.BoxGeometry(11, 0.6, 0.6), yel, 0, y, 5); add(new THREE.BoxGeometry(0.6, 0.6, 11), yel, -5, y, 0); add(new THREE.BoxGeometry(0.6, 0.6, 11), yel, 5, y, 0); }
     for (const y of [3, 10, 17]) { add(new THREE.BoxGeometry(0.35, 9.5, 0.35), yel, 0, y + 3.5, -5, 0, 0, 0.9); add(new THREE.BoxGeometry(0.35, 9.5, 0.35), yel, 0, y + 3.5, 5, 0, 0, -0.9); }
     add(new THREE.CylinderGeometry(2.4, 2.4, 1.2, 20), dark, 0, 27, 0);
+    const up = modelMesh('grue_peinte', paint !== 0xf2b705); // the downloaded crane for the upper works: the yellow one as it is, the other one greyed
+    if (up) { const K = 4.6, sz = up.geometry.userData.size; up.scale.setScalar(K); up.rotation.y = -Math.PI / 2; up.position.set(0, 27.6 + (sz[1] / 2 - 1.3) * K, -(sz[0] / 2 - 0.82) * K); g.add(up); // the pedestal stands on the slewing ring (the hook and the ladders hang lower)
+      add(new THREE.BoxGeometry(1.2, 1.2, 16), yel, 0, 36, 11); add(new THREE.BoxGeometry(4.5, 4, 5), dark, 0, 34, 18); } // counter-jib and counterweight of a Titan
+    else {
     add(new THREE.BoxGeometry(7, 6, 7), yel, 0, 31, 0);                                  // machinery house
     add(new THREE.BoxGeometry(2.6, 2.4, 2.4), stdM(0x9ab0c0, 0.1, 0.2), 4.6, 30, 0);     // cabin
     add(new THREE.BoxGeometry(4, 12, 4), yel, 0, 40, 0);                                 // A-frame mast
@@ -230,6 +234,7 @@
     add(new THREE.BoxGeometry(4.5, 4, 5), dark, 0, 33, 21);                              // counterweight
     add(new THREE.CylinderGeometry(0.05, 0.05, 46, 4), dark, 0, 40, -18, 1.2, 0, 0); add(new THREE.CylinderGeometry(0.05, 0.05, 22, 4), dark, 0, 40, 10, -1.0, 0, 0);
     add(new THREE.CylinderGeometry(0.04, 0.04, 20, 4), dark, 0, 24, -52); add(new THREE.BoxGeometry(1.2, 1.4, 1.2), dark, 0, 14, -52);
+    }
     const redL = LM.titanLights || (LM.titanLights = new THREE.MeshBasicMaterial({ color: new THREE.Color(8, 0.3, 0.2) }));
     for (const p of [[0, 46.2, 0], [0, 35.6, -55], [0, 35.6, 22]]) add(new THREE.SphereGeometry(0.35, 8, 6), redL, ...p);
     g.position.set(x, Math.max(groundH(x, z), WATER_Y + 1.2), z); g.rotation.y = turn; g.scale.setScalar(1.15);
