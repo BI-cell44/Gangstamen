@@ -176,7 +176,7 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
       }
       [0, 1, 2, 3, 4, 5, 10, 11, 12, 13].forEach((i, k) => { P[i].broken = was[k]; }); c.place(home[0], home[1], home[2]); return res;
     });
-    expect(r.lance && r.depart === 0 && r.apresReparations === 0 && r.apresCasses === 4, JSON.stringify(r)); return r;
+    expect(r.lance && r.apresReparations === r.depart && r.apresCasses === r.depart + 4, JSON.stringify(r)); return r; // (the traffic may break something of its own during the countdown)
   });
   await check('grues : modèles téléchargés sur les Titan et sur les quais, les pieds au sec', async () => {
     const r = await ev(() => {
