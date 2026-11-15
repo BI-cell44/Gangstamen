@@ -147,6 +147,29 @@ Chantiers lourds, où un modèle plus puissant fera nettement mieux : refontes d
 - [x] **Bords de carte logiques** (fait le 15 nov., Fable 5.2 ; capture `docs/captures/fable-bords-de-carte.png`). Avant : mur invisible à travers jardins et terrains vagues, puis une plaine vide jusqu'à l'horizon. Maintenant : (1) `src/make_belt.py` (étape de `build.sh`) prolonge la ville sur 250 m au-delà des bords et du tram : 19 rues coupées par le bord continuent, environ 1 200 maisons et immeubles inventés (marqués `x: 1`, ajoutés en fin de liste pour ne pas décaler les indices) et 500 arbres ; (2) `edgeWalls` (`src/world/edges-tram.js`) : un vrai mur de pierre visible le long des bords ouest, sud et est, entre les maisons, là où il n'y a ni rue, ni bâtiment, ni eau ; (3) les rues qui sortent sont fermées par un chantier : barrières, panneau « ROUTE BARRÉE », tranchée et tas de terre. Au nord le tram, au sud la Loire. Coût : +137 appels de dessin sur la vue de mesure (718), +45 Mo de mémoire ; à surveiller sur la vraie machine. Reste possible : rive d'en face de la Loire (avec le niveau de l'île de Nantes), bâtiments du fond plus simples si la fluidité baisse.
 - [x] **Loire : texture de l'eau et bateaux** (fait le 15 nov., Fable 5.2 ; capture `docs/captures/fable-loire-bateaux.png`). Eau : une tuile de vaguelettes lue trois fois à des tailles et des angles différents (plus de motif répété, le lointain se calme), `waterMat` dans `src/hd/world-upgrades.js`. Bateaux (`src/gx/boats.js`) : quatre voiliers suivent le chenal en boucle, un bac à voitures traverse entre le quai de Chantenay (x 932, z 320) et la pointe ouest de l'île de Nantes (x 1133, z 320) ; le Maillé-Brézé (destroyer musée) est amarré quai de la Fosse à sa place réelle (x 1386, z −468). **Géographie à retenir** : le bras de la Madeleine remonte vers le nord-est de (1100, 380) à (1650, −650) ; la pointe ouest de l'île de Nantes est déjà dans le relief du jeu (x > 1200, z < 380, sans rues) ; au sud de z 390, c'est le bras de Pirmil puis Trentemoult avec 22 s d'arrêt à chaque rive ; les voiliers lui cèdent le passage ; sillage, roulis, gîte. Modèles CGTrader téléchargés par l'utilisateur, allégés par `tools/assets/bake_model.js` (voir `DATA-LICENSES.md`). Décor seulement : pas de collision, on ne monte pas encore à bord (ce sera la navette du niveau de l'île). Reste : écume le long des quais, bateau à moteur, feux de navigation la nuit, corne du bac.
 
+## Répartition du travail restant (décision de l'utilisateur, 15 nov. 2026)
+
+L'utilisateur fait tourner **Fable 5.2** sur ce qui demande un modèle fort, et garde pour **Opus 5.5** ce qui est bien cadré. Chaque ligne renvoie au détail plus bas.
+
+### Pour Fable 5.2 (gros systèmes, code très lié, peu vérifiable sans écran)
+1. [ ] **Déplacements des piétons** : réseau de trottoirs et de passages piétons, traversées, évitement, groupes (les personnages animés sont faits).
+2. [ ] **Conduite des IA par voies** : trajectoires sur des voies, files aux feux, changements de voie, ronds-points, Rapaces et police qui conduisent proprement.
+3. [ ] **Partie en ligne robuste** : prédiction et correction, synchronisation de la circulation, du tram et des bonus, reprise après coupure.
+4. [ ] **Physique réaliste, 2e passe** : attend les essais de l'utilisateur sur la correction du 14 nov.
+5. [ ] **Niveau de l'île de Nantes et navette embarquable** : attend l'accord et les choix de l'utilisateur (taille, accès en voiture ou à pied). La pointe de l'île est déjà dans le relief ; le bac y accoste.
+6. [ ] **Bugs de rendu difficiles** : herbe sur la route selon l'angle près de la mairie (lieu exact à donner).
+
+### Pour Opus 5.5 (tâches cadrées, une par session, dans cet ordre)
+1. [ ] **Commissariat invisible devant la mairie** : capture, puis rendre le bâtiment visible et reconnaissable.
+2. [ ] **Garages au bon endroit** : comparer aux points OpenStreetMap et à la photo aérienne, changer de bâtiment ou de côté de rue.
+3. [ ] **Feux sur les trottoirs** au lieu du milieu de la chaussée.
+4. [ ] **Deux modes de jeu séparés** : « Chasse aux Rapaces » (temps limité) et « Conduite libre » (missions et activités sur la carte, cylindres lumineux). Montrer la proposition de menu avant de retirer quoi que ce soit.
+5. [ ] **Conduite libre : carte de choix du point d'apparition**, au départ et pendant le jeu (touche ou menu pause : la carte s'affiche, on choisit où réapparaître) ; à défaut de choix, lieu tiré au sort parmi plusieurs.
+6. [ ] **Loire, suite** : placer les modèles déjà téléchargés (bateau de pêche, bateau à vapeur, bateau à moteur, grues, ponton, abribus) avec `tools/assets/bake_model.js` ; écume le long des quais, feux de navigation la nuit, corne du bac.
+7. [ ] **Gens qui jouent au ballon** au parc Schwob (et à la Durantière si la carte s'agrandit jusque-là) : les footballeurs téléchargés par l'utilisateur (`joueur1…5`, `gardien`, `arbitre`, `cage` dans Téléchargements, prévus pour un autre projet, utilisables ici) ; passer par `tools/assets/bake_people.js` s'ils ont un squelette et des animations.
+8. [ ] **Terrasses** : remplacer les anciennes silhouettes des clients par les personnages animés (il manque une pose assise : la fabriquer à partir de la pose d'attente en pliant hanches et genoux).
+9. [ ] Backlog hérité (bas du fichier), au fil de l'eau.
+
 ## Retours du 15 nov. 2026 (matin), à traiter dans cet ordre
 
 - [ ] **Commissariat invisible devant la mairie** : l'utilisateur ne voit pas le bâtiment du commissariat (base de la police, x 170, z −343, `buildHQ` dans `src/gx/police.js`). Vérifier par capture qu'il est bien construit, visible et reconnaissable (enseigne, voitures de police garées), et qu'il n'est pas masqué par un bâtiment OSM.
