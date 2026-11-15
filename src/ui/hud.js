@@ -43,6 +43,9 @@ function buildMinimap() {
   W.buildings.forEach(b => poly(b.p, 'rgba(120,104,150,.9)'));
   mapC.ox = ox; mapC.oz = oz;
 }
+// (15 nov.) direction marks: a navigation chevron (point, two wings, notch at the back) instead of a plain triangle, so
+// the direction it points to cannot be misread. Drawn pointing along +x, centred on the origin.
+function chevronPath(g, s) { g.beginPath(); g.moveTo(s * 0.62, 0); g.lineTo(-s * 0.5, s * 0.58); g.lineTo(-s * 0.18, 0); g.lineTo(-s * 0.5, -s * 0.58); g.closePath(); }
 function drawMinimapOn(cv, me) {
   const mg = cv.getContext('2d'), S = cv.width, R = S / 2, Z = 1.25 * S / 336;
   mg.save(); mg.clearRect(0, 0, S, S);
@@ -61,7 +64,7 @@ function drawMinimapOn(cv, me) {
   }
   mg.restore();
   mg.save(); mg.translate(R, R);
-  // enemies beyond the edge of the minimap: a small triangle on the rim pointing at them,
+  // enemies beyond the edge of the minimap: a small chevron on the rim pointing at them,
   // bright and large when close, dimmer, greyer and smaller the further away they are
   const edge = (R - 9) / Z, hx = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
   const off = [...rivals, ...allPlayerCars()].filter(r => r !== me && r.alive && enemies(me, r));
@@ -75,9 +78,20 @@ function drawMinimapOn(cv, me) {
     const rr = Math.round(br + (150 - br) * e * 0.8), gg = Math.round(bg + (138 - bg) * e * 0.8), b2 = Math.round(bb + (160 - bb) * e * 0.8);
     const a = Math.atan2(sy, sx), k = S / 336 * 2, size = (11 - 6 * e) * k, rim = R - 4 - size * 0.2;
     mg.save(); mg.translate(Math.cos(a) * rim, Math.sin(a) * rim); mg.rotate(a);
-    mg.beginPath(); mg.moveTo(size * 0.55, 0); mg.lineTo(-size * 0.55, size * 0.55); mg.lineTo(-size * 0.55, -size * 0.55); mg.closePath();
+    chevronPath(mg, size * 1.25); mg.lineJoin = 'round';
     mg.globalAlpha = 1 - e * 0.3; mg.fillStyle = `rgb(${rr},${gg},${b2})`; mg.strokeStyle = 'rgba(0,0,0,.8)'; mg.lineWidth = Math.max(1, k * 0.9);
     mg.fill(); mg.stroke(); mg.restore();
+  }
+  // the mission target (the green arrow of the mission panel): a green chevron on the rim when it is off the minimap
+  const tg = gx && me.owner === locals[0] && gx.objTarget;
+  if (tg) {
+    const dx = tg.x - me.x, dz = tg.z - me.z, c = Math.cos(me.h), s = Math.sin(me.h);
+    const sx = (dx * c - dz * s) * Z, sy = (dx * s + dz * c) * Z;
+    if (Math.hypot(sx, sy) > R - 8) {
+      const a = Math.atan2(sy, sx), k = S / 336 * 2, size = 15 * k, rim = R - 4 - size * 0.25;
+      mg.save(); mg.translate(Math.cos(a) * rim, Math.sin(a) * rim); mg.rotate(a); chevronPath(mg, size); mg.lineJoin = 'round';
+      mg.fillStyle = '#7be07b'; mg.strokeStyle = '#000'; mg.lineWidth = Math.max(1.5, k * 1.2); mg.fill(); mg.stroke(); mg.restore();
+    }
   }
   const k = S / 336 * 2;
   mg.fillStyle = '#f2c14e'; mg.strokeStyle = '#000'; mg.lineWidth = 3;

@@ -97,6 +97,19 @@ function spawnRival(r) {
   r.mesh.userData.mBody.color.setHex(r.mesh.userData.base); r.mesh.userData.mPaint.color.setHex(r.mesh.userData.paint);
   r.ai = { mode: 'cruise', target: nearestNode(r.x, r.z), prev: -1, stuck: 0, back: 0, lost: 0, burst: 0, firing: 0 };
 }
+// (15 nov.) at the start of a game the six Rapaces used to be where the menu left them, one of them always on the
+// player's starting grid, shooting at once: they now start far away and join the hunt one after the other
+function scatterRivals() {
+  const [cx, cz] = playersCentre(); let k = 0;
+  for (const r of rivals) {
+    if (r.proxy || (teamMode && r.team >= 0)) continue;
+    let n = -1; for (let i = 0; i < 300 && n < 0; i++) { const j = (rnd() * G.x.length) | 0; if (nodeOk(j) && Math.hypot(G.x[j] - cx, G.z[j] - cz) > 320) n = j; }
+    if (n < 0) { spawnRival(r); continue; }
+    const nb = G.adj[n][0] ?? n; spawnRival(r);
+    r.place(G.x[n], G.z[n], Math.atan2(-(G.x[nb] - G.x[n]), -(G.z[nb] - G.z[n]))); r.ai.target = nearestNode(r.x, r.z);
+    r.calmT = 12 + 7 * k++; // seconds of cruising before it starts looking for players
+  }
+}
 function spawnPickup(pk) {
   const [cx, cz] = playersCentre();
   const n = farNode(cx, cz, 120);

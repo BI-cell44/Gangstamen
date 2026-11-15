@@ -149,7 +149,7 @@
     if (!cur) return;
     clearMarkers(); clearExtras();
     if (cur.savedAmb) { settings.tod = cur.savedAmb[0]; settings.rain = cur.savedAmb[1]; applyAmbience(); }
-    restoreRivals(); objEl.hidden = true; objBar(null);
+    restoreRivals(); objEl.hidden = true; objBar(null); objDir(null);
     cur = null; mission = null;
   }
   const mEl = document.createElement('div'); mEl.id = 'mres'; mEl.hidden = true; document.body.append(mEl);
@@ -174,7 +174,7 @@
     say(win ? 'Mission réussie !' : 'Mission ratée.', { cancel: true, pitch: 1.05 });
     if (win) dialogue(m.outro, show); else if (res === 'dead') setTimeout(show, 600); else show();
   }
-  function freeRoam() { cleanupMission(); for (const r of rivals) spawnRival(r); setupMatch(settings.goal, settings.limit); flash('Chantenay', 'Bac à sable · roule librement'); }
+  function freeRoam() { cleanupMission(); scatterRivals(); setupMatch(settings.goal, settings.limit); flash('Chantenay', 'Bac à sable · roule librement'); }
   function toMenu() { // back to the title screen without reloading
     started = false; paused = false; document.body.classList.remove('ingame', 'split'); $('title').hidden = false; renderCampaign(); showView('vCamp');
     for (const L of locals) scene.remove(L.car.mesh); locals = [];
@@ -215,7 +215,7 @@
   function gameStep(dt) { // inside the world step
     const now = performance.now();
     step(dt);
-    puStep(dt, now); rocketStep(dt); mineStep(dt, now); shieldStep(dt); furnitureStep(dt); Fences.step(dt); actStep(dt); discoverStep(dt);
+    puStep(dt, now); rocketStep(dt); mineStep(dt, now); shieldStep(dt); furnitureStep(dt); Fences.step(dt); LightPoles.step(dt); actStep(dt); discoverStep(dt);
     for (const L of locals) {
       L.specCd = (L.specCd || 0) - dt;
       const c = L.car;

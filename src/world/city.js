@@ -472,6 +472,23 @@ function buildGround() {
       ribbon(foot, p, r.w, ROAD_Y.foot, cFoot, 3);
     }
   });
+  // (15 nov.) zebra crossings painted on the carriageway at the OpenStreetMap crossings (where the pedestrians cross):
+  // white bands along the street, side by side across its width
+  for (const [cx, cz, k] of (W.traffic && W.traffic.signals) || []) {
+    if (k !== 3) continue;
+    let best = null, bd = 1e9;
+    for (const sg of roadSegs.get(key(Math.floor(cx / RCELL), Math.floor(cz / RCELL))) || []) {
+      const [ax, az, bx, bz, w] = sg, dx = bx - ax, dz = bz - az, L2 = dx * dx + dz * dz || 1e-6, t = Math.max(0, Math.min(1, ((cx - ax) * dx + (cz - az) * dz) / L2));
+      const d = Math.hypot(cx - ax - dx * t, cz - az - dz * t); if (d < w / 2 && -w < bd) { bd = -w; best = sg; } // the widest street through the point
+    }
+    if (!best) continue;
+    const [ax, az, bx, bz, w] = best, L = Math.hypot(bx - ax, bz - az) || 1, ux = (bx - ax) / L, uz = (bz - az) / L, t = (cx - ax) * ux + (cz - az) * uz;
+    const mx = ax + ux * t, mz = az + uz * t, half = w / 2 - 0.5;
+    for (let o = -half + 0.25; o <= half - 0.25 + 1e-6; o += 1.1) {
+      const px = mx - uz * o, pz = mz + ux * o;
+      ribbon(marks, [px - ux * 1.5, pz - uz * 1.5, px + ux * 1.5, pz + uz * 1.5], 0.5, ROAD_Y.mark, cMark, 100);
+    }
+  }
   // bridges over the railway trench: deck, side beams and parapets
   const deck = new Buf(), side = new Buf();
   const cConc = col('#a39a8e'), cPar = col('#b8ae9f');

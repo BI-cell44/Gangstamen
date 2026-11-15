@@ -42,6 +42,7 @@ function shoot(from, targets, dmg, range, spread, enemy) {
     if (perp < 1.9) { best = along; hitCar = t; }
   }
   if (!hitCar && gx && gx.Fences) best = gx.Fences.shoot(ox, oz, dx, dz, best, from, dmg); // a fence in the way takes the bullet (and breaks)
+  if (!hitCar && gx && gx.LightPoles) best = gx.LightPoles.shoot(ox, oz, dx, dz, best, from, dmg); // so does a traffic light pole
   const ex = ox + dx * best, ez = oz + dz * best;
   tracer(ox, oy, oz, ex, tracerEnd(ox, oy, oz, ex, ez, hitCar), ez, enemy, dx, dz);
   sfx.gun(enemy);

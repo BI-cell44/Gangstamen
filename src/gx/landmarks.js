@@ -103,7 +103,7 @@
     [942.4, 98.9, 947.9, 104, 25], [949.3, 105.3, 954.9, 110.5, 25], [956.4, 111.9, 962, 117, 25], [963.4, 118.3, 966.2, 120.9, 15],
     [969.8, 122.1, 972.4, 119.2, 15], [974, 117.5, 976.5, 114.8, 14], [964.9, 127.5, 962.3, 130.3, 15], [960.8, 132, 958.2, 134.7, 14]];
   function stairs() {
-    const st = stoneTex(256, 256, 8, '#c9c0ae'), stepM = stdM(0xffffff, 0.9, 0, { map: st }), wallM = stdM(0xb7ad9b, 0.85), rail = stdM(0x1c1d22, 0.5, 0.7);
+    const st = stoneTex(256, 256, 8, '#c9c0ae'), stepM = stdM(0xffffff, 0.9, 0, { map: st }), wallM = stdM(0xcbc2b0, 0.85), capM = stdM(0xe2dacb, 0.75), rail = stdM(0x1c1d22, 0.5, 0.7);
     const total = STAIRS.reduce((s, f) => s + f[4], 0), steps = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), stepM, total), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0);
     // heights: the flights follow each other down the slope; the terrain sets the top and the quay the bottom
     const top = groundH(940, 100), bot = Math.max(WATER_Y + 1.5, Math.min(groundH(978, 112), groundH(955, 138)));
@@ -121,10 +121,37 @@
       for (const side of [-1, 1]) { // parapet and handrail along the flight
         const ox = -dz * side * (W / 2 + 0.2), oz = dx * side * (W / 2 + 0.2), mx = (ax + bx) / 2 + ox, mz = (az + bz) / 2 + oz, my = (y0 + yEnd) / 2;
         const w = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.0, L / Math.cos(slope) + 0.4), wallM); w.position.set(mx, my + 0.2, mz); w.rotation.set(0, Math.atan2(dx, dz), 0, 'YXZ'); w.rotateX(slope); w.castShadow = w.receiveShadow = true; g.add(w);
+        const cp = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.12, L / Math.cos(slope) + 0.5), capM); cp.position.set(mx, my + 0.76, mz); cp.rotation.set(0, Math.atan2(dx, dz), 0, 'YXZ'); cp.rotateX(slope); g.add(cp); // coping stone
         const r = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, L / Math.cos(slope), 6), rail); r.position.set(mx - ox * 0.5, my + 1.0, mz - oz * 0.5); r.rotation.set(0, Math.atan2(dx, dz), 0, 'YXZ'); r.rotateX(Math.PI / 2 + slope); g.add(r);
       }
     });
     steps.count = k; steps.castShadow = steps.receiveShadow = true; g.add(steps);
+    // (15 nov., the user found the stairs unconvincing) landings between the flights, the terrace where the two upper
+    // flights meet and the side flights start, all on a solid stone base down to the quay, so it reads as one monument
+    const W2 = 2.6, slab = (x0, z0, x1, z1, y, wid, m = stepM, pad = 0.6) => { // a level slab from (x0, z0) to (x1, z1), top at y
+      const L = Math.hypot(x1 - x0, z1 - z0) || 0.01, h = Math.max(0.4, y - (bot - 2));
+      const o = new THREE.Mesh(new THREE.BoxGeometry(wid, h, L + pad), m); o.position.set((x0 + x1) / 2, y - h / 2, (z0 + z1) / 2); o.rotation.y = Math.atan2(x1 - x0, z1 - z0);
+      o.castShadow = o.receiveShadow = true; g.add(o); return o;
+    };
+    const flightEnd = i => flightTop(i) - STAIRS[i][4] * perStep;
+    for (const chain of [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9], [10, 11]]) for (let j = 0; j + 1 < chain.length; j++) {
+      const a = STAIRS[chain[j]], b = STAIRS[chain[j + 1]]; slab(a[2], a[3], b[0], b[1], flightEnd(chain[j]), W2);
+    }
+    for (let i = 0; i < 4; i++) { // the strip between the two upper flights: one wide stair instead of two separate ones
+      const a = STAIRS[i], b = STAIRS[i + 4], y0 = flightTop(i), y1 = flightEnd(i), mx = (a[0] + a[2] + b[0] + b[2]) / 4, mz = (a[1] + a[3] + b[1] + b[3]) / 4;
+      const L = Math.hypot(a[2] - a[0], a[3] - a[1]), dx = (a[2] - a[0]) / L, dz = (a[3] - a[1]) / L, slope = Math.atan2(y0 - y1, L);
+      const c = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.1, L / Math.cos(slope) + 0.6), wallM); c.position.set(mx, (y0 + y1) / 2 + 0.2, mz); c.rotation.set(0, Math.atan2(dx, dz), 0, 'YXZ'); c.rotateX(slope); c.castShadow = true; g.add(c);
+      const cp = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.12, L / Math.cos(slope) + 0.7), capM); cp.position.set(mx, (y0 + y1) / 2 + 0.81, mz); cp.rotation.set(0, Math.atan2(dx, dz), 0, 'YXZ'); cp.rotateX(slope); g.add(cp);
+    }
+    { // terrace at the foot of the upper flights, from which the four side flights leave
+      const ux = 0.733, uz = 0.68, vx = -uz, vz = ux, pts = [STAIRS[3].slice(2, 4), STAIRS[7].slice(2, 4), STAIRS[8].slice(0, 2), STAIRS[10].slice(0, 2)];
+      let u0 = 1e9, u1 = -1e9, v0 = 1e9, v1 = -1e9; for (const [x, z] of pts) { const u = x * ux + z * uz, v = x * vx + z * vz; u0 = Math.min(u0, u); u1 = Math.max(u1, u); v0 = Math.min(v0, v); v1 = Math.max(v1, v); }
+      u0 -= 0.3; u1 += 1.6; v0 -= 1.6; v1 += 1.6; const um = (u0 + u1) / 2, y = flightEnd(3);
+      const p = (u, v) => [u * ux + v * vx, u * uz + v * vz];
+      const [ax, az] = p(um, v0), [bx, bz] = p(um, v1); slab(ax, az, bx, bz, y, u1 - u0, stepM, 0);
+      const [fx, fz] = p(u1 + 0.2, v0), [gx2, gz] = p(u1 + 0.2, v1); slab(fx, fz, gx2, gz, y + 0.95, 0.4, stepM, 0); // parapet on the Loire side, the face of the terrace below it
+      const cp = slab(fx, fz, gx2, gz, y + 1.07, 0.55, capM, 0.1); cp.scale.y = 0.12 / cp.geometry.parameters.height; cp.position.y = y + 1.01;
+    }
     // the statue of Sainte-Anne (Amédée Ménard, 1871) on its column at the top, looking over the Loire
     const sx = 939.6, sz = 99.5, sy = groundH(sx, sz), white = stdM(0xe6dfd0, 0.7), lamp = stdM(0x1c1d22, 0.5, 0.7);
     const add = (geo, m, x, y, z) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };

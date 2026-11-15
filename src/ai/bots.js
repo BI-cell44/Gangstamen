@@ -25,7 +25,8 @@ function minPlayerSight(c) { let d = 1e9; for (const p of allPlayerCars()) if (p
 function rivalInput(r, dt) {
   const ai = r.ai;
   let target = null, dp = 1e9;
-  const foes = [...allPlayerCars(), ...(teamMode ? rivals : []), ...(gx ? gx.foes() : []), ...(gx && gx.copsOn ? gx.copsOn(r) : [])].filter(c => c.alive && enemies(r, c));
+  if (r.calmT > 0) r.calmT -= dt; // just (re)started far away: cruise, leave the players alone (scatterRivals)
+  const foes = [...(r.calmT > 0 ? [] : allPlayerCars()), ...(teamMode ? rivals : []), ...(gx ? gx.foes() : []), ...(gx && gx.copsOn ? gx.copsOn(r) : [])].filter(c => c.alive && enemies(r, c));
   for (const c of foes) { const d = Math.hypot(c.x - r.x, c.z - r.z); if (d < dp) { dp = d; target = c; } }
   let los = false;
   if (target && dp < 110) los = segHit(r.x, r.z, (target.x - r.x) / dp, (target.z - r.z) / dp, dp) >= dp - 0.5;

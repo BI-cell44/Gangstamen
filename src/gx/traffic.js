@@ -60,6 +60,7 @@
       lampRefs.push(hd_);
     });
     for (const o of [pm, hm, lampIM]) { o.userData.hdLinear = true; o.frustumCulled = false; scene.add(o); }
+    TF.im = { pm, hm, lamps: lampIM, poles }; TF.heads = heads; // pole i carries head i (breakable: lightpoles.js)
     pm.castShadow = true;
   }
   const LAMP = { r: new THREE.Color(5, 0.15, 0.05), a: new THREE.Color(5, 2.2, 0.05), g: new THREE.Color(0.1, 4, 1.2), off: new THREE.Color(0.06, 0.06, 0.06) };
@@ -67,7 +68,7 @@
   function lightsTick(dt) {
     TF.t += dt; lampAcc += dt; if (!lampIM || lampAcc < 0.25) return; lampAcc = 0;
     lampRefs.forEach((hd_, i) => {
-      const st = lightState(hd_.j, hd_.h + Math.PI); // the traffic facing this head drives towards it: heading h + pi
+      const st = hd_.broken ? '' : lightState(hd_.j, hd_.h + Math.PI); // the traffic facing this head drives towards it: heading h + pi
       lampIM.setColorAt(i * 3, st === 'r' ? LAMP.r : LAMP.off); lampIM.setColorAt(i * 3 + 1, st === 'a' ? LAMP.a : LAMP.off); lampIM.setColorAt(i * 3 + 2, st === 'g' ? LAMP.g : LAMP.off);
     });
     lampIM.instanceColor.needsUpdate = true;

@@ -315,14 +315,14 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
       const r = await ev(() => {
         const X = __gm.gx, A = X.acts(), L = __gm.locals()[0], c = L.car, out = { activites: A.length };
         L.ammo = { rockets: 2 }; __gm.step(1 / 30); out.armes = /2/.test(document.getElementById('ammo').textContent); // the weapon line still updates (a function of the activities once replaced it)
-        const race = A.find(a => a.id === 'r_lib'); out.longueur = Math.round(race.len); out.points = race.cps.length;
+        const race = A.find(a => a.id === 'r_lib2'); out.longueur = Math.round(race.len); out.points = race.cps.length;
         const txt = () => document.querySelector('#objective .oText').textContent, ttl = () => document.querySelector('#objective .oTitle').textContent;
         c.place(race.start[0] + 20, race.start[1], 0); c.hp = 100; __gm.step(1 / 30); out.indice = /Arrête-toi dans la balise/.test(txt()) && /Course/.test(ttl());
         c.place(race.start[0], race.start[1], 0); __gm.step(1 / 30); __gm.step(1 / 30); out.depart = !!X.actRun();
         for (let i = 0; i < 90; i++) __gm.step(1 / 30); out.consigne = /Suis les balises bleues/.test(txt()) && /Départ dans/.test(txt()) && X.actRun().count > 0; // still readable after 3 s
         for (let i = 0; i < 130; i++) __gm.step(1 / 30); out.enCourse = /flèche/.test(txt()); // briefing over
         for (let k = 1; k < race.cps.length; k++) { const [x, z] = race.cps[k]; for (let i = 0; i < 12; i++) { c.place(x, z, c.h); c.hp = 100; __gm.step(1 / 30); } }
-        out.fini = !X.actRun(); out.record = __gm.Profile.cur.records.race_r_lib; out.fantome = (__gm.Profile.cur.records.ghost_r_lib || []).length;
+        out.fini = !X.actRun(); out.record = __gm.Profile.cur.records.race_r_lib2; out.fantome = (__gm.Profile.cur.records.ghost_r_lib2 || []).length;
         for (let i = 0; i < 90; i++) __gm.step(1 / 30); out.resultat = /Sprint/.test(ttl()) && !document.getElementById('objective').hidden; // the result is still shown 3 s later
         for (let i = 0; i < 140; i++) __gm.step(1 / 30);
         const smash = A.find(a => a.id === 'd_smash'); c.place(smash.start[0], smash.start[1], 0); for (let i = 0; i < 240 && !X.actRun(); i++) { c.vx = c.vz = 0; __gm.step(1 / 30); } out.defi = X.actRun() && X.actRun().a.id;

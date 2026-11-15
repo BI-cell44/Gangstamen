@@ -15,6 +15,7 @@ gx/garages.js
 gx/pickups-weapons.js
 gx/furniture.js
 gx/fences.js
+gx/lightpoles.js
 gx/campaign.js
 gx/radio.js
 gx/quick-chat.js

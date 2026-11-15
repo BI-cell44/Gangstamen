@@ -18,7 +18,8 @@ function startGame(kind) {
     locals.push(makeLocal(0, settings.soloCtl, playerPaint(0, t, kind === 'online'), t));
   }
   for (const L of locals) if (L.team >= 0) L.colour = TEAMS[L.team].css;
-  if (teamMode) for (const r of rivals) if (!r.proxy) spawnRival(r);
+  if (teamMode) { for (const r of rivals) if (!r.proxy) spawnRival(r); }
+  else if (kind !== 'online' || Net.isHost) scatterRivals();
   updateTeamBar(); $('killsLab').textContent = teamMode ? 'KO' : 'RAPACES';
   player = locals[0].car;
   applyPerf();
