@@ -17,24 +17,53 @@
     const d = minPlayerDist(G.x[HQ.node], G.z[HQ.node]);
     return d > minD && d < maxD && !npcs.some(o => near(o, G.x[HQ.node], G.z[HQ.node]) < 10) ? HQ.node : -1;
   }
-  function buildHQ() { // a sign on a post, a blue lamp and two parked police cars in front of the station
+  function buildHQ() { // (15 nov.) the station itself dressed up: blue « POLICE NATIONALE » bands, flag, blue lamp,
+    // and the sign post and two parked police cars in its forecourt (before: by a back street, away from the building)
     if (HQ.built || !hd) return; HQ.built = true; hqNode(-1, 1e9);
-    const nx = G.x[HQ.node], nz = G.z[HQ.node], dx = HQ.x - nx, dz = HQ.z - nz, L = Math.hypot(dx, dz) || 1, ux = dx / L, uz = dz / L; // from the street towards the building
-    const sx = nx + ux * Math.min(L - 3, 7), sz = nz + uz * Math.min(L - 3, 7), y = surfaceH(sx, sz), g = new THREE.Group();
-    const [cv, cg] = canvas(512, 128); cg.fillStyle = '#1b2f8a'; cg.fillRect(0, 0, 512, 128); cg.strokeStyle = '#ffffff'; cg.lineWidth = 6; cg.strokeRect(6, 6, 500, 116);
-    cg.fillStyle = '#ffffff'; cg.font = 'bold 54px Arial, sans-serif'; cg.textAlign = 'center'; cg.textBaseline = 'middle'; cg.fillText('POLICE', 256, 46); cg.font = 'bold 30px Arial, sans-serif'; cg.fillText('NATIONALE', 256, 96);
+    const b = W.buildings.find(o => o.n === 'Police nationale'); if (!b) return;
+    const p = b.p, n = p.length / 2; let cx = 0, cz = 0, gmin = 1e9, sa = 0;
+    for (let i = 0; i < n; i++) { const j = (i + 1) % n; cx += p[2 * i] / n; cz += p[2 * i + 1] / n; gmin = Math.min(gmin, groundH(p[2 * i], p[2 * i + 1])); sa += p[2 * i] * p[2 * j + 1] - p[2 * j] * p[2 * i + 1]; }
+    const top = (b.b != null ? b.b : groundH(cx, cz)) + (b.h || 8); // top of the walls, as in city.js (the roof sits above)
+    // the front: the wall that looks towards the boulevard de la Liberté
+    let rx = cx - 30, rz = cz, rd = 1e18;
+    for (const r of W.roads) if (/Libert/.test(W.names[r.n] || '')) for (let k = 0; k < r.p.length; k += 2) { const d = (r.p[k] - cx) ** 2 + (r.p[k + 1] - cz) ** 2; if (d < rd) { rd = d; rx = r.p[k]; rz = r.p[k + 1]; } }
+    const [cv, cg] = canvas(1024, 128); cg.fillStyle = '#1b2f8a'; cg.fillRect(0, 0, 1024, 128); cg.fillStyle = '#ffffff'; cg.fillRect(0, 8, 1024, 6); cg.fillRect(0, 114, 1024, 6);
+    cg.font = 'bold 70px Arial, sans-serif'; cg.textAlign = 'center'; cg.textBaseline = 'middle'; cg.fillText('POLICE NATIONALE', 512, 66);
     const tx = new THREE.CanvasTexture(cv); tx.encoding = THREE.sRGBEncoding;
-    const post = new THREE.MeshStandardMaterial({ color: hd.lin(0x2a2a2e), roughness: 0.5, metalness: 0.6 }), sm = new THREE.MeshStandardMaterial({ map: tx, emissive: 0xffffff, emissiveMap: tx, emissiveIntensity: 0.35, roughness: 0.5 });
-    const sign = new THREE.Mesh(new THREE.BoxGeometry(3, 0.75, 0.1), [post, post, post, post, sm, sm]); sign.position.y = 3.2; g.add(sign);
-    const pl = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 3.2, 8), post); pl.position.y = 1.6; pl.castShadow = true; g.add(pl);
-    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.4, 0.6, 4) })); lamp.position.y = 3.75; g.add(lamp);
-    g.position.set(sx, y, sz); g.rotation.y = Math.atan2(-ux, -uz); g.traverse(o => { o.userData.hdLinear = true; }); scene.add(g);
-    gridAdd([sx - 0.1, sz, sx + 0.1, sz], 0.4);
-    for (const k of [-1, 1]) { // parked along the kerb, nose to tail
-      const m = makeCar(0xeef0f2, 0x1b2f8a, false, 'saloon', { guns: false, police: true }), px = nx + ux * 4.2 + uz * k * 3.2, pz = nz + uz * 4.2 - ux * k * 3.2;
-      m.position.set(px, surfaceH(px, pz) + 0.34, pz); m.rotation.y = Math.atan2(uz, -ux); scene.add(m);
-      gridAdd([px - uz * 2, pz + ux * 2, px + uz * 2, pz - ux * 2], 3.5);
+    const blue = new THREE.MeshStandardMaterial({ color: hd.lin(0x1b2f8a), roughness: 0.6 }), band = new THREE.MeshStandardMaterial({ map: tx, emissive: 0xffffff, emissiveMap: tx, emissiveIntensity: 0.3, roughness: 0.5 });
+    const post = new THREE.MeshStandardMaterial({ color: hd.lin(0x2a2a2e), roughness: 0.5, metalness: 0.6 }), g = new THREE.Group();
+    let front = null, fd = -2;
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n, ax = p[2 * i], az = p[2 * i + 1], bx = p[2 * j], bz = p[2 * j + 1], L = Math.hypot(bx - ax, bz - az); if (L < 4) continue;
+      let nx = (bz - az) / L, nz = -(bx - ax) / L; if (sa < 0) { nx = -nx; nz = -nz; } // outward
+      const mx = (ax + bx) / 2, mz = (az + bz) / 2, w = Math.min(L - 0.8, 9), dl = Math.hypot(rx - mx, rz - mz) || 1, f = (nx * (rx - mx) + nz * (rz - mz)) / dl;
+      if (f > fd) { fd = f; front = { mx, mz, nx, nz, ux: (bx - ax) / L, uz: (bz - az) / L, L }; }
+      const m = new THREE.Mesh(new THREE.BoxGeometry(w, 0.9, 0.12), [blue, blue, blue, blue, band, blue]);
+      m.position.set(mx + nx * 0.1, top - 1.1, mz + nz * 0.1); m.rotation.y = Math.atan2(nx, nz); g.add(m);
     }
+    if (front) {
+      const { mx, mz, nx, nz, ux, uz } = front;
+      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.4, 0.6, 4) })); lamp.position.set(mx + nx * 0.35, top - 2.1, mz + nz * 0.35); g.add(lamp);
+      // flag on the roof edge above the door
+      const fx = mx - nx * 1.2, fz = mz - nz * 1.2, pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 4, 8), post); pole.position.set(fx, top + 2, fz); g.add(pole);
+      const [fc, fg] = canvas(96, 64); fg.fillStyle = '#1d3f9a'; fg.fillRect(0, 0, 32, 64); fg.fillStyle = '#ffffff'; fg.fillRect(32, 0, 32, 64); fg.fillStyle = '#d42a2a'; fg.fillRect(64, 0, 32, 64);
+      const ft = new THREE.CanvasTexture(fc); ft.encoding = THREE.sRGBEncoding;
+      const flag = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1), new THREE.MeshStandardMaterial({ map: ft, side: THREE.DoubleSide, roughness: 0.8 })); flag.position.set(fx + ux * 0.78, top + 3.45, fz + uz * 0.78); flag.rotation.y = Math.atan2(nx, nz); g.add(flag);
+      // sign post in the forecourt, and two police cars parked side by side facing the station
+      const sx = mx + nx * 3 + ux * (front.L / 2 - 1), sz = mz + nz * 3 + uz * (front.L / 2 - 1), sy = surfaceH(sx, sz);
+      const [cv2, cg2] = canvas(512, 128); cg2.fillStyle = '#1b2f8a'; cg2.fillRect(0, 0, 512, 128); cg2.strokeStyle = '#ffffff'; cg2.lineWidth = 6; cg2.strokeRect(6, 6, 500, 116);
+      cg2.fillStyle = '#ffffff'; cg2.font = 'bold 54px Arial, sans-serif'; cg2.textAlign = 'center'; cg2.textBaseline = 'middle'; cg2.fillText('POLICE', 256, 46); cg2.font = 'bold 30px Arial, sans-serif'; cg2.fillText('NATIONALE', 256, 96);
+      const t2 = new THREE.CanvasTexture(cv2); t2.encoding = THREE.sRGBEncoding; const sm = new THREE.MeshStandardMaterial({ map: t2, emissive: 0xffffff, emissiveMap: t2, emissiveIntensity: 0.35, roughness: 0.5 });
+      const sign = new THREE.Mesh(new THREE.BoxGeometry(3, 0.75, 0.1), [post, post, post, post, sm, sm]); sign.position.set(sx, sy + 3.2, sz); sign.rotation.y = Math.atan2(nx, nz); g.add(sign);
+      const pl = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 3.2, 8), post); pl.position.set(sx, sy + 1.6, sz); pl.castShadow = true; g.add(pl);
+      gridAdd([sx - 0.1, sz, sx + 0.1, sz], 0.4);
+      for (const k of [-1, 1]) {
+        const m = makeCar(0xeef0f2, 0x1b2f8a, false, 'saloon', { guns: false, police: true }), px = mx + nx * 4.5 + ux * k * 1.6, pz = mz + nz * 4.5 + uz * k * 1.6;
+        m.position.set(px, surfaceH(px, pz) + 0.34, pz); m.rotation.y = Math.atan2(nx, nz); scene.add(m);
+        gridAdd([px - nx * 2, pz - nz * 2, px + nx * 2, pz + nz * 2], 3.5);
+      }
+    }
+    g.traverse(o => { o.userData.hdLinear = true; }); scene.add(g);
   }
   function spawnCop(L) {
     let n = R() < 0.6 ? hqNode() : -1; if (n < 0) n = spawnNode(110, 220); if (n < 0) return; // from the station when possible

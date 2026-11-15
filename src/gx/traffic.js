@@ -43,8 +43,11 @@
     for (const j of TF.lights) for (let q = 0; q < 4; q++) {
       const a = j.ax + q * Math.PI / 2, fx = -Math.sin(a), fz = -Math.cos(a); // heading of the traffic this head faces
       // pole at the right-hand corner before the junction for that traffic
-      const x = j.x - fx * 8 - fz * 6.5, z = j.z - fz * 8 + fx * 6.5;
-      if (segHit(j.x, j.z, (x - j.x) / 10.3, (z - j.z) / 10.3, 10.3) < 10) continue; // inside a building
+      // (15 nov.) then pushed out of the carriageway onto the pavement (0.9 m past the kerb): with fixed offsets, the
+      // poles of the wide streets stood in the middle of the road
+      const p0 = offRoad(j.x - fx * 8 - fz * 4, j.z - fz * 8 + fx * 4, 0.9); if (!p0) continue;
+      const [x, z] = p0, dj = Math.hypot(x - j.x, z - j.z); if (dj > 22) continue;
+      if (segHit(j.x, j.z, (x - j.x) / dj, (z - j.z) / dj, dj) < dj - 0.3) continue; // behind a wall, or inside a building
       poles.push([x, z]); heads.push({ x, z, h: a, j, axisA: q % 2 === 0 });
     }
     const grey = new THREE.MeshLambertMaterial({ color: 0x2c2f33 });

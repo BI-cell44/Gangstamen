@@ -8,6 +8,7 @@
     // nearest point of the boulevard: the forecourt marker sits there, the workshop beside it
     let best = null, bd = 1e9;
     for (const r of W.roads) { if (!r.d) continue; for (let i = 0; i < r.p.length; i += 2) { const d = Math.hypot(r.p[i] - G.x, r.p[i + 1] - G.z); if (d < bd) { bd = d; best = [r, i]; } } }
+    if (G.rx == null) { G.rx = G.x; G.rz = G.z; } // (15 nov.) the real spot, kept: the workshop is placed by it
     const [r, i] = best, p = r.p, j = i + 2 < p.length ? i + 2 : i - 2;
     let ux = p[j] - p[i], uz = p[j + 1] - p[i + 1]; const l = Math.hypot(ux, uz) || 1; ux /= l; uz /= l; if (j < i) { ux = -ux; uz = -uz; }
     const side = (-uz * (G.x - p[i]) + ux * (G.z - p[i + 1])) >= 0 ? 1 : -1;
@@ -44,7 +45,12 @@
         const ax = r.p[i], az = r.p[i + 1], bx = r.p[i + 2], bz = r.p[i + 3], L = Math.hypot(bx - ax, bz - az); if (L < 1) continue;
         for (let s = 0; s <= L; s += 3) {
           const x = ax + (bx - ax) * s / L, z = az + (bz - az) * s / L; if (Math.hypot(x - G.x, z - G.z) > 70) continue;
-          for (const side of [1, -1]) cand.push({ x, z, ux: (bx - ax) / L, uz: (bz - az) / L, side, w: r.w, d: Math.hypot(x - G.x, z - G.z) });
+          for (const side of [1, -1]) { // (15 nov.) ranked by how close the workshop's middle is to the real garage: before, the
+            // distance was taken from the kerb point, the same for both sides of the street, and some ended up opposite the real one
+            const ux = (bx - ax) / L, uz = (bz - az) / L, nx = -uz * side, nz = ux * side, m = r.w / 2 + 1.4 + DP / 2;
+            const same = ((G.rx ?? G.x) - x) * nx + ((G.rz ?? G.z) - z) * nz > 0; // on the real garage's side of the street
+            cand.push({ x, z, ux, uz, side, w: r.w, d: Math.hypot(x + nx * m - (G.rx ?? G.x), z + nz * m - (G.rz ?? G.z)) + (same ? 0 : 1000) });
+          }
         }
       }
     }

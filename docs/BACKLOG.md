@@ -19,21 +19,29 @@ Dernier retour d'essai de l'utilisateur (15 nov., soir) : Ultra tourne sans prob
 9. [ ] **Toits plus jolis** (15 nov.) : remplacer la photo aérienne des toits par des textures dessinées, plus belles mais inspirées de la photo (couleurs, motifs : tuiles, ardoise, zinc, toits plats). **D'abord un essai sur une petite zone**, montré à l'utilisateur avant de l'étendre.
 10. [ ] **Piétons, suite** (possible pour Opus) : évitement entre piétons, groupes, foule selon le lieu et l'heure, respect du feu piéton aux carrefours à feux.
 11. [ ] **Lumières des lampadaires dans l'intro de nuit** : taches au sol mal placées ou mal dessinées.
+12. [ ] **Pont Anne-de-Bretagne : un seul pont** (15 nov.) : il est dessiné comme trois ponts côte à côte, c'est un seul ouvrage.
+13. [ ] **Piétons en fuite qui entrent dans les bâtiments** (15 nov.) : en fuyant, certains traversent encore les murs ; les garder sur le réseau de trottoirs.
 
 ## Pour Opus 5.5 (dans cet ordre)
 
-1. [ ] **Commissariat invisible devant la mairie** (x 170, z −343, `buildHQ` dans `src/gx/police.js`) : capture, puis le rendre visible et reconnaissable (pas masqué par un bâtiment OSM).
-2. [ ] **Garages au bon endroit** (`src/gx/garages.js`) : celui près du tram et celui du milieu du boulevard de la Liberté semblent en face du vrai ; comparer aux points `shop=car_repair` d'OSM et à la photo aérienne.
-3. [ ] **Feux sur les trottoirs** au lieu du milieu de la chaussée (`TF` dans `src/gx/traffic.js` ; les feux cassables de `src/gx/lightpoles.js` suivent les mêmes instances).
-4. [ ] **Routes qui se mélangent avec le sol** (15 nov.) : par endroits la chaussée passe sous le relief ou flotte, par exemple dans la montée du quai de la Fosse vers Sainte-Anne ; captures, puis caler routes et sol.
+1. [x] (fait le 15 nov. au soir : bandeaux bleus « POLICE NATIONALE » sur les murs du vrai bâtiment, drapeau, gyrophare, panneau et deux voitures garées devant, côté boulevard ; avant, le décor était près d'une rue de derrière) **Commissariat invisible devant la mairie** (x 170, z −343, `buildHQ` dans `src/gx/police.js`) : capture, puis le rendre visible et reconnaissable (pas masqué par un bâtiment OSM).
+2. [x] (fait : l'atelier est cherché du côté de la rue où est le vrai garage, au plus près de lui ; les trois garages sont maintenant de leur côté, à 26 à 51 m du point OSM) **Garages au bon endroit** (`src/gx/garages.js`) : celui près du tram et celui du milieu du boulevard de la Liberté semblent en face du vrai ; comparer aux points `shop=car_repair` d'OSM et à la photo aérienne.
+3. [x] (fait : poteaux poussés sur le trottoir à 0,9 m de la bordure ; mesure : 0 feu sur la chaussée sur 36, contre 26 sur 40 avant) **Feux sur les trottoirs** au lieu du milieu de la chaussée (`TF` dans `src/gx/traffic.js` ; les feux cassables de `src/gx/lightpoles.js` suivent les mêmes instances).
+4. [x] (fait en grande partie : la chaussée suit le relief sur toute sa largeur là où le sol se bombe, plus de trottoir ni d'herbe à travers les voies dans la montée de la rue de l'Hermitage ; reste la bande pavée ondulée entre deux chaussées séparées) **Routes qui se mélangent avec le sol** (15 nov.) : par endroits la chaussée passe sous le relief ou flotte, par exemple dans la montée du quai de la Fosse vers Sainte-Anne ; captures, puis caler routes et sol.
 5. [ ] **Deux modes de jeu séparés** : « Chasse aux Rapaces » (temps limité) et « Conduite libre » (pas de chrono, missions et activités sur la carte avec leurs cylindres lumineux). Montrer la proposition de menu à l'utilisateur avant de retirer quoi que ce soit.
 6. [ ] **Conduite libre : choisir où apparaître sur une carte** : au lancement du mode, une carte avec plusieurs points de départ, à cliquer ou à choisir à la manette ; pendant le jeu, une touche (et le menu pause) affiche la carte en grand pour réapparaître sur un autre point à tout moment. Sans choix, point tiré au sort.
-7. [ ] **Campagne : trois niveaux de difficulté** (15 nov.) : facile, normal, difficile, choisis au lancement de la campagne et enregistrés dans la sauvegarde ; jouer sur les dégâts reçus, la résistance et la vitesse des ennemis (mines, Vautour, roquettes du Grand Duc), les chronos (orage). Le réglage « normal » reprend l'actuel.
+7. [x] (fait : bouton « Difficulté » en haut de l'écran Campagne, enregistré ; Facile = ennemis ×0,7, dégâts reçus ×0,6, chrono ×1,35, escorte plus solide ; Difficile = ×1,35, ×1,4, ×0,8) **Campagne : trois niveaux de difficulté** (15 nov.) : facile, normal, difficile, choisis au lancement de la campagne et enregistrés dans la sauvegarde ; jouer sur les dégâts reçus, la résistance et la vitesse des ennemis (mines, Vautour, roquettes du Grand Duc), les chronos (orage). Le réglage « normal » reprend l'actuel.
 8. [ ] **Loire, suite** : placer les bateaux téléchargés (pêche, vapeur, moteur) avec `tools/assets/bake_model.js` ; écume le long des quais, feux de navigation la nuit, corne du bac.
 9. [ ] **Gens qui jouent au ballon** au parc Schwob : footballeurs téléchargés (`joueur1…5`, `gardien`, `arbitre`, `cage`), par `tools/assets/bake_people.js` s'ils ont un squelette.
 10. [ ] **Terrasses** : clients en personnages animés, avec une pose assise fabriquée à partir de la pose d'attente.
 11. [ ] **Mission du Vautour** : la fuite « vers le quai de la Fosse » est à revoir, le quai est dans la carte ; missions possibles à l'escalier Sainte-Anne et au tram.
 12. [ ] **Test « courses et défis » qui échoue par intermittence** : la voiture garée en fin de sprint est parfois détruite (champ `mortAvant` du test), puis le défi Destruction ne démarre pas dans le temps imparti. Cause à trouver (le défi démarre bien quand on rejoue la même séquence seule) ; piste de Fable : un panneau de résultat minuté en temps réel bloquerait le départ suivant, à rendre indépendant de l'horloge.
+13. [ ] **Roquettes sans effet sur la police et la circulation** (15 nov.) : elles touchent les Rapaces, pas les voitures de police ni celles qui passent.
+14. [ ] **La voiture traverse le bas de l'escalier Sainte-Anne** (15 nov.) : ajouter les murs de collision du massif, de la terrasse et des volées basses (`src/gx/landmarks.js`).
+15. [ ] **Une étoile quand on percute une voiture de police** (15 nov.) : sans être recherché, tamponner une voiture de police fait passer à une étoile.
+16. [ ] **Une étoile quand on écrase un piéton** (15 nov.) : message « La police l'a vu » et passage à une étoile.
+17. [ ] **Vue capot** (15 nov.) : on voit un peu le dessous du capot ; remonter ou avancer la caméra.
+18. [ ] **Pas de piétons en short sous la pluie ou l'orage** (15 nov.), si possible : tenues longues, parapluies éventuels.
 
 ## En attente d'un essai de l'utilisateur
 

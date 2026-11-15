@@ -67,6 +67,7 @@ function damage(c, d, by) {
   if (c.alive && c.shield > 0 && gx && gx.shieldHit) gx.shieldHit(c, by && by.x !== undefined ? by : null);
   if (!c.alive || c.shield > 0) return;
   markFight(c, by); if (by && by.local) markFight(by, c);
+  if (c.local && gx && gx.mission && gx.mission.live && gx.campDiff) d *= gx.campDiff().hurt; // (15 nov.) campaign difficulty
   c.hp -= d * (c.armor || 1) * (CAT_DMG[c.style] || 1); // (cycle 13) the van takes less, the coupé more
   if (c.local) { sfx.hit(); rumbleFor(c.owner, 0.35, 0.6, 90); }
   if (c.hp > 0) return;

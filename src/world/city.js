@@ -310,7 +310,13 @@ function densify(p, step) {
 function ribbon(buf, p0, w, y, rgb, uvScale) {
   const p = densify(p0, 2);
   const n = p.length / 2; if (n < 2) return;
-  const L = [], R = [];
+  const L = [], R = [], C = [];
+  let cols = 1; // more columns only where the ground bulges across the street (keeps flat streets as light as before)
+  if (w > 3.5) for (let i = 0; i < n && cols === 1; i += 2) {
+    const x = p[2 * i], z = p[2 * i + 1], j = Math.min(n - 1, i + 1), k = Math.max(0, j - 1), ex = p[2 * j] - p[2 * k], ez = p[2 * j + 1] - p[2 * k + 1], l = Math.hypot(ex, ez) || 1;
+    const ox = -ez / l * w / 2, oz = ex / l * w / 2;
+    for (const t of [0.25, 0.5, 0.75]) { const qx = x + ox * (1 - 2 * t), qz = z + oz * (1 - 2 * t), lin = groundH(x + ox, z + oz) * (1 - t) + groundH(x - ox, z - oz) * t; if (Math.abs(groundH(qx, qz) - lin) > 0.08) { cols = Math.ceil(w / 3); break; } }
+  }
   let dist = 0; const ds = [0];
   for (let i = 0; i < n; i++) {
     const x = p[2 * i], z = p[2 * i + 1];
@@ -325,15 +331,18 @@ function ribbon(buf, p0, w, y, rgb, uvScale) {
     }
     const ox = -dz * w / 2 * m, oz = dx * w / 2 * m;
     const lx = x + ox, lz = z + oz, rx = x - ox, rz = z - oz;
-    // hug the terrain on both edges so roads never float above or sink below the ground
+    // hug the terrain on both edges so roads never float above or sink below the ground; (15 nov.) and across the width
+    // every 3 m or so: flat from kerb to kerb, a wide street on a slope let the ground (and the pavements) show through it
     L.push([lx, groundH(lx, lz) + y, lz]); R.push([rx, groundH(rx, rz) + y, rz]);
+    const row = []; for (let c = 0; c <= cols; c++) { const t = c / cols, qx = lx + (rx - lx) * t, qz = lz + (rz - lz) * t; row.push([qx, groundH(qx, qz) + y, qz]); } C.push(row);
     if (i > 0) { dist += Math.hypot(x - p[2 * i - 2], z - p[2 * i - 1]); ds.push(dist); }
   }
   // world-space UVs: overlapping pieces of road show exactly the same texture, so junctions look seamless
   const wu = q => [q[0] / 6, q[2] / 6];
-  for (let i = 0; i < n - 1; i++) {
-    buf.tri(L[i], R[i], R[i + 1], [0, 1, 0], wu(L[i]), wu(R[i]), wu(R[i + 1]), rgb);
-    buf.tri(L[i], R[i + 1], L[i + 1], [0, 1, 0], wu(L[i]), wu(R[i + 1]), wu(L[i + 1]), rgb);
+  for (let i = 0; i < n - 1; i++) for (let c = 0; c < cols; c++) {
+    const a = C[i][c], b = C[i][c + 1], e = C[i + 1][c + 1], f = C[i + 1][c];
+    buf.tri(a, b, e, [0, 1, 0], wu(a), wu(b), wu(e), rgb);
+    buf.tri(a, e, f, [0, 1, 0], wu(a), wu(e), wu(f), rgb);
   }
 }
 function disk(buf, x, z, r, y, rgb) {

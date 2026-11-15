@@ -2546,7 +2546,13 @@ function densify(p, step) {
 function ribbon(buf, p0, w, y, rgb, uvScale) {
   const p = densify(p0, 2);
   const n = p.length / 2; if (n < 2) return;
-  const L = [], R = [];
+  const L = [], R = [], C = [];
+  let cols = 1; // more columns only where the ground bulges across the street (keeps flat streets as light as before)
+  if (w > 3.5) for (let i = 0; i < n && cols === 1; i += 2) {
+    const x = p[2 * i], z = p[2 * i + 1], j = Math.min(n - 1, i + 1), k = Math.max(0, j - 1), ex = p[2 * j] - p[2 * k], ez = p[2 * j + 1] - p[2 * k + 1], l = Math.hypot(ex, ez) || 1;
+    const ox = -ez / l * w / 2, oz = ex / l * w / 2;
+    for (const t of [0.25, 0.5, 0.75]) { const qx = x + ox * (1 - 2 * t), qz = z + oz * (1 - 2 * t), lin = groundH(x + ox, z + oz) * (1 - t) + groundH(x - ox, z - oz) * t; if (Math.abs(groundH(qx, qz) - lin) > 0.08) { cols = Math.ceil(w / 3); break; } }
+  }
   let dist = 0; const ds = [0];
   for (let i = 0; i < n; i++) {
     const x = p[2 * i], z = p[2 * i + 1];
@@ -2561,15 +2567,18 @@ function ribbon(buf, p0, w, y, rgb, uvScale) {
     }
     const ox = -dz * w / 2 * m, oz = dx * w / 2 * m;
     const lx = x + ox, lz = z + oz, rx = x - ox, rz = z - oz;
-    // hug the terrain on both edges so roads never float above or sink below the ground
+    // hug the terrain on both edges so roads never float above or sink below the ground; (15 nov.) and across the width
+    // every 3 m or so: flat from kerb to kerb, a wide street on a slope let the ground (and the pavements) show through it
     L.push([lx, groundH(lx, lz) + y, lz]); R.push([rx, groundH(rx, rz) + y, rz]);
+    const row = []; for (let c = 0; c <= cols; c++) { const t = c / cols, qx = lx + (rx - lx) * t, qz = lz + (rz - lz) * t; row.push([qx, groundH(qx, qz) + y, qz]); } C.push(row);
     if (i > 0) { dist += Math.hypot(x - p[2 * i - 2], z - p[2 * i - 1]); ds.push(dist); }
   }
   // world-space UVs: overlapping pieces of road show exactly the same texture, so junctions look seamless
   const wu = q => [q[0] / 6, q[2] / 6];
-  for (let i = 0; i < n - 1; i++) {
-    buf.tri(L[i], R[i], R[i + 1], [0, 1, 0], wu(L[i]), wu(R[i]), wu(R[i + 1]), rgb);
-    buf.tri(L[i], R[i + 1], L[i + 1], [0, 1, 0], wu(L[i]), wu(R[i + 1]), wu(L[i + 1]), rgb);
+  for (let i = 0; i < n - 1; i++) for (let c = 0; c < cols; c++) {
+    const a = C[i][c], b = C[i][c + 1], e = C[i + 1][c + 1], f = C[i + 1][c];
+    buf.tri(a, b, e, [0, 1, 0], wu(a), wu(b), wu(e), rgb);
+    buf.tri(a, e, f, [0, 1, 0], wu(a), wu(e), wu(f), rgb);
   }
 }
 function disk(buf, x, z, r, y, rgb) {
@@ -3771,7 +3780,7 @@ const SETTINGS_KEY = 'gangstamen.settings.v1';
 const settings = Object.assign({
   ctl: ['kb1', 'kb2', 'kb3', 'kb4'], soloCtl: 'kb1+pad0', nPlayers: 2,
   music: 0.7, fx: 0.8, amb: 0.8, rumble: true, retro: true, nick: '',
-  hdq: 2, autoQ: true, physics: 'arcade', tod: 'sunset', rain: '0', traffic: 2, voices: true, shadows: 1, dist: 2, intro: true, teams: false, team: [0, 1, 0, 1], netTeams: false, netTeam: -1, goal: 20, limit: 10, // physics 'real' = realistic mode (cycle 4), chosen in the options
+  hdq: 2, autoQ: true, physics: 'arcade', tod: 'sunset', rain: '0', traffic: 2, voices: true, shadows: 1, dist: 2, intro: true, teams: false, team: [0, 1, 0, 1], netTeams: false, netTeam: -1, goal: 20, limit: 10, campDiff: 1, // physics 'real' = realistic mode (cycle 4), chosen in the options
 }, (() => { try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); } catch (e) { return {}; } })());
 function saveSettingsRaw() { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { } }
 function saveSettings() { saveSettingsRaw(); if (typeof Profile !== 'undefined') Profile.capture(); } // the progression also goes to the save slot (cycle 10)
@@ -4588,6 +4597,7 @@ function damage(c, d, by) {
   if (c.alive && c.shield > 0 && gx && gx.shieldHit) gx.shieldHit(c, by && by.x !== undefined ? by : null);
   if (!c.alive || c.shield > 0) return;
   markFight(c, by); if (by && by.local) markFight(by, c);
+  if (c.local && gx && gx.mission && gx.mission.live && gx.campDiff) d *= gx.campDiff().hurt; // (15 nov.) campaign difficulty
   c.hp -= d * (c.armor || 1) * (CAT_DMG[c.style] || 1); // (cycle 13) the van takes less, the coupé more
   if (c.local) { sfx.hit(); rumbleFor(c.owner, 0.35, 0.6, 90); }
   if (c.hp > 0) return;
@@ -5416,8 +5426,11 @@ const gx = !HD ? null : (() => {
     for (const j of TF.lights) for (let q = 0; q < 4; q++) {
       const a = j.ax + q * Math.PI / 2, fx = -Math.sin(a), fz = -Math.cos(a); // heading of the traffic this head faces
       // pole at the right-hand corner before the junction for that traffic
-      const x = j.x - fx * 8 - fz * 6.5, z = j.z - fz * 8 + fx * 6.5;
-      if (segHit(j.x, j.z, (x - j.x) / 10.3, (z - j.z) / 10.3, 10.3) < 10) continue; // inside a building
+      // (15 nov.) then pushed out of the carriageway onto the pavement (0.9 m past the kerb): with fixed offsets, the
+      // poles of the wide streets stood in the middle of the road
+      const p0 = offRoad(j.x - fx * 8 - fz * 4, j.z - fz * 8 + fx * 4, 0.9); if (!p0) continue;
+      const [x, z] = p0, dj = Math.hypot(x - j.x, z - j.z); if (dj > 22) continue;
+      if (segHit(j.x, j.z, (x - j.x) / dj, (z - j.z) / dj, dj) < dj - 0.3) continue; // behind a wall, or inside a building
       poles.push([x, z]); heads.push({ x, z, h: a, j, axisA: q % 2 === 0 });
     }
     const grey = new THREE.MeshLambertMaterial({ color: 0x2c2f33 });
@@ -5708,24 +5721,53 @@ const gx = !HD ? null : (() => {
     const d = minPlayerDist(G.x[HQ.node], G.z[HQ.node]);
     return d > minD && d < maxD && !npcs.some(o => near(o, G.x[HQ.node], G.z[HQ.node]) < 10) ? HQ.node : -1;
   }
-  function buildHQ() { // a sign on a post, a blue lamp and two parked police cars in front of the station
+  function buildHQ() { // (15 nov.) the station itself dressed up: blue « POLICE NATIONALE » bands, flag, blue lamp,
+    // and the sign post and two parked police cars in its forecourt (before: by a back street, away from the building)
     if (HQ.built || !hd) return; HQ.built = true; hqNode(-1, 1e9);
-    const nx = G.x[HQ.node], nz = G.z[HQ.node], dx = HQ.x - nx, dz = HQ.z - nz, L = Math.hypot(dx, dz) || 1, ux = dx / L, uz = dz / L; // from the street towards the building
-    const sx = nx + ux * Math.min(L - 3, 7), sz = nz + uz * Math.min(L - 3, 7), y = surfaceH(sx, sz), g = new THREE.Group();
-    const [cv, cg] = canvas(512, 128); cg.fillStyle = '#1b2f8a'; cg.fillRect(0, 0, 512, 128); cg.strokeStyle = '#ffffff'; cg.lineWidth = 6; cg.strokeRect(6, 6, 500, 116);
-    cg.fillStyle = '#ffffff'; cg.font = 'bold 54px Arial, sans-serif'; cg.textAlign = 'center'; cg.textBaseline = 'middle'; cg.fillText('POLICE', 256, 46); cg.font = 'bold 30px Arial, sans-serif'; cg.fillText('NATIONALE', 256, 96);
+    const b = W.buildings.find(o => o.n === 'Police nationale'); if (!b) return;
+    const p = b.p, n = p.length / 2; let cx = 0, cz = 0, gmin = 1e9, sa = 0;
+    for (let i = 0; i < n; i++) { const j = (i + 1) % n; cx += p[2 * i] / n; cz += p[2 * i + 1] / n; gmin = Math.min(gmin, groundH(p[2 * i], p[2 * i + 1])); sa += p[2 * i] * p[2 * j + 1] - p[2 * j] * p[2 * i + 1]; }
+    const top = (b.b != null ? b.b : groundH(cx, cz)) + (b.h || 8); // top of the walls, as in city.js (the roof sits above)
+    // the front: the wall that looks towards the boulevard de la Liberté
+    let rx = cx - 30, rz = cz, rd = 1e18;
+    for (const r of W.roads) if (/Libert/.test(W.names[r.n] || '')) for (let k = 0; k < r.p.length; k += 2) { const d = (r.p[k] - cx) ** 2 + (r.p[k + 1] - cz) ** 2; if (d < rd) { rd = d; rx = r.p[k]; rz = r.p[k + 1]; } }
+    const [cv, cg] = canvas(1024, 128); cg.fillStyle = '#1b2f8a'; cg.fillRect(0, 0, 1024, 128); cg.fillStyle = '#ffffff'; cg.fillRect(0, 8, 1024, 6); cg.fillRect(0, 114, 1024, 6);
+    cg.font = 'bold 70px Arial, sans-serif'; cg.textAlign = 'center'; cg.textBaseline = 'middle'; cg.fillText('POLICE NATIONALE', 512, 66);
     const tx = new THREE.CanvasTexture(cv); tx.encoding = THREE.sRGBEncoding;
-    const post = new THREE.MeshStandardMaterial({ color: hd.lin(0x2a2a2e), roughness: 0.5, metalness: 0.6 }), sm = new THREE.MeshStandardMaterial({ map: tx, emissive: 0xffffff, emissiveMap: tx, emissiveIntensity: 0.35, roughness: 0.5 });
-    const sign = new THREE.Mesh(new THREE.BoxGeometry(3, 0.75, 0.1), [post, post, post, post, sm, sm]); sign.position.y = 3.2; g.add(sign);
-    const pl = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 3.2, 8), post); pl.position.y = 1.6; pl.castShadow = true; g.add(pl);
-    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.4, 0.6, 4) })); lamp.position.y = 3.75; g.add(lamp);
-    g.position.set(sx, y, sz); g.rotation.y = Math.atan2(-ux, -uz); g.traverse(o => { o.userData.hdLinear = true; }); scene.add(g);
-    gridAdd([sx - 0.1, sz, sx + 0.1, sz], 0.4);
-    for (const k of [-1, 1]) { // parked along the kerb, nose to tail
-      const m = makeCar(0xeef0f2, 0x1b2f8a, false, 'saloon', { guns: false, police: true }), px = nx + ux * 4.2 + uz * k * 3.2, pz = nz + uz * 4.2 - ux * k * 3.2;
-      m.position.set(px, surfaceH(px, pz) + 0.34, pz); m.rotation.y = Math.atan2(uz, -ux); scene.add(m);
-      gridAdd([px - uz * 2, pz + ux * 2, px + uz * 2, pz - ux * 2], 3.5);
+    const blue = new THREE.MeshStandardMaterial({ color: hd.lin(0x1b2f8a), roughness: 0.6 }), band = new THREE.MeshStandardMaterial({ map: tx, emissive: 0xffffff, emissiveMap: tx, emissiveIntensity: 0.3, roughness: 0.5 });
+    const post = new THREE.MeshStandardMaterial({ color: hd.lin(0x2a2a2e), roughness: 0.5, metalness: 0.6 }), g = new THREE.Group();
+    let front = null, fd = -2;
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n, ax = p[2 * i], az = p[2 * i + 1], bx = p[2 * j], bz = p[2 * j + 1], L = Math.hypot(bx - ax, bz - az); if (L < 4) continue;
+      let nx = (bz - az) / L, nz = -(bx - ax) / L; if (sa < 0) { nx = -nx; nz = -nz; } // outward
+      const mx = (ax + bx) / 2, mz = (az + bz) / 2, w = Math.min(L - 0.8, 9), dl = Math.hypot(rx - mx, rz - mz) || 1, f = (nx * (rx - mx) + nz * (rz - mz)) / dl;
+      if (f > fd) { fd = f; front = { mx, mz, nx, nz, ux: (bx - ax) / L, uz: (bz - az) / L, L }; }
+      const m = new THREE.Mesh(new THREE.BoxGeometry(w, 0.9, 0.12), [blue, blue, blue, blue, band, blue]);
+      m.position.set(mx + nx * 0.1, top - 1.1, mz + nz * 0.1); m.rotation.y = Math.atan2(nx, nz); g.add(m);
     }
+    if (front) {
+      const { mx, mz, nx, nz, ux, uz } = front;
+      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.4, 0.6, 4) })); lamp.position.set(mx + nx * 0.35, top - 2.1, mz + nz * 0.35); g.add(lamp);
+      // flag on the roof edge above the door
+      const fx = mx - nx * 1.2, fz = mz - nz * 1.2, pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 4, 8), post); pole.position.set(fx, top + 2, fz); g.add(pole);
+      const [fc, fg] = canvas(96, 64); fg.fillStyle = '#1d3f9a'; fg.fillRect(0, 0, 32, 64); fg.fillStyle = '#ffffff'; fg.fillRect(32, 0, 32, 64); fg.fillStyle = '#d42a2a'; fg.fillRect(64, 0, 32, 64);
+      const ft = new THREE.CanvasTexture(fc); ft.encoding = THREE.sRGBEncoding;
+      const flag = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1), new THREE.MeshStandardMaterial({ map: ft, side: THREE.DoubleSide, roughness: 0.8 })); flag.position.set(fx + ux * 0.78, top + 3.45, fz + uz * 0.78); flag.rotation.y = Math.atan2(nx, nz); g.add(flag);
+      // sign post in the forecourt, and two police cars parked side by side facing the station
+      const sx = mx + nx * 3 + ux * (front.L / 2 - 1), sz = mz + nz * 3 + uz * (front.L / 2 - 1), sy = surfaceH(sx, sz);
+      const [cv2, cg2] = canvas(512, 128); cg2.fillStyle = '#1b2f8a'; cg2.fillRect(0, 0, 512, 128); cg2.strokeStyle = '#ffffff'; cg2.lineWidth = 6; cg2.strokeRect(6, 6, 500, 116);
+      cg2.fillStyle = '#ffffff'; cg2.font = 'bold 54px Arial, sans-serif'; cg2.textAlign = 'center'; cg2.textBaseline = 'middle'; cg2.fillText('POLICE', 256, 46); cg2.font = 'bold 30px Arial, sans-serif'; cg2.fillText('NATIONALE', 256, 96);
+      const t2 = new THREE.CanvasTexture(cv2); t2.encoding = THREE.sRGBEncoding; const sm = new THREE.MeshStandardMaterial({ map: t2, emissive: 0xffffff, emissiveMap: t2, emissiveIntensity: 0.35, roughness: 0.5 });
+      const sign = new THREE.Mesh(new THREE.BoxGeometry(3, 0.75, 0.1), [post, post, post, post, sm, sm]); sign.position.set(sx, sy + 3.2, sz); sign.rotation.y = Math.atan2(nx, nz); g.add(sign);
+      const pl = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 3.2, 8), post); pl.position.set(sx, sy + 1.6, sz); pl.castShadow = true; g.add(pl);
+      gridAdd([sx - 0.1, sz, sx + 0.1, sz], 0.4);
+      for (const k of [-1, 1]) {
+        const m = makeCar(0xeef0f2, 0x1b2f8a, false, 'saloon', { guns: false, police: true }), px = mx + nx * 4.5 + ux * k * 1.6, pz = mz + nz * 4.5 + uz * k * 1.6;
+        m.position.set(px, surfaceH(px, pz) + 0.34, pz); m.rotation.y = Math.atan2(nx, nz); scene.add(m);
+        gridAdd([px - nx * 2, pz - nz * 2, px + nx * 2, pz + nz * 2], 3.5);
+      }
+    }
+    g.traverse(o => { o.userData.hdLinear = true; }); scene.add(g);
   }
   function spawnCop(L) {
     let n = R() < 0.6 ? hqNode() : -1; if (n < 0) n = spawnNode(110, 220); if (n < 0) return; // from the station when possible
@@ -6472,9 +6514,14 @@ const gx = !HD ? null : (() => {
     if (t > 0 && c.speed < 1) { c.nav.stuck += dt; if (c.nav.stuck > 1.6) { c.nav.back = 1; c.nav.stuck = 0; } } else c.nav.stuck = 0;
     return [{ t, s, hb: Math.abs(diff) > 1 && c.speed > 14 }, c.ri >= rt.length - 1 && Math.hypot(tx - c.x, tz - c.z) < 9];
   }
+  // (15 nov.) campaign difficulty, chosen on the campaign screen: enemy and ally toughness, damage the player takes
+  // during a mission, time limits. « Normal » is the game as it was.
+  const CAMP_DIFF = [{ name: 'Facile', foe: 0.7, ally: 1.4, hurt: 0.6, time: 1.35 }, { name: 'Normal', foe: 1, ally: 1, hurt: 1, time: 1 }, { name: 'Difficile', foe: 1.35, ally: 0.8, hurt: 1.4, time: 0.8 }];
+  function campDiff() { return CAMP_DIFF[settings.campDiff ?? 1] || CAMP_DIFF[1]; }
   function extraCar(paint, stripe, style, o = {}) {
     const c = new Car(makeCar(paint, stripe, false, style, { guns: o.guns !== false }), false);
-    Object.assign(c, { team: o.team ?? 1, hp: o.hp || 100, maxHp: o.hp || 100, extra: true, friendly: !!o.friendly });
+    const hp = Math.round((o.hp || 100) * (o.friendly ? campDiff().ally : campDiff().foe));
+    Object.assign(c, { team: o.team ?? 1, hp, maxHp: hp, extra: true, friendly: !!o.friendly });
     if (o.bot) c.botIndex = 100 + extras.length;
     extras.push(c); return c;
   }
@@ -6482,7 +6529,7 @@ const gx = !HD ? null : (() => {
   function missionRapace(x, z, h, o = {}) { // a Rapace that belongs to the mission: no respawn unless asked
     const r = new Car(makeCar(o.paint || 0x16151b, o.stripe || 0xc8202f, false, o.style || 'hatch'), false);
     r.botIndex = 200 + rivals.length; r.team = 0; r.meshTeam = 0; r.once = !o.respawn; r.place(x, z, h ?? 0);
-    r.hp = o.hp || 60; r.alive = true; r.wreck = 0;
+    r.hp = Math.round((o.hp || 60) * campDiff().foe); r.alive = true; r.wreck = 0;
     r.ai = { mode: 'cruise', target: nearestNodeTo(x, z), prev: -1, stuck: 0, back: 0, lost: 0, burst: 0, firing: 0, goal: o.goal || null };
     rivals.push(r); return r;
   }
@@ -6559,6 +6606,7 @@ const gx = !HD ? null : (() => {
     // nearest point of the boulevard: the forecourt marker sits there, the workshop beside it
     let best = null, bd = 1e9;
     for (const r of W.roads) { if (!r.d) continue; for (let i = 0; i < r.p.length; i += 2) { const d = Math.hypot(r.p[i] - G.x, r.p[i + 1] - G.z); if (d < bd) { bd = d; best = [r, i]; } } }
+    if (G.rx == null) { G.rx = G.x; G.rz = G.z; } // (15 nov.) the real spot, kept: the workshop is placed by it
     const [r, i] = best, p = r.p, j = i + 2 < p.length ? i + 2 : i - 2;
     let ux = p[j] - p[i], uz = p[j + 1] - p[i + 1]; const l = Math.hypot(ux, uz) || 1; ux /= l; uz /= l; if (j < i) { ux = -ux; uz = -uz; }
     const side = (-uz * (G.x - p[i]) + ux * (G.z - p[i + 1])) >= 0 ? 1 : -1;
@@ -6595,7 +6643,12 @@ const gx = !HD ? null : (() => {
         const ax = r.p[i], az = r.p[i + 1], bx = r.p[i + 2], bz = r.p[i + 3], L = Math.hypot(bx - ax, bz - az); if (L < 1) continue;
         for (let s = 0; s <= L; s += 3) {
           const x = ax + (bx - ax) * s / L, z = az + (bz - az) * s / L; if (Math.hypot(x - G.x, z - G.z) > 70) continue;
-          for (const side of [1, -1]) cand.push({ x, z, ux: (bx - ax) / L, uz: (bz - az) / L, side, w: r.w, d: Math.hypot(x - G.x, z - G.z) });
+          for (const side of [1, -1]) { // (15 nov.) ranked by how close the workshop's middle is to the real garage: before, the
+            // distance was taken from the kerb point, the same for both sides of the street, and some ended up opposite the real one
+            const ux = (bx - ax) / L, uz = (bz - az) / L, nx = -uz * side, nz = ux * side, m = r.w / 2 + 1.4 + DP / 2;
+            const same = ((G.rx ?? G.x) - x) * nx + ((G.rz ?? G.z) - z) * nz > 0; // on the real garage's side of the street
+            cand.push({ x, z, ux, uz, side, w: r.w, d: Math.hypot(x + nx * m - (G.rx ?? G.x), z + nz * m - (G.rz ?? G.z)) + (same ? 0 : 1000) });
+          }
         }
       }
     }
@@ -7439,7 +7492,7 @@ const gx = !HD ? null : (() => {
       intro: [['nadia', 'Quatre Rapaces planquent leurs caisses au bord de la Loire. De nuit, sous l’orage, ils ne t’attendent pas.'], ['nadia', 'Tu as trois minutes avant qu’ils ne déménagent. Ramasse les roquettes sur la route, ça aide.']],
       outro: [['radio', 'Nuit agitée sur les quais : quatre voitures en flammes, et l’orage qui n’arrange rien.'], ['duc', 'Tu m’as pris la place, la gare, mon lieutenant et mes quais. Monte sur la Butte, si tu oses.']],
       setup(m) {
-        placePlayer([60, 280], [200, 470]); m.left = 180; m.kills = 0;
+        placePlayer([60, 280], [200, 470]); m.left = m.left0 = Math.round(180 * campDiff().time); m.kills = 0;
         const spots = [[150, 470], [240, 452], [320, 480], [300, 420]];
         m.r = spots.map(([x, z]) => { const [a, b] = roadPoint(x, z); return missionRapace(a, b, 0, { hp: 70 }); });
         const L = locals[0]; L.ammo = L.ammo || { rockets: 0, mines: 0, nitro: 0 }; L.ammo.rockets = Math.max(L.ammo.rockets, 3); L.weapon = 'rockets';
@@ -7447,7 +7500,7 @@ const gx = !HD ? null : (() => {
       update(m, dt) {
         m.left -= dt; const alive = m.r.filter(r => r.alive);
         const near_ = alive.reduce((b, r) => !b || Math.hypot(r.x - locals[0].car.x, r.z - locals[0].car.z) < Math.hypot(b.x - locals[0].car.x, b.z - locals[0].car.z) ? r : b, null);
-        objective('Orage sur la Loire', 'Rapaces restants : ' + alive.length + ' · ' + fmtClock(m.left)); objBar(m.left / 180);
+        objective('Orage sur la Loire', 'Rapaces restants : ' + alive.length + ' · ' + fmtClock(m.left)); objBar(m.left / m.left0);
         objDir(near_ ? near_.x : null, near_ ? near_.z : 0);
         if (!alive.length) return 'win';
         return m.left <= 0 ? 'fail' : null;
@@ -7541,6 +7594,13 @@ const gx = !HD ? null : (() => {
       b.addEventListener('click', () => startMission(i));
       box.append(b);
     });
+    { // difficulty switch (15 nov.)
+      const d = document.createElement('button'); d.className = 'mbtn'; d.style.marginTop = '8px';
+      const lab = () => { d.textContent = 'Difficulté : ' + campDiff().name + ' ◀ ▶'; }; lab();
+      d.addEventListener('click', () => { settings.campDiff = ((settings.campDiff ?? 1) + 1) % 3; saveSettings(); lab(); });
+      d.addEventListener('keydown', e => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { settings.campDiff = ((settings.campDiff ?? 1) + (e.key === 'ArrowLeft' ? 2 : 1)) % 3; saveSettings(); lab(); e.preventDefault(); } });
+      box.prepend(d);
+    }
     const prog = $('campProg'); if (prog) prog.textContent = done.length + ' / ' + MISSIONS.length + ' missions · respect en banque : ' + (settings.bank || 0);
     // races and challenges of the open world, with the records of this save (cycle 11)
     const rb = document.createElement('div'); rb.className = 'fine'; rb.style.marginTop = '10px';
@@ -8427,7 +8487,7 @@ const gx = !HD ? null : (() => {
   { const el = $('ammo'); if (el) { el.style.pointerEvents = 'auto'; el.style.cursor = 'pointer'; el.addEventListener('pointerdown', e => { e.preventDefault(); if (locals[0]) cycleWeapon(locals[0]); }); } }
   const api = { netIn, dj, cycleWeapon, hearShot, quickChat, chatIn, step: gameStep, world, landmarkTick, tick: dt => { tick(dt); Boats.step(dt); }, Boats, People, portCranes, LM, walks: () => { if (!walks) buildWalks(); return walks; }, start: startHook, cars: () => npcs.concat(extras), copsOn, shieldHit, makeBus, policeHQ: HQ, hqNode, spots: SPOTS, unlocked, postcards, acts: () => (actsBuild(), acts), actRun: () => run, startAct, hearCars: carsHearShot, traffic: TF, Fences, LightPoles, lightState, roadRules, makeNpc, placeOnGraph, nextNode, spawnPatrol, npcs: () => npcs, damage: damageNpc, addHeat, say, peds: () => peds, stars, special, startMission, renderCampaign, cleanupMission, MISSIONS,
     get gmode() { return gm ? gm.kind : 0; }, mines: () => mines, customers: () => customers, teamScores: modeTeamScores, goalText, rematch: rematchMode,
-    get blocking() { return blocking; }, get mission() { return mission; }, foes: () => extras.filter(c => c.alive && c.team === 1), saveBank, pus: () => pus, furniture: () => furniture, garage: GARAGE, garages: GARAGES,
+    get blocking() { return blocking; }, get mission() { return mission; }, foes: () => extras.filter(c => c.alive && c.team === 1), saveBank, pus: () => pus, furniture: () => furniture, garage: GARAGE, garages: GARAGES, campDiff,
     get onGarage() { return gx_onGarage; }, get objTarget() { return objEl.hidden ? null : objTgt; },
     minimap(me, add) { minimap(me, add); actMinimap(add); discMinimap(add); for (const pu of pus) if (pu.on) add(pu, '#' + new THREE.Color(PU_COL[pu.kind]).getHexString()); for (const c of extras) if (c.alive) add(c, c.friendly ? '#f2c81e' : '#ff3b3b'); for (const m of markers) add(m, '#ffffff'); if (GARAGE.pad && mode === 'solo') for (const G of GARAGES) add(G, '#3a8aff'); } };
   return api;

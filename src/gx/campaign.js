@@ -89,7 +89,7 @@
       intro: [['nadia', 'Quatre Rapaces planquent leurs caisses au bord de la Loire. De nuit, sous l’orage, ils ne t’attendent pas.'], ['nadia', 'Tu as trois minutes avant qu’ils ne déménagent. Ramasse les roquettes sur la route, ça aide.']],
       outro: [['radio', 'Nuit agitée sur les quais : quatre voitures en flammes, et l’orage qui n’arrange rien.'], ['duc', 'Tu m’as pris la place, la gare, mon lieutenant et mes quais. Monte sur la Butte, si tu oses.']],
       setup(m) {
-        placePlayer([60, 280], [200, 470]); m.left = 180; m.kills = 0;
+        placePlayer([60, 280], [200, 470]); m.left = m.left0 = Math.round(180 * campDiff().time); m.kills = 0;
         const spots = [[150, 470], [240, 452], [320, 480], [300, 420]];
         m.r = spots.map(([x, z]) => { const [a, b] = roadPoint(x, z); return missionRapace(a, b, 0, { hp: 70 }); });
         const L = locals[0]; L.ammo = L.ammo || { rockets: 0, mines: 0, nitro: 0 }; L.ammo.rockets = Math.max(L.ammo.rockets, 3); L.weapon = 'rockets';
@@ -97,7 +97,7 @@
       update(m, dt) {
         m.left -= dt; const alive = m.r.filter(r => r.alive);
         const near_ = alive.reduce((b, r) => !b || Math.hypot(r.x - locals[0].car.x, r.z - locals[0].car.z) < Math.hypot(b.x - locals[0].car.x, b.z - locals[0].car.z) ? r : b, null);
-        objective('Orage sur la Loire', 'Rapaces restants : ' + alive.length + ' · ' + fmtClock(m.left)); objBar(m.left / 180);
+        objective('Orage sur la Loire', 'Rapaces restants : ' + alive.length + ' · ' + fmtClock(m.left)); objBar(m.left / m.left0);
         objDir(near_ ? near_.x : null, near_ ? near_.z : 0);
         if (!alive.length) return 'win';
         return m.left <= 0 ? 'fail' : null;
@@ -191,6 +191,13 @@
       b.addEventListener('click', () => startMission(i));
       box.append(b);
     });
+    { // difficulty switch (15 nov.)
+      const d = document.createElement('button'); d.className = 'mbtn'; d.style.marginTop = '8px';
+      const lab = () => { d.textContent = 'Difficulté : ' + campDiff().name + ' ◀ ▶'; }; lab();
+      d.addEventListener('click', () => { settings.campDiff = ((settings.campDiff ?? 1) + 1) % 3; saveSettings(); lab(); });
+      d.addEventListener('keydown', e => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { settings.campDiff = ((settings.campDiff ?? 1) + (e.key === 'ArrowLeft' ? 2 : 1)) % 3; saveSettings(); lab(); e.preventDefault(); } });
+      box.prepend(d);
+    }
     const prog = $('campProg'); if (prog) prog.textContent = done.length + ' / ' + MISSIONS.length + ' missions · respect en banque : ' + (settings.bank || 0);
     // races and challenges of the open world, with the records of this save (cycle 11)
     const rb = document.createElement('div'); rb.className = 'fine'; rb.style.marginTop = '10px';

@@ -166,9 +166,14 @@
     if (t > 0 && c.speed < 1) { c.nav.stuck += dt; if (c.nav.stuck > 1.6) { c.nav.back = 1; c.nav.stuck = 0; } } else c.nav.stuck = 0;
     return [{ t, s, hb: Math.abs(diff) > 1 && c.speed > 14 }, c.ri >= rt.length - 1 && Math.hypot(tx - c.x, tz - c.z) < 9];
   }
+  // (15 nov.) campaign difficulty, chosen on the campaign screen: enemy and ally toughness, damage the player takes
+  // during a mission, time limits. « Normal » is the game as it was.
+  const CAMP_DIFF = [{ name: 'Facile', foe: 0.7, ally: 1.4, hurt: 0.6, time: 1.35 }, { name: 'Normal', foe: 1, ally: 1, hurt: 1, time: 1 }, { name: 'Difficile', foe: 1.35, ally: 0.8, hurt: 1.4, time: 0.8 }];
+  function campDiff() { return CAMP_DIFF[settings.campDiff ?? 1] || CAMP_DIFF[1]; }
   function extraCar(paint, stripe, style, o = {}) {
     const c = new Car(makeCar(paint, stripe, false, style, { guns: o.guns !== false }), false);
-    Object.assign(c, { team: o.team ?? 1, hp: o.hp || 100, maxHp: o.hp || 100, extra: true, friendly: !!o.friendly });
+    const hp = Math.round((o.hp || 100) * (o.friendly ? campDiff().ally : campDiff().foe));
+    Object.assign(c, { team: o.team ?? 1, hp, maxHp: hp, extra: true, friendly: !!o.friendly });
     if (o.bot) c.botIndex = 100 + extras.length;
     extras.push(c); return c;
   }
@@ -176,7 +181,7 @@
   function missionRapace(x, z, h, o = {}) { // a Rapace that belongs to the mission: no respawn unless asked
     const r = new Car(makeCar(o.paint || 0x16151b, o.stripe || 0xc8202f, false, o.style || 'hatch'), false);
     r.botIndex = 200 + rivals.length; r.team = 0; r.meshTeam = 0; r.once = !o.respawn; r.place(x, z, h ?? 0);
-    r.hp = o.hp || 60; r.alive = true; r.wreck = 0;
+    r.hp = Math.round((o.hp || 60) * campDiff().foe); r.alive = true; r.wreck = 0;
     r.ai = { mode: 'cruise', target: nearestNodeTo(x, z), prev: -1, stuck: 0, back: 0, lost: 0, burst: 0, firing: 0, goal: o.goal || null };
     rivals.push(r); return r;
   }
