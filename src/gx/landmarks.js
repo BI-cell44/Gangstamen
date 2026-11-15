@@ -172,7 +172,7 @@
     // a moored barge and the yellow Titan crane at the far end of the quays, towards the Île de Nantes
     let east = null; for (const sg of segs) if (sg[1] > 480 && (!east || sg[0] > east[0])) east = sg;
     let mid = null; for (const sg of segs) if (sg[1] > 520 && Math.abs(sg[0] - 250) < (mid ? Math.abs(mid[0] - 250) : 1e9)) mid = sg;
-    if (mid) barge(mid); titan();
+    if (mid) barge(mid); titan(); titan(1218, 366, 0x8d949a, Math.PI / 2 + 0.25, 'titanGrise');
   }
   function barge(sg) {
     const [ax, az, bx, bz] = sg, L = Math.hypot(bx - ax, bz - az) || 1, ux = (bx - ax) / L, uz = (bz - az) / L;
@@ -185,9 +185,10 @@
     g.position.set(ax + nx * 6, WATER_Y - 0.1, az + nz * 6); g.rotation.y = Math.atan2(ux, uz);
     hd.linearize(g); g.traverse(o => { o.userData.hdLinear = true; }); scene.add(g); LM.barge = g;
   }
-  function titan(sg) { // the yellow Titan crane (1954): a lattice tower, the cabin, the long boom over the river
-    const x = 1690, z = -430; // its real spot: the western tip of the Île de Nantes, across the Loire from the quai de la Fosse
-    const yel = stdM(0xf2b705, 0.45, 0.35), dark = stdM(0x2a2a2e, 0.6, 0.5), g = new THREE.Group();
+  // The two Titan cranes of the île de Nantes, where OpenStreetMap puts them: the yellow one (1954) on the quay facing the
+  // quai de la Fosse, the grey one (1966) at the western tip, by the Hangar à Bananes, where the ferry lands.
+  function titan(x = 1528, z = -288, paint = 0xf2b705, turn = 0.4, key = 'titan') {
+    const yel = stdM(paint, 0.45, 0.35), dark = stdM(0x2a2a2e, 0.6, 0.5), g = new THREE.Group();
     const add = (geo, m, px, py, pz, rx = 0, ry = 0, rz = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(px, py, pz); o.rotation.set(rx, ry, rz); o.castShadow = true; g.add(o); return o; };
     // portal legs with cross-bracing
     for (const lx of [-5, 5]) for (const lz of [-5, 5]) add(new THREE.BoxGeometry(0.8, 26, 0.8), yel, lx, 13, lz);
@@ -202,10 +203,11 @@
     add(new THREE.BoxGeometry(4.5, 4, 5), dark, 0, 33, 21);                              // counterweight
     add(new THREE.CylinderGeometry(0.05, 0.05, 46, 4), dark, 0, 40, -18, 1.2, 0, 0); add(new THREE.CylinderGeometry(0.05, 0.05, 22, 4), dark, 0, 40, 10, -1.0, 0, 0);
     add(new THREE.CylinderGeometry(0.04, 0.04, 20, 4), dark, 0, 24, -52); add(new THREE.BoxGeometry(1.2, 1.4, 1.2), dark, 0, 14, -52);
-    const redL = new THREE.MeshBasicMaterial({ color: new THREE.Color(8, 0.3, 0.2) }); LM.titanLights = redL;
+    const redL = LM.titanLights || (LM.titanLights = new THREE.MeshBasicMaterial({ color: new THREE.Color(8, 0.3, 0.2) }));
     for (const p of [[0, 46.2, 0], [0, 35.6, -55], [0, 35.6, 22]]) add(new THREE.SphereGeometry(0.35, 8, 6), redL, ...p);
-    g.position.set(x, Math.max(groundH(x, z), WATER_Y + 1.2), z); g.rotation.y = 0.4; g.scale.setScalar(1.15);
-    hd.linearize(g); g.traverse(o => { o.userData.hdLinear = true; }); scene.add(g); LM.titan = g;
+    g.position.set(x, Math.max(groundH(x, z), WATER_Y + 1.2), z); g.rotation.y = turn; g.scale.setScalar(1.15);
+    hd.linearize(g); g.traverse(o => { o.userData.hdLinear = true; }); scene.add(g); LM[key] = g;
+    for (const [lx, lz] of [[-5, -5], [5, -5], [5, 5], [-5, 5]]) { const c = Math.cos(turn), s = Math.sin(turn), px = x + (lx * c + lz * s) * 1.15, pz = z + (-lx * s + lz * c) * 1.15; gridAdd([px - 0.5, pz, px + 0.5, pz], 3.5); gridAdd([px, pz - 0.5, px, pz + 0.5], 3.5); } // the legs stop a car, one drives under the portal
   }
   // the Misery quarry: the granite cliff face of the old quarry, just east of the district
   function misery() {

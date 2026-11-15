@@ -600,5 +600,33 @@
   "simMs": 12.31,
   "loadS": 29,
   "failed": 0
+ },
+ {
+  "date": "2026-11-15T13:28",
+  "label": "Fable : rampes du bac, grue grise",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 735,
+  "trianglesK": 1128,
+  "meshes": 3395,
+  "geometries": 2982,
+  "materials": 471,
+  "heapMB": 326,
+  "simMs": 15.43,
+  "loadS": 32,
+  "failed": 2
+ },
+ {
+  "date": "2026-11-15T13:39",
+  "label": "Fable : rampes du bac, grue grise",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 797,
+  "trianglesK": 1154,
+  "meshes": 3342,
+  "geometries": 2957,
+  "materials": 455,
+  "heapMB": 290,
+  "simMs": 11.71,
+  "loadS": 21,
+  "failed": 0
  }
 ]

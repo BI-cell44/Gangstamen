@@ -7,11 +7,13 @@
     const list = [], CH = [[60, 1150], [300, 800], [560, 600], [820, 490], [960, 482]]; // middle of the channel, west to east; they turn back before the shuttle's route round the tip of the island
     // the shuttle (user's choice, 15 Nov.): like the Navibus, from the Gare Maritime (quai de la Fosse) down the Madeleine arm
     // and round the tip of the île de Nantes to the Hangar à Bananes, by the grey Titan crane; it carries the players' cars
-    const ROUTE = [[1339, -383], [1376, -348], [1300, -210], [1235, -50], [1150, 110], [1078, 250], [1092, 392], [1190, 440], [1300, 442], [1300, 401]];
-    const LAND = [{ x: 1298, z: -402, h: Math.PI / 2, name: 'Gare Maritime' }, { x: 1300, z: 352, h: Math.PI, name: 'Île de Nantes' }]; // where a car waits and is set down; h: heading when set down (inland)
+    const ROUTE = [[1339, -383], [1376, -348], [1300, -210], [1235, -50], [1150, 110], [1078, 250], [1092, 392], [1190, 440], [1312, 442], [1312, 401]]; // lands just east of the footbridge of the real pontoon (its parapet ends at x 1301)
+    // the ramps (no teleporting, user's request of 15 Nov.): from the quay down to the end of the boat when it is alongside;
+    // s: where the ramp starts on land, the boat's end is worked out from the route. A big light at the top says go or wait.
+    const LAND = [{ name: 'Gare Maritime', end: -1 }, { name: 'Île de Nantes', end: 1 }];
     const DECK_Y = 1.55, DOCK = [ROUTE[0], ROUTE[ROUTE.length - 1]];
     const MOORED = [1388, -468, Math.atan2(-0.69, 0.72)];
-    let curve = null, len = 0, built = false, wakeM = null, moored = null, route = null, routeLen = 0, fy = null; const halos = [];
+    let curve = null, len = 0, built = false, wakeM = null, moored = null, route = null, routeLen = 0, fy = null;
     function decode(name, length, axis, waterline) { // -> geometry in metres, bow towards -z, y = 0 at the water line
       const m = (W.models || {})[name]; if (!m) return null;
       const bin = (s, T) => { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new T(u.buffer); };
@@ -57,13 +59,26 @@
       if (sail) for (let i = 0; i < 4; i++) { const b = add('sail', sail, mat, 26, 2.2); b.s = (i * 0.25 + 0.06 + R() * 0.08) * len; b.v0 = 2.8 + R() * 1.6; b.v = b.v0; }
       if (ferry) {
         route = new THREE.CatmullRomCurve3(ROUTE.map(p => new THREE.Vector3(p[0], 0, p[1])), false, 'catmullrom', 0.5); routeLen = route.getLength();
-        const b = fy = add('ferry', ferry, mat, 46, 9); b.t = 0; b.side = 0; b.wait = 12; b.v = 0; b.cargo = [];
-        DECKS.push((x, z) => { if (!b.cargo.length) return null; const dx = x - b.x, dz = z - b.z, s = Math.sin(b.h), c = Math.cos(b.h), lx = dx * c - dz * s, lz = dx * s + dz * c; return Math.abs(lx) < 9 && Math.abs(lz) < 21 ? WATER_Y + DECK_Y : null; });
-        for (const L of LAND) { // a column of light where the car waits for the boat
-          L.y = groundH(L.x, L.z);
-          const m = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, 14, 24, 1, true), new THREE.MeshBasicMaterial({ color: 0x4fd0ff, transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
-          m.position.set(L.x, L.y + 7, L.z); m.userData.hdLinear = true; m.renderOrder = 3; scene.add(m); halos.push(m);
-        }
+        const b = fy = add('ferry', ferry, mat, 46, 9); b.t = 0; b.side = 0; b.wait = 20; b.v = 0; b.still = 0; b.came = [];
+        const onDeck = (x, z) => { const dx = x - b.x, dz = z - b.z, s = Math.sin(b.h), c = Math.cos(b.h), lx = dx * c - dz * s, lz = dx * s + dz * c; return Math.abs(lx) < 8.2 && Math.abs(lz) < 21.5; };
+        b.onDeck = onDeck;
+        DECKS.push((x, z) => onDeck(x, z) ? WATER_Y + DECK_Y : null);
+        const lampG = new THREE.SphereGeometry(0.75, 12, 8), postM = new THREE.MeshLambertMaterial({ color: hd.lin(0x3a3f44) }), rampM = new THREE.MeshLambertMaterial({ color: hd.lin(0x70757a) });
+        LAND.forEach((L, k) => {
+          // the boat's pose at this dock, the end of its deck that touches the land, and the ramp from there up the bank
+          const u = k ? 1 : 0, p = route.getPointAt(u), tg = route.getTangentAt(u), ax = tg.x * L.end, az = tg.z * L.end; // (ax, az): from the boat towards the land
+          L.bx = p.x + ax * 21.5; L.bz = p.z + az * 21.5; L.len = 24; L.ax = ax; L.az = az; L.x = L.bx + ax * L.len; L.z = L.bz + az * L.len; L.y = groundH(L.x, L.z); L.hw = 4.6;
+          DECKS.push((x, z) => { // lowered only while the boat is alongside
+            if (b.side !== k || b.wait <= 0) return null;
+            const dx = x - L.bx, dz = z - L.bz, s = dx * ax + dz * az, lat = dx * az - dz * ax; if (s < -0.5 || s > L.len || Math.abs(lat) > L.hw) return null;
+            const y = WATER_Y + DECK_Y + (L.y - WATER_Y - DECK_Y) * Math.max(0, s) / L.len; return y > groundH(x, z) - 0.2 ? y : null; });
+          const g = new THREE.BoxGeometry(L.hw * 2, 0.3, Math.hypot(L.len, L.y - WATER_Y - DECK_Y) + 1), m = new THREE.Mesh(g, rampM);
+          m.position.set(L.bx + ax * L.len / 2, (L.y + WATER_Y + DECK_Y) / 2 - 0.2, L.bz + az * L.len / 2); m.rotation.order = 'YXZ'; m.rotation.y = Math.atan2(ax, az); m.rotation.x = -Math.atan2(L.y - WATER_Y - DECK_Y, L.len);
+          m.receiveShadow = true; m.userData.hdLinear = true; scene.add(m);
+          const lx = L.x - az * (L.hw + 1.2), lz = L.z + ax * (L.hw + 1.2), post = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 5, 8), postM); post.position.set(lx, groundH(lx, lz) + 2.5, lz); post.userData.hdLinear = true; scene.add(post);
+          L.lamp = new THREE.Mesh(lampG, new THREE.MeshBasicMaterial({ color: 0xff2a1a })); L.lamp.position.set(lx, groundH(lx, lz) + 5.4, lz); L.lamp.userData.hdLinear = true; scene.add(L.lamp);
+          gridAdd([lx - 0.3, lz, lx + 0.3, lz], 3.5);
+        });
       }
       // the Maillé-Brézé, museum ship of the quai de la Fosse, moored where OpenStreetMap draws her (132 m, bow upstream)
       const esc = decode('escorteur', 132, 2, 0.09);
@@ -86,21 +101,30 @@
           roll = (0.13 + Math.sin(T * 0.5 + b.ph) * 0.035) * (t.x > 0 ? 1 : -1) * Math.min(1, b.v / 2); pitch = Math.sin(T * 0.8 + b.ph) * 0.018;
         } else {
           // b.t: metres along the route from the Gare Maritime; b.side: the dock it is at, or leaving from
-          const goal = b.side ? 0 : routeLen;
+          const goal = b.side ? 0 : routeLen, cars = typeof locals !== 'undefined' ? locals.map(L => L.car).filter(c => c && c.alive) : [], x0 = b.x, z0 = b.z, h0 = b.h;
+          const riders = cars.filter(c => b.onDeck(c.x, c.z));
           if (b.wait > 0) {
-            b.wait -= dt; b.v = 0;
-            // a player's car waiting in the light, almost stopped: on board, and the boat leaves
-            if (!b.cargo.length && typeof locals !== 'undefined') for (const L of locals) { const c = L.car, P = LAND[b.side]; if (c && c.alive && !c.aboard && Math.hypot(c.x - P.x, c.z - P.z) < 5.5 && Math.hypot(c.vx, c.vz) < 3) { c.aboard = { lx: b.cargo.length % 2 ? 3.6 : 0, lz: Math.floor(b.cargo.length / 2) * 6, rh: b.side ? Math.PI : 0 }; b.cargo.push(c); b.wait = Math.min(b.wait, 2.5); flashFor(L, 'NAVETTE', 'Cap sur ' + LAND[1 - b.side].name); } }
+            b.v = 0; const P = LAND[b.side];
+            // nobody halfway up the ramp when it lifts; riders stopped on board: no need to wait for the timetable
+            const onRamp = cars.some(c => { const dx = c.x - P.bx, dz = c.z - P.bz, s = dx * P.ax + dz * P.az; return s > -1 && s < P.len + 2 && Math.abs(dx * P.az - dz * P.ax) < P.hw + 1 && !b.onDeck(c.x, c.z); });
+            b.still = riders.length && riders.every(c => Math.hypot(c.vx, c.vz) < 0.8) ? b.still + dt : 0;
+            b.wait -= dt; if (b.still > 4 && b.wait > 2 && riders.some(c => !b.came.includes(c))) b.wait = 2; // only for those who came aboard here: who stays on after a crossing waits for the timetable if (onRamp && b.wait < 1.5) b.wait = 1.5;
+            if (b.wait <= 0 && riders.length) for (const L of locals) if (riders.includes(L.car)) flashFor(L, 'NAVETTE', 'Cap sur ' + LAND[1 - b.side].name);
           } else {
-            const left = Math.abs(goal - b.t), done = routeLen - left, want = Math.min(b.cargo.length ? 11 : 8, 0.7 + left * 0.2, 0.7 + done * 0.3);
+            const left = Math.abs(goal - b.t), done = routeLen - left, want = Math.min(riders.length ? 11 : 8, 0.7 + left * 0.2, 0.7 + done * 0.3);
             b.v += (want - b.v) * Math.min(1, dt * 1.2); b.t += (b.side ? -1 : 1) * b.v * dt;
-            if (left < 0.6) { b.t = goal; b.side = 1 - b.side; b.wait = 25; b.v = 0;
-              for (const c of b.cargo) { const P = LAND[b.side]; c.aboard = null; c.place(P.x, P.z, P.h); const L = locals.find(l => l.car === c); if (L) flashFor(L, P.name.toUpperCase(), 'Terminus de la navette'); }
-              b.cargo.length = 0; }
+            if (left < 0.6) { b.t = goal; b.side = 1 - b.side; b.wait = 25; b.v = 0; b.still = 0; b.came = riders.slice();
+              for (const L of locals) if (riders.includes(L.car)) flashFor(L, LAND[b.side].name.toUpperCase(), 'Feu vert : descends par la rampe'); }
           }
           const u = Math.min(1, Math.max(0, b.t / routeLen)), p = route.getPointAt(u), tg = route.getTangentAt(u);
           b.x = p.x; b.z = p.z; b.h = Math.atan2(-tg.x, -tg.z); // double-ended: same heading both ways
-          for (const c of b.cargo) { const a = c.aboard, s = Math.sin(b.h), co = Math.cos(b.h); c.x = b.x + a.lx * co + a.lz * s; c.z = b.z - a.lx * s + a.lz * co; c.h = b.h + a.rh; c.vx = c.vz = 0; }
+          // whoever stands on the deck is carried along, and stays free to move on it
+          if (b.x !== x0 || b.z !== z0 || b.h !== h0) for (const c of riders) {
+            const dx = c.x - x0, dz = c.z - z0, s0 = Math.sin(h0), c0 = Math.cos(h0), lx = dx * c0 - dz * s0, lz = dx * s0 + dz * c0, s1 = Math.sin(b.h), c1 = Math.cos(b.h), dh = b.h - h0;
+            c.x = b.x + lx * c1 + lz * s1; c.z = b.z - lx * s1 + lz * c1; c.h += dh;
+            const vx = c.vx, vz = c.vz, sd = Math.sin(dh), cd = Math.cos(dh); c.vx = vx * cd + vz * sd; c.vz = -vx * sd + vz * cd;
+          }
+          for (let k = 0; k < 2; k++) LAND[k].lamp.material.color.setHex(b.side === k && b.wait > 3 ? 0x2cff4a : 0xff2a1a);
           b.wk.rotation.y = b.side ? Math.PI : 0; b.wk.position.z = b.side ? -20 : 20;
           roll = Math.sin(T * 0.45) * 0.006;
         }

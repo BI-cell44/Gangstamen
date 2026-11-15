@@ -152,16 +152,23 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
     });
     expect(r.avance > r.longueur && r.auDessusDeLEau > 20 && r.tablier > 4 && r.solArrivee > 2 && r.est > 2200, JSON.stringify(r)); return r;
   });
-  await check('navette : la voiture embarque à la gare maritime et descend sur l’île', async () => {
+  await check('navette : on monte par la rampe, on traverse, on descend sur l’île sans être repris', async () => {
     const r = await ev(() => {
-      const B = __gm.gx.Boats, f = B.ferry, c = __gm.locals()[0].car, A = B.LAND[0], Z = B.LAND[1], home = [c.x, c.z, c.h];
-      for (let i = 0; i < 2000 && !(f.side === 0 && f.wait > 5); i++) B.step(0.5); // wait for the boat at the Gare Maritime
-      c.place(A.x, A.z, 0); c.hp = 100; B.step(0.1); const boarded = !!c.aboard; let onDeck = 0, wet = 0, n = 0, maxV = 0;
-      for (let i = 0; i < 3000 && c.aboard; i++) { B.step(0.2); __gm.step(1 / 30); n++; maxV = Math.max(maxV, f.v); if (Math.abs(__gm.surfaceH(c.x, c.z) - (0.3 + 1.55)) < 1.2) onDeck++; if (c.aboard && Math.hypot(c.x - f.x, c.z - f.z) > 12) wet++; }
-      const res = { embarque: boarded, pas: n, surLePont: onDeck, ecarts: wet, vitesse: +maxV.toFixed(1), arrive: +Math.hypot(c.x - Z.x, c.z - Z.z).toFixed(1), sol: +__gm.groundH(c.x, c.z).toFixed(1), libre: !c.aboard, hp: Math.round(c.hp) };
+      const B = __gm.gx.Boats, f = B.ferry, c = __gm.locals()[0].car, A = B.LAND[0], Z = B.LAND[1], home = [c.x, c.z, c.h], g = __gm.groundH;
+      for (let i = 0; i < 3000 && !(f.side === 0 && f.wait > 18); i++) B.step(0.5); // the boat alongside at the Gare Maritime
+      const vert = A.lamp.material.color.getHex() === 0x2cff4a;
+      c.place(A.x + A.ax * 4, A.z + A.az * 4, Math.atan2(A.ax, A.az)); c.hp = 100;
+      for (let i = 0; i < 500; i++) { c.vx = -A.ax * 7; c.vz = -A.az * 7; __gm.step(1 / 30); if (f.onDeck(c.x, c.z) && Math.hypot(c.x - f.x, c.z - f.z) < 7) break; }
+      const boarded = f.onDeck(c.x, c.z), yDeck = +__gm.surfaceH(c.x, c.z).toFixed(1); let off = 0, n = 0;
+      for (let i = 0; i < 6000 && !(f.side === 1 && f.wait > 0); i++) { c.vx = c.vz = 0; B.step(0.2); __gm.step(1 / 60); n++; if (!f.onDeck(c.x, c.z)) off++; }
+      const arrived = f.side === 1, rouge = A.lamp.material.color.getHex() === 0xff2a1a;
+      for (let i = 0; i < 600; i++) { c.vx = Z.ax * 7; c.vz = Z.az * 7; __gm.step(1 / 30); if ((c.x - Z.x) * Z.ax + (c.z - Z.z) * Z.az > 6) break; }
+      const landed = [+g(c.x, c.z).toFixed(1), Math.round(Math.hypot(c.x - Z.x, c.z - Z.z))], p = [c.x, c.z];
+      for (let i = 0; i < 400; i++) { c.vx = c.vz = 0; B.step(0.5); } // the boat goes back: the car stays ashore
+      const res = { feuVert: vert, embarque: boarded, pont: yDeck, pas: n, horsDuPont: off, arrive: arrived, feuRouge: rouge, sol: landed[0], rampe: landed[1], reste: +Math.hypot(c.x - p[0], c.z - p[1]).toFixed(1), reparti: f.side !== 1 || f.wait <= 0 || f.t < 10, hp: Math.round(c.hp) };
       c.place(home[0], home[1], home[2]); return res; // back to town for the next checks
     });
-    expect(r.embarque && r.libre && r.arrive < 3 && r.sol > 2 && r.ecarts === 0 && r.surLePont > r.pas * 0.9 && r.hp > 90, JSON.stringify(r)); return r;
+    expect(r.feuVert && r.embarque && r.pont > 1 && r.pont < 3.5 && r.horsDuPont === 0 && r.arrive && r.feuRouge && r.sol > 3 && r.rampe < 15 && r.reste < 1 && r.hp > 90, JSON.stringify(r)); return r;
   });
   await check('Loire : voiliers et bac sur l’eau, le bac traverse', async () => {
     const r = await ev(() => {
