@@ -78,6 +78,7 @@ Ce qui a été construit, dans l'ordre. Le détail de chaque changement est dans
 | 15 nov. 2026 | Opus 5.5 : police à une étoile plus semée en une seconde, Rapaces loin au départ et en chasse un par un, feux tricolores cassables (`gx/lightpoles.js`), flèches en chevron et flèche de mission sur la minicarte, courses et livraison plus longues, escalier Sainte-Anne repris (paliers, terrasse), passages piétons peints | `ultra` (fusion de `opus-retours-15nov`) |
 | 15 nov. 2026 | Ménage : un seul fichier de tâches (`docs/BACKLOG.md`), `LEDGER.md` et `HANDOFF.md` retirés d'`ultra`, anciennes branches toutes fusionnées, à supprimer sur GitHub (seules restent `main`, `ultra`, `server`) | `ultra`, `main` |
 | 15 nov. 2026 | Fable 5.2 : grues refaites avec le modèle acheté (haut des deux Titan, cinq grues de quai), pontons en bois près des rampes du bac | ultra |
+| 15 nov. 2026 | Fable 5.2 : fin de dérapage progressive ; on tombe et on coule dans la Loire ; rampe du bac solide en permanence ; plus de voiture couchée au bord du pont | ultra |
 
 ## Annexe : feuille de route Ultra, détail des cycles et des retours (14 et 15 nov. 2026)
 
