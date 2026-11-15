@@ -151,6 +151,9 @@ Les étapes antérieures sont dans `git log`.
 - [ ] **Flèches de mission sur la carte** (demande du 15 nov.) : afficher aussi sur la carte (minicarte et carte plein écran) les flèches vertes de direction des missions.
 - [ ] **Forme des flèches de direction** (demande du 15 nov.) : remplacer les triangles (vert mission, rouge rapace…) par une pointe de flèche en chevron, type curseur de navigation (deux ailes et une encoche à l'arrière), pour qu'on lise sans ambiguïté la direction pointée.
 - [ ] **Grue Titan grise** (demande du 15 nov.) : il manque la grue grise au bout de l'île de Nantes. La Titan jaune existe déjà (`titan()` dans `src/gx.js`) ; ajouter la grise sur le même modèle, à placer d'après sa position réelle (OpenStreetMap ou photo aérienne).
+- [ ] **Escalier Sainte-Anne à refaire** (demande du 15 nov.) : l'escalier ajouté le 14 novembre n'est pas satisfaisant, le reprendre (forme, marches, paliers, fidélité au vrai escalier).
+- [ ] **Feux tricolores cassables** (demande du 15 nov.) : pouvoir casser les feux en roulant dedans ou en tirant dessus, comme les autres éléments destructibles.
+- [ ] **Pas de rapace au démarrage** (demande du 15 nov.) : en lançant la partie, il y a toujours un rapace qui apparaît et nous tire dessus ; rendre cette apparition aléatoire ou la retarder, et éviter qu'un ennemi apparaisse près du joueur dans les premières secondes.
 - [ ] **Passages piétons** (demande du 15 nov.) : dessiner des passages piétons sur la chaussée (idéalement aux emplacements réels d'OpenStreetMap, `highway=crossing`, sinon aux carrefours) et faire que les piétons se baladent de préférence sur les trottoirs et traversent sur ces passages plutôt qu'au hasard.
 - [ ] Mairie : le fronton à horloge est une supposition ; le dos et les côtés reprennent la face avant.
 - [ ] Bâtiments HD : quelques toits ou rez-de-chaussée étranges possibles ; détection des jardins encore clairsemée. Retouche rue par rue possible sur demande.
