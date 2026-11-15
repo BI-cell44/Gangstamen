@@ -460,5 +460,33 @@
   "simMs": 4.84,
   "loadS": 17,
   "failed": 0
+ },
+ {
+  "date": "2026-11-15T10:11",
+  "label": "Fable : réseau de trottoirs",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 713,
+  "trianglesK": 998,
+  "meshes": 2708,
+  "geometries": 2308,
+  "materials": 432,
+  "heapMB": 273,
+  "simMs": 5.11,
+  "loadS": 19,
+  "failed": 2
+ },
+ {
+  "date": "2026-11-15T10:21",
+  "label": "Fable : réseau de trottoirs",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 846,
+  "trianglesK": 1036,
+  "meshes": 2707,
+  "geometries": 2307,
+  "materials": 431,
+  "heapMB": 273,
+  "simMs": 5.48,
+  "loadS": 20,
+  "failed": 0
  }
 ]

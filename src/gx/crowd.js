@@ -104,10 +104,10 @@
   function placePed(p) {
     const ps = players(); if (!ps.length || !walks.length) return false;
     for (let k = 0; k < 40; k++) {
-      const w = (R() * walks.length) | 0, pl = walks[w], i = ((R() * (pl.length / 2 - 1)) | 0);
-      const x = pl[2 * i], z = pl[2 * i + 1], d = minPlayerDist(x, z);
+      const a = walks.spawn[(R() * walks.spawn.length) | 0], x = walks.x[a], z = walks.z[a], d = minPlayerDist(x, z);
       if (d < 35 || d > 170) continue;
-      Object.assign(p, { w, t: i + R() * 0.9, ox: 0, oz: 0, state: 'walk', timer: 0, on: true });
+      const es = walks.e[a].filter(e => e[1] !== 1), e = es[(R() * es.length) | 0]; if (!e) continue;
+      Object.assign(p, { a, b: e[0], ek: e[1], f: R() * 0.9, ox: 0, oz: 0, state: 'walk', timer: 0, on: true });
       return true;
     }
     p.on = false; return false;
@@ -124,17 +124,19 @@
     return P;
   }
   function pedStep(p, dt) {
-    const pl = walks[p.w], n = pl.length / 2;
-    let i = Math.floor(p.t), f = p.t - i; if (i >= n - 1) { i = n - 2; f = 1; }
-    const ax = pl[2 * i], az = pl[2 * i + 1], bx = pl[2 * i + 2], bz = pl[2 * i + 3], L = Math.hypot(bx - ax, bz - az) || 1;
-    const hx = (bx - ax) / L * p.dir, hz = (bz - az) / L * p.dir;
+    let ax = walks.x[p.a], az = walks.z[p.a], bx = walks.x[p.b], bz = walks.z[p.b], L = Math.hypot(bx - ax, bz - az) || 1;
+    let hx = (bx - ax) / L, hz = (bz - az) / L;
+    const arrive = away => { pedNext(p, away); ax = walks.x[p.a]; az = walks.z[p.a]; bx = walks.x[p.b]; bz = walks.z[p.b]; L = Math.hypot(bx - ax, bz - az) || 1; hx = (bx - ax) / L; hz = (bz - az) / L; };
     let moving = 0;
-    if (p.state === 'walk') {
-      p.t += p.dir * p.speed * dt / L; moving = p.speed;
-      if (p.t <= 0) { p.t = 0; p.dir = 1; } if (p.t >= n - 1) { p.t = n - 1.001; p.dir = -1; }
+    if (p.state === 'wait') { // at the kerb: looks for a gap, then crosses
+      p.timer -= dt; p.waited += dt; p.h += wrapA(Math.atan2(hx, hz) - p.h) * Math.min(1, dt * 5);
+      if (p.timer <= 0 || (p.waited > 0.7 && crossingClear(p))) p.state = 'walk';
+    } else if (p.state === 'walk') {
+      moving = p.speed * (p.ek === 1 ? 1.3 : 1); p.f += moving * dt / L;
+      if (p.f >= 1) arrive();
       const ol = Math.hypot(p.ox, p.oz); if (ol > 0.01) { const k = Math.min(ol, dt * 1.2) / ol; p.ox -= p.ox * k; p.oz -= p.oz * k; }
       p.h += wrapA(Math.atan2(hx, hz) - p.h) * Math.min(1, dt * 6);
-      p.idleIn -= dt; if (p.idleIn <= 0) { p.state = 'idle'; p.timer = 2 + R() * 4; p.idleIn = 10 + R() * 25; if (R() < 0.3) p.dir = -p.dir; }
+      p.idleIn -= dt; if (p.idleIn <= 0 && p.ek !== 1 && p.state === 'walk') { p.state = 'idle'; p.timer = 2 + R() * 4; p.idleIn = 10 + R() * 25; if (R() < 0.3) { const s = p.a; p.a = p.b; p.b = s; p.f = 1 - p.f; } }
     } else if (p.state === 'idle') { // stops, looks around, then goes on
       p.timer -= dt; if (p.timer <= 0) p.state = 'walk';
     } else if (p.state === 'flee') {
@@ -146,13 +148,13 @@
     } else if (p.state === 'down') {
       p.timer -= dt; if (p.timer <= 0) { p.state = 'walk'; }
     } else if (p.state === 'panic') { // gunfire: runs off along the pavement, away from the shooter, arms over the head
-      p.t += p.dir * p.run * dt / L; moving = p.run;
-      if (p.t <= 0) { p.t = 0; p.dir = 1; } if (p.t >= n - 1) { p.t = n - 1.001; p.dir = -1; }
+      moving = p.run; p.f += moving * dt / L;
+      if (p.f >= 1) arrive(p.fear || [p.x, p.z]);
       const ol = Math.hypot(p.ox, p.oz); if (ol > 0.01) { const k = Math.min(ol, dt * 2) / ol; p.ox -= p.ox * k; p.oz -= p.oz * k; }
       p.h += wrapA(Math.atan2(hx, hz) - p.h) * Math.min(1, dt * 10);
       p.timer -= dt; if (p.timer <= 0) { p.state = 'idle'; p.timer = 1.5 + R() * 2; p.lookTo = (R() - 0.5) * 2; }
     }
-    p.x = ax + (bx - ax) * f + p.ox; p.z = az + (bz - az) * f + p.oz;
+    { const f = Math.min(1, Math.max(0, p.f)); p.x = ax + (bx - ax) * f + p.ox; p.z = az + (bz - az) * f + p.oz; }
     if (p._pin) { p.x = p._pin[0]; p.z = p._pin[1]; p.h = p._pin[2] || 0; } // test hook: line people up for a capture
     // watch out for cars
     if (p.state !== 'down') for (const c of [...allPlayerCars(), ...rivals, ...npcs]) {
@@ -164,7 +166,7 @@
         if (c.local) { addHeat(c, 0.45); shout(c, true); }
         break;
       }
-      if (along > 0 && along < c.speed * 1.4 + 3 && Math.abs(lat) < 3.2 && (p.state === 'walk' || p.state === 'idle')) {
+      if (along > 0 && along < c.speed * 1.4 + 3 && Math.abs(lat) < 3.2 && (p.state === 'walk' || p.state === 'idle' || p.state === 'wait')) {
         const sg = lat >= 0 ? 1 : -1; p.state = 'flee'; p.timer = 0.9 + R() * 0.4;
         p.fvx = vz * sg * 6.5; p.fvz = -vx * sg * 6.5;
         if (c.local) shout(c, false);
@@ -177,7 +179,7 @@
     p.look_ += ((p.lookTo || 0) - p.look_) * Math.min(1, dt * 3);
     let P;
     if (p.state === 'down') { P = P0(); P.lie = -Math.PI / 2; P.arm = [-2.6, -2.2]; P.thigh = [0.2, -0.3]; P.knee = [0.6, 0.2]; P.hipsY = 0.18 / p.s; p.y -= 0.05; }
-    else if (p.state === 'idle') { const t = performance.now() / 1000 + p.phase; P = P0(); P.sway = Math.sin(t * 0.9) * 0.04; P.thigh = [Math.sin(t * 0.9) * 0.05, -0.05]; P.arm = [0.05, -0.05]; P.look = p.look_ * 1.4; }
+    else if (p.state === 'idle' || p.state === 'wait') { const t = performance.now() / 1000 + p.phase; P = P0(); P.sway = Math.sin(t * 0.9) * 0.04; P.thigh = [Math.sin(t * 0.9) * 0.05, -0.05]; P.arm = [0.05, -0.05]; P.look = p.look_ * 1.4; }
     else {
       p.phase += dt * (moving > 3 ? moving * 2.1 : moving * 4.2);
       const run = p.state === 'flee' || p.state === 'panic', A = run ? 1.25 : Math.min(1, 0.55 + p.speed * 0.3);

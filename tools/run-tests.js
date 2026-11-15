@@ -163,6 +163,17 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
     });
     expect(r.actifs && r.corps >= 6 && r.osBouges > 8 && r.nan === 0 && r.visible && /run/.test(r.clips) && /walk|slow|phone/.test(r.clips) && r.taille > 0.9 && r.taille < 2.1, JSON.stringify(r)); return r;
   });
+  await check('trottoirs : réseau, passages piétons, presque personne sur la chaussée hors passage', async () => {
+    const r = await ev(() => {
+      const g = __gm.gx, WN = g.walks(), ps = g.peds(), c = __gm.locals()[0].car; let onRoad = 0, crossing = 0, waited = 0, n = 0, moved = 0, jumps = 0;
+      for (const p of ps) { p.on = true; const a = WN.spawn[(n * 97) % WN.spawn.length], e = WN.e[a][0]; Object.assign(p, { a, b: e[0], ek: e[1], f: 0.2, ox: 0, oz: 0, state: 'walk', timer: 0, idleIn: 999 }); n++; }
+      const p0 = ps.map(p => [WN.x[p.a], WN.z[p.a]]), seen = new Set();
+      for (let i = 0; i < 900; i++) { __gm.step(1 / 15); for (const p of ps) { if (!p.on) continue; if (p.ek === 1 && p.state === 'walk') { crossing++; seen.add(p); } if (p.state === 'wait') waited++; else if (p.ek !== 1 && p.state === 'walk' && __gm.roadEdge(p.x, p.z)[0] < -0.5) onRoad++; if (p._lx !== undefined && Math.hypot(p.x - p._lx, p.z - p._lz) > 3) jumps++; p._lx = p.x; p._lz = p.z; } }
+      ps.forEach((p, i) => { if (Math.hypot(p.x - p0[i][0], p.z - p0[i][1]) > 20) moved++; delete p._lx; delete p._lz; });
+      return Object.assign({ pietons: ps.length, loin: moved, traversees: seen.size, attentes: waited > 0, surChaussee: onRoad, sauts: jumps }, WN.stats);
+    });
+    expect(r.nodes > 3000 && r.crossings > 150 && r.biggest > r.nodes * 0.5 && r.loin > r.pietons * 0.5 && r.traversees >= 3 && r.attentes && r.surChaussee < r.pietons * 900 * 0.02, JSON.stringify(r)); return r;
+  });
   await check('mur du tram (nord)', async () => {
     const r = await ev(() => { const c = __gm.locals()[0].car, x = 600, w = __gm.tramWall(x); c.place(x, w + 8, Math.PI); c.hp = 100; for (let i = 0; i < 60; i++) { c.vx = 0; c.vz = -8; __gm.step(1 / 30); } return +(c.z - w).toFixed(2); });
     expect(r > 0, 'la voiture a franchi les voies (' + r + ')'); return { marge: r };
@@ -186,8 +197,8 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
     await check('piétons et clients fuient au coup de feu', async () => {
       const r = await ev(() => { const peds = __gm.gx.peds().filter(p => p.on && p.state !== 'down'); if (!peds.length) return { peds: 0 };
         const p = peds[0], L = __gm.locals()[0]; L.car.place(p.x + 8, p.z + 8, 0); L.car.vx = L.car.vz = 0;
-        __gm.shoot(L.car, [], 1, 95, 0.05, false); const s1 = p.state, t0 = p.t;
-        for (let i = 0; i < 20; i++) __gm.step(1 / 30); return { peds: peds.length, state: s1, moved: +Math.abs(p.t - t0).toFixed(2), later: p.state }; });
+        __gm.shoot(L.car, [], 1, 95, 0.05, false); const s1 = p.state, x0 = p.x, z0 = p.z;
+        for (let i = 0; i < 20; i++) __gm.step(1 / 30); return { peds: peds.length, state: s1, moved: +Math.hypot(p.x - x0, p.z - z0).toFixed(2), later: p.state }; });
       expect(r.peds > 0 && r.state === 'panic' && r.moved > 0, JSON.stringify(r)); return r;
     });
     await check('radio : les 4 stations au même niveau audible (au-dessus de 220 Hz)', async () => {

@@ -62,7 +62,7 @@
       if (!p.on) { if (o) o.mesh.visible = false; return; }
       if (!o) { init(); o = p._sk = make(p); }
       const m = o.mesh, dt = People.dt || 0, run = p.state === 'flee' || p.state === 'panic', down = p.state === 'down';
-      let kind = run ? 'run' : p.state === 'idle' || down ? (o.phone && o.sex === 'm' ? 'talk' : 'idle') : p.old ? 'slow' : o.phone ? 'phone' : 'walk';
+      let kind = run ? 'run' : p.state === 'idle' || p.state === 'wait' || down ? (o.phone && o.sex === 'm' ? 'talk' : 'idle') : p.old ? 'slow' : o.phone ? 'phone' : 'walk';
       const name = o.sex + '_' + kind, sp = run ? (p.state === 'panic' ? p.run || 4.5 : 5.5) : p.speed;
       if (name !== o.clip) { if (o.clip) { for (let b = 0; b < o.bones.length; b++) o.from[b].copy(o.bones[b].quaternion); o.fade = 0.22; } o.clip = name; }
       if (!down) o.t += dt * (SPEED[kind] ? Math.max(0.5, Math.min(1.6, sp / SPEED[kind])) : 1);

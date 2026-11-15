@@ -152,7 +152,7 @@ Chantiers lourds, où un modèle plus puissant fera nettement mieux : refontes d
 L'utilisateur fait tourner **Fable 5.2** sur ce qui demande un modèle fort, et garde pour **Opus 5.5** ce qui est bien cadré. Chaque ligne renvoie au détail plus bas.
 
 ### Pour Fable 5.2 (gros systèmes, code très lié, peu vérifiable sans écran)
-1. [ ] **Déplacements des piétons** : réseau de trottoirs et de passages piétons, traversées, évitement, groupes (les personnages animés sont faits).
+1. [x] **Déplacements des piétons** (fait le 15 nov., Fable 5.2) : les trottoirs forment un réseau (`buildWalks` dans `src/gx/pedestrians.js` : 11 700 points tous les 10 m des deux côtés des rues et sur les chemins piétons d'OpenStreetMap, reliés aux coins, en bout de rue et aux passages piétons ; aucun lien ne traverse un mur). Les piétons choisissent leur chemin à chaque coin, attendent au bord qu'aucune voiture n'arrive puis traversent d'un pas plus vif ; au coup de feu ils fuient par le trottoir qui s'éloigne du tireur. Mesure du test : moins de 1 % du temps sur la chaussée hors passage (entrées de cours, retours d'esquive). **Reste (Opus possible)** : évitement entre piétons, groupes, foule selon le lieu et l'heure, respect du feu piéton aux carrefours à feux.
 2. [ ] **Conduite des IA par voies** : trajectoires sur des voies, files aux feux, changements de voie, ronds-points, Rapaces et police qui conduisent proprement.
 3. [ ] **Partie en ligne robuste** : prédiction et correction, synchronisation de la circulation, du tram et des bonus, reprise après coupure.
 4. [ ] **Physique réaliste, 2e passe** : attend les essais de l'utilisateur sur la correction du 14 nov.
