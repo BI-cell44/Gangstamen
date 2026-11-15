@@ -33,7 +33,7 @@ Dernier retour d'essai de l'utilisateur (15 nov., soir) : Ultra tourne sans prob
 9. [ ] **Gens qui jouent au ballon** au parc Schwob : footballeurs téléchargés (`joueur1…5`, `gardien`, `arbitre`, `cage`), par `tools/assets/bake_people.js` s'ils ont un squelette.
 10. [ ] **Terrasses** : clients en personnages animés, avec une pose assise fabriquée à partir de la pose d'attente.
 11. [ ] **Mission du Vautour** : la fuite « vers le quai de la Fosse » est à revoir, le quai est dans la carte ; missions possibles à l'escalier Sainte-Anne et au tram.
-12. [ ] **Test « courses et défis » qui échoue par intermittence** : la voiture garée en fin de sprint est parfois détruite (champ `mortAvant` du test), puis le défi Destruction ne démarre pas dans le temps imparti. Cause à trouver (le défi démarre bien quand on rejoue la même séquence seule).
+12. [ ] **Test « courses et défis » qui échoue par intermittence** : la voiture garée en fin de sprint est parfois détruite (champ `mortAvant` du test), puis le défi Destruction ne démarre pas dans le temps imparti. Cause à trouver (le défi démarre bien quand on rejoue la même séquence seule) ; piste de Fable : un panneau de résultat minuté en temps réel bloquerait le départ suivant, à rendre indépendant de l'horloge.
 
 ## En attente d'un essai de l'utilisateur
 
