@@ -170,7 +170,7 @@
       let hit = wall <= step_ + 0.4 ? [r.x + ux * wall, r.z + uz * wall] : null;
       if (!hit) for (const c of [...allPlayerCars(), ...rivals, ...npcs, ...extras]) {
         if (!c.alive || c === r.from || (c.team >= 0 && c.team === r.from.team)) continue;
-        if (Math.hypot(c.x - r.x, c.z - r.z) < 2.4) { hit = [r.x, r.z]; break; }
+        if (Math.hypot(c.x - r.x, c.z - r.z) < 2.4) { hit = [c.x, c.z]; r.hitCar = c; break; } // (15 nov.) the blast goes off on the car itself
       }
       r.x += r.vx * dt; r.z += r.vz * dt;
       const gy = surfaceH(r.x, r.z); r.y = Math.max(gy + 0.6, r.y - dt * 0.8);
@@ -178,7 +178,12 @@
       r.m.position.set(r.x, r.y, r.z); r.m.rotation.set(0, Math.atan2(-r.vx, -r.vz), 0);
       hd.smoke(r.x - ux * 0.5, r.y, r.z - uz * 0.5, (R() - 0.5), 0.5, (R() - 0.5), 0.35, 4, 1.2, 0.75, 0.45);
       hd.fire(r.x - ux * 0.45, r.y, r.z - uz * 0.45, -ux * 6, 0, -uz * 6, 0.45, 0.08, 1.2);
-      if (hit) { scene.remove(r.m); rockets.splice(rockets.indexOf(r), 1); if (r.ghost) explode(hit[0], hit[1]); else blast(hit[0], hit[1], r.from, 48, 8); }
+      if (hit) {
+        scene.remove(r.m); rockets.splice(rockets.indexOf(r), 1); if (r.ghost) explode(hit[0], hit[1]); else blast(hit[0], hit[1], r.from, 48, 8);
+        // (15 nov.) a direct hit finishes a police or passing car (70 and 40 hp): before, the blast went off 2.4 m away and left them
+        // standing with nothing to show for it, while the Rapaces showed their damage
+        if (!r.ghost && r.hitCar && r.hitCar.npc && r.hitCar.alive) damageNpc(r.hitCar, 40, r.from);
+      }
     }
   }
   // mines: dropped behind, armed after a second, go off when a car rolls over them

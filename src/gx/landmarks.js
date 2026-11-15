@@ -152,6 +152,14 @@
       const [fx, fz] = p(u1 + 0.2, v0), [gx2, gz] = p(u1 + 0.2, v1); slab(fx, fz, gx2, gz, y + 0.95, 0.4, stepM, 0); // parapet on the Loire side, the face of the terrace below it
       const cp = slab(fx, fz, gx2, gz, y + 1.07, 0.55, capM, 0.1); cp.scale.y = 0.12 / cp.geometry.parameters.height; cp.position.y = y + 1.01;
     }
+    { // (15 nov.) collision: cars went through the foot of the stairs. Walls around every flight and the terrace
+      const box4 = (x0, z0, x1, z1, wid) => { const L = Math.hypot(x1 - x0, z1 - z0) || 1, ux = (x1 - x0) / L, uz = (z1 - z0) / L, h = wid / 2, P = [[x0 - uz * h, z0 + ux * h], [x1 - uz * h, z1 + ux * h], [x1 + uz * h, z1 - ux * h], [x0 + uz * h, z0 - ux * h]];
+        for (let q = 0; q < 4; q++) gridAdd([...P[q], ...P[(q + 1) % 4]], 3.5); };
+      for (const f of STAIRS) box4(f[0], f[1], f[2], f[3], 3.4);
+      const ux = 0.733, uz = 0.68, pts = [STAIRS[3].slice(2, 4), STAIRS[7].slice(2, 4), STAIRS[8].slice(0, 2), STAIRS[10].slice(0, 2)];
+      const mx = pts.reduce((a, p) => a + p[0], 0) / 4, mz = pts.reduce((a, p) => a + p[1], 0) / 4;
+      box4(mx - ux * 2.5, mz - uz * 2.5, mx + ux * 3, mz + uz * 3, 11); // the terrace (as built above, give or take)
+    }
     // the statue of Sainte-Anne (Amédée Ménard, 1871) on its column at the top, looking over the Loire
     const sx = 939.6, sz = 99.5, sy = groundH(sx, sz), white = stdM(0xe6dfd0, 0.7), lamp = stdM(0x1c1d22, 0.5, 0.7);
     const add = (geo, m, x, y, z) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };

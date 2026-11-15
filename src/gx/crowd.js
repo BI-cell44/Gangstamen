@@ -163,7 +163,7 @@
       const vx = c.vx / c.speed, vz = c.vz / c.speed, along = dx * vx + dz * vz, lat = dx * vz - dz * vx;
       if (d < 2.3) { // too late: knocked over, gets back up a bit later
         p.state = 'down'; p.timer = 2.5 + R(); { const k = Math.max(0, Math.min(1.5, segHit(p.x, p.z, vx, vz, 2) - 0.5)); p.ox += vx * k; p.oz += vz * k; } sfx.hit();
-        if (c.local) { addHeat(c, 0.45); shout(c, true); }
+        if (c.local) { oneStar(c, 0.45, 'La police l’a vu : piéton renversé'); shout(c, true); }
         break;
       }
       if (along > 0 && along < c.speed * 1.4 + 3 && Math.abs(lat) < 3.2 && (p.state === 'walk' || p.state === 'idle' || p.state === 'wait')) {

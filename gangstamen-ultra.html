@@ -4706,6 +4706,7 @@ function carVsCar(a, b) {
   if (rv < 0) {
     const j = -rv * 0.8;
     if (-rv > 2.5 && locals[0] && (a === locals[0].car || b === locals[0].car)) sfx.impact(-rv); // crash under the player's ears
+    if (-rv > 3 && gx && gx.copBump) { if (a.local && b.npc === 'cop' && b.alive) gx.copBump(a); else if (b.local && a.npc === 'cop' && a.alive) gx.copBump(b); } // (15 nov.) ramming the police: one star
     if (!aFix) { a.vx -= nx * j * 2 * ka; a.vz -= nz * j * 2 * ka; }
     if (!bFix) { b.vx += nx * j * 2 * kb; b.vz += nz * j * 2 * kb; }
     if (-rv > 6 && enemies(a, b)) {
@@ -5710,8 +5711,11 @@ const gx = !HD ? null : (() => {
     if (!policeOn()) return;
     if (L.car && L.car.style === 'police') amount *= 0.5; // (cycle 13) in a police car, the others look away more often
     const before = stars(L); L.heat = Math.min(5.99, heat(L) + amount); L.calm = 0; L.unseen = 0;
-    if (stars(L) > before) { flashFor(L, '★'.repeat(stars(L)) + ' POLICE', stars(L) === 1 ? 'Les flics ont vu ça' : stars(L) >= 4 ? 'Toutes les patrouilles sur vous' : 'Renforts en route'); if (gx.dj) gx.dj('police', stars(L)); }
+    if (stars(L) > before) { flashFor(L, '★'.repeat(stars(L)) + ' POLICE', stars(L) === 1 ? (why || 'Les flics ont vu ça') : stars(L) >= 4 ? 'Toutes les patrouilles sur vous' : 'Renforts en route'); if (gx.dj) gx.dj('police', stars(L)); }
   }
+  // (15 nov., user request) some offences are enough on their own for one star: running a pedestrian over, ramming or
+  // shooting a police car
+  function oneStar(by, amount, why) { const L = by && by.local ? by.owner : null; if (!L) return; addHeat(by, Math.max(amount, 1.02 - heat(L)), why); }
   function policeOn() { return !(mission && mission.noPolice); }
   // (user request) the real police station near the town hall (OpenStreetMap amenity=police, « Police nationale ») is
   // the base: patrols and reinforcements leave from its door when it is not right under the player's nose
@@ -6071,7 +6075,7 @@ const gx = !HD ? null : (() => {
       const vx = c.vx / c.speed, vz = c.vz / c.speed, along = dx * vx + dz * vz, lat = dx * vz - dz * vx;
       if (d < 2.3) { // too late: knocked over, gets back up a bit later
         p.state = 'down'; p.timer = 2.5 + R(); { const k = Math.max(0, Math.min(1.5, segHit(p.x, p.z, vx, vz, 2) - 0.5)); p.ox += vx * k; p.oz += vz * k; } sfx.hit();
-        if (c.local) { addHeat(c, 0.45); shout(c, true); }
+        if (c.local) { oneStar(c, 0.45, 'La police l’a vu : piéton renversé'); shout(c, true); }
         break;
       }
       if (along > 0 && along < c.speed * 1.4 + 3 && Math.abs(lat) < 3.2 && (p.state === 'walk' || p.state === 'idle' || p.state === 'wait')) {
@@ -6141,7 +6145,7 @@ const gx = !HD ? null : (() => {
       mesh.updateMatrixWorld(true); mesh.bind(new THREE.Skeleton(bones));
       mesh.castShadow = true; mesh.userData.hdLinear = true; mesh.userData.shared = true; mesh.visible = false; scene.add(mesh);
       const root = c.bones.findIndex(b => b.p < 0);
-      const o = { mesh, bones, c, sex: c.sex, root, rootY: bones[root].position.y, k: 1.72 / c.h, clip: '', t: R() * 3, fade: 0, from: bones.map(() => new THREE.Quaternion()), phone: !p.kid && R() < 0.1, far: 0 };
+      const o = { mesh, bones, c, name, sex: c.sex, root, rootY: bones[root].position.y, k: 1.72 / c.h, clip: '', t: R() * 3, fade: 0, from: bones.map(() => new THREE.Quaternion()), phone: !p.kid && R() < 0.1, far: 0 };
       all.push(o); return o;
     }
     function pose(o, name, t) {
@@ -6271,7 +6275,7 @@ const gx = !HD ? null : (() => {
       if (d < 2.1 && car.speed > 2) { // hit: knocked over and pushed along the car's way
         const vx = car.vx / car.speed, vz = car.vz / car.speed, k = Math.min(3.5, 0.8 + car.speed * 0.12);
         c.state = 'down'; c.timer = 3 + R() * 1.5; c.ox += vx * k + dx / (d || 1) * 0.6; c.oz += vz * k + dz / (d || 1) * 0.6; c.downA = Math.atan2(vx, vz);
-        sfx.hit(); if (car.local) { addHeat(car, 0.45); shout(car, true); }
+        sfx.hit(); if (car.local) { oneStar(car, 0.45, 'La police l’a vu : piéton renversé'); shout(car, true); }
         break;
       }
       if (car.speed > 4 && d < 9 && (c.state === 'sit' || c.state === 'back')) { // run away from the car, sideways to its path
@@ -6447,7 +6451,7 @@ const gx = !HD ? null : (() => {
   function damageNpc(c, d, by) {
     if (!c.alive) return;
     c.hp -= d;
-    if (by && by.local) { addHeat(by, d * (c.npc === 'cop' ? 0.035 : 0.012)); if (c.npc === 'civ') { c.nav.panic = 8; } }
+    if (by && by.local) { if (c.npc === 'cop') oneStar(by, d * 0.035, 'Tu as percuté la police'); else addHeat(by, d * 0.012); if (c.npc === 'civ') { c.nav.panic = 8; } }
     if (c.npc === 'civ' && by && by.local && !c.chase && c.npc === 'civ' && c.hp > 0 && R() < 0.02) sfx.horn && sfx.horn();
     if (c.hp > 0) return;
     c.alive = false; c.dead = 0; explode(c.x, c.z);
@@ -7001,7 +7005,7 @@ const gx = !HD ? null : (() => {
       let hit = wall <= step_ + 0.4 ? [r.x + ux * wall, r.z + uz * wall] : null;
       if (!hit) for (const c of [...allPlayerCars(), ...rivals, ...npcs, ...extras]) {
         if (!c.alive || c === r.from || (c.team >= 0 && c.team === r.from.team)) continue;
-        if (Math.hypot(c.x - r.x, c.z - r.z) < 2.4) { hit = [r.x, r.z]; break; }
+        if (Math.hypot(c.x - r.x, c.z - r.z) < 2.4) { hit = [c.x, c.z]; r.hitCar = c; break; } // (15 nov.) the blast goes off on the car itself
       }
       r.x += r.vx * dt; r.z += r.vz * dt;
       const gy = surfaceH(r.x, r.z); r.y = Math.max(gy + 0.6, r.y - dt * 0.8);
@@ -7009,7 +7013,12 @@ const gx = !HD ? null : (() => {
       r.m.position.set(r.x, r.y, r.z); r.m.rotation.set(0, Math.atan2(-r.vx, -r.vz), 0);
       hd.smoke(r.x - ux * 0.5, r.y, r.z - uz * 0.5, (R() - 0.5), 0.5, (R() - 0.5), 0.35, 4, 1.2, 0.75, 0.45);
       hd.fire(r.x - ux * 0.45, r.y, r.z - uz * 0.45, -ux * 6, 0, -uz * 6, 0.45, 0.08, 1.2);
-      if (hit) { scene.remove(r.m); rockets.splice(rockets.indexOf(r), 1); if (r.ghost) explode(hit[0], hit[1]); else blast(hit[0], hit[1], r.from, 48, 8); }
+      if (hit) {
+        scene.remove(r.m); rockets.splice(rockets.indexOf(r), 1); if (r.ghost) explode(hit[0], hit[1]); else blast(hit[0], hit[1], r.from, 48, 8);
+        // (15 nov.) a direct hit finishes a police or passing car (70 and 40 hp): before, the blast went off 2.4 m away and left them
+        // standing with nothing to show for it, while the Rapaces showed their damage
+        if (!r.ghost && r.hitCar && r.hitCar.npc && r.hitCar.alive) damageNpc(r.hitCar, 40, r.from);
+      }
     }
   }
   // mines: dropped behind, armed after a second, go off when a car rolls over them
@@ -8220,6 +8229,14 @@ const gx = !HD ? null : (() => {
       const [fx, fz] = p(u1 + 0.2, v0), [gx2, gz] = p(u1 + 0.2, v1); slab(fx, fz, gx2, gz, y + 0.95, 0.4, stepM, 0); // parapet on the Loire side, the face of the terrace below it
       const cp = slab(fx, fz, gx2, gz, y + 1.07, 0.55, capM, 0.1); cp.scale.y = 0.12 / cp.geometry.parameters.height; cp.position.y = y + 1.01;
     }
+    { // (15 nov.) collision: cars went through the foot of the stairs. Walls around every flight and the terrace
+      const box4 = (x0, z0, x1, z1, wid) => { const L = Math.hypot(x1 - x0, z1 - z0) || 1, ux = (x1 - x0) / L, uz = (z1 - z0) / L, h = wid / 2, P = [[x0 - uz * h, z0 + ux * h], [x1 - uz * h, z1 + ux * h], [x1 + uz * h, z1 - ux * h], [x0 + uz * h, z0 - ux * h]];
+        for (let q = 0; q < 4; q++) gridAdd([...P[q], ...P[(q + 1) % 4]], 3.5); };
+      for (const f of STAIRS) box4(f[0], f[1], f[2], f[3], 3.4);
+      const ux = 0.733, uz = 0.68, pts = [STAIRS[3].slice(2, 4), STAIRS[7].slice(2, 4), STAIRS[8].slice(0, 2), STAIRS[10].slice(0, 2)];
+      const mx = pts.reduce((a, p) => a + p[0], 0) / 4, mz = pts.reduce((a, p) => a + p[1], 0) / 4;
+      box4(mx - ux * 2.5, mz - uz * 2.5, mx + ux * 3, mz + uz * 3, 11); // the terrace (as built above, give or take)
+    }
     // the statue of Sainte-Anne (Amédée Ménard, 1871) on its column at the top, looking over the Loire
     const sx = 939.6, sz = 99.5, sy = groundH(sx, sz), white = stdM(0xe6dfd0, 0.7), lamp = stdM(0x1c1d22, 0.5, 0.7);
     const add = (geo, m, x, y, z) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
@@ -8487,7 +8504,7 @@ const gx = !HD ? null : (() => {
   { const el = $('ammo'); if (el) { el.style.pointerEvents = 'auto'; el.style.cursor = 'pointer'; el.addEventListener('pointerdown', e => { e.preventDefault(); if (locals[0]) cycleWeapon(locals[0]); }); } }
   const api = { netIn, dj, cycleWeapon, hearShot, quickChat, chatIn, step: gameStep, world, landmarkTick, tick: dt => { tick(dt); Boats.step(dt); }, Boats, People, portCranes, LM, walks: () => { if (!walks) buildWalks(); return walks; }, start: startHook, cars: () => npcs.concat(extras), copsOn, shieldHit, makeBus, policeHQ: HQ, hqNode, spots: SPOTS, unlocked, postcards, acts: () => (actsBuild(), acts), actRun: () => run, startAct, hearCars: carsHearShot, traffic: TF, Fences, LightPoles, lightState, roadRules, makeNpc, placeOnGraph, nextNode, spawnPatrol, npcs: () => npcs, damage: damageNpc, addHeat, say, peds: () => peds, stars, special, startMission, renderCampaign, cleanupMission, MISSIONS,
     get gmode() { return gm ? gm.kind : 0; }, mines: () => mines, customers: () => customers, teamScores: modeTeamScores, goalText, rematch: rematchMode,
-    get blocking() { return blocking; }, get mission() { return mission; }, foes: () => extras.filter(c => c.alive && c.team === 1), saveBank, pus: () => pus, furniture: () => furniture, garage: GARAGE, garages: GARAGES, campDiff,
+    get blocking() { return blocking; }, get mission() { return mission; }, foes: () => extras.filter(c => c.alive && c.team === 1), saveBank, pus: () => pus, furniture: () => furniture, garage: GARAGE, garages: GARAGES, campDiff, copBump: c => oneStar(c, 0.1, 'Tu as percuté la police'),
     get onGarage() { return gx_onGarage; }, get objTarget() { return objEl.hidden ? null : objTgt; },
     minimap(me, add) { minimap(me, add); actMinimap(add); discMinimap(add); for (const pu of pus) if (pu.on) add(pu, '#' + new THREE.Color(PU_COL[pu.kind]).getHexString()); for (const c of extras) if (c.alive) add(c, c.friendly ? '#f2c81e' : '#ff3b3b'); for (const m of markers) add(m, '#ffffff'); if (GARAGE.pad && mode === 'solo') for (const G of GARAGES) add(G, '#3a8aff'); } };
   return api;
@@ -8576,7 +8593,7 @@ function updateCamera(L, dt) {
   } else if (mode === 2 || mode === 3) {
     // hood (above the bonnet, eye height) and bumper (low, at the front edge): fixed to the car, no lag
     const y = c.mesh ? c.mesh.position.y : gp, f = c.fwd, s = back ? -1 : 1;
-    const along = mode === 2 ? (back ? -0.6 : 0.5) : (back ? -2.4 : 2.35), up = mode === 2 ? 1.32 : 0.62;
+    const along = mode === 2 ? (back ? -0.6 : 0.95) : (back ? -2.4 : 2.35), up = mode === 2 ? 1.36 : 0.62; // (15 nov.) hood: further forward, over the bonnet itself (from 0.5 m the inside of the body showed at the bottom of the screen)
     camPos.set(c.x + f[0] * along, y + up, c.z + f[1] * along);
     camLook.set(c.x + f[0] * (along + 20 * s), y + up - 0.6, c.z + f[1] * (along + 20 * s));
     k = 1; fov = 64 + Math.min(14, sp * 0.3);

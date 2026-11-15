@@ -43,7 +43,7 @@ function updateCamera(L, dt) {
   } else if (mode === 2 || mode === 3) {
     // hood (above the bonnet, eye height) and bumper (low, at the front edge): fixed to the car, no lag
     const y = c.mesh ? c.mesh.position.y : gp, f = c.fwd, s = back ? -1 : 1;
-    const along = mode === 2 ? (back ? -0.6 : 0.5) : (back ? -2.4 : 2.35), up = mode === 2 ? 1.32 : 0.62;
+    const along = mode === 2 ? (back ? -0.6 : 0.95) : (back ? -2.4 : 2.35), up = mode === 2 ? 1.36 : 0.62; // (15 nov.) hood: further forward, over the bonnet itself (from 0.5 m the inside of the body showed at the bottom of the screen)
     camPos.set(c.x + f[0] * along, y + up, c.z + f[1] * along);
     camLook.set(c.x + f[0] * (along + 20 * s), y + up - 0.6, c.z + f[1] * (along + 20 * s));
     k = 1; fov = 64 + Math.min(14, sp * 0.3);

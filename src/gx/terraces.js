@@ -54,7 +54,7 @@
       if (d < 2.1 && car.speed > 2) { // hit: knocked over and pushed along the car's way
         const vx = car.vx / car.speed, vz = car.vz / car.speed, k = Math.min(3.5, 0.8 + car.speed * 0.12);
         c.state = 'down'; c.timer = 3 + R() * 1.5; c.ox += vx * k + dx / (d || 1) * 0.6; c.oz += vz * k + dz / (d || 1) * 0.6; c.downA = Math.atan2(vx, vz);
-        sfx.hit(); if (car.local) { addHeat(car, 0.45); shout(car, true); }
+        sfx.hit(); if (car.local) { oneStar(car, 0.45, 'La police l’a vu : piéton renversé'); shout(car, true); }
         break;
       }
       if (car.speed > 4 && d < 9 && (c.state === 'sit' || c.state === 'back')) { // run away from the car, sideways to its path

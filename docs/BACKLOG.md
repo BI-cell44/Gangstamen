@@ -36,12 +36,12 @@ Dernier retour d'essai de l'utilisateur (15 nov., soir) : Ultra tourne sans prob
 10. [ ] **Terrasses** : clients en personnages animés, avec une pose assise fabriquée à partir de la pose d'attente.
 11. [ ] **Mission du Vautour** : la fuite « vers le quai de la Fosse » est à revoir, le quai est dans la carte ; missions possibles à l'escalier Sainte-Anne et au tram.
 12. [ ] **Test « courses et défis » qui échoue par intermittence** : la voiture garée en fin de sprint est parfois détruite (champ `mortAvant` du test), puis le défi Destruction ne démarre pas dans le temps imparti. Cause à trouver (le défi démarre bien quand on rejoue la même séquence seule) ; piste de Fable : un panneau de résultat minuté en temps réel bloquerait le départ suivant, à rendre indépendant de l'horloge.
-13. [ ] **Roquettes sans effet sur la police et la circulation** (15 nov.) : elles touchent les Rapaces, pas les voitures de police ni celles qui passent.
-14. [ ] **La voiture traverse le bas de l'escalier Sainte-Anne** (15 nov.) : ajouter les murs de collision du massif, de la terrasse et des volées basses (`src/gx/landmarks.js`).
-15. [ ] **Une étoile quand on percute une voiture de police** (15 nov.) : sans être recherché, tamponner une voiture de police fait passer à une étoile.
-16. [ ] **Une étoile quand on écrase un piéton** (15 nov.) : message « La police l'a vu » et passage à une étoile.
-17. [ ] **Vue capot** (15 nov.) : on voit un peu le dessous du capot ; remonter ou avancer la caméra.
-18. [ ] **Pas de piétons en short sous la pluie ou l'orage** (15 nov.), si possible : tenues longues, parapluies éventuels.
+13. [x] (fait : l'explosion part de la voiture touchée, et un coup direct achève une voiture de police ou de passage) **Roquettes sans effet sur la police et la circulation** (15 nov.) : elles touchent les Rapaces, pas les voitures de police ni celles qui passent.
+14. [x] (fait : murs de collision autour de chaque volée et de la terrasse ; à confirmer en jeu) **La voiture traverse le bas de l'escalier Sainte-Anne** (15 nov.) : ajouter les murs de collision du massif, de la terrasse et des volées basses (`src/gx/landmarks.js`).
+15. [x] (fait : percuter ou toucher une voiture de police donne au moins une étoile, « Tu as percuté la police ») **Une étoile quand on percute une voiture de police** (15 nov.) : sans être recherché, tamponner une voiture de police fait passer à une étoile.
+16. [x] (fait : « La police l'a vu : piéton renversé », au moins une étoile, aussi pour les clients des terrasses) **Une étoile quand on écrase un piéton** (15 nov.) : message « La police l'a vu » et passage à une étoile.
+17. [x] (fait : caméra avancée au-dessus du capot, plus de bande sombre en bas de l'écran) **Vue capot** (15 nov.) : on voit un peu le dessous du capot ; remonter ou avancer la caméra.
+18. [ ] **Pas de piétons en short sous la pluie ou l'orage** (15 nov.), si possible : tenues longues, parapluies éventuels. Il faut d'abord repérer lesquels des 8 modèles du pack (`pick()` dans `src/gx/people.js`, champ `name` ajouté) sont en short : une capture de chacun, puis les écarter quand `hd.amb.rain` est fort.
 
 ## En attente d'un essai de l'utilisateur
 

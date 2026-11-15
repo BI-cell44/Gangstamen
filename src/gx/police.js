@@ -6,8 +6,11 @@
     if (!policeOn()) return;
     if (L.car && L.car.style === 'police') amount *= 0.5; // (cycle 13) in a police car, the others look away more often
     const before = stars(L); L.heat = Math.min(5.99, heat(L) + amount); L.calm = 0; L.unseen = 0;
-    if (stars(L) > before) { flashFor(L, '★'.repeat(stars(L)) + ' POLICE', stars(L) === 1 ? 'Les flics ont vu ça' : stars(L) >= 4 ? 'Toutes les patrouilles sur vous' : 'Renforts en route'); if (gx.dj) gx.dj('police', stars(L)); }
+    if (stars(L) > before) { flashFor(L, '★'.repeat(stars(L)) + ' POLICE', stars(L) === 1 ? (why || 'Les flics ont vu ça') : stars(L) >= 4 ? 'Toutes les patrouilles sur vous' : 'Renforts en route'); if (gx.dj) gx.dj('police', stars(L)); }
   }
+  // (15 nov., user request) some offences are enough on their own for one star: running a pedestrian over, ramming or
+  // shooting a police car
+  function oneStar(by, amount, why) { const L = by && by.local ? by.owner : null; if (!L) return; addHeat(by, Math.max(amount, 1.02 - heat(L)), why); }
   function policeOn() { return !(mission && mission.noPolice); }
   // (user request) the real police station near the town hall (OpenStreetMap amenity=police, « Police nationale ») is
   // the base: patrols and reinforcements leave from its door when it is not right under the player's nose

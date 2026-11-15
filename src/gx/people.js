@@ -42,7 +42,7 @@
       mesh.updateMatrixWorld(true); mesh.bind(new THREE.Skeleton(bones));
       mesh.castShadow = true; mesh.userData.hdLinear = true; mesh.userData.shared = true; mesh.visible = false; scene.add(mesh);
       const root = c.bones.findIndex(b => b.p < 0);
-      const o = { mesh, bones, c, sex: c.sex, root, rootY: bones[root].position.y, k: 1.72 / c.h, clip: '', t: R() * 3, fade: 0, from: bones.map(() => new THREE.Quaternion()), phone: !p.kid && R() < 0.1, far: 0 };
+      const o = { mesh, bones, c, name, sex: c.sex, root, rootY: bones[root].position.y, k: 1.72 / c.h, clip: '', t: R() * 3, fade: 0, from: bones.map(() => new THREE.Quaternion()), phone: !p.kid && R() < 0.1, far: 0 };
       all.push(o); return o;
     }
     function pose(o, name, t) {

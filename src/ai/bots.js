@@ -84,6 +84,7 @@ function carVsCar(a, b) {
   if (rv < 0) {
     const j = -rv * 0.8;
     if (-rv > 2.5 && locals[0] && (a === locals[0].car || b === locals[0].car)) sfx.impact(-rv); // crash under the player's ears
+    if (-rv > 3 && gx && gx.copBump) { if (a.local && b.npc === 'cop' && b.alive) gx.copBump(a); else if (b.local && a.npc === 'cop' && a.alive) gx.copBump(b); } // (15 nov.) ramming the police: one star
     if (!aFix) { a.vx -= nx * j * 2 * ka; a.vz -= nz * j * 2 * ka; }
     if (!bFix) { b.vx += nx * j * 2 * kb; b.vz += nz * j * 2 * kb; }
     if (-rv > 6 && enemies(a, b)) {
