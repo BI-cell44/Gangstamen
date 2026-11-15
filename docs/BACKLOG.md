@@ -14,10 +14,11 @@ Dernier retour d'essai de l'utilisateur (15 nov., soir) : Ultra tourne sans prob
 4. [ ] **La voiture penche énormément sur les bords du bac** (15 nov.) : en roulant contre le bord intérieur du pont, la voiture se couche ; corriger le contact avec le bord (`DECKS`, `src/gx/boats.js`).
 5. [ ] **Autres passagers du bac** : voitures de la circulation et piétons qui attendent au quai, embarquent et débarquent de l'autre côté.
 6. [ ] **Île de Nantes, suite** : Nefs en halles métalliques ouvertes (aujourd'hui un bâtiment fermé) ; **grues et pontons : fait le 15 nov.** (capture `docs/captures/fable-grues.png`) : le modèle acheté est une grue de port sur fût, pas une Titan ; il sert de haut (cabine, machinerie, flèche) aux deux Titan, posé sur le portique en treillis avec contre-flèche et contrepoids (jaune tel quel, grise par désaturation), et de grue de quai en cinq endroits (quai sud de l'île, quai de Chantenay), `src/gx/models.js` (`modelMesh`, `bankFrom`, `QUAY_CRANES`) ; ponton en bois à côté de chaque rampe du bac. Reste : habiller la rampe elle-même (dalle nue), une 6e grue refusée à Chantenay (emplacement sur une rue) ; façades et lieux de l'île. **Droits** : ni le Grand Éléphant ni le Carrousel des Mondes Marins (œuvres de La Machine) : seulement des créations originales, à valider avec l'utilisateur.
-7. [ ] **Conduite des IA par voies** : trajectoires sur des voies, files aux feux, changements de voie, ronds-points, Rapaces et police qui conduisent proprement ; **passage des ponts sur l'eau** pour la circulation et la police (aujourd'hui exclus par `nodeOk`).
-8. [ ] **Partie en ligne robuste** : prédiction et correction, synchronisation de la circulation, du tram, des bonus et du bac, capture du drapeau tenue par l'hôte, reprise après coupure. Jamais testée à plusieurs.
-9. [ ] **Toits plus jolis** (15 nov.) : remplacer la photo aérienne des toits par des textures dessinées, plus belles mais inspirées de la photo (couleurs, motifs : tuiles, ardoise, zinc, toits plats). **D'abord un essai sur une petite zone**, montré à l'utilisateur avant de l'étendre.
-10. [ ] **Piétons, suite** (possible pour Opus) : évitement entre piétons, groupes, foule selon le lieu et l'heure, respect du feu piéton aux carrefours à feux.
+7. Physique : sauts (tangage et roulis en l'air, réception sur les suspensions), collisions par hauteur pour tout le mobilier ; deux-roues (la physique actuelle ne le permet pas).
+8. [ ] **Conduite des IA par voies** : trajectoires sur des voies, files aux feux, changements de voie, ronds-points, Rapaces et police qui conduisent proprement ; **passage des ponts sur l'eau** pour la circulation et la police (aujourd'hui exclus par `nodeOk`).
+9. [ ] **Partie en ligne robuste** : prédiction et correction, synchronisation de la circulation, du tram, des bonus et du bac, capture du drapeau tenue par l'hôte, reprise après coupure. Jamais testée à plusieurs.
+10. [ ] **Toits plus jolis** (15 nov.) : remplacer la photo aérienne des toits par des textures dessinées, plus belles mais inspirées de la photo (couleurs, motifs : tuiles, ardoise, zinc, toits plats). **D'abord un essai sur une petite zone**, montré à l'utilisateur avant de l'étendre.
+11. [ ] **Piétons, suite** (possible pour Opus) : évitement entre piétons, groupes, foule selon le lieu et l'heure, respect du feu piéton aux carrefours à feux.
 
 
 ## Pour Opus 5.5 (dans cet ordre)
@@ -51,7 +52,6 @@ Dernier retour d'essai de l'utilisateur (15 nov., soir) : Ultra tourne sans prob
 - Enseignes lumineuses, marché de la butte, sorties d'école.
 - Garage : autocollants années 90, vitrine tournante, réglage de suspension.
 - Cartes postales : plus de lieux, textes relus, photos en mode photo.
-- Physique : sauts (tangage et roulis en l'air, réception sur les suspensions), collisions par hauteur pour tout le mobilier ; deux-roues (la physique actuelle ne le permet pas).
 - Tram et bus : intérieur visible, portes qui s'ouvrent aux arrêts.
 - Performances si la machine le demande : niveau de détail des voitures au-delà de 120 m, distance d'affichage du mobilier selon la qualité, moins de programmes de shaders, première image du menu.
 - Brouillard et atmosphère selon la météo ; rive d'en face de la Loire ; bâtiments du fond plus simples si la fluidité baisse.
