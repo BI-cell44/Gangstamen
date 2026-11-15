@@ -14,7 +14,7 @@ from PIL import Image
 osm, fdir, faces_json, out = sys.argv[1:5]
 lat0, lon0 = 47.2025, -1.5900050000000001
 KX = math.cos(math.radians(lat0)) * 111320.0; KZ = 110540.0
-X0, X1, Z0, Z1 = -372.5, 1664.0, -840.0, 686.5  # play area, see convert.py
+X0, X1, Z0, Z1 = -372.5, 2280.0, -840.0, 686.5  # play area, see convert.py
 
 KINDS = {  # OSM tag -> sign family
     'shop=bakery': 'bakery', 'shop=pastry': 'bakery', 'amenity=pharmacy': 'pharmacy', 'amenity=cafe': 'cafe', 'amenity=bar': 'cafe', 'amenity=pub': 'cafe',

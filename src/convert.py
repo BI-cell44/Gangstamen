@@ -18,7 +18,7 @@ def proj(lat, lon):
 
 # play area (game metres): west and south edges of the first map; east to the start of the quai de la Fosse,
 # north just past the tram line 1, which closes the map on that side
-X0, X1, Z0, Z1 = -372.5, 1664.0, -845.0, 686.5
+X0, X1, Z0, Z1 = -372.5, 2280.0, -845.0, 686.5  # x1 was 1664 until 15 Nov. 2026 (île de Nantes, Nefs, pont Anne-de-Bretagne)
 CX, CZ, HX, HZ = (X0 + X1) / 2, (Z0 + Z1) / 2, (X1 - X0) / 2, (Z1 - Z0) / 2
 MARGIN = 60.0
 
@@ -153,6 +153,7 @@ roads, rails, greens, names = [], [], [], []
 name_idx = {}
 for wid, (pts, tg) in ways.items():
     hw = tg.get('highway')
+    if hw == 'construction' and tg.get('construction'): hw = tg['construction']  # a street being rebuilt today was open in 1996 (pont Anne-de-Bretagne)
     if hw in ROADW and len(pts) >= 2:
         if tg.get('area') == 'yes':
             continue
@@ -479,6 +480,19 @@ for nid, t in TAGN.items():
         x, z = nodes[nid]
         if inside((x, z), -3) and south_of_tram(x, z, 2) and not any(math.hypot(x - s[0], z - s[1]) < 15 for s in stops): stops.append([r1(x), r1(z)])
 print('traffic', len(signals), 'signals', sum(1 for s in signals if s[2] == 0), 'lights', len(bus), 'bus runs', len(stops), 'stops')
+
+# Building numbers are used by the facade photos, the hints and the game code: a building already in the previous
+# conversion keeps its number, new ones (a wider map, new OSM data) are numbered after them.
+import os
+if os.path.exists(dst):
+    try:
+        old = {tuple(b['p'][:8]): i for i, b in enumerate(json.load(open(dst, encoding='utf-8'))['buildings'])}
+        known = sorted((b for b in buildings if tuple(b['p'][:8]) in old), key=lambda b: old[tuple(b['p'][:8])])
+        fresh = [b for b in buildings if tuple(b['p'][:8]) not in old]
+        same = len(known) == len(old) and all(old[tuple(b['p'][:8])] == i for i, b in enumerate(known))
+        print('buildings kept from the previous conversion:', len(known), 'of', len(old), '(numbers unchanged)' if same else '(SOME ARE GONE: numbers shift)', '; new:', len(fresh))
+        buildings = known + fresh
+    except Exception as e: print('previous conversion not readable:', e)
 
 out = {
     'meta': {'hx': r1(HX), 'hz': r1(HZ), 'cx': r1(CX), 'cz': r1(CZ), 'x0': X0, 'x1': X1, 'z0': Z0, 'z1': Z1, 'lat0': lat0, 'lon0': lon0,

@@ -14,7 +14,7 @@ Trois sorties, construites depuis le même code (`sh build.sh`) :
 | `gangstamen-hd.html` | Version HD : rendu HDR, météo, campagne, vie de quartier (5,3 Mo) |
 | `gangstamen-ultra.html` | Branche `ultra` uniquement : la HD qui reçoit les évolutions de la feuille de route (`docs/BACKLOG.md`) |
 
-**La carte** : 2 037 m sur 1 532 m (x de −372,5 à 1 664, z de −845 à 686,5 ; origine fixe 47,2025° N, −1,590005° E, x vers l'est, z vers le sud), du boulevard de la Liberté à la butte Sainte-Anne et au quai de la Fosse. Au nord, la ligne 1 du tram ferme la carte ; ailleurs, des murs de pierre et des rues fermées par un chantier, avec une ville inventée qui continue 250 m au-delà (`src/make_belt.py`). Environ 4 800 bâtiments, 1 800 rues et chemins, relief IGN, Loire.
+**La carte** : 2 653 m sur 1 532 m depuis le 15 nov. 2026 (bord est porté de 1 664 à 2 280 pour l'île de Nantes ; x de −372,5 à 2 280, z de −845 à 686,5 ; origine fixe 47,2025° N, −1,590005° E, x vers l'est, z vers le sud), du boulevard de la Liberté à la butte Sainte-Anne et au quai de la Fosse. Au nord, la ligne 1 du tram ferme la carte ; ailleurs, des murs de pierre et des rues fermées par un chantier, avec une ville inventée qui continue 250 m au-delà (`src/make_belt.py`). Environ 4 800 bâtiments, 1 800 rues et chemins, relief IGN, Loire.
 
 **Ce que le joueur peut faire**
 - Combat libre contre les bots (KO, chrono, équipes), colline, course, capture du drapeau.

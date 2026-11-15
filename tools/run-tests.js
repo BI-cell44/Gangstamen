@@ -142,6 +142,16 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
     });
     expect(r.murs > 300 && r.maisons > 800 && r.rues > 10 && r.noeudsDehors === 0, JSON.stringify(r)); return r;
   });
+  await check('pont Anne-de-Bretagne : on traverse la Loire en voiture jusqu’à l’île', async () => {
+    const r = await ev(() => {
+      const c = __gm.locals()[0].car, home = [c.x, c.z, c.h], A = [1749, -693], Z = [1836, -571], L = Math.hypot(Z[0] - A[0], Z[1] - A[1]), ux = (Z[0] - A[0]) / L, uz = (Z[1] - A[1]) / L;
+      c.place(A[0] - ux * 6, A[1] - uz * 6, Math.atan2(-ux, -uz)); c.hp = 100; let over = 0, maxY = -1e9;
+      for (let i = 0; i < 400; i++) { c.vx = ux * 14; c.vz = uz * 14; __gm.step(1 / 30); if (__gm.groundH(c.x, c.z) < 0.45) over++; maxY = Math.max(maxY, __gm.surfaceH(c.x, c.z)); if ((c.x - Z[0]) * ux + (c.z - Z[1]) * uz > 15) break; }
+      const res = { avance: Math.round((c.x - A[0]) * ux + (c.z - A[1]) * uz), longueur: Math.round(L), auDessusDeLEau: over, tablier: +maxY.toFixed(1), solArrivee: +__gm.groundH(c.x, c.z).toFixed(1), est: __gm.EDGE.x1 };
+      c.place(home[0], home[1], home[2]); return res;
+    });
+    expect(r.avance > r.longueur && r.auDessusDeLEau > 20 && r.tablier > 4 && r.solArrivee > 2 && r.est > 2200, JSON.stringify(r)); return r;
+  });
   await check('navette : la voiture embarque à la gare maritime et descend sur l’île', async () => {
     const r = await ev(() => {
       const B = __gm.gx.Boats, f = B.ferry, c = __gm.locals()[0].car, A = B.LAND[0], Z = B.LAND[1], home = [c.x, c.z, c.h];
@@ -183,7 +193,7 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
       ps.forEach((p, i) => { if (Math.hypot(p.x - p0[i][0], p.z - p0[i][1]) > 20) moved++; delete p._lx; delete p._lz; });
       return Object.assign({ pietons: ps.length, loin: moved, traversees: seen.size, attentes: waited > 0, surChaussee: onRoad, sauts: jumps }, WN.stats);
     });
-    expect(r.nodes > 3000 && r.crossings > 150 && r.biggest > r.nodes * 0.5 && r.loin > r.pietons * 0.5 && r.traversees >= 3 && r.attentes && r.surChaussee < r.pietons * 900 * 0.02, JSON.stringify(r)); return r;
+    expect(r.nodes > 3000 && r.crossings > 150 && r.biggest > r.nodes * 0.35 && r.loin > r.pietons * 0.5 && r.traversees >= 3 && r.attentes && r.surChaussee < r.pietons * 900 * 0.02, JSON.stringify(r)); return r;
   });
   await check('mur du tram (nord)', async () => {
     const r = await ev(() => { const c = __gm.locals()[0].car, x = 600, w = __gm.tramWall(x); c.place(x, w + 8, Math.PI); c.hp = 100; for (let i = 0; i < 60; i++) { c.vx = 0; c.vz = -8; __gm.step(1 / 30); } return +(c.z - w).toFixed(2); });

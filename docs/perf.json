@@ -572,5 +572,33 @@
   "simMs": 4.86,
   "loadS": 18,
   "failed": 0
+ },
+ {
+  "date": "2026-11-15T12:52",
+  "label": "Fable : carte étendue à l'île de Nantes",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 792,
+  "trianglesK": 1156,
+  "meshes": 3324,
+  "geometries": 2923,
+  "materials": 455,
+  "heapMB": 326,
+  "simMs": 11.34,
+  "loadS": 21,
+  "failed": 1
+ },
+ {
+  "date": "2026-11-15T13:02",
+  "label": "Fable : carte étendue à l'île de Nantes",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 835,
+  "trianglesK": 1159,
+  "meshes": 3352,
+  "geometries": 2939,
+  "materials": 467,
+  "heapMB": 290,
+  "simMs": 12.31,
+  "loadS": 29,
+  "failed": 0
  }
 ]

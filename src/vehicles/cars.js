@@ -213,7 +213,7 @@ function drive(c, inp, dt) {
   if (real) planarReal(c, inp, dt); else planarArcade(c, inp, dt);
   const ox = c.x, oz = c.z;
   c.x += c.vx * dt; c.z += c.vz * dt;
-  if (!c.aboard && groundH(c.x, c.z) < WATER_Y + 0.9) { // the Loire is not drivable (a car aboard the ferry is carried by it)
+  if (!c.aboard && groundH(c.x, c.z) < WATER_Y + 0.9 && deckH(c.x, c.z) === null) { // (a bridge over the water carries the car) // the Loire is not drivable (a car aboard the ferry is carried by it)
     c.x = ox; c.z = oz; c.vx *= -0.3; c.vz *= -0.3;
     if (c.player && Math.random() < 0.3) spawnFx(c.x, 0.5, c.z, 0.6, 0x9fc4d8, 0.4, 3, 2);
   }
