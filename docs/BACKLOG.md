@@ -184,6 +184,27 @@ L'utilisateur fait tourner **Fable 5.2** sur ce qui demande un modèle fort, et 
 - [ ] **Conduite libre : point de départ varié** : ne plus apparaître toujours au même endroit ; tirage au sort parmi plusieurs lieux, ou carte avec choix du point de départ.
 - [ ] **Loire, suite** : cargo de pêche, bateau à vapeur, bateau à moteur, grues et pontons téléchargés par l'utilisateur (voir `DATA-LICENSES.md`) à placer ; dossiers `joueur1…5`, `gardien`, `arbitre`, `cage` (footballeurs) : demander à l'utilisateur à quoi il les destine.
 
+## Retours du 15 nov. 2026 (midi), répartis Fable / Opus
+
+Notés par Opus 5.5 pendant que Fable 5.2 travaillait sur `ultra` ; rien n'est commencé. Une première version de ces notes avait été mise par erreur dans `LEDGER.md` sur `main` : elle en a été retirée, cette section fait foi.
+
+### Pour Fable 5.2 : le bac (suite de « Navette embarquable », niveau de l'île de Nantes)
+- [ ] **Traversées sans fin** : en arrivant à destination, on est aussitôt remis dans le bac pour le retour. Débarquer pour de bon : laisser la voiture sortir, et ne pas réembarquer tant qu'on n'est pas ressorti puis revenu dans la zone (ou tant qu'on n'a pas demandé à monter).
+- [ ] **Bouger à bord** : pouvoir manœuvrer la voiture sur le pont pendant la traversée (rester porté par le bac, `DECKS`), au lieu d'être figé.
+- [ ] **Autres passagers** : des voitures de la circulation et des piétons prennent aussi le bac (attente au quai, embarquement, débarquement de l'autre côté).
+- [ ] **Embarquer en roulant, sans téléportation** : supprimer la colonne bleue ; une rampe à la Gare Maritime et une à la pointe de l'île, on monte et on descend du bac en roulant. Un gros feu vert / rouge au bout de chaque rampe indique si on peut y aller (bac à quai et rampe baissée, ou non).
+- [ ] **Grue Titan grise** (demande du 15 nov.) : elle manque au bout de l'île de Nantes, là où arrive le bac. Avec le point « Grues et pontons » ci-dessus ; la Titan jaune existe déjà (`titan()`), la grise peut partir du même modèle ou de `Cranes.fbx`.
+
+### Pour Opus 5.5 (tâches cadrées)
+1. [ ] **Police semée au bout d'une seconde à une étoile** (bug) : `src/gx/frame.js`, boucle de la police. Tant qu'aucune voiture de police n'est apparue, `seen` est faux, la chaleur baisse au rythme rapide (0,12/s) et, partie juste au-dessus de 1, repasse sous le seuil presque aussitôt : « Semés ! ». Délai de grâce, ou « pas vu » seulement après l'arrivée d'une première patrouille.
+2. [ ] **Pas de Rapace qui tire dès le lancement** : `freeRoam()` (`src/gx/campaign.js`) fait apparaître tous les Rapaces d'un coup, et l'un d'eux tombe toujours sur le joueur. Pas d'ennemi à moins de quelques centaines de mètres du joueur au départ, et une arrivée échelonnée (à rapprocher de la carte d'apparition, point 5 de la liste Opus).
+3. [ ] **Feux tricolores cassables** : renversés en roulant dedans ou détruits par les tirs, comme les clôtures. À faire avec le point « Feux sur les trottoirs » (point 3 de la liste Opus).
+4. [ ] **Flèches de direction en forme de flèche** : remplacer les triangles (vert mission, rouge Rapace…) par une pointe en chevron avec une encoche à l'arrière, comme un curseur de navigation, pour lire la direction sans ambiguïté (image de référence fournie par l'utilisateur le 15 nov.).
+5. [ ] **Flèches de mission sur la carte** : afficher aussi la flèche verte de direction des missions sur la minicarte et la carte plein écran.
+6. [ ] **Missions plus longues** : allonger les missions en ville (sprint, livraison…) en profitant de la carte agrandie (Sainte-Anne, quai de la Fosse).
+7. [ ] **Escalier Sainte-Anne à refaire** : forme, marches, paliers, plus fidèle au vrai escalier (`src/gx/landmarks.js`).
+8. [ ] **Passages piétons dessinés** : le réseau de trottoirs et de traversées est fait (Fable, `src/gx/pedestrians.js`) ; vérifier par capture que les bandes blanches sont bien peintes sur la chaussée aux passages, sinon les ajouter.
+
 ## Retours de jeu de l'utilisateur (14 nov. 2026), à traiter
 Décision de l'utilisateur (14 nov.) : chaque point est traité dans le cycle où il est prévu ; les corrections partent aussi dans `main` (classique et HD).
 Captures dans `docs/retours/`.
