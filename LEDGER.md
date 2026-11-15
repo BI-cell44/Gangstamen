@@ -130,6 +130,7 @@ Les étapes antérieures sont dans `git log`.
 ## Reste à faire
 
 ### Prioritaire
+- [ ] **Bug police 1 étoile** (signalé le 15 nov.) : à une étoile, la police est « semée » au bout d'environ 1 seconde. Piste (`src/gx.js`, boucle « police: wanted levels ») : tant qu'aucune voiture de police n'est encore apparue, `seen` est faux et la chaleur baisse au rythme rapide (0,12/s) ; juste au-dessus de 1, elle repasse sous le seuil presque aussitôt et déclenche « Semés ! ». Il faut un délai de grâce ou ne compter « pas vu » qu'après l'arrivée d'une première patrouille.
 - [ ] **Qualité automatique** : ajouter une case pour désactiver la baisse automatique de qualité, et un délai de grâce d'environ 15 secondes au démarrage pour ignorer les saccades de chargement (le message « Qualité graphique réduite » s'est affiché à tort chez l'utilisateur).
 - [ ] Tester la HD en vrai (fluidité, taille des flammes) et la cinématique avec le son.
 - [ ] Vérifier une vraie partie en ligne à plusieurs.
