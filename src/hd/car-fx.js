@@ -77,6 +77,6 @@
     for (const r of rings) if (r.t > 0) { r.t += dt; const k = r.t / 0.5; r.m.scale.setScalar(1 + k * 22); r.m.material.color.setRGB(3 * (1 - k), 2 * (1 - k), 1 * (1 - k)); if (k >= 1) { r.t = 0; r.m.visible = false; } }
     for (const s of scorches) if (s.t > 0) { s.t -= dt; if (s.t < 8) s.m.material.opacity = 0.85 * s.t / 8; if (s.t <= 0) s.m.visible = false; }
     if (skDirty) { skGeo.attributes.position.needsUpdate = true; skDirty = false; }
-    if (waterMatRef) { waterMatRef.normalMap.offset.x = time * 0.012; waterMatRef.normalMap.offset.y = time * 0.02; }
+    if (waterMatRef) waterMatRef.userData.uT.value = time;
   }
 

@@ -5,6 +5,7 @@ set -e
 cd "$(dirname "$0")"
 mkdir -p build && cd build
 cp ../data/world_raw.json ../data/facades2.json ../data/shops.json ../data/facade_hints.json ../data/furniture.json ../data/fences.json .
+rm -rf models && cp -r ../data/models models
 # the sources are split by system (src/*.parts list the files in order); the HD renderer and the HD game layer are
 # assembled the same way and inlined into the template at their markers
 python3 - <<'PY'

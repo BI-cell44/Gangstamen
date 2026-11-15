@@ -41,6 +41,7 @@ Ce qui a été construit, dans l'ordre. Le détail de chaque changement est dans
 | 14 nov. 2026 | Ultra : retour à l'ancienne règle de qualité automatique (demande de l'utilisateur), la case pour la couper reste | `ultra` |
 | 14 nov. 2026 | Ultra, cycle 2 : mobilier et terrasses instanciés (`gx/batch.js`), pièces fixes des voitures fusionnées, ville par tuiles (`world/tiles.js`), culling réactivé sur les maillages instanciés | `ultra` |
 | 14 nov. 2026 | Ultra, cycle 1 : lanceur de tests (`tools/run-tests.js`, 12 vérifications), mesures dans `docs/perf.json`, superposition F3, qualité automatique corrigée (médiane, délai de grâce de 15 s, deux fenêtres lentes, case pour la couper) | `ultra` |
+| 15 nov. 2026 | Fable 5.2 : Loire. Eau refaite (plus de motif répété), quatre voiliers sur le chenal et un bac à voitures qui traverse vers l'île (`src/gx/boats.js`). Premiers modèles CGTrader, allégés par `tools/assets/bake_model.js` vers `data/models/` | ultra |
 
 ## Ce qui a été fait, par domaine
 

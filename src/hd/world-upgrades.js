@@ -20,10 +20,25 @@
     return wetPatch(m, true);
   }
   function waterMat() {
-    const n = 128, hf = new Float32Array(n * n);
-    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) hf[y * n + x] = Math.sin(x * 0.196 + Math.sin(y * 0.147) * 2.1) * 1.2 + Math.sin(y * 0.245 + x * 0.098) + Math.sin((x + y) * 0.39) * 0.5;
-    const nm = heightToNormal(hf, n, 0.5); nm.repeat.set(110, 110);
+    // one tile of ripples (waves of whole numbers of periods in many directions, so it wraps), read three times by the
+    // shader at sizes and angles that never line up: no visible repeat, and the far water calms down instead of shimmering
+    const n = 256, hf = new Float32Array(n * n), K = 6.2832 / n;
+    const WV = [[3, 1, 1, 0.3], [2, -3, 0.8, 1.7], [5, 2, 0.55, 4.1], [-4, 5, 0.5, 2.6], [7, -2, 0.33, 0.9], [1, 8, 0.3, 5.2], [9, 6, 0.2, 3.3], [-11, 4, 0.16, 1.1], [6, -13, 0.13, 2.2]];
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { let h = 0; for (const [a, b, amp, ph] of WV) { const t = (a * x + b * y) * K + ph; h += amp * (Math.sin(t) + 0.35 * Math.sin(2 * t + 1.3)); } hf[y * n + x] = h; }
+    const nm = heightToNormal(hf, n, 0.9);
     const m = new THREE.MeshStandardMaterial({ color: lin(0x18323c), roughness: 0.09, metalness: 0.0, normalMap: nm, normalScale: new THREE.Vector2(0.5, 0.5), envMapIntensity: 1.5 });
+    const uT = { value: 0 }; m.userData.uT = uT;
+    m.onBeforeCompile = sh => {
+      sh.uniforms.uWaterT = uT;
+      const a = 'vec3 mapN = texture2D( normalMap, vUv ).xyz * 2.0 - 1.0;', chunk = THREE.ShaderChunk.normal_fragment_maps;
+      if (chunk.split(a).length !== 2) return; // another three.js: keep the plain normal map
+      sh.fragmentShader = 'uniform float uWaterT;\n' + sh.fragmentShader.replace('#include <normal_fragment_maps>', chunk.replace(a, `
+        vec2 wU = vUv * 4000.0; float wD = length( vViewPosition );
+        vec3 wn1 = texture2D( normalMap, wU * 0.031 + uWaterT * vec2( 0.010, 0.016 ) ).xyz * 2.0 - 1.0;
+        vec3 wn2 = texture2D( normalMap, mat2( 0.8, -0.6, 0.6, 0.8 ) * wU * 0.0113 + uWaterT * vec2( -0.006, 0.004 ) ).xyz * 2.0 - 1.0;
+        vec3 wn3 = texture2D( normalMap, mat2( 0.6, 0.8, -0.8, 0.6 ) * wU * 0.083 + uWaterT * vec2( 0.02, -0.011 ) ).xyz * 2.0 - 1.0;
+        vec3 mapN = normalize( vec3( ( wn1.xy * 0.9 + wn2.xy * 1.1 + wn3.xy * 0.6 * clamp( 1.0 - wD / 160.0, 0.0, 1.0 ) ) / ( 1.0 + wD / 380.0 ), 1.5 ) );`));
+    };
     done.add(m); waterMatRef = m;
     return m;
   }

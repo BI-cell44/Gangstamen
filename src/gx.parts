@@ -21,4 +21,5 @@ gx/modes.js
 gx/activities.js
 gx/discover.js
 gx/landmarks.js
+gx/boats.js
 gx/zz-world-api.js

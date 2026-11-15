@@ -432,5 +432,19 @@
   "simMs": 1.04,
   "loadS": 5,
   "failed": 0
+ },
+ {
+  "date": "2026-11-15T00:41",
+  "label": "Fable : Loire (eau, bateaux)",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 765,
+  "trianglesK": 913,
+  "meshes": 2640,
+  "geometries": 2296,
+  "materials": 421,
+  "heapMB": 242,
+  "simMs": 5.05,
+  "loadS": 20,
+  "failed": 0
  }
 ]

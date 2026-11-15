@@ -142,6 +142,15 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
     });
     expect(r.murs > 300 && r.maisons > 800 && r.rues > 10 && r.noeudsDehors === 0, JSON.stringify(r)); return r;
   });
+  await check('Loire : voiliers et bac sur l’eau, le bac traverse', async () => {
+    const r = await ev(() => {
+      const B = __gm.gx.Boats, g = __gm.groundH, s0 = B.list.map(b => [b.x, b.z]); let dry = 0, sides = new Set(), minD = 1e9;
+      const fy = B.list.find(b => b.kind === 'ferry');
+      for (let i = 0; i < 240; i++) { B.step(0.5); sides.add(fy.side); for (const b of B.list) { if (b.x > -400 && b.x < 1800 && b.z < 760 && g(b.x, b.z) > 0.45) dry++; if (b !== fy) minD = Math.min(minD, Math.hypot(b.x - fy.x, b.z - fy.z)); } }
+      return { bateaux: B.list.length, voiliers: B.list.filter(b => b.kind === 'sail').length, auSec: dry, rives: sides.size, ecartBac: Math.round(minD), avance: Math.round(Math.min(...B.list.filter(b => b.kind === 'sail').map((b, i) => Math.hypot(b.x - s0[i][0], b.z - s0[i][1])))), modeles: Object.keys(__gm.W.models || {}).join(',') };
+    });
+    expect(r.voiliers >= 3 && r.bateaux === r.voiliers + 1 && r.auSec === 0 && r.rives === 2 && r.ecartBac > 18 && r.avance > 50, JSON.stringify(r)); return r;
+  });
   await check('mur du tram (nord)', async () => {
     const r = await ev(() => { const c = __gm.locals()[0].car, x = 600, w = __gm.tramWall(x); c.place(x, w + 8, Math.PI); c.hp = 100; for (let i = 0; i < 60; i++) { c.vx = 0; c.vz = -8; __gm.step(1 / 30); } return +(c.z - w).toFixed(2); });
     expect(r > 0, 'la voiture a franchi les voies (' + r + ')'); return { marge: r };

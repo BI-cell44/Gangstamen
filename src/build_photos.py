@@ -18,6 +18,8 @@ import os
 for key, fn in (('shops', 'shops.json'), ('hints', 'facade_hints.json'), ('furniture', 'furniture.json'), ('fences', 'fences.json')):
     if os.path.exists(fn):
         w[key] = json.load(open(fn, encoding='utf-8'))
+if os.path.isdir('models'):  # downloaded models, baked by tools/assets/bake_model.js (boats on the Loire)
+    w['models'] = {fn[:-5]: json.load(open('models/' + fn, encoding='utf-8')) for fn in sorted(os.listdir('models')) if fn.endswith('.json')}
 prods = sorted({p for c in meta['chunks'] for p in (c.get('prods') or [c.get('prod')])})
 print('chunks', len(meta['chunks']), 'producers', prods)
 atl = [base64.b64encode(open(f'{up}/{PFX}_{k}.jpg', 'rb').read()).decode() for k in range(len(meta['atlas']))]
