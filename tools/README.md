@@ -23,7 +23,7 @@ Les autres scripts testent chacun une fonction (équipes, fin de partie, tirs au
 
 ## Crochets de test dans le jeu
 
-`window.__gm` (état et actions), `window.__noIntro`, `window.__introT`, `window.__trHold`, `window.__cam`, `window.__camAt`. Détail dans `LEDGER.md`, section « Comment reprendre ».
+`window.__gm` (état et actions), `window.__noIntro`, `window.__introT`, `window.__trHold`, `window.__cam`, `window.__camAt`. Détail dans `CLAUDE.md`, section « Tester ».
 
 ## Tests du 14 novembre 2026 (`tests/nov14_*.js`)
 

@@ -342,7 +342,9 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
         out.fini = !X.actRun(); out.record = __gm.Profile.cur.records.race_r_lib2; out.fantome = (__gm.Profile.cur.records.ghost_r_lib2 || []).length;
         for (let i = 0; i < 90; i++) __gm.step(1 / 30); out.resultat = /Sprint/.test(ttl()) && !document.getElementById('objective').hidden; // the result is still shown 3 s later
         for (let i = 0; i < 140; i++) __gm.step(1 / 30);
-        const smash = A.find(a => a.id === 'd_smash'); c.place(smash.start[0], smash.start[1], 0); for (let i = 0; i < 240 && !X.actRun(); i++) { c.vx = c.vz = 0; __gm.step(1 / 30); } out.defi = X.actRun() && X.actRun().a.id;
+        out.mortAvant = !c.alive; out.memeVoiture = L.car === c; c.alive = true; c.hp = 100; L.deadT = 0; // the car may have been wrecked while parked at the end of the sprint (then sent back to its spawn mid-test)
+        const smash = A.find(a => a.id === 'd_smash'); c.place(smash.start[0], smash.start[1], 0); for (let i = 0; i < 400 && !X.actRun(); i++) { c.vx = c.vz = 0; c.hp = 100; c.shield = 30; __gm.step(1 / 30); } // shield: a Rapace could kill the parked car, sent back to its spawn (the intermittent failure) out.defi = X.actRun() && X.actRun().a.id;
+        if (!out.defi) out.diag = { vivant: c.alive, distance: Math.round(Math.hypot(c.x - smash.start[0], c.z - smash.start[1])), vitesse: +c.speed.toFixed(1), titre: document.querySelector('#objective .oTitle').textContent, mission: X.mission && (X.mission.id || X.mission.name || 1), mode: X.gmode, etoiles: X.stars(L), run: !!X.actRun() }; // (15 nov.) to find the intermittent failure
         c.shield = 0; __gm.damage(c, 1000); __gm.step(1 / 30); out.abandon = !X.actRun(); for (let i = 0; i < 200 && !c.alive; i++) __gm.step(1 / 30); c.hp = 100; c.place(61, 276, 0);
         return out;
       });

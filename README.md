@@ -73,7 +73,8 @@ Les règles, les commandes et le jeu en ligne sont identiques. Le moteur HD est 
 ## Branches
 
 - **`main`** : la version publiée comme artifact sur claude.ai. Le jeu en ligne passe par la capacité `room` de claude.ai (aucun serveur à héberger).
-- **`server`** : la même version + un petit serveur Node.js (`server/`, aucune dépendance) qui sert le jeu et relaie le jeu en ligne par WebSocket, pour l'héberger soi-même.
+- **`ultra`** : la version où se font toutes les améliorations (artifact « Gangstamen Ultra ») ; elle ne passe dans `main` qu'avec l'accord de l'auteur.
+- **`server`** : la même version que `main` + un petit serveur Node.js (`server/`, aucune dépendance) qui sert le jeu et relaie le jeu en ligne par WebSocket, pour l'héberger soi-même.
 
 ## Modes de jeu
 

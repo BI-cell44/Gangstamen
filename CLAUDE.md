@@ -2,12 +2,13 @@
 
 Jeu de combat de voitures en 3D dans les vraies rues de Chantenay (Nantes), un fichier HTML par version, publié comme artifact claude.ai. L'utilisateur écrit en français : répondre en français ; tous les textes du jeu sont en français (accents, apostrophe courbe ’).
 
-**À lire dans l'ordre** : ce fichier, `docs/ETAT_DU_PROJET.md` (état, architecture, audit, artifacts), `docs/BACKLOG.md` (feuille de route : prendre le premier cycle non fait), `docs/DECISIONS_TECHNIQUES.md` (ne pas défaire une décision en vigueur sans le dire), `docs/HISTORIQUE.md` (ce qui a été fait). `README.md` est pour les joueurs.
+**À lire dans l'ordre** : ce fichier, `docs/ETAT_DU_PROJET.md` (état, architecture, audit, artifacts), `docs/BACKLOG.md` (seul fichier du reste à faire, réparti Fable / Opus : prendre la première tâche de sa liste), `docs/DECISIONS_TECHNIQUES.md` (ne pas défaire une décision en vigueur sans le dire), `docs/HISTORIQUE.md` (ce qui a été fait). `README.md` est pour les joueurs.
 
 ## Branches
 - `main` : version stable (classique et HD). `server` = `main` + serveur Node : fusionner `main` dans `server`, jamais l'inverse, et pousser les deux ensemble.
 - `ultra` : évolutions de la feuille de route, publiées sur l'artifact Ultra. Fusionner `main` dans `ultra` pour récupérer les corrections ; `ultra` ne va dans `main` qu'avec l'accord de l'utilisateur.
-- Branches figées : `passation-2026-11-13`, `passation-2026-11-13-server` (ne pas modifier).
+- Il n'y a que ces trois branches (décision de l'utilisateur, 15 nov.). Travailler sur une branche à part le temps d'une tâche si une autre session est sur `ultra`, puis la fusionner et la supprimer.
+- Anciennes branches supprimées le 15 nov., leurs commits sont tous dans l'historique : passation figée du 13 nov. `c92a34e` (main) et `98ff32e` (server), `carte-sainte-anne` `f20574b`, `hd-ambiance-campagne` `e786736`. Pour en retrouver une : `git branch nom commit`.
 
 ## Construire
 `sh build.sh` produit `gangstamen.html` (classique), `gangstamen-hd.html` (HD) et, sur `ultra`, `gangstamen-ultra.html`. Les sources sont découpées par système (décision D-12) : `src/template.parts`, `src/hd.parts` et `src/gx.parts` listent dans l'ordre les fichiers assemblés en une seule portée (moteur commun dans `src/shell`, `core`, `world`, `vehicles`, `fx`, `audio`, `input`, `game`, `ui`, `ai`, `net` ; rendu HD dans `src/hd/` ; jeu HD dans `src/gx/`), plus `data/`. Plan détaillé : `docs/ETAT_DU_PROJET.md`, section 2. Tout est dans la même portée : une fonction d'un fichier voit celles des autres ; l'ordre du manifeste compte pour les `const` lus au chargement. Pour trouver un symbole : `grep -rn "function nom" src`. **Ne jamais modifier les `.html` construits à la main** ; les commiter avec les sources. Le build est reproductible à l'octet.
