@@ -149,6 +149,7 @@ Les étapes antérieures sont dans `git log`.
 - [ ] **Missions plus longues** (demande du 15 nov.) : allonger les missions en ville (sprint, livraison…), avec des parcours plus étendus maintenant que la carte va jusqu'à Sainte-Anne et au quai de la Fosse.
 - [ ] **Flèches de mission sur la carte** (demande du 15 nov.) : afficher aussi sur la carte (minicarte et carte plein écran) les flèches vertes de direction des missions.
 - [ ] **Forme des flèches de direction** (demande du 15 nov.) : remplacer les triangles (vert mission, rouge rapace…) par une pointe de flèche en chevron, type curseur de navigation (deux ailes et une encoche à l'arrière), pour qu'on lise sans ambiguïté la direction pointée.
+- [ ] **Passages piétons** (demande du 15 nov.) : dessiner des passages piétons sur la chaussée (idéalement aux emplacements réels d'OpenStreetMap, `highway=crossing`, sinon aux carrefours) et faire que les piétons se baladent de préférence sur les trottoirs et traversent sur ces passages plutôt qu'au hasard.
 - [ ] Mairie : le fronton à horloge est une supposition ; le dos et les côtés reprennent la face avant.
 - [ ] Bâtiments HD : quelques toits ou rez-de-chaussée étranges possibles ; détection des jardins encore clairsemée. Retouche rue par rue possible sur demande.
 - [ ] Commerces : les enseignes nationales ont un libellé générique ; mettre les vrais noms si on le souhaite.
