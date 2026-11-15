@@ -16,7 +16,7 @@ Téléchargés par l'utilisateur avec son compte CGTrader (licence « Royalty Fr
 
 | Modèle du jeu | Fichier d'origine | Emploi |
 |---|---|---|
-| `data/models/ferry.json` (6 849 triangles, 36 766 à l'origine) | « Ferry F-15 », https://www.cgtrader.com/3d-models/watercraft/industrial-watercraft/ferry-f-15 (`ferry-boat-att.fbx` + `textures(1).rar`) | bac de Loire |
+| `data/models/ferry.json` (6 849 triangles, 36 766 à l'origine) | « Ferry F-15 » de joao3DModels, licence « Royalty Free (no AI) », https://www.cgtrader.com/3d-models/watercraft/industrial-watercraft/ferry-f-15 (`ferry-boat-att.fbx` + `textures(1).rar`) | bac de Loire |
 | `data/models/voilier.json` (4 497 triangles, 25 012 à l'origine) | « Sailing boat », https://www.cgtrader.com/3d-models/vehicle/other/sailing-boat-3f6498e9-d40f-4370-8dc8-aba96f1cd7cf (`sailing_boat_fbx.rar` + `Textures(2).rar`) | voiliers |
 | `data/models/escorteur.json` (8 927 triangles, 160 353 à l'origine ; couleurs refaites, sans les textures) | « Destroyer ship », https://www.cgtrader.com/3d-models/watercraft/military-watercraft/destroyer-ship (`fbx.rar`) | navire-musée Maillé-Brézé à quai (modèle générique de destroyer, pas une copie du vrai navire) |
 | `data/people.json` (8 personnages de 1 500 à 2 000 triangles, 11 mouvements, 8 palettes de couleurs) | « City People Samples » de denysalmaral, gratuit, https://www.cgtrader.com/free-3d-models/character/other/low-poly-people-free-sample-pack (`CityPeopleFREE_v1.4.0.unitypackage`) | piétons animés |
