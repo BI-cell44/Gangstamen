@@ -18,7 +18,7 @@ Dernier retour d'essai de l'utilisateur (15 nov., soir) : Ultra tourne sans prob
 8. [ ] **Partie en ligne robuste** : prédiction et correction, synchronisation de la circulation, du tram, des bonus et du bac, capture du drapeau tenue par l'hôte, reprise après coupure. Jamais testée à plusieurs.
 9. [ ] **Toits plus jolis** (15 nov.) : remplacer la photo aérienne des toits par des textures dessinées, plus belles mais inspirées de la photo (couleurs, motifs : tuiles, ardoise, zinc, toits plats). **D'abord un essai sur une petite zone**, montré à l'utilisateur avant de l'étendre.
 10. [ ] **Piétons, suite** (possible pour Opus) : évitement entre piétons, groupes, foule selon le lieu et l'heure, respect du feu piéton aux carrefours à feux.
-11. [ ] **Lumières des lampadaires dans l'intro de nuit** : taches au sol mal placées ou mal dessinées.
+
 
 ## Pour Opus 5.5 (dans cet ordre)
 
