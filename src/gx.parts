@@ -4,6 +4,7 @@ gx/traffic.js
 gx/police.js
 gx/pedestrians.js
 gx/crowd.js
+gx/people.js
 gx/batch.js
 gx/terraces.js
 gx/voices.js

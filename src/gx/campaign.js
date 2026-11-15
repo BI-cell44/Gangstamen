@@ -178,7 +178,7 @@
   function toMenu() { // back to the title screen without reloading
     started = false; paused = false; document.body.classList.remove('ingame', 'split'); $('title').hidden = false; renderCampaign(); showView('vCamp');
     for (const L of locals) scene.remove(L.car.mesh); locals = [];
-    for (const c of npcs.slice()) removeNpc(c); for (const p of peds) p.on = false; crowd.begin(); crowd.end(); active = false; sfx.engine(0, false); sfx.siren(0);
+    for (const c of npcs.slice()) removeNpc(c); for (const p of peds) p.on = false; crowd.begin(); crowd.end(); People.hideAll(); active = false; sfx.engine(0, false); sfx.siren(0);
   }
   function renderCampaign() {
     const box = $('campList'); if (!box) return; box.innerHTML = '';

@@ -446,5 +446,19 @@
   "simMs": 5.05,
   "loadS": 20,
   "failed": 0
+ },
+ {
+  "date": "2026-11-15T09:49",
+  "label": "Fable : piétons animés, Maillé-Brézé",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 732,
+  "trianglesK": 967,
+  "meshes": 2733,
+  "geometries": 2321,
+  "materials": 440,
+  "heapMB": 242,
+  "simMs": 4.84,
+  "loadS": 17,
+  "failed": 0
  }
 ]

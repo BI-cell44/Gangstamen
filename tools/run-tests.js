@@ -151,6 +151,18 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
     });
     expect(r.voiliers >= 3 && r.bateaux === r.voiliers + 1 && r.auSec === 0 && r.rives === 2 && r.ecartBac > 18 && r.avance > 50, JSON.stringify(r)); return r;
   });
+  await check('piétons animés : personnages à squelette, marche, course', async () => {
+    const r = await ev(() => {
+      const g = __gm.gx, P = g.People, c = __gm.locals()[0].car, ps = g.peds().slice(0, 6);
+      ps.forEach((p, i) => { p.on = true; p._pin = [c.x - 4 + i * 1.5, c.z + 30, 0]; p.state = i === 5 ? 'panic' : 'walk'; p.run = 4.5; p.timer = 99; p.idleIn = 99; });
+      __gm.step(0.05); const o = ps[0]._sk, q0 = o ? o.bones.map(b => b.quaternion.toArray()) : [];
+      if (o) { P.dt = 0.2; P.draw(ps[0]); o.mesh.updateMatrixWorld(true); }
+      const moved = o ? o.bones.filter((b, i) => b.quaternion.toArray().some((v, k) => Math.abs(v - q0[i][k]) > 0.01)).length : 0;
+      const out = { actifs: P.on, corps: P.all.length, clips: [...new Set(P.all.map(a => a.clip))].sort().join(','), osBouges: moved, nan: o ? o.bones.filter(b => b.matrixWorld.elements.some(isNaN)).length : -1, visible: !!(o && o.mesh.visible), taille: o ? +(o.c.h * o.mesh.scale.x).toFixed(2) : 0 };
+      ps.forEach(p => { delete p._pin; p.state = 'walk'; }); return out;
+    });
+    expect(r.actifs && r.corps >= 6 && r.osBouges > 8 && r.nan === 0 && r.visible && /run/.test(r.clips) && /walk|slow|phone/.test(r.clips) && r.taille > 0.9 && r.taille < 2.1, JSON.stringify(r)); return r;
+  });
   await check('mur du tram (nord)', async () => {
     const r = await ev(() => { const c = __gm.locals()[0].car, x = 600, w = __gm.tramWall(x); c.place(x, w + 8, Math.PI); c.hp = 100; for (let i = 0; i < 60; i++) { c.vx = 0; c.vz = -8; __gm.step(1 / 30); } return +(c.z - w).toFixed(2); });
     expect(r > 0, 'la voiture a franchi les voies (' + r + ')'); return { marge: r };

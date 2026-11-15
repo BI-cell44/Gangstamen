@@ -5,8 +5,9 @@
   // =====================================================================================
   const Boats = (() => {
     const list = [], CH = [[60, 1150], [300, 800], [560, 600], [820, 480], [1250, 470], [1700, 470], [2050, 470]]; // middle of the channel, west to east
-    const DOCK = [[1255, 396], [1295, 546]]; // ferry: Chantenay bank, island bank
-    let curve = null, len = 0, built = false, wakeM = null;
+    const DOCK = [[932, 320], [1133, 320]]; // ferry: Chantenay quay, western tip of the île de Nantes (the Madeleine arm runs north-east between them)
+    const MOORED = [1388, -468, Math.atan2(-0.69, 0.72)];
+    let curve = null, len = 0, built = false, wakeM = null, moored = null;
     function decode(name, length, axis, waterline) { // -> geometry in metres, bow towards -z, y = 0 at the water line
       const m = (W.models || {})[name]; if (!m) return null;
       const bin = (s, T) => { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new T(u.buffer); };
@@ -51,6 +52,9 @@
       curve = new THREE.CatmullRomCurve3(pts, true, 'catmullrom', 0.4); len = curve.getLength();
       if (sail) for (let i = 0; i < 4; i++) { const b = add('sail', sail, mat, 26, 2.2); b.s = (i * 0.25 + 0.06 + R() * 0.08) * len; b.v0 = 2.8 + R() * 1.6; b.v = b.v0; }
       if (ferry) { const b = add('ferry', ferry, mat, 46, 9); b.t = 0; b.side = 0; b.wait = 8; b.v = 0; b.x = DOCK[0][0]; b.z = DOCK[0][1]; b.h = Math.atan2(-(DOCK[1][0] - DOCK[0][0]), -(DOCK[1][1] - DOCK[0][1])); }
+      // the Maillé-Brézé, museum ship of the quai de la Fosse, moored where OpenStreetMap draws her (132 m, bow upstream)
+      const esc = decode('escorteur', 132, 2, 0.09);
+      if (esc) { const m = new THREE.Mesh(esc, mat); m.position.set(MOORED[0], WATER_Y, MOORED[1]); m.rotation.y = MOORED[2]; m.castShadow = true; m.userData.shared = true; m.userData.hdLinear = true; scene.add(m); moored = m; }
       step(0);
     }
     function step(dt) {
@@ -85,5 +89,5 @@
         b.wk.visible = b.v > 0.5; b.wk.scale.set(1, 1, Math.min(1, b.v / 3));
       }
     }
-    return { build, step, list, get curve() { return curve; }, DOCK };
+    return { build, step, list, get curve() { return curve; }, get moored() { return moored; }, DOCK };
   })();

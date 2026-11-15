@@ -33,8 +33,22 @@ const { NodeIO } = req('@gltf-transform/core'), { MeshoptSimplifier } = req('mes
         } else C.push(...flat);
       }
       const n = idx ? idx.getCount() : pos.getCount();
+      if (opt.deck) { // no texture: paint by slope and height (decks, hull below the water line), one colour per triangle
+        const [dk, low, lowY] = opt.deck;
+        for (let i = 0; i < n; i += 3) {
+          const v = [0, 1, 2].map(k => base + (idx ? idx.getScalar(i + k) : i + k)), a = v.map(j => [P[j * 3], P[j * 3 + 1], P[j * 3 + 2]]);
+          const e1 = a[1].map((q, k) => q - a[0][k]), e2 = a[2].map((q, k) => q - a[0][k]), nx = e1[1] * e2[2] - e1[2] * e2[1], ny = e1[2] * e2[0] - e1[0] * e2[2], nz = e1[0] * e2[1] - e1[1] * e2[0], l = Math.hypot(nx, ny, nz) || 1;
+          const cy = (a[0][1] + a[1][1] + a[2][1]) / 3, col = cy < lowY ? low : Math.abs(ny / l) > 0.92 ? dk : null;
+          for (const p of a) { I.push(P.length / 3); P.push(...p); C.push(...(col || flat)); }
+        }
+        continue;
+      }
       for (let i = 0; i < n; i++) I.push(base + (idx ? idx.getScalar(i) : i));
     }
+  }
+  if (opt.grad) { // colours by height (fraction of the height, bottom to top) when the model comes without usable textures
+    let y0 = 1e9, y1 = -1e9; for (let i = 1; i < P.length; i += 3) { y0 = Math.min(y0, P[i]); y1 = Math.max(y1, P[i]); }
+    for (let i = 0; i < P.length / 3; i++) { const f = (P[i * 3 + 1] - y0) / (y1 - y0); let c = opt.grad[0][1]; for (const [t, col] of opt.grad) if (f >= t) c = col; C[i * 3] = c[0]; C[i * 3 + 1] = c[1]; C[i * 3 + 2] = c[2]; }
   }
   console.log('materials', JSON.stringify(seen), 'tris', I.length / 3, 'verts', P.length / 3);
   // weld on position + colour

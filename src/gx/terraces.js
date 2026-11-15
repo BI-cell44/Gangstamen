@@ -104,7 +104,7 @@
   }
   function crowdDraw() {
     crowd.begin();
-    for (const p of peds) if (p.on && p.pose) crowd.draw(p, p.pose);
+    if (People.on) { People.begin(); for (const p of peds) People.draw(p); } else for (const p of peds) if (p.on && p.pose) crowd.draw(p, p.pose);
     for (const c of customers) if (c.pose && c.vis) crowd.draw(c, c.pose, c.draw);
     crowd.end();
   }
