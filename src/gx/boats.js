@@ -68,13 +68,14 @@
           // the boat's pose at this dock, the end of its deck that touches the land, and the ramp from there up the bank
           const u = k ? 1 : 0, p = route.getPointAt(u), tg = route.getTangentAt(u), ax = tg.x * L.end, az = tg.z * L.end; // (ax, az): from the boat towards the land
           L.bx = p.x + ax * 21.5; L.bz = p.z + az * 21.5; L.len = 24; L.ax = ax; L.az = az; L.x = L.bx + ax * L.len; L.z = L.bz + az * L.len; L.y = groundH(L.x, L.z); L.hw = 4.6;
-          DECKS.push((x, z) => { // lowered only while the boat is alongside
-            if (b.side !== k || b.wait <= 0) return null;
+          DECKS.push((x, z) => { // solid at all times (user, 15 Nov.): with the boat away, a car that drives off its end falls into the Loire
             const dx = x - L.bx, dz = z - L.bz, s = dx * ax + dz * az, lat = dx * az - dz * ax; if (s < -0.5 || s > L.len || Math.abs(lat) > L.hw) return null;
             const y = WATER_Y + DECK_Y + (L.y - WATER_Y - DECK_Y) * Math.max(0, s) / L.len; return y > groundH(x, z) - 0.2 ? y : null; });
-          const g = new THREE.BoxGeometry(L.hw * 2, 0.3, Math.hypot(L.len, L.y - WATER_Y - DECK_Y) + 1), m = new THREE.Mesh(g, rampM);
-          m.position.set(L.bx + ax * L.len / 2, (L.y + WATER_Y + DECK_Y) / 2 - 0.2, L.bz + az * L.len / 2); m.rotation.order = 'YXZ'; m.rotation.y = Math.atan2(ax, az); m.rotation.x = -Math.atan2(L.y - WATER_Y - DECK_Y, L.len);
-          m.receiveShadow = true; m.userData.hdLinear = true; scene.add(m);
+          // the slab from the top of the bank down to the level of the deck; it stays down when the boat is away
+          const sl = Math.hypot(L.len, L.y - WATER_Y - DECK_Y) + 0.6, m = new THREE.Mesh(new THREE.BoxGeometry(L.hw * 2, 0.3, sl), rampM), hinge = new THREE.Group();
+          m.position.set(0, -0.2, sl / 2); m.receiveShadow = true; m.castShadow = true; m.userData.hdLinear = true; hinge.add(m);
+          hinge.position.set(L.x, L.y, L.z); hinge.rotation.order = 'YXZ'; hinge.rotation.y = Math.atan2(-ax, -az); L.slope = Math.atan2(L.y - WATER_Y - DECK_Y, L.len); hinge.rotation.x = L.slope;
+          hinge.userData.hdLinear = true; scene.add(hinge); L.hinge = hinge;
           const lx = L.x - az * (L.hw + 1.2), lz = L.z + ax * (L.hw + 1.2), post = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 5, 8), postM); post.position.set(lx, groundH(lx, lz) + 2.5, lz); post.userData.hdLinear = true; scene.add(post);
           L.lamp = new THREE.Mesh(lampG, new THREE.MeshBasicMaterial({ color: 0xff2a1a })); L.lamp.position.set(lx, groundH(lx, lz) + 5.4, lz); L.lamp.userData.hdLinear = true; scene.add(L.lamp);
           gridAdd([lx - 0.3, lz, lx + 0.3, lz], 3.5);

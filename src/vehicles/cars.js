@@ -196,11 +196,18 @@ class Car {
   }
   get speed() { return Math.hypot(this.vx, this.vz); }
   get fwd() { return [-Math.sin(this.h), -Math.cos(this.h)]; }
-  place(x, z, h) { this.x = x; this.z = z; this.h = h; this.vx = this.vz = 0; this.yb = undefined; this.yv = 0; this.air = 0; this.nitro = 0; if (this.phys) { this.phys.r = 0; this.phys.gear = 1; this.phys.ax = 0; } this.sync(); }
+  place(x, z, h) { this.x = x; this.z = z; this.h = h; this.vx = this.vz = 0; this.yb = undefined; this.yv = 0; this.air = 0; this.nitro = 0; this.sink = 0; if (this.phys) { this.phys.r = 0; this.phys.gear = 1; this.phys.ax = 0; } this.sync(); }
   sync() {
     const [fx, fz] = this.fwd, rx = -fz, rz = fx;
-    const hf = surfaceH(this.x + fx * 1.7, this.z + fz * 1.7), hb = surfaceH(this.x - fx * 1.7, this.z - fz * 1.7);
-    const hr = surfaceH(this.x + rx * 0.9, this.z + rz * 0.9), hl = surfaceH(this.x - rx * 0.9, this.z - rz * 0.9);
+    let hf = surfaceH(this.x + fx * 1.7, this.z + fz * 1.7), hb = surfaceH(this.x - fx * 1.7, this.z - fz * 1.7);
+    let hr = surfaceH(this.x + rx * 0.9, this.z + rz * 0.9), hl = surfaceH(this.x - rx * 0.9, this.z - rz * 0.9);
+    if (this.sink > 0) { // in the Loire: floats a moment, then goes down nose first
+      const d = this.sink < 0.6 ? 0.25 : 0.25 + (this.sink - 0.6) * 0.75;
+      this.mesh.position.set(this.x, WATER_Y + 0.25 - d, this.z); this.mesh.rotation.set(-Math.min(0.5, this.sink * 0.22), this.h, Math.sin(this.sink * 2.3) * 0.07, 'YXZ'); return;
+    }
+    // a wheel over a drop (the edge of the ferry's deck, a quay) does not lay the car on its side: the body leans as if
+    // the ground went on a little lower, no more (15 Nov.: the car lay over on the deck's edge)
+    { const h0 = surfaceH(this.x, this.z); hr = Math.max(hr, h0 - 0.35); hl = Math.max(hl, h0 - 0.35); if (groundH(this.x, this.z) < WATER_Y + 0.9) { hf = Math.max(hf, h0 - 0.5); hb = Math.max(hb, h0 - 0.5); } } // (front and rear only over the water: slopes and kerbs keep their pitch)
     this.mesh.position.set(this.x, Math.max(surfaceH(this.x, this.z), (hf + hb) / 2) + 0.34 + (this.air || 0), this.z);
     if (this.air > 0.2) { this._ap = (this._ap ?? Math.atan2(hf - hb, 3.4)) - 0.35 * (1 / 60); this.mesh.rotation.set(Math.max(-0.5, this._ap), this.h, this.mesh.rotation.z * 0.98, 'YXZ'); return; }
     this._ap = undefined;
@@ -208,12 +215,23 @@ class Car {
   }
 }
 
+// a car in the river: it drifts on a little, goes under, and its driver is back on dry land a moment later
+function sinking(c, dt) {
+  c.sink += dt; const k = Math.exp(-2.2 * dt); c.vx *= k; c.vz *= k; c.x += c.vx * dt; c.z += c.vz * dt; c.air = 0; c.yv = 0;
+  if (Math.random() < dt * 9) spawnFx(c.x + (Math.random() - 0.5) * 2.4, WATER_Y + 0.2, c.z + (Math.random() - 0.5) * 3.4, 0.35, 0xe8f4f8, 0.25, 2, 1.2); // bubbles
+  if (c.sink > 3.2 && c.alive) { c.alive = false; c.hp = 0; if (c.owner) c.owner.deadT = 1.4; }
+  return 0;
+}
 function drive(c, inp, dt) {
   const real = useRealPhysics(c);
   if (real) planarReal(c, inp, dt); else planarArcade(c, inp, dt);
   const ox = c.x, oz = c.z;
+  if (c.sink > 0) return sinking(c, dt);
   c.x += c.vx * dt; c.z += c.vz * dt;
-  if (groundH(c.x, c.z) < WATER_Y + 0.9 && deckH(c.x, c.z) === null) { // (a bridge or the ferry over the water carries the car) // the Loire is not drivable (a car aboard the ferry is carried by it)
+  // The Loire. A bridge or the ferry carries the car. A player's car that leaves the quay, the ramp or the deck falls in
+  // and sinks (Ultra, 15 Nov.); the others (bots, traffic, classic and HD builds) are still turned back at the water's edge.
+  const wet = groundH(c.x, c.z) < WATER_Y + 0.9 && deckH(c.x, c.z) === null, canSink = HD && ULTRA && c.local;
+  if (wet && !canSink) {
     c.x = ox; c.z = oz; c.vx *= -0.3; c.vz *= -0.3;
     if (c.player && Math.random() < 0.3) spawnFx(c.x, 0.5, c.z, 0.6, 0x9fc4d8, 0.4, 3, 2);
   }
@@ -227,6 +245,10 @@ function drive(c, inp, dt) {
     else {
       if (c.air > 0.4 && c.yv < -6) { spawnFx(c.x, 0.3, c.z, 0.5, 0xffe28a, 0.2, 2, 2); if (c.local) { sfx.impact(-c.yv * 0.8); rumbleFor(c.owner, 0.5, 0.5, 150); } if (c.yv < -hurt) damage(c, (-c.yv - hurt) * hk); }
       c.yv = Math.max(-14, Math.min(14, (g - c.yb) / Math.max(dt, 1e-3))); c.yb = g; c.air = 0;
+    }
+    if (wet && canSink && c.yb < WATER_Y + 0.3 && groundH(c.x, c.z) < WATER_Y - 0.1) { // touches the water where it is deep enough
+      c.sink = 0.001; c.air = 0; c.yv = 0; for (let i = 0; i < 4; i++) spawnFx(c.x + (Math.random() - 0.5) * 3, WATER_Y + 0.4, c.z + (Math.random() - 0.5) * 3, 1.1, 0xcfe4ee, 0.5, 5, 3);
+      sfx.impact(9); rumbleFor(c.owner, 0.7, 0.4, 300); if (typeof flashFor === 'function') flashFor(c.owner, 'À L’EAU !', 'La voiture coule');
     }
   }
   let impact = 0;
@@ -251,14 +273,16 @@ function planarArcade(c, inp, dt) {
   if (c.nitro > 0 && vf < MAX) vf += 9 * dt;
   vf -= vf * Math.abs(vf) * 0.0011 * dt * 10 * (44 / Math.max(44, MAX));
   // handbrake: the rear lets go; keep the slide going a moment after release if the throttle is held (drift)
-  if (inp.hb && Math.abs(vf) > 7) c.drift = 0.8; else c.drift = Math.max(0, (c.drift || 0) - dt * (inp.t > 0 ? 0.7 : 2.5));
+  if (inp.hb && Math.abs(vf) > 7) c.drift = 0.8; else c.drift = Math.max(0, (c.drift || 0) - dt * (inp.t > 0 ? 0.7 : 1.7));
   if (inp.hb) vf -= vf * 0.55 * dt;
-  vr *= Math.exp(-(inp.hb ? 1.0 : c.drift > 0 ? 2.4 : 9 * (1 + 0.12 * (T.grip || 0))) * grip * dt);
+  // the tyres take hold again little by little as the slide dies (15 Nov.: the grip came back all at once, the slide stopped dead)
+  const dw = Math.min(1, (c.drift || 0) / 0.55), hold = dw * dw * (3 - 2 * dw);
+  vr *= Math.exp(-(inp.hb ? 1.0 : 2.4 * hold + 9 * (1 + 0.12 * (T.grip || 0)) * (1 - hold)) * grip * dt);
   // gravity along the slope of the Chantenay hills
   const slope = (surfaceH(c.x + fx * 1.7, c.z + fz * 1.7) - surfaceH(c.x - fx * 1.7, c.z - fz * 1.7)) / 3.4;
   vf -= 9.81 * slope * 0.75 * dt;
   c.steer += (inp.s - c.steer) * Math.min(1, dt * 8);
-  const yaw = c.steer * Math.max(-1, Math.min(1, vf / 6)) * (2.1 / (1 + Math.abs(vf) / 30)) * (inp.hb ? 1.9 : c.drift > 0 ? 1.35 : 1) * (grip < 1 ? 0.25 : 1);
+  const yaw = c.steer * Math.max(-1, Math.min(1, vf / 6)) * (2.1 / (1 + Math.abs(vf) / 30)) * (inp.hb ? 1.9 : 1 + 0.35 * hold) * (grip < 1 ? 0.25 : 1);
   c.h += yaw * dt;
   const [nfx, nfz] = c.fwd, nrx = -nfz, nrz = nfx;
   c.vx = nfx * vf + nrx * vr; c.vz = nfz * vf + nrz * vr;

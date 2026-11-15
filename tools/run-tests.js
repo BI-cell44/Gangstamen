@@ -142,6 +142,42 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
     });
     expect(r.murs > 300 && r.maisons > 800 && r.rues > 10 && r.noeudsDehors === 0, JSON.stringify(r)); return r;
   });
+  await check('Loire : la rampe reste solide bac absent, la voiture tombe au bout, coule, et le joueur revient à terre', async () => {
+    const r = await ev(() => {
+      const B = __gm.gx.Boats, f = B.ferry, L0 = __gm.locals()[0], c = L0.car, A = B.LAND[0], g = __gm.groundH, out = {};
+      for (let i = 0; i < 3000 && !(f.side === 1 || (f.wait <= 0 && f.t > 200)); i++) B.step(0.5); // the boat is away
+      c.place(A.x + A.ax * 4, A.z + A.az * 4, Math.atan2(A.ax, A.az)); c.hp = 100; let far = 0, tSink = null, yMin = 1e9, dead = null;
+      for (let i = 0; i < 1200; i++) {
+        if (!c.sink) { c.vx = -A.ax * 8; c.vz = -A.az * 8; } __gm.step(1 / 30);
+        const s = (A.x - c.x) * A.ax + (A.z - c.z) * A.az; if (!c.sink && c.alive && dead === null) far = Math.max(far, s);
+        if (c.sink > 0 && tSink === null) { tSink = i / 30; out.fond = +g(c.x, c.z).toFixed(1); } if (c.sink > 0) yMin = Math.min(yMin, c.mesh.position.y);
+        if (!c.alive && dead === null) dead = i / 30; if (dead !== null && c.alive) { out.retour = +g(c.x, c.z).toFixed(1); break; }
+      }
+      Object.assign(out, { rampe: A.len, rouleSur: Math.round(far), tombe: tSink !== null, sousLEau: +yMin.toFixed(1), coule: dead !== null ? +(dead - tSink).toFixed(1) : null, hp: Math.round(c.hp), sink: c.sink || 0 });
+      // and the roll of a car parked on the very edge of the deck
+      const s = Math.sin(f.h), co = Math.cos(f.h); c.place(f.x + 7.6 * co, f.z - 7.6 * s, f.h); c.sync(); out.roulisAuBord = Math.round(Math.abs(c.mesh.rotation.z) * 57.3);
+      c.place(L0.spawn[0], L0.spawn[1], L0.spawn[2]); return out;
+    });
+    expect(r.rouleSur >= r.rampe - 2 && r.tombe && r.sousLEau < -1 && r.coule > 2 && r.retour > 2 && r.hp === 100 && r.sink === 0 && r.roulisAuBord < 20, JSON.stringify(r)); return r;
+  });
+  await check('défi Destruction : chaque casse compte, les réparations ne font pas baisser le total', async () => {
+    const r = await ev(() => {
+      const X = __gm.gx, c = __gm.locals()[0].car, a = X.acts().find(q => q.id === 'd_smash'), P = X.Fences.panels, home = [c.x, c.z, c.h];
+      const was = [0, 1, 2, 3, 4, 5, 10, 11, 12, 13].map(i => P[i].broken);
+      for (let i = 0; i < 6; i++) P[i].broken = true; // six panels already down before the start
+      c.place(a.start[0], a.start[1], 0); for (let i = 0; i < 400 && !X.actRun(); i++) { c.vx = c.vz = 0; c.hp = 100; c.shield = 30; __gm.step(1 / 30); }
+      const run = X.actRun(); let res = { lance: false };
+      if (run) {
+        for (let i = 0; i < 300; i++) { c.vx = c.vz = 0; X.step(1 / 30); } const s0 = run.score || 0; // past the countdown (the activities advance in the game step of gx)
+        for (let i = 0; i < 6; i++) P[i].broken = false; X.step(1 / 30); const s1 = run.score || 0; // six repairs
+        for (let i = 10; i < 14; i++) P[i].broken = true; X.step(1 / 30); const s2 = run.score || 0; // four breaks
+        res = { lance: true, depart: s0, apresReparations: s1, apresCasses: s2 };
+        c.shield = 0; __gm.damage(c, 1000); __gm.step(1 / 30); for (let i = 0; i < 200 && !c.alive; i++) __gm.step(1 / 30); c.hp = 100; // leaves the challenge
+      }
+      [0, 1, 2, 3, 4, 5, 10, 11, 12, 13].forEach((i, k) => { P[i].broken = was[k]; }); c.place(home[0], home[1], home[2]); return res;
+    });
+    expect(r.lance && r.depart === 0 && r.apresReparations === 0 && r.apresCasses === 4, JSON.stringify(r)); return r;
+  });
   await check('grues : modèles téléchargés sur les Titan et sur les quais, les pieds au sec', async () => {
     const r = await ev(() => {
       const g = __gm.gx, big = o => { let n = 0; o.traverse(m => { if (m.isMesh && m.geometry.index && m.geometry.index.count > 9000) n++; }); return n; };
@@ -350,7 +386,8 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
         for (let i = 0; i < 90; i++) __gm.step(1 / 30); out.resultat = /Sprint/.test(ttl()) && !document.getElementById('objective').hidden; // the result is still shown 3 s later
         for (let i = 0; i < 140; i++) __gm.step(1 / 30);
         out.mortAvant = !c.alive; out.memeVoiture = L.car === c; c.alive = true; c.hp = 100; L.deadT = 0; // the car may have been wrecked while parked at the end of the sprint (then sent back to its spawn mid-test)
-        const smash = A.find(a => a.id === 'd_smash'); c.place(smash.start[0], smash.start[1], 0); for (let i = 0; i < 400 && !X.actRun(); i++) { c.vx = c.vz = 0; c.hp = 100; c.shield = 30; __gm.step(1 / 30); } // shield: a Rapace could kill the parked car, sent back to its spawn (the intermittent failure) out.defi = X.actRun() && X.actRun().a.id;
+        const smash = A.find(a => a.id === 'd_smash'); c.place(smash.start[0], smash.start[1], 0); for (let i = 0; i < 400 && !X.actRun(); i++) { c.vx = c.vz = 0; c.hp = 100; c.shield = 30; __gm.step(1 / 30); } // shield: a Rapace could kill the parked car, sent back to its spawn (the intermittent failure)
+        out.defi = X.actRun() && X.actRun().a.id; // (was swallowed by the comment above when it shared its line: the check failed every time)
         if (!out.defi) out.diag = { vivant: c.alive, distance: Math.round(Math.hypot(c.x - smash.start[0], c.z - smash.start[1])), vitesse: +c.speed.toFixed(1), titre: document.querySelector('#objective .oTitle').textContent, mission: X.mission && (X.mission.id || X.mission.name || 1), mode: X.gmode, etoiles: X.stars(L), run: !!X.actRun() }; // (15 nov.) to find the intermittent failure
         c.shield = 0; __gm.damage(c, 1000); __gm.step(1 / 30); out.abandon = !X.actRun(); for (let i = 0; i < 200 && !c.alive; i++) __gm.step(1 / 30); c.hp = 100; c.place(61, 276, 0);
         return out;

@@ -66,7 +66,7 @@
       const len = route(c.x, c.z, tx, tz).reduce((acc, p, i, A) => acc + (i ? Math.hypot(p[0] - A[i - 1][0], p[1] - A[i - 1][1]) : 0), 0);
       run.dest = [tx, tz]; run.destName = s.n || 'le client'; run.limit = Math.round(len / 13 + 12); run.mk = addMarker(tx, tz, 7, 0xffffff);
     } else if (a.kind === 'cops') { L.heat = 2.5; L.calm = 0; L.unseen = 0; }
-    else if (a.kind === 'smash') run.base = brokenCount();
+    else if (a.kind === 'smash') run.last = brokenCount();
   }
   function brokenCount() { let n = 0; for (const f of furniture) if (f.broken) n++; for (const p of Fences.panels) if (p.broken) n++; return n + LightPoles.broken; }
   function makeGhost(style) {
@@ -138,7 +138,7 @@
     }
     if (a.kind === 'drift') { const [fx, fz] = c.fwd, lat = Math.abs(c.vx * -fz + c.vz * fx); if (c.speed > 8 && (c.drift > 0 || lat > 3) && c.air < 0.2) { run.combo = Math.min(5, (run.combo || 1) + dt * 0.4); run.score += c.speed * dt * run.combo; } else run.combo = 1; }
     if (a.kind === 'jump') { if (c.air > 0.3) { run.fly = (run.fly || 0) + c.speed * dt; } else if (run.fly) { run.score = Math.max(run.score, run.fly); if (run.fly > 8) flashFor(L, 'Saut de ' + Math.round(run.fly) + ' m', ''); run.fly = 0; } }
-    if (a.kind === 'smash') run.score = brokenCount() - run.base;
+    if (a.kind === 'smash') { const n = brokenCount(); if (n > run.last) run.score = (run.score || 0) + n - run.last; run.last = n; } // each new break counts; things broken earlier get repaired far from the player, which made the total go down, below zero (user, 15 Nov.)
     if (a.kind === 'cops') { run.score = Math.max(0, a.time - run.t); if ((L.heat || 0) < 1 && run.t > 3) return endAct(true, 'Semés en ' + fmtT(run.t)); }
     if (a.kind === 'deliv') {
       const d = Math.hypot(run.dest[0] - c.x, run.dest[1] - c.z); objDir(...run.dest);
