@@ -20,6 +20,7 @@ Jeu de combat de voitures en 3D dans les vraies rues de Chantenay (Nantes), un f
 - Ne jamais dire « ça marche » sans test ; dire clairement ce qui n'a pas pu être vérifié (son, manette, fluidité réelle, en ligne à plusieurs).
 
 ## Modifier le code sans casser
+- **Jamais de code après un commentaire `//` sur la même ligne** : en insérant un commentaire au milieu d'une ligne, tout ce qui suit est avalé sans erreur (arrivé deux fois le 15-16 nov. : un test toujours faux, le bac qui n'attendait plus). Mettre le commentaire en fin de ligne ou sur sa propre ligne.
 - Petits scripts de remplacement qui vérifient que le texte visé existe **une seule fois** (`/home/claude/tools/rep.py FICHIER PAIRES.py`, à recréer au besoin : il remplace chaque paire `(ancien, nouveau)` en exigeant une occurrence unique).
 - Tout code HD derrière `if (HD)` ou dans `gx` ; couleurs écrites en sRGB, une seule conversion en linéaire en HD.
 - Murs de collision : `gridAdd(segment, 3.5)` (la recherche ne regarde que la cellule du centre de la voiture ; une marge plus petite laisse passer).

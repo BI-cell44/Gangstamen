@@ -192,6 +192,14 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
     });
     expect(r.halle && r.hauteurLibre >= 6 && r.colonnes > 25 && r.traverse >= r.aFaire && r.ecartsDeColonne < 40, JSON.stringify(r)); return r;
   });
+  await check('bac : des passagers à pied embarquent, traversent, débarquent, jamais dans l’eau', async () => {
+    const r = await ev(() => {
+      const B = __gm.gx.Boats, f = B.ferry, g = __gm.groundH, seen = new Set(), rode = new Set(); let wet = 0, held = 0;
+      for (let i = 0; i < 5000; i++) { B.step(0.2); B.pax.forEach((p, k) => { seen.add(p.st); if (p.st === 'ride') rode.add(k); if (p.on && p.st !== 'gone' && g(p.x, p.z) < 0.45 && !f.onDeck(p.x, p.z) && __gm.surfaceH(p.x, p.z) < 1) wet++; if (p.st === 'board' && f.wait <= 0) held++; }); }
+      return { passagers: B.pax.length, etats: [...seen].sort().join(','), ontTraverse: rode.size, dansLEau: wet, bacPartiSansEux: held, dessines: B.pax.filter(p => p._sk).length };
+    });
+    expect(r.passagers >= 4 && r.ontTraverse === r.passagers && r.dansLEau === 0 && r.bacPartiSansEux === 0 && /board/.test(r.etats) && /leave/.test(r.etats) && r.dessines === r.passagers, JSON.stringify(r)); return r;
+  });
   await check('grues : modèles téléchargés sur les Titan et sur les quais, les pieds au sec', async () => {
     const r = await ev(() => {
       const g = __gm.gx, big = o => { let n = 0; o.traverse(m => { if (m.isMesh && m.geometry.index && m.geometry.index.count > 9000) n++; }); return n; };

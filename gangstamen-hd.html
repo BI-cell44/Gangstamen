@@ -8579,7 +8579,36 @@ const gx = !HD ? null : (() => {
       // the Maillé-Brézé, museum ship of the quai de la Fosse, moored where OpenStreetMap draws her (132 m, bow upstream)
       const esc = decode('escorteur', 132, 2, 0.09);
       if (esc) { const m = new THREE.Mesh(esc, mat); m.position.set(MOORED[0], WATER_Y, MOORED[1]); m.rotation.y = MOORED[2]; m.castShadow = true; m.userData.shared = true; m.userData.hdLinear = true; scene.add(m); moored = m; }
-      step(0);
+      paxInit(); step(0);
+    }
+    // Foot passengers of the ferry (backlog « autres passagers »): a few people wait at the top of each ramp, walk
+    // aboard when the boat is alongside, stand along the rail for the crossing, walk off and away on the other side.
+    // They are drawn like the street's pedestrians (People) but live here: nobody else moves them.
+    const pax = [];
+    function paxInit() {
+      if (!fy || !People.on) return;
+      for (let i = 0; i < 6; i++) pax.push({ dock: i < 3 ? 0 : 1, st: 'wait', slot: i % 3, lx: (i % 2 ? 1 : -1) * 7.3, lz: -9 + (i % 3) * 7 + (i < 3 ? 0 : 3), x: 0, y: 0, z: 0, h: 0, on: true, state: 'idle', speed: 1.35 + R() * 0.3, s: 0.94 + R() * 0.1, woman: R() < 0.5, old: false, kid: false, away: 0, tg: null, k: 0 });
+    }
+    const paxSpot = (p, L) => { const side = -1, a = L.hw + 2.2 + p.slot * 1.1; return [L.x + L.ax * (2 + p.slot * 0.8) + L.az * a * side, L.z + L.az * (2 + p.slot * 0.8) - L.ax * a * side]; }; // on the quay, on the side away from the lamp post
+    const paxLane = (p, L, s) => { const lat = (p.lx > 0 ? 1 : -1) * 3.4; return [L.bx + L.ax * s + L.az * lat, L.bz + L.az * s - L.ax * lat]; }; // along the edge of the ramp, s metres up from the boat
+    function paxStep(dt) {
+      const b = fy; if (!b || !pax.length) return;
+      const sn = Math.sin(b.h), cs = Math.cos(b.h), deck = p => [b.x + p.lx * cs + p.lz * sn, b.z - p.lx * sn + p.lz * cs], docked = b.wait > 0;
+      for (const p of pax) {
+        const L = LAND[p.dock];
+        if (p.st === 'gone') { p.away -= dt; p.on = false; if (p.away <= 0) { p.st = 'wait'; const q = paxSpot(p, L); p.x = q[0]; p.z = q[1]; p.h = Math.atan2(-L.ax, -L.az); } }
+        else if (p.st === 'wait') { p.on = true; p.state = 'idle'; const q = paxSpot(p, L); p.x = q[0]; p.z = q[1];
+          if (docked && b.side === p.dock && b.wait > 6 && b.wait < 21) { p.st = 'board'; p.tg = [paxLane(p, L, L.len - 1), paxLane(p, L, 0.5), null]; p.k = 0; } }
+        else if (p.st === 'ride') { const q = deck(p); p.x = q[0]; p.z = q[1]; p.state = 'idle'; p.h = b.h + (p.lx > 0 ? -1.57 : 1.57) + Math.PI; // looking out over the rail
+          if (docked && b.side !== p.dock) { p.dock = b.side; const M = LAND[p.dock]; p.st = 'leave'; p.tg = [paxLane(p, M, 0.5), paxLane(p, M, M.len - 1), [M.x + M.ax * 16 + M.az * p.lx * 0.4, M.z + M.az * 16 - M.ax * p.lx * 0.4]]; p.k = 0; } }
+        else { // walking aboard or ashore: from one point to the next
+          let t = p.tg[p.k] || deck(p); const dx = t[0] - p.x, dz = t[1] - p.z, d = Math.hypot(dx, dz);
+          p.state = 'walk'; if (d > 0.05) { const stp = Math.min(d, p.speed * dt); p.x += dx / d * stp; p.z += dz / d * stp; p.h += wrapA(Math.atan2(dx, dz) - p.h) * Math.min(1, dt * 8); }
+          if (d < 0.35) { p.k++; if (p.k >= p.tg.length) { if (p.st === 'board') p.st = 'ride'; else { p.st = 'gone'; p.away = 14 + R() * 20; } } }
+          if (p.st === 'board' && (!docked || b.side !== p.dock)) { p.st = 'gone'; p.away = 4; } // missed it: back to the queue
+        }
+        p.y = surfaceH(p.x, p.z) + 0.36; People.draw(p);
+      }
     }
     function step(dt) {
       if (!built) return;
@@ -8604,7 +8633,8 @@ const gx = !HD ? null : (() => {
             // nobody halfway up the ramp when it lifts; riders stopped on board: no need to wait for the timetable
             const onRamp = cars.some(c => { const dx = c.x - P.bx, dz = c.z - P.bz, s = dx * P.ax + dz * P.az; return s > -1 && s < P.len + 2 && Math.abs(dx * P.az - dz * P.ax) < P.hw + 1 && !b.onDeck(c.x, c.z); });
             b.still = riders.length && riders.every(c => Math.hypot(c.vx, c.vz) < 0.8) ? b.still + dt : 0;
-            b.wait -= dt; if (b.still > 4 && b.wait > 2 && riders.some(c => !b.came.includes(c))) b.wait = 2; // only for those who came aboard here: who stays on after a crossing waits for the timetable if (onRamp && b.wait < 1.5) b.wait = 1.5;
+            b.wait -= dt; if (b.still > 4 && b.wait > 2 && riders.some(c => !b.came.includes(c))) b.wait = 2; // only for those who came aboard here: who stays on after a crossing waits for the timetable
+            if ((onRamp || pax.some(p => p.st === 'board')) && b.wait < 1.5) b.wait = 1.5; // (and for the foot passengers still on the ramp)
             if (b.wait <= 0 && riders.length) for (const L of locals) if (riders.includes(L.car)) flashFor(L, 'NAVETTE', 'Cap sur ' + LAND[1 - b.side].name);
           } else {
             const left = Math.abs(goal - b.t), done = routeLen - left, want = Math.min(riders.length ? 11 : 8, 0.7 + left * 0.2, 0.7 + done * 0.3);
@@ -8620,6 +8650,7 @@ const gx = !HD ? null : (() => {
             c.x = b.x + lx * c1 + lz * s1; c.z = b.z - lx * s1 + lz * c1; c.h += dh;
             const vx = c.vx, vz = c.vz, sd = Math.sin(dh), cd = Math.cos(dh); c.vx = vx * cd + vz * sd; c.vz = -vx * sd + vz * cd;
           }
+          paxStep(dt);
           for (let k = 0; k < 2; k++) LAND[k].lamp.material.color.setHex(b.side === k && b.wait > 3 ? 0x2cff4a : 0xff2a1a);
           // dock 0 (Gare Maritime) is behind the boat (+z), dock 1 ahead (-z); closed again two seconds before leaving
           for (const gt of b.gates || []) { const want = b.wait > 2 && gt.out === (b.side ? -1 : 1) ? 1 : 0; gt.open += (want - gt.open) * Math.min(1, dt * 1.6); gt.hinge.rotation.x = gt.out * 1.36 * gt.open; }
@@ -8631,7 +8662,7 @@ const gx = !HD ? null : (() => {
         b.wk.visible = b.v > 0.5; b.wk.scale.set(1, 1, Math.min(1, b.v / 3));
       }
     }
-    return { build, step, list, LAND, ROUTE, get ferry() { return fy; }, get curve() { return curve; }, get moored() { return moored; }, DOCK };
+    return { build, step, list, LAND, ROUTE, pax, get ferry() { return fy; }, get curve() { return curve; }, get moored() { return moored; }, DOCK };
   })();
   // =====================================================================================
   // (16 nov., user request) free driving: a map of the area with starting points, at the start of the mode and at any

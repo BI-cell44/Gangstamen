@@ -796,5 +796,19 @@
   "simMs": 9.03,
   "loadS": 22,
   "failed": 0
+ },
+ {
+  "date": "2026-11-16T07:17",
+  "label": "Fable : passagers du bac",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 772,
+  "trianglesK": 1177,
+  "meshes": 3650,
+  "geometries": 3137,
+  "materials": 491,
+  "heapMB": 347,
+  "simMs": 10.06,
+  "loadS": 26,
+  "failed": 0
  }
 ]
