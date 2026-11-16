@@ -6249,11 +6249,33 @@ const gx = !HD ? null : (() => {
     const lk = look();
     return Object.assign(lk, { w: 0, t: 0, dir: R() < 0.5 ? 1 : -1, speed: (1.05 + R() * 0.55) * (lk.old ? 0.72 : lk.kid ? 0.9 : 1), ox: 0, oz: 0, fvx: 0, fvz: 0, state: 'walk', timer: 0, phase: R() * 6, x: 0, y: 0, z: 0, h: 0, on: false, idleIn: 6 + R() * 20, look_: 0, lookT: 0 });
   }
+  // how busy a pavement node is: from 0.3 in a quiet street to 1 among the shops and cafés (counted once per node)
+  let busy = null;
+  function busyAt(a) {
+    if (!busy) { busy = new Float32Array(walks.x.length).fill(-1); }
+    if (busy[a] < 0) { let n = 0; for (const s of W.shops || []) if (Math.abs(s.x - walks.x[a]) < 70 && Math.abs(s.z - walks.z[a]) < 70) n++; busy[a] = Math.min(1, 0.3 + n * 0.12); }
+    return busy[a];
+  }
+  // pedestrian lights: a crossing within 28 m of a junction with traffic lights waits for the cars it crosses to have red
+  function crossingLight(p) {
+    if (!TF.lights || !TF.lights.length) return null;
+    const mx = (walks.x[p.a] + walks.x[p.b]) / 2, mz = (walks.z[p.a] + walks.z[p.b]) / 2;
+    let j = null, bd = 28; for (const o of TF.lights) { const d = Math.hypot(o.x - mx, o.z - mz); if (d < bd) { bd = d; j = o; } }
+    if (!j) return null;
+    const h = Math.atan2(-(walks.x[p.b] - walks.x[p.a]), -(walks.z[p.b] - walks.z[p.a])) + Math.PI / 2; // the cars that cross our path
+    return lightState(j, h) === 'r' && lightState(j, h + Math.PI) === 'r' ? 'go' : 'stop';
+  }
   function placePed(p) {
     const ps = players(); if (!ps.length || !walks.length) return false;
+    p.buddy = null; p.hasBuddy = null;
+    // (16 nov., backlog « piétons, suite ») one walker in four joins someone already out, side by side
+    if (R() < 0.25) { const q = peds[(R() * peds.length) | 0];
+      if (q && q !== p && q.on && !q.buddy && !q.hasBuddy && q.state === 'walk' && q.ek !== 1) { const d = minPlayerDist(q.x, q.z);
+        if (d > 35 && d < 170) { Object.assign(p, { a: q.a, b: q.b, ek: q.ek, f: q.f, ox: q.ox, oz: q.oz, state: 'walk', timer: 0, on: true, buddy: q, speed: q.speed }); q.hasBuddy = p; return true; } } }
     for (let k = 0; k < 40; k++) {
       const a = walks.spawn[(R() * walks.spawn.length) | 0], x = walks.x[a], z = walks.z[a], d = minPlayerDist(x, z);
       if (d < 35 || d > 170) continue;
+      if (R() > busyAt(a)) continue; // more people where the shops are
       const es = walks.e[a].filter(e => e[1] !== 1), e = es[(R() * es.length) | 0]; if (!e) continue;
       Object.assign(p, { a, b: e[0], ek: e[1], f: R() * 0.9, ox: 0, oz: 0, state: 'walk', timer: 0, on: true });
       return true;
@@ -6272,19 +6294,28 @@ const gx = !HD ? null : (() => {
     return P;
   }
   function pedStep(p, dt) {
+    // a companion walks beside the one it came out with, at the same pace, and stops when they stop
+    if (p.buddy) { const q = p.buddy;
+      if (!q.on || q.state === 'panic' || q.state === 'down' || q.state === 'flee' || p.state !== 'walk' && p.state !== 'idle' && p.state !== 'wait') { if (q.hasBuddy === p) q.hasBuddy = null; p.buddy = null; }
+      else { p.a = q.a; p.b = q.b; p.ek = q.ek; p.f = q.f; p.speed = q.speed; p.state = q.state; p.timer = q.timer; p.waited = q.waited; } }
     let ax = walks.x[p.a], az = walks.z[p.a], bx = walks.x[p.b], bz = walks.z[p.b], L = Math.hypot(bx - ax, bz - az) || 1;
     let hx = (bx - ax) / L, hz = (bz - az) / L;
     const arrive = away => { pedNext(p, away); ax = walks.x[p.a]; az = walks.z[p.a]; bx = walks.x[p.b]; bz = walks.z[p.b]; L = Math.hypot(bx - ax, bz - az) || 1; hx = (bx - ax) / L; hz = (bz - az) / L; };
     let moving = 0;
     if (p.state === 'wait') { // at the kerb: looks for a gap, then crosses
       p.timer -= dt; p.waited += dt; p.h += wrapA(Math.atan2(hx, hz) - p.h) * Math.min(1, dt * 5);
-      if (p.timer <= 0 || (p.waited > 0.7 && crossingClear(p))) p.state = 'walk';
+      const tl = crossingLight(p); // red man: waits (40 s at most); green man: goes once the way is clear
+      if (tl ? (tl === 'go' && p.waited > 0.7 && crossingClear(p)) || p.waited > 40 : p.timer <= 0 || (p.waited > 0.7 && crossingClear(p))) p.state = 'walk';
     } else if (p.state === 'walk') {
-      moving = p.speed * (p.ek === 1 ? 1.3 : 1); p.f += moving * dt / L;
-      if (p.f >= 1) arrive();
-      const ol = Math.hypot(p.ox, p.oz); if (ol > 0.01) { const k = Math.min(ol, dt * 1.2) / ol; p.ox -= p.ox * k; p.oz -= p.oz * k; }
+      moving = p.speed * (p.ek === 1 ? 1.3 : 1);
+      // (16 nov.) everyone keeps to the right of the pavement, so walkers coming the other way pass each other; behind a
+      // slower walker going the same way, one slows down
+      for (const q of peds) { if (q === p || !q.on || q.a !== p.a || q.b !== p.b || q === p.buddy || q === p.hasBuddy) continue; const gap = (q.f - p.f) * L; if (gap > 0 && gap < 1.4) moving = Math.min(moving, (q.state === 'walk' ? q.speed : 0) * 0.95); }
+      if (!p.buddy) { p.f += moving * dt / L; if (p.f >= 1) arrive(); } // (a companion takes the leader's place on the walk)
+      { const side = 0.55 + (p.buddy ? 0.75 : 0), tx = -hz * side, tz = hx * side, ex = tx - p.ox, ez = tz - p.oz, el = Math.hypot(ex, ez);
+        if (el > 0.01) { const k = Math.min(el, dt * 1.2) / el; p.ox += ex * k; p.oz += ez * k; } }
       p.h += wrapA(Math.atan2(hx, hz) - p.h) * Math.min(1, dt * 6);
-      p.idleIn -= dt; if (p.idleIn <= 0 && p.ek !== 1 && p.state === 'walk') { p.state = 'idle'; p.timer = 2 + R() * 4; p.idleIn = 10 + R() * 25; if (R() < 0.3) { const s = p.a; p.a = p.b; p.b = s; p.f = 1 - p.f; } }
+      p.idleIn -= dt; if (!p.buddy && p.idleIn <= 0 && p.ek !== 1 && p.state === 'walk') { p.state = 'idle'; p.timer = 2 + R() * 4; p.idleIn = 10 + R() * 25; if (R() < 0.3) { const s = p.a; p.a = p.b; p.b = s; p.f = 1 - p.f; } }
     } else if (p.state === 'idle') { // stops, looks around, then goes on
       p.timer -= dt; if (p.timer <= 0) p.state = 'walk';
     } else if (p.state === 'flee') {
