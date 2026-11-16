@@ -76,6 +76,22 @@
     }
     g.traverse(o => { o.userData.hdLinear = true; }); scene.add(g);
   }
+  // (16 nov., user) roadblocks at four stars and more: two police cars parked across a street the player is heading for,
+  // 120 to 220 m ahead, a little apart so a careful driver squeezes through and a fast one hits them; they stay put
+  function roadblock(L) {
+    const c = L.car, v = Math.hypot(c.vx, c.vz); if (v < 6) return;
+    const ux = c.vx / v, uz = c.vz / v; let best = -1, bs = -1e9;
+    for (let k = 0; k < 60; k++) { const n = (R() * G.x.length) | 0; if (!nodeOk(n) || G.adj[n].length !== 2) continue;
+      const dx = G.x[n] - c.x, dz = G.z[n] - c.z, d = Math.hypot(dx, dz); if (d < 120 || d > 220) continue;
+      const along = (dx * ux + dz * uz) / d; if (along < 0.75) continue;
+      if (npcs.some(o => o.block && Math.hypot(o.x - G.x[n], o.z - G.z[n]) < 80)) continue;
+      if (along > bs) { bs = along; best = n; } }
+    if (best < 0) return;
+    const a = G.adj[best][0], b = G.adj[best][1], ex = G.x[b] - G.x[a], ez = G.z[b] - G.z[a], el = Math.hypot(ex, ez) || 1, px = -ez / el, pz = ex / el;
+    for (const s of [-1, 1]) { const o = makeNpc('cop'), x = G.x[best] + px * s * 2.6, z = G.z[best] + pz * s * 2.6;
+      o.place(x, z, Math.atan2(-px * s, -pz * s) + 0.35 * s); o.block = L; o.blockT = 70; o.lost = 0; o.fireCd = 2; npcs.push(o); }
+    if (L) flashFor(L, 'Barrage de police', 'Ils bloquent la rue devant toi');
+  }
   function spawnCop(L) {
     let n = R() < 0.6 ? hqNode() : -1; if (n < 0) n = spawnNode(110, 220); if (n < 0) return; // from the station when possible
     const c = makeNpc('cop'); placeOnGraph(c, n); c.ai = { mode: 'hunt' }; c.chase = L; c.lost = 0; c.fireCd = 1; npcs.push(c);

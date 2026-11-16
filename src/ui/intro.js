@@ -46,6 +46,7 @@ const Intro = (() => {
     { t: 10.5 * BAR, arr: 3 },
     { t: T_HIT, arr: -1, title: true },
   ];
+  let stView = null;
   let state = 'off', t0 = 0, shot = -1, capT = 0, capText = '', cars = null, R = [], C = [], saved = null, butte = null, hit = false, back = false, fog0 = 0, fireAcc = 0, shakeAmt = 0, lastT = 0, fromMenu = false;
   const focus = new THREE.Vector3(), focusCar = { mesh: { position: focus } }, look = new THREE.Vector3();
   const sm = k => { k = Math.max(0, Math.min(1, k)); return k * k * (3 - 2 * k); };
@@ -73,6 +74,11 @@ const Intro = (() => {
     if (cars) return;
     R = [actor(0, true), actor(0, false), actor(0, false)]; C = [actor(1, true), actor(1, false), actor(1, false)];
     cars = [...R, ...C]; butte = buttePath();
+    // a spot 40 to 60 m from Sainte-Anne with nothing in between, on the ground, for the opening of the Rapaces' shot
+    const st = landmarks.find(o => o.k === 'stAnne');
+    if (st) for (const D of [50, 40, 60, 32]) { if (stView) break; for (let k = 0; k < 24; k++) { const a = k / 24 * 6.283, dx = Math.cos(a), dz = Math.sin(a), x = st.x + dx * D, z = st.z + dz * D;
+      if (groundH(x, z) < WATER_Y + 1 || segHit(x, z, -dx, -dz, D - 14) < D - 14.5 || segHit(x, z, dx, dz, 7) < 7) continue;
+      stView = { x, z, y: Y(x, z), dx: -dx, dz: -dz, tx: st.x, ty: Y(st.x, st.z) + 14, tz: st.z }; break; } }
   }
   // place an actor on a path: dir 1 drives towards increasing s, -1 the other way; v is its speed
   function put(c, P, s, lat, dir, v, dt) {
@@ -152,8 +158,11 @@ const Intro = (() => {
       for (const c of C) park(c);
       const s = 14 + 15 * u;
       put(R[0], butte, s, -0.5, 1, 15, dt); put(R[1], butte, s - 8, 0.6, 1, 15, dt); put(R[2], butte, s - 16, -0.7, 1, 15, dt);
-      const p = pathPose(butte, Math.min(butte.len - 2, 52 + 5 * u), 2.5);
-      cam(p.x, Y(p.x, p.z) + 0.75, p.z, R[0].x, R[0].mesh.position.y + 0.7, R[0].z, 48, 0.03); eng = 15;
+      // (16 nov., user) the shot opens on the church of Sainte-Anne, the top of the butte, seen from a clear spot below it,
+      // then cuts to the cars rolling down
+      if (u < 1.5 && stView) { const e = sm(u / 1.5); cam(stView.x + stView.dx * e * 6, stView.y + 1.5 + e * 2, stView.z + stView.dz * e * 6, stView.tx, stView.ty, stView.tz, 52, 0.02); }
+      else { const p = pathPose(butte, Math.min(butte.len - 2, 52 + 5 * u), 2.5); cam(p.x, Y(p.x, p.z) + 0.75, p.z, R[0].x, R[0].mesh.position.y + 0.7, R[0].z, 48, 0.03); }
+      eng = 15;
     } else if (i === 3) { // the Chantenaysiens wait by the town hall, then pull away
       for (const c of R) park(c);
       const g = Math.max(0, u - 2.7), d = 3.6 * g * g, v = 7.2 * g;
@@ -205,7 +214,7 @@ const Intro = (() => {
     sfx.arr(4); sfx.engine(0, false);
     shot = -1; state = 'off'; document.body.classList.remove('cine');
   }
-  function showMenu() { $('title').hidden = false; const b = $('start'); if (fromMenu) showView('vOpt'); else if (b) b.focus(); }
+  function showMenu() { $('title').hidden = false; const f = $('startFree'), b = HD && f && !f.hidden ? f : $('start'); if (fromMenu) showView('vOpt'); else if (b) b.focus(); }
   function finish() { // back to the menu through black
     if (state === 'off') return;
     const playing = state === 'play';

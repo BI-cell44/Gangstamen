@@ -158,6 +158,47 @@
     // aboard when the boat is alongside, stand along the rail for the crossing, walk off and away on the other side.
     // They are drawn like the street's pedestrians (People) but live here: nobody else moves them.
     const pax = [];
+    // (16 nov., user; Fable's list) two cars of the district that take the ferry: they wait on the approach road above a
+    // ramp, drive down and park on the deck once the gate is flat, cross, and drive off and away on the other side; then a
+    // new one turns up at one of the two queues. Real cars (they collide, can be shunted or wrecked), driven from here
+    const fcars = [];
+    function fcarNew(dock, slot) {
+      const L = LAND[dock], c = makeNpc('civ'), x = L.x + L.ax * (12 + slot * 7.5) + L.az * 2.4, z = L.z + L.az * (12 + slot * 7.5) - L.ax * 2.4; // in the lane going down, the other one is for those coming off
+      c.ferry = true; c.nav = { a: 0, b: 0, panic: 0, stuck: 0, back: 0, wait: 0, honk: 0, lane: 1.7, pass: 0 }; c.place(x, z, Math.atan2(L.ax, L.az)); c.alive = true; c.mesh.visible = true; npcs.push(c);
+      return { c, st: 'queue', dock, slot, tg: null, k: 0, lx: 0, lz: 0, rh: 0, away: 0 };
+    }
+    function fcarDrive(f, dt, v) { // towards the next point; waits behind anything in the way; true when the last one is reached
+      const c = f.c, t = f.tg[f.k], dx = t[0] - c.x, dz = t[1] - c.z, d = Math.hypot(dx, dz);
+      if (d < 0.8) { f.k++; return f.k >= f.tg.length; }
+      const ux = dx / d, uz = dz / d;
+      const blocked = allPlayerCars().concat(npcs).some(o => { if (o === c || !o.alive) return false; const ex = o.x - c.x, ez = o.z - c.z, al = ex * ux + ez * uz; return al > 0 && al < 7 && Math.abs(ex * uz - ez * ux) < 2.4; });
+      f.stuck = blocked ? (f.stuck || 0) + dt : 0;
+      if (f.stuck > 12) { f.stuck = 0; c.x = t[0]; c.z = t[1]; c.sync(); f.k++; return f.k >= f.tg.length; } // stuck (a car parked in the way): it gets past, the ferry must not wait for ever
+      const sp = blocked ? 0 : Math.min(v, d * 1.5 + 1);
+      c.h += wrapA(Math.atan2(-ux, -uz) - c.h) * Math.min(1, dt * 4); c.vx = ux * sp; c.vz = uz * sp; c.x += c.vx * dt; c.z += c.vz * dt; c.sync();
+      return false;
+    }
+    function fcarStep(dt, b, landEnd, gateOpen) {
+      if (!fcars.length && typeof makeNpc === 'function') { fcars.push(fcarNew(0, 0), fcarNew(1, 0)); }
+      const sn = Math.sin(b.h), cs = Math.cos(b.h), W_ = (lx, lz) => [b.x + lx * cs + lz * sn, b.z - lx * sn + lz * cs];
+      for (let i = 0; i < fcars.length; i++) { const f = fcars[i], c = f.c;
+        if (f.st === 'away') { f.away -= dt; if (f.away <= 0) { const dock = R() < 0.5 ? 0 : 1; fcars[i] = fcarNew(dock, fcars.some(o => o !== f && o.st === 'queue' && o.dock === dock) ? 1 : 0); } continue; }
+        if (!c.alive || !npcs.includes(c)) { f.st = 'away'; f.away = 40 + R() * 40; continue; } // wrecked or cleared: another one later
+        const L = LAND[f.dock], docked = b.wait > 0 && gateOpen;
+        if (f.st === 'queue') { c.vx = c.vz = 0;
+          if (docked && b.side === f.dock && b.wait > 7 && !fcars.some(o => o !== f && (o.st === 'board' || (o.st === 'leave' && o.k < 2)))) {
+            const lx = fcars.some(o => o.st === 'ride' && o.lx < 0) ? 3.3 : -3.3, lz = landEnd * 4; // the free side of the deck
+            f.lx = lx; f.lz = lz; f.st = 'board'; f.k = 0; f.tg = [[L.x + L.az * 2.4, L.z - L.ax * 2.4], [L.bx + L.az * 2.4, L.bz - L.ax * 2.4], W_(lx, landEnd * 15), W_(lx, lz)]; }
+        } else if (f.st === 'board') {
+          if (fcarDrive(f, dt, 6)) { f.st = 'ride'; f.rh = c.h - b.h; }
+        } else if (f.st === 'ride') {
+          const q = W_(f.lx, f.lz); c.x = q[0]; c.z = q[1]; c.h = b.h + f.rh; c.vx = c.vz = 0; c.sync();
+          if (docked && b.side !== f.dock) { const M = LAND[b.side]; f.dock = b.side; f.st = 'leave'; f.k = 0; f.tg = [W_(f.lx * 0.5, landEnd * 17), [M.bx - M.az * 2.4, M.bz + M.ax * 2.4], [M.x - M.az * 2.4, M.z + M.ax * 2.4], [M.x + M.ax * 45 - M.az * 2.4, M.z + M.az * 45 + M.ax * 2.4]]; }
+        } else if (f.st === 'leave') {
+          if (fcarDrive(f, dt, 7)) { removeNpc(c); f.st = 'away'; f.away = 30 + R() * 40; }
+        }
+      }
+    }
     // (16 nov., user) a car that drives into a bench breaks it; they are mended while the boat is alongside, out of sight
     function breakBench(b, bn, c) {
       bn.broken = true; for (const o of bn.parts) o.visible = false;
@@ -254,7 +295,7 @@
             const onRamp = cars.some(c => { const dx = c.x - P.bx, dz = c.z - P.bz, s = dx * P.ax + dz * P.az; return s > -4 && s < P.len + 2 && Math.abs(dx * P.az - dz * P.ax) < P.hw + 1; }); // includes a car astride the gate
             b.still = riders.length && riders.every(c => Math.hypot(c.vx, c.vz) < 0.8) ? b.still + dt : 0;
             b.wait -= dt; if (b.still > 4 && b.wait > 2 && riders.some(c => !b.came.includes(c))) b.wait = 2; // only for those who came aboard here: who stays on after a crossing waits for the timetable
-            if ((onRamp || pax.some(p => p.st === 'board' || (p.st === 'leave' && p.k < 4))) && b.wait < 3) b.wait = 3; // (16 nov.) held with the gate down while a car or a foot passenger is on the ramp
+            if ((onRamp || pax.some(p => p.st === 'board' || (p.st === 'leave' && p.k < 4)) || fcars.some(f => f.st === 'board' || (f.st === 'leave' && f.k < 3))) && b.wait < 3) b.wait = 3; // (16 nov.) held with the gate down while a car or a foot passenger is on the ramp
             if (b.wait <= 0 && riders.length) for (const L of locals) if (riders.includes(L.car)) flashFor(L, 'NAVETTE', 'Cap sur ' + LAND[1 - b.side].name);
           } else {
             const left = Math.abs(goal - b.t), done = routeLen - left, want = Math.min(riders.length ? 11 : 8, 0.7 + left * 0.2, 0.7 + done * 0.3);
@@ -293,6 +334,7 @@
               if (hit) { c.x = b.x + lx * cs + lz * sn; c.z = b.z - lx * sn + lz * cs; c.vx = vx * cs + vz * sn; c.vz = -vx * sn + vz * cs; if (c.local && Math.hypot(vx, vz) > 4) sfx.impact(4); }
             } }
           paxStep(dt, allCars);
+          { const g = (b.gates || []).find(q => q.out === landEnd); fcarStep(dt, b, landEnd, !!g && g.open > 0.95); }
           // dock 0 (Gare Maritime) is behind the boat (+z), dock 1 ahead (-z); closed again two seconds before leaving
           // (16 nov.) the gate that goes down is the one at the end facing the ramp of the dock it is at, worked out from where
           // the gate actually is (the fixed end per dock only lowered the right one at one of the two docks)

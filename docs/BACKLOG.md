@@ -85,12 +85,12 @@ Demandes du 16 nov. en fin d'après-midi, par priorité (d'abord ce que j'ai cas
 37. [x] (fait : chaque poteau monte jusqu'au toit trouvé juste au-dessus, les toits ne sont pas plats) **Poteaux des Halles Dubigeon** : certains ne touchent toujours pas le plafond.
 38. [x] (fait : l'assiette du bus est mesurée à ses essieux, 8,8 m d'écart) **Bus dans le sol** : dans la montée juste avant la place Jean-Macé (bosse du sol).
 39. [x] (fait : elle descend du ciel au-dessus de la voiture, aussi au choix d'un point de départ) **Caméra au départ** : elle traverse plein de modèles ; partir plutôt du ciel.
-40. [ ] **Autres voitures sur le bac** + bande de route au sol jusqu'à la rampe (en cours).
-41. [ ] **Menu** : en premier « Conduite libre : choisis où démarrer », avec « courses et défis dans le quartier ».
-42. [ ] **Menu de pause** : ajouter Options et Commandes.
-43. [ ] **Intro** : sur le plan des Rapaces qui tiennent le haut de la butte, montrer un élément de la butte Sainte-Anne (église, escalier ou place des Garennes).
-44. [ ] **Barrages de police** dans les rues quand on est recherché au maximum.
-45. [ ] **Étoiles** : vérifier qu'écraser des piétons quand on est déjà recherché fait bien monter au-delà d'une étoile.
+40. [x] (fait : deux voitures du quartier attendent en file sur la route d'accès, embarquent barrière couchée, traversent et repartent de l'autre côté, puis une autre arrive ; le bac les attend. La bande de route relie chaque rampe à la rue la plus proche) **Autres voitures sur le bac** + bande de route au sol jusqu'à la rampe (en cours).
+41. [x] (fait) **Menu** : en premier « Conduite libre : choisis où démarrer », avec « courses et défis dans le quartier ».
+42. [x] (fait : « Retour » y ramène) **Menu de pause** : ajouter Options et Commandes.
+43. [x] (fait : le plan s'ouvre sur l'église Sainte-Anne vue d'en bas, puis passe aux voitures) **Intro** : sur le plan des Rapaces qui tiennent le haut de la butte, montrer un élément de la butte Sainte-Anne (église, escalier ou place des Garennes).
+44. [x] (fait : à quatre étoiles et plus, de temps en temps deux voitures de police garées en travers d'une rue devant toi, à 120–220 m) **Barrages de police** dans les rues quand on est recherché au maximum.
+45. [x] (vérifié : chaque piéton renversé ajoute une demi-étoile au-delà de la première, jusqu'à cinq) **Étoiles** : vérifier qu'écraser des piétons quand on est déjà recherché fait bien monter au-delà d'une étoile.
 28. [x] (fait : toit en chapiteau rayé rouge et crème, mâts, fanions et guirlande, posé sur le bâtiment rond du quai Wilson) **Chapiteau du Chapidock** : l'école de cirque au bout de l'île de Nantes, modélisée en cylindre à toit plat.
 29. [x] (fait, sauf en ligne qui recharge encore) **« Quitter vers le menu »** : revient au menu sans tout recharger (la page se rechargeait et repassait par l'écran de chargement).
 30. [x] (fait) **Pause sur le bac** : la pause doit arrêter le bac (la voiture restait au-dessus de l'eau pendant que le bac continuait).

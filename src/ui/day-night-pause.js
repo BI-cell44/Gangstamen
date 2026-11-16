@@ -37,7 +37,7 @@ function toggleRetro() {
 const pauseEl = document.createElement('div');
 pauseEl.id = 'pause'; pauseEl.hidden = true;
 pauseEl.style.cssText = 'position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:rgba(13,10,20,.75)';
-pauseEl.innerHTML = '<div class="card" style="display:flex;flex-direction:column;gap:12px;align-items:flex-start"><h2 style="margin:0;font-family:var(--display);font-weight:normal;font-size:40px;color:var(--chalk);text-shadow:3px 3px 0 var(--magenta)">Pause</h2><button class="big" id="pResume">Reprendre</button><button class="mbtn" id="pMap" hidden>Carte · démarrer ailleurs (G)</button><button class="mbtn" id="pPhoto">Mode photo (F2)</button><button class="mbtn" id="pQuit">Quitter vers le menu</button></div>';
+pauseEl.innerHTML = '<div class="card" style="display:flex;flex-direction:column;gap:12px;align-items:flex-start"><h2 style="margin:0;font-family:var(--display);font-weight:normal;font-size:40px;color:var(--chalk);text-shadow:3px 3px 0 var(--magenta)">Pause</h2><button class="big" id="pResume">Reprendre</button><button class="mbtn" id="pMap" hidden>Carte · démarrer ailleurs (G)</button><button class="mbtn" id="pPhoto">Mode photo (F2)</button><button class="mbtn" id="pOpt">Son et options</button><button class="mbtn" id="pCtrl">Commandes</button><button class="mbtn" id="pQuit">Quitter vers le menu</button></div>';
 document.body.append(pauseEl);
 function togglePause() {
   if (!started || Match.over) return;
@@ -50,6 +50,7 @@ function togglePause() {
 $('pMap').addEventListener('click', () => { paused = false; pauseEl.hidden = true; if (gx && gx.SpawnMap) gx.SpawnMap.show(); });
 $('pResume').addEventListener('click', () => { paused = false; pauseEl.hidden = true; });
 $('pPhoto').addEventListener('click', () => PhotoMode.toggle(true));
+for (const [b, v] of [['pOpt', 'vOpt'], ['pCtrl', 'vCtrl']]) $(b).addEventListener('click', () => { pauseEl.hidden = true; $('title').hidden = false; showView(v); fromPause = true; });
 // (16 nov., user) everything is loaded already: back to the menu in place, without the loading screen; online still reloads (network state)
-$('pQuit').addEventListener('click', () => { if (mode !== 'online' && gx && gx.toMenu) { pauseEl.hidden = true; PhotoMode.toggle && PhotoMode.toggle(false); try { gx.cleanupMission(); } catch (e) { } gx.toMenu('vMain'); const b = $('start'); if (b) b.focus(); return; } try { if (Net.room) Net.room.leave(); } catch (e) { } location.reload(); });
+$('pQuit').addEventListener('click', () => { if (mode !== 'online' && gx && gx.toMenu) { pauseEl.hidden = true; PhotoMode.toggle && PhotoMode.toggle(false); try { gx.cleanupMission(); } catch (e) { } gx.toMenu('vMain'); const b = HD && $('startFree') && !$('startFree').hidden ? $('startFree') : $('start'); if (b) b.focus(); return; } try { if (Net.room) Net.room.leave(); } catch (e) { } location.reload(); });
 

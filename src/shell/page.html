@@ -69,6 +69,7 @@ body { background: var(--ink); color: var(--chalk); font-family: var(--body); ov
 #title .keys { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 6px 18px; font-family: var(--data); font-size: 20px; }
 #title kbd { display: inline-block; min-width: 1.6em; text-align: center; padding: 0 5px; border: 2px solid var(--chalk); border-bottom-width: 4px; border-radius: 4px; margin-right: 6px; font-family: var(--data); font-size: 18px; background: rgba(0,0,0,.4); }
 #title .fine { font-size: 12px; color: rgba(243,234,216,.7); }
+#startFree small { display: block; font-size: .55em; opacity: .8; margin-top: 4px; }
 #title .fine a { color: var(--chalk); }
 
 #title h2 { margin: 0; font-family: var(--display); font-weight: normal; font-size: 30px; color: var(--sunset); text-shadow: 3px 3px 0 #000; }
@@ -290,8 +291,8 @@ body.cine #logo, body.cine #credit { display: none; }
     <section id="vMain" class="view">
       <p>Les Rapaces de la Butte ont pris le quartier. Six caisses noires tournent entre la place Jean-Macé et les quais de Loire. Reprends les rues de Chantenay : rentre-leur dedans, arrose-les, et ramasse les clés à molette pour réparer ta caisse.</p>
       <div class="menu">
+        <button class="big hdOnly" id="startFree" hidden>Conduite libre · choisis où démarrer<small>Courses et défis dans le quartier</small></button>
         <button id="start" class="big" disabled>Chargement du quartier…</button>
-        <button class="mbtn hdOnly" id="startFree" hidden>Conduite libre · sans chrono, choisis où démarrer</button>
         <button class="mbtn hdOnly" data-go="vCamp" hidden>Campagne · 7 missions</button>
         <button class="mbtn" data-go="vSplit">Écran partagé · 2 à 4 joueurs</button>
         <button class="mbtn" data-go="vOnline">En ligne · jusqu'à 12 joueurs</button>

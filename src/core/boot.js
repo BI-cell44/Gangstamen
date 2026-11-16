@@ -35,7 +35,7 @@ const paintNow = () => new Promise(r => { let done = false; const go = () => { i
   requestAnimationFrame(frame);
   held.forEach(b => { b.disabled = false; });
   startBtn.disabled = false; startBtn.textContent = HD ? 'Chasse aux Rapaces · solo' : 'Solo · prendre le volant';
-  startBtn.focus();
+  { const f = $('startFree'); if (HD && f) { startBtn.className = 'mbtn'; f.focus(); } else startBtn.focus(); } // (16 nov., user) free driving first in the menu
   startBtn.addEventListener('click', () => Busy.run(HD ? 'Chasse aux Rapaces' : 'partie solo', () => startGame('solo')));
   { const f = $('startFree'); if (f) f.addEventListener('click', () => Busy.run('Conduite libre', () => startGame('solo', 'free'))); }
   $('splitGo').addEventListener('click', () => Busy.run('écran partagé', () => startGame('split')));

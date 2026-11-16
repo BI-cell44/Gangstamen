@@ -12,7 +12,12 @@
     for (const c of npcs.slice()) {
       const d = minPlayerDist(c.x, c.z);
       if (!c.alive) { c.dead += dt; c.vx *= 0.95; c.vz *= 0.95; c.x += c.vx * dt; c.z += c.vz * dt; if (c.dead > 12 || d > 300) removeNpc(c); continue; }
+      if (c.ferry) continue; // (16 nov.) the cars that take the ferry are driven by gx/boats.js
       if (d > 340 || (c.npc === 'cop' && !c.chase && !c.prey && d > 260)) { removeNpc(c); continue; }
+      if (c.block) { // a roadblock: parked, brakes on; gone when far behind, after a while, or when the stars are down
+        c.blockT -= dt; drive(c, { t: 0, s: 0, hb: true }, dt);
+        if (c.blockT <= 0 && d > 120 || d > 320 || stars(c.block) < 3 && d > 90) removeNpc(c);
+        continue; }
       if (c.npc === 'cop' && !c.chase) patrolLook(c, dt);
       const inp = c.bus ? busInput(c, dt) : c.npc === 'cop' && (c.chase || c.prey) ? copInput(c, dt) : civInput(c, dt);
       drive(c, inp, dt);
@@ -29,6 +34,7 @@
       const mine = npcs.filter(c => c.npc === 'cop' && c.chase === L && c.alive);
       const want = [0, 1, 2, 3, 4, 5][stars(L)];
       if (mine.length < want && R() < dt * 0.6) spawnCop(L);
+      if (stars(L) >= 4 && !npcs.some(c => c.block === L) && R() < dt * 0.08) roadblock(L); // (16 nov.) a roadblock now and then at four stars and more
       const seen = mine.some(c => c.lost < 4);
       L.calm = (L.calm || 0) + dt;
       // (15 nov.) out of sight, the heat only cools after a grace period: before, with no patrol arrived yet, « unseen »

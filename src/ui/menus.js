@@ -1,5 +1,7 @@
 // ---------- menus ----------
+let fromPause = false; // (16 nov., user) Options and Controls opened from the pause menu: « Retour » goes back to the pause
 function showView(id) {
+  if (fromPause && id === 'vMain') { fromPause = false; $('title').hidden = true; pauseEl.hidden = false; $('pResume').focus(); return; }
   document.querySelectorAll('#title .view').forEach(v => { v.hidden = v.id !== id; });
   const f = document.querySelector('#' + id + ' .big, #' + id + ' .mbtn, #' + id + ' input'); if (f) f.focus();
   if (id === 'vOnline') { $('nick').value = settings.nick || ''; renderGames(); }
