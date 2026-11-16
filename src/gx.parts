@@ -26,4 +26,5 @@ gx/models.js
 gx/landmarks.js
 gx/boats.js
 gx/spawnmap.js
+gx/navlights.js
 gx/zz-world-api.js

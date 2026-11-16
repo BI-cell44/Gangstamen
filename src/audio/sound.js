@@ -275,6 +275,11 @@ const sfx = (() => {
       for (const [f, dt] of [[1318, 0], [988, 0.22], [1318, 0.5], [988, 0.72]]) { const o = ac.createOscillator(), g = ac.createGain(); o.type = 'sine'; o.frequency.value = f;
         g.gain.setValueAtTime(0.0001, t + dt); g.gain.linearRampToValueAtTime(0.16, t + dt + 0.005); g.gain.exponentialRampToValueAtTime(0.001, t + dt + 0.5); o.connect(g).connect(fxG); o.start(t + dt); o.stop(t + dt + 0.55); }
     },
+    shipHorn(vol = 1) { // (16 nov.) the ferry's horn: two low notes, long, a little rough
+      if (!ac || vol < 0.02) return; const t = ac.currentTime;
+      for (const f of [98, 123]) { const o = ac.createOscillator(), g = ac.createGain(), bf = ac.createBiquadFilter(); o.type = 'sawtooth'; o.frequency.value = f; o.frequency.setValueAtTime(f * 0.97, t); o.frequency.linearRampToValueAtTime(f, t + 0.25); bf.type = 'lowpass'; bf.frequency.value = 520;
+        g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.11 * vol, t + 0.18); g.gain.setValueAtTime(0.11 * vol, t + 1.5); g.gain.exponentialRampToValueAtTime(0.001, t + 2.1); o.connect(bf).connect(g).connect(fxG); o.start(t); o.stop(t + 2.2); }
+    },
     horn() { // a little 90s hatchback horn
       if (!ac) return; const t = ac.currentTime;
       for (const f of [415, 523]) { const o = ac.createOscillator(), g = ac.createGain(), bf = ac.createBiquadFilter(); o.type = 'square'; o.frequency.value = f; bf.type = 'lowpass'; bf.frequency.value = 1800;

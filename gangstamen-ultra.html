@@ -3682,6 +3682,11 @@ const sfx = (() => {
       for (const [f, dt] of [[1318, 0], [988, 0.22], [1318, 0.5], [988, 0.72]]) { const o = ac.createOscillator(), g = ac.createGain(); o.type = 'sine'; o.frequency.value = f;
         g.gain.setValueAtTime(0.0001, t + dt); g.gain.linearRampToValueAtTime(0.16, t + dt + 0.005); g.gain.exponentialRampToValueAtTime(0.001, t + dt + 0.5); o.connect(g).connect(fxG); o.start(t + dt); o.stop(t + dt + 0.55); }
     },
+    shipHorn(vol = 1) { // (16 nov.) the ferry's horn: two low notes, long, a little rough
+      if (!ac || vol < 0.02) return; const t = ac.currentTime;
+      for (const f of [98, 123]) { const o = ac.createOscillator(), g = ac.createGain(), bf = ac.createBiquadFilter(); o.type = 'sawtooth'; o.frequency.value = f; o.frequency.setValueAtTime(f * 0.97, t); o.frequency.linearRampToValueAtTime(f, t + 0.25); bf.type = 'lowpass'; bf.frequency.value = 520;
+        g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.11 * vol, t + 0.18); g.gain.setValueAtTime(0.11 * vol, t + 1.5); g.gain.exponentialRampToValueAtTime(0.001, t + 2.1); o.connect(bf).connect(g).connect(fxG); o.start(t); o.stop(t + 2.2); }
+    },
     horn() { // a little 90s hatchback horn
       if (!ac) return; const t = ac.currentTime;
       for (const f of [415, 523]) { const o = ac.createOscillator(), g = ac.createGain(), bf = ac.createBiquadFilter(); o.type = 'square'; o.frequency.value = f; bf.type = 'lowpass'; bf.frequency.value = 1800;
@@ -8668,6 +8673,36 @@ const gx = !HD ? null : (() => {
     }
     return { show, close, get open() { return open; }, get spots() { return resolve(); }, rejects };
   })();
+  // =====================================================================================
+  // (16 nov., backlog « Loire, suite ») navigation lights on the boats at night (red to port, green to starboard, white
+  // at the top) and the ferry's horn when it leaves the quay, louder the closer the player is
+  // =====================================================================================
+  const NavLights = (() => {
+    let done = false, lastWait = null; const lamps = [];
+    function setup() {
+      if (done || !Boats.list || !Boats.list.length) return; done = true;
+      const ball = new THREE.SphereGeometry(1, 10, 8); ball.userData.shared = true;
+      const M = c => new THREE.MeshBasicMaterial({ color: new THREE.Color(...c), fog: false });
+      const red = M([5, 0.2, 0.15]), green = M([0.2, 4, 0.8]), white = M([4, 4, 3.6]);
+      for (const b of Boats.list) {
+        b.body.updateMatrix(); b.body.geometry.computeBoundingBox(); // in the boat's own frame
+        const bb = b.body.geometry.boundingBox.clone().applyMatrix4(b.body.matrix), sz = bb.getSize(new THREE.Vector3()), big = b.kind === 'ferry', r = big ? 0.32 : 0.16;
+        const top = big ? sz.y * 0.75 : sz.y * 0.95, side = Math.min(sz.x, sz.z) / 2 * 0.9, alongX = sz.x > sz.z, cx = (bb.min.x + bb.max.x) / 2, cz = (bb.min.z + bb.max.z) / 2, deck = big ? sz.y * 0.45 : sz.y * 0.18;
+        for (const [m, a, y] of [[red, -side, deck], [green, side, deck], [white, 0, top]]) { // a: across the hull (the long axis can be x or z)
+          const o = new THREE.Mesh(ball, m); o.scale.setScalar(r); o.position.set(alongX ? cx : cx + a, y, alongX ? cz + a : cz); o.visible = false; o.userData.hdLinear = true; b.g.add(o); lamps.push(o);
+        }
+      }
+    }
+    function step(dt) {
+      setup(); if (!done) return;
+      const night = !!(hd.amb && hd.amb.t > 1.4);
+      if (lamps.length && lamps[0].visible !== night) for (const o of lamps) o.visible = night;
+      const f = Boats.ferry; if (!f) return;
+      if (lastWait !== null && lastWait > 0 && f.wait <= 0) { const d = minPlayerDist(f.x, f.z); if (d < 600) sfx.shipHorn && sfx.shipHorn(Math.max(0.15, 1 - d / 600)); }
+      lastWait = f.wait;
+    }
+    return { step };
+  })();
   function world() {
     try { church(); } catch (e) { console.warn('church', e); }
     try { quays(); } catch (e) { console.warn('quays', e); }
@@ -8685,7 +8720,7 @@ const gx = !HD ? null : (() => {
     if (LM.titanLights) LM.titanLights.color.setRGB((performance.now() / 700 | 0) % 2 ? 8 * n + 0.6 : 0.4, 0.3, 0.2);
   }
   { const el = $('ammo'); if (el) { el.style.pointerEvents = 'auto'; el.style.cursor = 'pointer'; el.addEventListener('pointerdown', e => { e.preventDefault(); if (locals[0]) cycleWeapon(locals[0]); }); } }
-  const api = { netIn, dj, cycleWeapon, hearShot, quickChat, chatIn, step: gameStep, world, landmarkTick, tick: dt => { tick(dt); Boats.step(dt); }, Boats, People, portCranes, LM, walks: () => { if (!walks) buildWalks(); return walks; }, start: startHook, cars: () => npcs.concat(extras), copsOn, shieldHit, makeBus, policeHQ: HQ, hqNode, spots: SPOTS, unlocked, postcards, acts: () => (actsBuild(), acts), actRun: () => run, startAct, hearCars: carsHearShot, traffic: TF, Fences, LightPoles, lightState, roadRules, makeNpc, placeOnGraph, nextNode, spawnPatrol, npcs: () => npcs, damage: damageNpc, addHeat, say, peds: () => peds, stars, special, startMission, renderCampaign, cleanupMission, MISSIONS,
+  const api = { netIn, dj, cycleWeapon, hearShot, quickChat, chatIn, step: gameStep, world, landmarkTick, tick: dt => { tick(dt); Boats.step(dt); NavLights.step(dt); }, Boats, People, portCranes, LM, walks: () => { if (!walks) buildWalks(); return walks; }, start: startHook, cars: () => npcs.concat(extras), copsOn, shieldHit, makeBus, policeHQ: HQ, hqNode, spots: SPOTS, unlocked, postcards, acts: () => (actsBuild(), acts), actRun: () => run, startAct, hearCars: carsHearShot, traffic: TF, Fences, LightPoles, lightState, roadRules, makeNpc, placeOnGraph, nextNode, spawnPatrol, npcs: () => npcs, damage: damageNpc, addHeat, say, peds: () => peds, stars, special, startMission, renderCampaign, cleanupMission, MISSIONS,
     get gmode() { return gm ? gm.kind : 0; }, mines: () => mines, customers: () => customers, teamScores: modeTeamScores, goalText, rematch: rematchMode,
     get blocking() { return blocking; }, get mission() { return mission; }, foes: () => extras.filter(c => c.alive && c.team === 1), saveBank, pus: () => pus, furniture: () => furniture, garage: GARAGE, garages: GARAGES, campDiff, SpawnMap, copBump: c => oneStar(c, 0.1, 'Tu as percuté la police'),
     get onGarage() { return gx_onGarage; }, get objTarget() { return objEl.hidden ? null : objTgt; },
