@@ -6043,12 +6043,17 @@ const gx = !HD ? null : (() => {
   }
   function patrolLook(c, dt) {
     if (c.prey && (!c.prey.alive || c.prey.gone || c.lost > 8)) { c.prey = null; c.ai = null; }
-    if (c.prey || (c.lookT -= dt) > 0) return; c.lookT = 0.5;
+    if ((c.lookT -= dt) > 0) return; c.lookT = 0.5;
+    // (16 nov., user) a patrol that sees a wanted player gives chase, before anything else
+    for (const L of locals) { const p = L.car; if (stars(L) < 1 || !p.alive) continue; const d = near(c, p.x, p.z);
+      if (d < 85 && segHit(c.x, c.z, (p.x - c.x) / d, (p.z - c.z) / d, d) >= d - 0.5) { copChase(c, L); return; } }
+    if (c.prey) return;
     for (const r of rivals) {
       if (!r.alive || r.gone || r.proxy || r.friendly) continue; const d = near(c, r.x, r.z); if (d > 75) continue;
       if (segHit(c.x, c.z, (r.x - c.x) / d, (r.z - c.z) / d, d) >= d - 0.5) { c.prey = r; c.lost = 0; c.ai = { mode: 'hunt' }; if (minPlayerDist(c.x, c.z) < 90 && gx.dj) gx.dj('copRap'); return; }
     }
   }
+  function copChase(c, L) { if (!c.alive || c.block || !c.nav) return; c.prey = null; c.parked = false; c.hqSpot = -1; c.chase = L; c.ai = { mode: 'hunt' }; c.lost = 0; c.fireCd = Math.min(c.fireCd || 1, 1); }
   // the police cars after a given Rapace: the Rapace fights back (read by rivalInput)
   const copsOn = r => npcs.filter(c => c.npc === 'cop' && c.prey === r && c.alive);
   function copInput(c, dt) {
@@ -6782,7 +6787,7 @@ const gx = !HD ? null : (() => {
   function damageNpc(c, d, by) {
     if (!c.alive) return;
     c.hp -= d;
-    if (by && by.local) { if (c.npc === 'cop') oneStar(by, d * 0.035, 'Tu as percuté la police'); else addHeat(by, d * 0.012); if (c.npc === 'civ') { c.nav.panic = 8; } }
+    if (by && by.local) { if (c.npc === 'cop') { oneStar(by, d * 0.035, 'Tu as percuté la police'); if (c.hp > 0 && !c.chase) copChase(c, by.owner); } else addHeat(by, d * 0.012); if (c.npc === 'civ') { c.nav.panic = 8; } } // (16 nov., user) a police car shot at reacts
     if (c.npc === 'civ' && by && by.local && !c.chase && c.npc === 'civ' && c.hp > 0 && R() < 0.02) sfx.horn && sfx.horn();
     if (c.hp > 0) return;
     c.alive = false; c.dead = 0; explode(c.x, c.z);
@@ -8476,12 +8481,18 @@ const gx = !HD ? null : (() => {
   function buildPortCranes() {
     for (const [sx, sz, dx, dz, name, turn] of QUAY_CRANES) {
       const bk = bankFrom(sx, sz, dx, dz); if (!bk) continue;
-      const x = bk[0] - dx * 7, z = bk[1] - dz * 7; if (segHit(x, z, dx, dz, 5) < 5 || segHit(x, z, -dx, -dz, 5) < 5 || roadEdge(x, z)[0] < 1.5) continue; // not in a wall, not on a street
+      // (16 nov., user) back from the edge until the ground under the plinth is flat: on the slope of the quay part of it
+      // stood in the air
+      const ring = (x, z) => { let lo = 1e9, hi = -1e9; for (let k = 0; k < 12; k++) { const h = groundH(x + Math.cos(k * 0.5236) * 2.9, z + Math.sin(k * 0.5236) * 2.9); lo = Math.min(lo, h); hi = Math.max(hi, h); } return [lo, hi]; };
+      let x = 0, z = 0, ok = false;
+      for (let back = 7; back <= 34 && !ok; back += 1.5) { x = bk[0] - dx * back; z = bk[1] - dz * back; const [lo, hi] = ring(x, z);
+        ok = hi - lo < 0.4 && !(segHit(x, z, dx, dz, 5) < 5 || segHit(x, z, -dx, -dz, 5) < 5 || roadEdge(x, z)[0] < 1.5); } // not in a wall, not on a street
+      if (!ok) continue;
       const o = modelMesh(name); if (!o) return;
-      const S = 2.3, sz3 = o.geometry.userData.size, gy = groundH(x, z);
+      const S = 2.3, sz3 = o.geometry.userData.size, gy = Math.max(...ring(x, z));
       // the model: boom along -x, pedestal near +x; turn it so that the boom points to the water
       const g = new THREE.Group(); o.scale.setScalar(S); o.position.set(-(sz3[0] / 2 - 0.82) * S, sz3[1] / 2 * S, 0); g.add(o);
-      const plinth = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.8, 1.6, 12), new THREE.MeshLambertMaterial({ color: hd.lin(0x8a8880) })); plinth.position.y = 0.3; plinth.userData.hdLinear = true; g.add(plinth);
+      const plinth = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.8, 2.4, 12), new THREE.MeshLambertMaterial({ color: hd.lin(0x8a8880) })); plinth.position.y = -0.1; // goes 1.3 m into the ground plinth.userData.hdLinear = true; g.add(plinth);
       g.position.set(x, gy + 0.9, z); g.rotation.y = Math.atan2(dz, -dx) + turn; g.userData.hdLinear = true; scene.add(g); portCranes.push(g);
       gridAdd([x - 2.2, z, x + 2.2, z], 3.5); gridAdd([x, z - 2.2, x, z + 2.2], 3.5);
     }
@@ -8895,17 +8906,19 @@ const gx = !HD ? null : (() => {
             b.gates.push({ hinge, out, open: 0 }); } }
         DECKS.push((x, z) => onDeck(x, z) ? WATER_Y + DECK_Y : null);
         { // (16 nov.) wooden benches along both sides of the deck, where the foot passengers sit for the crossing
-          const wood = new THREE.MeshLambertMaterial({ color: hd.lin(0x5e3b22) }), legM = new THREE.MeshLambertMaterial({ color: hd.lin(0x3a3f44) });
-          // against the side walls of the model (|x| 8.25, measured), the seat at chair height like the terrace chairs
+          // (16 nov., user) the street bench (wooden seat and back, green metal ends), and it breaks like it: the pieces fly,
+          // fall on the deck and stay there, carried by the boat (they belong to it), until it is mended at the next dock
+          const wood = new THREE.MeshStandardMaterial({ color: hd.lin(0x7a5232), roughness: 0.75 }), legM = new THREE.MeshStandardMaterial({ color: hd.lin(0x2f5a3a), roughness: 0.5, metalness: 0.5 });
+          // against the side walls of the model (|x| 8.25, measured), the seat at chair height like the terrace chairs;
+          // each bench is a small group turned so that its length runs along the boat and its back is against the side
           b.benches = [];
           for (const sd of [-1, 1]) for (const lz of BENCH_Z) {
-            const parts = [], n0 = b.g.children.length;
-            const seat = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.05, 2.4), wood); seat.position.set(sd * 7.95, DECK_Y + 0.45, lz); b.g.add(seat);
-            const back = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.45, 2.4), wood); back.position.set(sd * 8.2, DECK_Y + 0.72, lz); b.g.add(back);
-            for (const e of [-1, 1]) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.43, 0.06), legM); l.position.set(sd * 7.95, DECK_Y + 0.21, lz + e * 1.05); b.g.add(l); }
-            b.benches.push({ sd, lz, parts: b.g.children.slice(n0), broken: false });
+            const bg = new THREE.Group(); bg.position.set(sd * 7.95, DECK_Y, lz); bg.rotation.y = -sd * Math.PI / 2; b.g.add(bg);
+            const add = (geo, m, x, y, z) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; o.userData.hdLinear = true; o.userData.p0 = o.position.clone(); bg.add(o); return o; };
+            add(new THREE.BoxGeometry(2.2, 0.06, 0.45), wood, 0, 0.45, 0); add(new THREE.BoxGeometry(2.2, 0.4, 0.05), wood, 0, 0.75, -0.22);
+            for (const ex of [-1, 1]) add(new THREE.BoxGeometry(0.06, 0.45, 0.45), legM, ex, 0.22, 0);
+            b.benches.push({ sd, lz, parts: bg.children.slice(), broken: false, t: 9 });
           }
-          b.g.traverse(o => { if (o.isMesh && (o.material === wood || o.material === legM)) o.userData.hdLinear = true; });
         }
         const lampG = new THREE.SphereGeometry(0.75, 12, 8), postM = new THREE.MeshLambertMaterial({ color: hd.lin(0x3a3f44) }), rampM = new THREE.MeshLambertMaterial({ color: hd.lin(0x70757a) });
         LAND.forEach((L, k) => {
@@ -9001,7 +9014,11 @@ const gx = !HD ? null : (() => {
     }
     // (16 nov., user) a car that drives into a bench breaks it; they are mended while the boat is alongside, out of sight
     function breakBench(b, bn, c) {
-      bn.broken = true; for (const o of bn.parts) o.visible = false;
+      bn.broken = true; bn.t = 0;
+      { // the pieces fly away from the car, in the bench's own frame (turned a quarter from the boat's)
+        const sn0 = Math.sin(b.h), cs0 = Math.cos(b.h), lvx = c ? c.vx * cs0 - c.vz * sn0 : 0, lvz = c ? c.vx * sn0 + c.vz * cs0 : 0, sp = Math.max(6, Math.min(16, Math.hypot(lvx, lvz)));
+        for (const o of bn.parts) { const a = Math.atan2(lvz, lvx) + (R() - 0.5) * 1.2, s2 = sp * (0.4 + R() * 0.6), vx = Math.cos(a) * s2, vz = Math.sin(a) * s2, q = o.parent.rotation.y;
+          o.userData.v = [vx * Math.cos(q) - vz * Math.sin(q), 3 + R() * 5, vx * Math.sin(q) + vz * Math.cos(q), (R() - 0.5) * 10, (R() - 0.5) * 10]; } }
       const sn = Math.sin(b.h), cs = Math.cos(b.h), lx = bn.sd * 7.9, x = b.x + lx * cs + bn.lz * sn, z = b.z - lx * sn + bn.lz * cs, y = b.g.position.y + DECK_Y + 0.4;
       for (let k = 0; k < 5; k++) spawnFx(x + (R() - 0.5) * 2, y, z + (R() - 0.5) * 2, 0.35, 0x5e3b22, 0.5, 3 + R() * 3, 1.5);
       if (c && c.local) { sfx.impact(6); addHeat(c, 0.02); }
@@ -9016,8 +9033,8 @@ const gx = !HD ? null : (() => {
       if (p.st === 'gone' || p.st === 'down' || !p.on) return;
       for (const c of cars) {
         if (c.ferry) continue; // the cars taking the ferry drive slowly among them
-        const dx = p.x - c.x, dz = p.z - c.z, d = Math.hypot(dx, dz), v = Math.hypot(c.vx, c.vz); if (d > 8 || v < 3) continue;
-        const toward = (c.vx * dx + c.vz * dz) / (d || 1); if (toward < 1.5) continue;
+        const dx = p.x - c.x, dz = p.z - c.z, d = Math.hypot(dx, dz), v = Math.hypot(c.vx, c.vz); if (d > 15 || v < 2.5) continue; // (16 nov., user) seen from further off: on the ramp they did not run
+        const toward = (c.vx * dx + c.vz * dz) / (d || 1); if (toward < 1.2) continue;
         if (d < 1.7 && v > 4) { knock(p, c); return; }
         if (p.st !== 'flee') { const b = fy, sn = Math.sin(b.h), cs = Math.cos(b.h), ex = p.x - b.x, ez = p.z - b.z; p.loc = b.onDeck(p.x, p.z) ? [ex * cs - ez * sn, ex * sn + ez * cs] : null; p.st = 'flee'; }
         p.t = 1.6; p.fx = dx / (d || 1); p.fz = dz / (d || 1); // away from the car, a little to the side of its path
@@ -9088,7 +9105,7 @@ const gx = !HD ? null : (() => {
         } else {
           // b.t: metres along the route from the Gare Maritime; b.side: the dock it is at, or leaving from
           const goal = b.side ? 0 : routeLen, cars = typeof locals !== 'undefined' ? locals.map(L => L.car).filter(c => c && c.alive) : [], x0 = b.x, z0 = b.z, h0 = b.h;
-          const riders = cars.filter(c => b.onDeck(c.x, c.z)), allCars = cars.concat(gx && typeof npcs !== 'undefined' ? npcs.filter(c => c && c.alive !== false) : []);
+          const riders = cars.filter(c => b.onDeck(c.x, c.z)), wrecks = (typeof locals !== 'undefined' ? locals.map(L => L.car) : []).concat(typeof rivals !== 'undefined' ? rivals : [], typeof npcs !== 'undefined' ? npcs : []).filter(c => c && c.alive === false && b.onDeck(c.x, c.z)), allCars = cars.concat(gx && typeof npcs !== 'undefined' ? npcs.filter(c => c && c.alive !== false) : []);
           const landEnd = (() => { const P = LAND[b.side], sn = Math.sin(b.h), cs = Math.cos(b.h); return Math.sign((P.bx - b.x) * sn + (P.bz - b.z) * cs) || 1; })();
           if (b.wait > 0) {
             b.v = 0; const P = LAND[b.side];
@@ -9101,16 +9118,17 @@ const gx = !HD ? null : (() => {
           } else {
             const left = Math.abs(goal - b.t), done = routeLen - left, want = Math.min(riders.length ? 11 : 8, 0.7 + left * 0.2, 0.7 + done * 0.3);
             b.v += (want - b.v) * Math.min(1, dt * 1.2); b.t += (b.side ? -1 : 1) * b.v * dt;
-            if (left < 0.6) { for (const bn of b.benches || []) if (bn.broken) { bn.broken = false; for (const o of bn.parts) o.visible = true; } b.t = goal; b.side = 1 - b.side; b.wait = 25; b.v = 0; b.still = 0; b.came = riders.slice();
+            if (left < 0.6) { for (const bn of b.benches || []) if (bn.broken) { bn.broken = false; for (const o of bn.parts) { o.position.copy(o.userData.p0); o.rotation.set(0, 0, 0); } } b.t = goal; b.side = 1 - b.side; b.wait = 25; b.v = 0; b.still = 0; b.came = riders.slice();
               for (const L of locals) if (riders.includes(L.car)) flashFor(L, LAND[b.side].name.toUpperCase(), 'Feu vert : descends par la rampe'); }
           }
           const u = Math.min(1, Math.max(0, b.t / routeLen)), p = route.getPointAt(u), tg = route.getTangentAt(u);
           b.x = p.x; b.z = p.z; b.h = Math.atan2(-tg.x, -tg.z); // double-ended: same heading both ways
           // whoever stands on the deck is carried along, and stays free to move on it
-          if (b.x !== x0 || b.z !== z0 || b.h !== h0) for (const c of riders) {
+          if (b.x !== x0 || b.z !== z0 || b.h !== h0) for (const c of riders.concat(wrecks)) { // (16 nov., user) and the wrecks: they stayed on the water
             const dx = c.x - x0, dz = c.z - z0, s0 = Math.sin(h0), c0 = Math.cos(h0), lx = dx * c0 - dz * s0, lz = dx * s0 + dz * c0, s1 = Math.sin(b.h), c1 = Math.cos(b.h), dh = b.h - h0;
             c.x = b.x + lx * c1 + lz * s1; c.z = b.z - lx * s1 + lz * c1; c.h += dh;
             const vx = c.vx, vz = c.vz, sd = Math.sin(dh), cd = Math.cos(dh); c.vx = vx * cd + vz * sd; c.vz = -vx * sd + vz * cd;
+            if (!c.alive) { c.vx *= 0.5; c.vz *= 0.5; if (c.sync) c.sync(); }
           }
           // (16 nov., user request) the sides of the deck hold the cars in; the ends too, except the one facing the ramp while
           // the boat is alongside and its gate is down
@@ -9134,6 +9152,12 @@ const gx = !HD ? null : (() => {
               }
               if (hit) { c.x = b.x + lx * cs + lz * sn; c.z = b.z - lx * sn + lz * cs; c.vx = vx * cs + vz * sn; c.vz = -vx * sn + vz * cs; if (c.local && Math.hypot(vx, vz) > 4) sfx.impact(4); }
             } }
+          for (const bn of b.benches || []) if (bn.broken && bn.t < 4) { bn.t += dt; // the pieces of a broken bench: fly, fall, bounce on the deck (which is y 0 here)
+            for (const o of bn.parts) { const v = o.userData.v; v[1] -= 20 * dt; o.position.x += v[0] * dt; o.position.z += v[2] * dt; o.position.y = Math.max(0.05, o.position.y + v[1] * dt);
+              if (o.position.y <= 0.05) { v[0] *= 0.8; v[2] *= 0.8; v[1] = Math.abs(v[1]) * 0.2; } const air = o.position.y > 0.1 ? 1 : 0; o.rotation.x += v[3] * dt * air; o.rotation.z += v[4] * dt * air;
+              // they stay on the deck: within its sides and ends, in the boat's frame
+              const wx = o.parent.position.x + (o.position.x * Math.cos(o.parent.rotation.y) + o.position.z * Math.sin(o.parent.rotation.y)), wz = o.parent.position.z + (-o.position.x * Math.sin(o.parent.rotation.y) + o.position.z * Math.cos(o.parent.rotation.y));
+              if (Math.abs(wx) > 8 || Math.abs(wz) > 19) { v[0] = -v[0] * 0.3; v[2] = -v[2] * 0.3; o.position.x += v[0] * dt * 2; o.position.z += v[2] * dt * 2; } } }
           paxStep(dt, allCars);
           { const g = (b.gates || []).find(q => q.out === landEnd); fcarStep(dt, b, landEnd, !!g && g.open > 0.95); }
           // dock 0 (Gare Maritime) is behind the boat (+z), dock 1 ahead (-z); closed again two seconds before leaving

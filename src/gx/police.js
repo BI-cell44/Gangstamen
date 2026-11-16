@@ -124,12 +124,17 @@
   }
   function patrolLook(c, dt) {
     if (c.prey && (!c.prey.alive || c.prey.gone || c.lost > 8)) { c.prey = null; c.ai = null; }
-    if (c.prey || (c.lookT -= dt) > 0) return; c.lookT = 0.5;
+    if ((c.lookT -= dt) > 0) return; c.lookT = 0.5;
+    // (16 nov., user) a patrol that sees a wanted player gives chase, before anything else
+    for (const L of locals) { const p = L.car; if (stars(L) < 1 || !p.alive) continue; const d = near(c, p.x, p.z);
+      if (d < 85 && segHit(c.x, c.z, (p.x - c.x) / d, (p.z - c.z) / d, d) >= d - 0.5) { copChase(c, L); return; } }
+    if (c.prey) return;
     for (const r of rivals) {
       if (!r.alive || r.gone || r.proxy || r.friendly) continue; const d = near(c, r.x, r.z); if (d > 75) continue;
       if (segHit(c.x, c.z, (r.x - c.x) / d, (r.z - c.z) / d, d) >= d - 0.5) { c.prey = r; c.lost = 0; c.ai = { mode: 'hunt' }; if (minPlayerDist(c.x, c.z) < 90 && gx.dj) gx.dj('copRap'); return; }
     }
   }
+  function copChase(c, L) { if (!c.alive || c.block || !c.nav) return; c.prey = null; c.parked = false; c.hqSpot = -1; c.chase = L; c.ai = { mode: 'hunt' }; c.lost = 0; c.fireCd = Math.min(c.fireCd || 1, 1); }
   // the police cars after a given Rapace: the Rapace fights back (read by rivalInput)
   const copsOn = r => npcs.filter(c => c.npc === 'cop' && c.prey === r && c.alive);
   function copInput(c, dt) {

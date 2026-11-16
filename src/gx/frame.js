@@ -107,7 +107,7 @@
   function damageNpc(c, d, by) {
     if (!c.alive) return;
     c.hp -= d;
-    if (by && by.local) { if (c.npc === 'cop') oneStar(by, d * 0.035, 'Tu as percuté la police'); else addHeat(by, d * 0.012); if (c.npc === 'civ') { c.nav.panic = 8; } }
+    if (by && by.local) { if (c.npc === 'cop') { oneStar(by, d * 0.035, 'Tu as percuté la police'); if (c.hp > 0 && !c.chase) copChase(c, by.owner); } else addHeat(by, d * 0.012); if (c.npc === 'civ') { c.nav.panic = 8; } } // (16 nov., user) a police car shot at reacts
     if (c.npc === 'civ' && by && by.local && !c.chase && c.npc === 'civ' && c.hp > 0 && R() < 0.02) sfx.horn && sfx.horn();
     if (c.hp > 0) return;
     c.alive = false; c.dead = 0; explode(c.x, c.z);

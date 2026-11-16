@@ -61,12 +61,18 @@
   function buildPortCranes() {
     for (const [sx, sz, dx, dz, name, turn] of QUAY_CRANES) {
       const bk = bankFrom(sx, sz, dx, dz); if (!bk) continue;
-      const x = bk[0] - dx * 7, z = bk[1] - dz * 7; if (segHit(x, z, dx, dz, 5) < 5 || segHit(x, z, -dx, -dz, 5) < 5 || roadEdge(x, z)[0] < 1.5) continue; // not in a wall, not on a street
+      // (16 nov., user) back from the edge until the ground under the plinth is flat: on the slope of the quay part of it
+      // stood in the air
+      const ring = (x, z) => { let lo = 1e9, hi = -1e9; for (let k = 0; k < 12; k++) { const h = groundH(x + Math.cos(k * 0.5236) * 2.9, z + Math.sin(k * 0.5236) * 2.9); lo = Math.min(lo, h); hi = Math.max(hi, h); } return [lo, hi]; };
+      let x = 0, z = 0, ok = false;
+      for (let back = 7; back <= 34 && !ok; back += 1.5) { x = bk[0] - dx * back; z = bk[1] - dz * back; const [lo, hi] = ring(x, z);
+        ok = hi - lo < 0.4 && !(segHit(x, z, dx, dz, 5) < 5 || segHit(x, z, -dx, -dz, 5) < 5 || roadEdge(x, z)[0] < 1.5); } // not in a wall, not on a street
+      if (!ok) continue;
       const o = modelMesh(name); if (!o) return;
-      const S = 2.3, sz3 = o.geometry.userData.size, gy = groundH(x, z);
+      const S = 2.3, sz3 = o.geometry.userData.size, gy = Math.max(...ring(x, z));
       // the model: boom along -x, pedestal near +x; turn it so that the boom points to the water
       const g = new THREE.Group(); o.scale.setScalar(S); o.position.set(-(sz3[0] / 2 - 0.82) * S, sz3[1] / 2 * S, 0); g.add(o);
-      const plinth = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.8, 1.6, 12), new THREE.MeshLambertMaterial({ color: hd.lin(0x8a8880) })); plinth.position.y = 0.3; plinth.userData.hdLinear = true; g.add(plinth);
+      const plinth = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.8, 2.4, 12), new THREE.MeshLambertMaterial({ color: hd.lin(0x8a8880) })); plinth.position.y = -0.1; // goes 1.3 m into the ground plinth.userData.hdLinear = true; g.add(plinth);
       g.position.set(x, gy + 0.9, z); g.rotation.y = Math.atan2(dz, -dx) + turn; g.userData.hdLinear = true; scene.add(g); portCranes.push(g);
       gridAdd([x - 2.2, z, x + 2.2, z], 3.5); gridAdd([x, z - 2.2, x, z + 2.2], 3.5);
     }
