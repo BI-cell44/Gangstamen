@@ -29,6 +29,7 @@
   const MEDALS = [['Or', 20], ['Argent', 16], ['Bronze', 13]]; // average speed (m/s) for each medal on a race
   let acts = null, run = null, actHud = null, ghostMesh = null;
   const fmtT = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0') + '.' + Math.floor((s % 1) * 10);
+  function nearActStart(x, z, m) { actsBuild(); return acts.some(a => Math.hypot(a.start[0] - x, a.start[1] - z) < m); } // (spawnmap.js)
   function actsBuild() {
     if (acts) return; acts = [];
     for (const d of ACT_DEF) {
@@ -45,6 +46,7 @@
   function actMarkers() { // start markers (re-added when a mission cleared them)
     for (const a of acts) if (unlocked(a.id) && (!a.mk || !markers.includes(a.mk))) a.mk = addMarker(a.start[0], a.start[1], 6, a.kind === 'race' ? 0x3ac8ff : 0xff9a2a);
   }
+  function actReset() { if (acts) actHide(); if (run) { dropGhost(); actPanel(null); run = null; } after = null; hintOn = false; } // (16 nov.) back to the menu: nothing left running
   function actHide() { for (const a of acts || []) if (a.mk) { scene.remove(a.mk.beam, a.mk.ring); const i = markers.indexOf(a.mk); if (i >= 0) markers.splice(i, 1); a.mk = null; } }
   function actPanel(title, text) { // the mission panel (title, line, arrow to the target)
     if (!title) { objEl.hidden = true; objBar(null); objDir(null); return; }

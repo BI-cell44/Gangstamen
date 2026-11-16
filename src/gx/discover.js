@@ -14,6 +14,7 @@
   ];
   let discT = 0;
   const found = () => (Profile.cur ? Profile.cur.found : []);
+  function nearPostcard(x, z, m) { return SPOTS.some(s => Math.hypot(s.x - x, s.z - z) < s.r + m); } // (spawnmap.js keeps its starting points clear)
   function discoverStep(dt) {
     if (mode !== 'solo' || !locals.length || (discT -= dt) > 0) return; discT = 0.5;
     const c = locals[0].car; if (!c.alive || !Profile.cur) return;

@@ -30,7 +30,7 @@ function startGame(kind, sub) {
   if (!HD) setNight(night);
   buildPlayerHuds(); layoutViews();
   $('title').hidden = true; started = true; paused = false; document.body.classList.add('ingame');
-  for (const L of locals) { L.cam.position.set(L.car.x, 20, L.car.z + 30); }
+  for (const L of locals) { const [fx, fz] = L.car.fwd; L.cam.position.set(L.car.x - fx * 9, surfaceH(L.car.x, L.car.z) + 70, L.car.z - fz * 9); } // (16 nov., user) down from the sky straight over the car: before, it came in from 30 m away through the buildings
   if (teamMode) for (const L of locals) { if (locals.length > 1) flashFor(L, TEAMS[L.team].short, baseName(L.team)); else flash(TEAMS[L.team].name, 'Base : ' + baseName(L.team) + ' · pas de tir ami'); }
   else if (kind === 'online') flash('Partie ' + Net.code.toUpperCase(), Net.isHost ? 'Code à donner aux amis · vous êtes l’hôte' : 'Bienvenue à Chantenay');
   else if (soloKind === 'free') flashAll('Conduite libre', 'Pas de chrono · courses, défis et missions sur la carte · G : carte');

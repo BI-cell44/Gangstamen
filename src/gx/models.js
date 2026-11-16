@@ -50,8 +50,11 @@
       for (let x = x0 + 11; x < x1; x += 22) for (let z = z0 + 11; z < z1; z += 22) if (inside(x, z, p) && inside(x + 3, z, p) && inside(x - 3, z, p) && inside(x, z + 3, p) && inside(x, z - 3, p) && roadEdge(x, z)[0] > 2) pts.push([x, z, top]);
     }
     if (!pts.length) return;
+    // (16 nov., user) the roofs of the Nefs are not flat: each column goes up to the roof found straight above it
+    { const rc = new THREE.Raycaster(), up = new THREE.Vector3(0, 1, 0), meshes = []; scene.traverse(o => { if (o.isMesh && !o.isInstancedMesh) meshes.push(o); }); rc.far = 14;
+      for (const P of pts) { rc.set(new THREE.Vector3(P[0], P[2] - 0.3, P[1]), up); const h = rc.intersectObjects(meshes, false)[0]; if (h) P[2] = h.point.y + 0.05; } }
     const im = new THREE.InstancedMesh(new THREE.BoxGeometry(0.8, 1, 0.8), new THREE.MeshStandardMaterial({ color: hd.lin(0x55625f), roughness: 0.7, metalness: 0.35 }), pts.length), M = new THREE.Matrix4();
-    pts.forEach(([x, z, top], i) => { const g = groundH(x, z) - 0.3, h = top - g; M.makeScale(1, h, 1); M.setPosition(x, g + h / 2, z); im.setMatrixAt(i, M); gridAdd([x - 0.6, z, x + 0.6, z], 3.5); gridAdd([x, z - 0.6, x, z + 0.6], 3.5); hallColumns.push([x, z]); });
+    pts.forEach(([x, z, top], i) => { const g = groundH(x, z) - 0.3, h = top - g; M.makeScale(1, h, 1); M.setPosition(x, g + h / 2, z); im.setMatrixAt(i, M); gridAdd([x - 0.6, z, x + 0.6, z], 3.5); gridAdd([x, z - 0.6, x, z + 0.6], 3.5); hallColumns.push([x, z, top]); });
     im.castShadow = true; im.receiveShadow = true; im.userData.hdLinear = true; im.frustumCulled = false; scene.add(im);
   }
   const portCranes = [];

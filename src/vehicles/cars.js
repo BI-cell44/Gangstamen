@@ -196,14 +196,15 @@ class Car {
   }
   get speed() { return Math.hypot(this.vx, this.vz); }
   get fwd() { return [-Math.sin(this.h), -Math.cos(this.h)]; }
-  place(x, z, h) { this.x = x; this.z = z; this.h = h; this.vx = this.vz = 0; this.yb = undefined; this.yv = 0; this.air = 0; this.nitro = 0; this.sink = 0; if (this.phys) { this.phys.r = 0; this.phys.gear = 1; this.phys.ax = 0; } this.sync(); }
+  place(x, z, h) { this.x = x; this.z = z; this.h = h; this.vx = this.vz = 0; this.yb = undefined; this.yv = 0; this.air = 0; this.nitro = 0; this.sink = 0; this._sp = undefined; if (this.phys) { this.phys.r = 0; this.phys.gear = 1; this.phys.ax = 0; } this.sync(); }
   sync() {
-    const [fx, fz] = this.fwd, rx = -fz, rz = fx;
-    let hf = surfaceH(this.x + fx * 1.7, this.z + fz * 1.7), hb = surfaceH(this.x - fx * 1.7, this.z - fz * 1.7);
+    const [fx, fz] = this.fwd, rx = -fz, rz = fx, wb = this.bus ? 4.4 : 1.7; // (16 nov., user) the bus's axles are far apart: measured there, its ends no longer dig into a bump
+    let hf = surfaceH(this.x + fx * wb, this.z + fz * wb), hb = surfaceH(this.x - fx * wb, this.z - fz * wb);
     let hr = surfaceH(this.x + rx * 0.9, this.z + rz * 0.9), hl = surfaceH(this.x - rx * 0.9, this.z - rz * 0.9);
     if (this.sink > 0) { // in the Loire: floats a moment, then goes down nose first
       const d = this.sink < 0.6 ? 0.25 : 0.25 + (this.sink - 0.6) * 0.75;
-      this.mesh.position.set(this.x, WATER_Y + 0.25 - d, this.z); this.mesh.rotation.set(-Math.min(0.5, this.sink * 0.22), this.h, Math.sin(this.sink * 2.3) * 0.07, 'YXZ'); return;
+      if (this._sp === undefined) { this._sp = this.mesh.rotation.x; this._sr = this.mesh.rotation.z; } // (16 nov., user) it keeps the angle it hit the water at, then goes down nose first
+      this.mesh.position.set(this.x, WATER_Y + 0.25 - d, this.z); this.mesh.rotation.set(Math.max(-1.1, this._sp - Math.min(0.5, this.sink * 0.22)), this.h, this._sr + Math.sin(this.sink * 2.3) * 0.07, 'YXZ'); return;
     }
     // a wheel over a drop (the edge of the ferry's deck, a quay) does not lay the car on its side: the body leans as if
     // the ground went on a little lower, no more (15 Nov.: the car lay over on the deck's edge)
@@ -216,13 +217,13 @@ class Car {
     this.mesh.position.set(this.x, Math.max(surfaceH(this.x, this.z), (hf + hb) / 2) + 0.34 + (this.air || 0), this.z);
     if (this.air > 0.2) { this._ap = (this._ap ?? Math.atan2(hf - hb, 3.4)) - 0.35 * (1 / 60); this.mesh.rotation.set(Math.max(-0.5, this._ap), this.h, this.mesh.rotation.z * 0.98, 'YXZ'); return; }
     this._ap = undefined;
-    this.mesh.rotation.set(Math.atan2(hf - hb, 3.4), this.h, Math.atan2(hr - hl, 1.8), 'YXZ');
+    this.mesh.rotation.set(Math.atan2(hf - hb, wb * 2), this.h, Math.atan2(hr - hl, 1.8), 'YXZ');
   }
 }
 
 // a car in the river: it drifts on a little, goes under, and its driver is back on dry land a moment later
 function sinking(c, dt) {
-  c.sink += dt; const k = Math.exp(-2.2 * dt); c.vx *= k; c.vz *= k; c.x += c.vx * dt; c.z += c.vz * dt; c.air = 0; c.yv = 0;
+  c.sink += dt; const k = Math.exp(-4.5 * dt); // the water stops it within a few metres c.vx *= k; c.vz *= k; c.x += c.vx * dt; c.z += c.vz * dt; c.air = 0; c.yv = 0;
   if (Math.random() < dt * 9) spawnFx(c.x + (Math.random() - 0.5) * 2.4, WATER_Y + 0.2, c.z + (Math.random() - 0.5) * 3.4, 0.35, 0xe8f4f8, 0.25, 2, 1.2); // bubbles
   if (c.sink > 3.2 && c.alive) { c.alive = false; c.hp = 0; if (c.owner) c.owner.deadT = 1.4; if (!c.local) { c.wreck = 1.5; c.dead = 0; c.mesh.visible = false; c.vx = c.vz = 0; } } // a bot under water: gone, then back as a wreck would
   return 0;
@@ -244,12 +245,13 @@ function drive(c, inp, dt) {
     // arcade: strong gravity, damage only on big falls; realistic: 1.35 g, a hard landing hurts sooner
     const G = real ? 9.81 * PHYS.airG : 22, hurt = real ? 8 : 12, hk = real ? 3 : 1.5;
     let g = surfaceH(c.x, c.z);
-    // (16 nov., user: a very high jump coming onto the pont Anne-de-Bretagne from the side) the relief climbs to the bridge
-    // deck at 27° there, and the edge of a deck is a step: a car on the ground cannot drive up a bank steeper than ~23° or a
-    // step of more than 30 cm; it is stopped like at a wall instead of being thrown into the air at the top
-    if (c.yb !== undefined && (c.air || 0) < 0.2 && g > c.yb + 0.04) {
+    // (16 nov., user: a very high jump coming onto the pont Anne-de-Bretagne from the side) the edge of a deck is a step: a
+    // car on the ground cannot climb a step of more than 30 cm steeper than 45°; it is stopped like at a wall instead of being
+    // thrown into the air. Slopes stay drivable, the big bumps of the Misery quarry still throw it (user, the same day)
+    const run0 = Math.hypot(c.x - ox, c.z - oz);
+    if (c.yb !== undefined && (c.air || 0) < 0.2 && g > c.yb + 0.3 && g - c.yb > run0) {
       const gxs = (surfaceH(c.x + 1, c.z) - surfaceH(c.x - 1, c.z)) / 2, gzs = (surfaceH(c.x, c.z + 1) - surfaceH(c.x, c.z - 1)) / 2, gl = Math.hypot(gxs, gzs);
-      if (g > c.yb + 0.3 || gl > 0.42) {
+      {
         const nx = gl > 1e-3 ? gxs / gl : c.vx / (Math.hypot(c.vx, c.vz) || 1), nz = gl > 1e-3 ? gzs / gl : c.vz / (Math.hypot(c.vx, c.vz) || 1), u = c.vx * nx + c.vz * nz;
         if (u > 0) { c.vx -= nx * u * 1.25; c.vz -= nz * u * 1.25; if (c.local && u > 6) sfx.impact(u * 0.6); }
         c.x = ox; c.z = oz; g = surfaceH(c.x, c.z);
@@ -263,7 +265,7 @@ function drive(c, inp, dt) {
       // (16 nov., user: « sauts très étranges ») the climb rate comes from the grade of the ground under the wheels, capped and
       // smoothed over a few hundredths of a second: a kerb, the edge of a bridge deck or the top of the ferry ramp is a step of a
       // few tens of centimetres in one frame, which used to give up to 14 m/s upwards and a launch; a real slope still does
-      const run = Math.hypot(c.vx, c.vz) * dt, gr = Math.max(-0.5, Math.min(0.5, (g - c.yb) / Math.max(run, 0.02)));
+      const run = Math.hypot(c.vx, c.vz) * dt, gr = Math.max(-0.75, Math.min(0.75, (g - c.yb) / Math.max(run, 0.02)));
       c.gr = c.air > 0.4 ? 0 : (c.gr || 0) + (gr - (c.gr || 0)) * Math.min(1, dt * 12);
       c.yv = Math.max(-14, Math.min(14, c.gr * run / Math.max(dt, 1e-3))); c.yb = g; c.air = 0;
     }

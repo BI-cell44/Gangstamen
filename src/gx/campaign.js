@@ -11,6 +11,7 @@
     const L = locals[0], [x, z] = roadPoint(...at), n = nearestNodeTo(x, z), nb = G.adj[n].reduce((b, v) => !toward || Math.hypot(G.x[v] - toward[0], G.z[v] - toward[1]) < Math.hypot(G.x[b] - toward[0], G.z[b] - toward[1]) ? v : b, G.adj[n][0]);
     L.car.place(x, z, heading(x, z, G.x[nb], G.z[nb])); L.spawn = [x, z, L.car.h]; L.car.hp = 100; L.car.alive = true; L.car.vx = L.car.vz = 0; L.deadT = 0;
     const u = L.car.mesh.userData; if (u.mBody) u.mBody.color.setHex(u.base); if (u.mPaint) u.mPaint.color.setHex(u.paint);
+    { const [fx, fz] = L.car.fwd; L.cam.position.set(x - fx * 9, surfaceH(x, z) + 70, z - fz * 9); } // (16 nov.) the camera comes down from the sky, not across the district
   }
   const MISSIONS = [
     { id: 'retour', title: 'Retour au quartier', where: 'Boulevard de la Liberté',
@@ -182,6 +183,8 @@
     if (typeof showroom === 'function') showroom(true);
     for (const L of locals) scene.remove(L.car.mesh); locals = [];
     for (const c of npcs.slice()) removeNpc(c); for (const p of peds) p.on = false; crowd.begin(); crowd.end(); People.hideAll(); active = false; sfx.engine(0, false); sfx.siren(0);
+    // (16 nov., user) a fresh start next time: no challenge still running, no power-ups or mines lying about, no mode objects
+    try { actReset(); } catch (e) { } for (const mn of mines) scene.remove(mn.m); mines.length = 0; for (const pu of pus) { pu.on = false; if (pu.g) pu.g.visible = false; } try { stopMode(); } catch (e) { } SpawnMap.close();
   }
   function renderCampaign() {
     const box = $('campList'); if (!box) return; box.innerHTML = '';

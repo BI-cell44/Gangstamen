@@ -120,6 +120,14 @@
           m.position.set(0, -0.2, sl / 2); m.receiveShadow = true; m.castShadow = true; m.userData.hdLinear = true; hinge.add(m);
           hinge.position.set(L.x, L.y, L.z); hinge.rotation.order = 'YXZ'; hinge.rotation.y = Math.atan2(-ax, -az); L.slope = Math.atan2(L.y - WATER_Y - DECK_Y, L.len); hinge.rotation.x = L.slope;
           hinge.userData.hdLinear = true; scene.add(hinge); L.hinge = hinge;
+          // (16 nov., user) a strip of road from the top of the ramp to the nearest street, drawn like the streets: straight
+          // up the ramp's axis while that meets a street within 80 m, otherwise to the nearest point of a street
+          { let pts = null;
+            for (let s = 2; s < 80; s += 2) { const x = L.x + ax * s, z = L.z + az * s; if (roadEdge(x, z)[0] < -1) { pts = [L.x - ax * 0.5, L.z - az * 0.5, x + ax * 2, z + az * 2]; break; } }
+            if (!pts) { let bd = 1e9, bp = null; for (const r of W.roads) { if (!r.d || r.b) continue; for (let i = 0; i < r.p.length; i += 2) { const d = Math.hypot(r.p[i] - L.x, r.p[i + 1] - L.z); if (d < bd) { bd = d; bp = [r.p[i], r.p[i + 1]]; } } }
+              if (bp && bd < 150) pts = [L.x - ax * 0.5, L.z - az * 0.5, L.x + ax * 6, L.z + az * 6, bp[0], bp[1]]; }
+            if (pts && ROAD_MATERIAL) { const B = new Buf(); ribbon(B, pts, L.hw * 2, ROAD_Y.drive + 0.01, col(HD ? '#414144' : '#46404c'), 6); const gg = B.geo(); if (HD) hd.linearize(new THREE.Mesh(gg)); const m = new THREE.Mesh(gg, ROAD_MATERIAL); m.receiveShadow = true; m.userData.hdLinear = true; scene.add(m); } // (the streets' colours were made linear at start-up: this one by hand)
+            L.road = pts; }
           // (16 nov., user) a proper traffic light: a dark housing with red, orange and green, facing the ramp both ways
           const lx = L.x - az * (L.hw + 1.2), lz = L.z + ax * (L.hw + 1.2), gy = groundH(lx, lz), post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 4.2, 8), postM); post.position.set(lx, gy + 2.1, lz); post.userData.hdLinear = true; scene.add(post);
           const head = new THREE.Group(); head.position.set(lx, gy + 5.1, lz); head.rotation.y = Math.atan2(-ax, -az); scene.add(head);

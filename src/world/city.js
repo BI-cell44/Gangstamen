@@ -97,6 +97,7 @@ if (!HD && W.photos && window.PHOTO_ATLAS) {
   });
 }
 const buildingPolys = [];
+let ROAD_MATERIAL = null; // the street surface, shared with what is laid later (gx/boats.js: the ferry approaches)
 const landmarks = [];
 
 function buildCity() {
@@ -463,7 +464,7 @@ function buildGround() {
   ground.receiveShadow = true; scene.add(ground);
 
   const at = asphaltTex();
-  const roadMat = HD ? hd.roadMat() : new THREE.MeshLambertMaterial({ map: at, vertexColors: true });
+  const roadMat = HD ? hd.roadMat() : new THREE.MeshLambertMaterial({ map: at, vertexColors: true }); ROAD_MATERIAL = roadMat;
   const drive = new Buf(), foot = new Buf(), marks = new Buf();
   const cDrive = col(HD ? '#414144' : '#46404c'), cPrim = col(HD ? '#39393c' : '#3d3843'), cFoot = col('#a69d92'), cMark = col('#efe6cf');
   W.roads.forEach(r => {

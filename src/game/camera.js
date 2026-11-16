@@ -46,6 +46,12 @@ function updateCamera(L, dt) {
     const along = mode === 2 ? (back ? -0.6 : 0.95) : (back ? -2.4 : 2.35), up = mode === 2 ? 1.36 : 0.62; // (15 nov.) hood: further forward, over the bonnet itself (from 0.5 m the inside of the body showed at the bottom of the screen)
     camPos.set(c.x + f[0] * along, y + up, c.z + f[1] * along);
     camLook.set(c.x + f[0] * (along + 20 * s), y + up - 0.6, c.z + f[1] * (along + 20 * s));
+    // (16 nov., user) the body pitches and rolls on its springs (accelerating, braking, cornering): the eye goes with the
+    // body, or the bonnet rises through it and the inside of the car shows
+    const bg = c.mesh && c.mesh.userData.bodyG;
+    if (bg && mode === 2 && c.mesh.parent) { c.mesh.updateMatrixWorld(true);
+      camPos.set(0, up, -along).sub(bg.position); bg.localToWorld(camPos);
+      camLook.set(0, up - 0.6, -(along + 20 * s)).sub(bg.position); bg.localToWorld(camLook); }
     k = 1; fov = 64 + Math.min(14, sp * 0.3);
   } else if (mode === 4) {
     const [fx, fz] = c.fwd;

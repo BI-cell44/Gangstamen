@@ -74,6 +74,23 @@ Demandes du 16 nov. après-midi, dans l'ordre de traitement (priorité : ce qui 
 29. [x] (fait, sauf en ligne qui recharge encore) **« Quitter vers le menu »** : on revoit l'écran de chargement alors que tout est déjà chargé.
 30. [x] (fait) **Pause sur le bac** : le bac continue sans la voiture, qui se retrouve au-dessus de l'eau ; la pause doit arrêter le bac.
 31. [x] (fait : mobilier et tables de terrasse retirés de l'emprise des ateliers) **Mobilier dans les garages** : retirer les bancs et le mobilier qui se retrouvent à l'intérieur.
+
+Demandes du 16 nov. en fin d'après-midi, par priorité (d'abord ce que j'ai cassé, puis les bugs, puis les ajouts) :
+
+32. [x] (fait : seules les vraies marches, plus de 30 cm à plus de 45°, arrêtent la voiture ; les pentes et bosses relancent comme avant, la pente reste lissée) **Sauts sur les grosses bosses** (régression de 22) : on ne saute plus sur les bosses comme à la carrière Misery.
+33. [x] (fait : chaque point est déplacé par les rues à plus de 25 m d'un départ de course ou de défi et 10 m au-delà d'une carte postale ; vérifié pour les sept) **Points de départ qui lancent un défi** : Mairie de Chantenay (défi), grue grise (course), place Jean-Macé (dérapage) ; vérifier qu'aucun point de départ ne déclenche de défi ni de carte postale.
+34. [x] (fait : défi en cours, balises, mines, bonus au sol, police et mode de jeu remis à zéro) **Retour au menu principal** : remettre à zéro défis, police, bonus… (un défi lancé était encore en cours en relançant une partie solo).
+35. [x] (fait) **Voiture qui coule** : elle ne doit pas se redresser ni rouler encore quelques mètres ; garder son inclinaison, freiner vite à l'horizontale ; pas de flammes ni de fumée quand on meurt en coulant.
+36. [x] (fait : l'œil suit la caisse sur ses suspensions) **Vue capot** : on voit encore l'intérieur de la voiture quand on accélère ou qu'on tourne.
+37. [x] (fait : chaque poteau monte jusqu'au toit trouvé juste au-dessus, les toits ne sont pas plats) **Poteaux des Halles Dubigeon** : certains ne touchent toujours pas le plafond.
+38. [x] (fait : l'assiette du bus est mesurée à ses essieux, 8,8 m d'écart) **Bus dans le sol** : dans la montée juste avant la place Jean-Macé (bosse du sol).
+39. [x] (fait : elle descend du ciel au-dessus de la voiture, aussi au choix d'un point de départ) **Caméra au départ** : elle traverse plein de modèles ; partir plutôt du ciel.
+40. [ ] **Autres voitures sur le bac** + bande de route au sol jusqu'à la rampe (en cours).
+41. [ ] **Menu** : en premier « Conduite libre : choisis où démarrer », avec « courses et défis dans le quartier ».
+42. [ ] **Menu de pause** : ajouter Options et Commandes.
+43. [ ] **Intro** : sur le plan des Rapaces qui tiennent le haut de la butte, montrer un élément de la butte Sainte-Anne (église, escalier ou place des Garennes).
+44. [ ] **Barrages de police** dans les rues quand on est recherché au maximum.
+45. [ ] **Étoiles** : vérifier qu'écraser des piétons quand on est déjà recherché fait bien monter au-delà d'une étoile.
 28. [x] (fait : toit en chapiteau rayé rouge et crème, mâts, fanions et guirlande, posé sur le bâtiment rond du quai Wilson) **Chapiteau du Chapidock** : l'école de cirque au bout de l'île de Nantes, modélisée en cylindre à toit plat.
 29. [x] (fait, sauf en ligne qui recharge encore) **« Quitter vers le menu »** : revient au menu sans tout recharger (la page se rechargeait et repassait par l'écran de chargement).
 30. [x] (fait) **Pause sur le bac** : la pause doit arrêter le bac (la voiture restait au-dessus de l'eau pendant que le bac continuait).

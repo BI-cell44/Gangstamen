@@ -21,6 +21,7 @@
     const lx = c.x - fx_ * wb - rx * hw, lz = c.z - fz_ * wb - rz * hw, rxw = c.x - fx_ * wb + rx * hw, rzw = c.z - fz_ * wb + rz * hw;
     if (!c.alive) {
       st.dead += dt; st.wl = st.wr = null;
+      if (c.sink > 0) return; // (16 nov., user) drowned: no fire or smoke under the water
       const k = Math.max(0, 1 - st.dead / 14);
       if (Math.random() < dt * 26 * k * q.parts) fire(c.x + rs() * 1.6, y + 0.7 + Math.random() * 0.5, c.z + rs() * 1.6, rs(), 1.5 + Math.random() * 2, rs(), 1.2 + Math.random() * 1.3, 0.5 + Math.random() * 0.4, 0.7 + k * 0.6);
       if (Math.random() < dt * (5 + 9 * k) * q.parts) smoke(c.x + rs(), y + 1.3, c.z + rs(), rs() + 0.6, 2.4 + Math.random() * 1.5, rs() + 0.3, 1.6, 3.2, 3 + Math.random() * 2, 0.03, 0.7);

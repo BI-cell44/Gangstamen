@@ -1082,6 +1082,7 @@ const hd = !HD ? null : (() => {
     const lx = c.x - fx_ * wb - rx * hw, lz = c.z - fz_ * wb - rz * hw, rxw = c.x - fx_ * wb + rx * hw, rzw = c.z - fz_ * wb + rz * hw;
     if (!c.alive) {
       st.dead += dt; st.wl = st.wr = null;
+      if (c.sink > 0) return; // (16 nov., user) drowned: no fire or smoke under the water
       const k = Math.max(0, 1 - st.dead / 14);
       if (Math.random() < dt * 26 * k * q.parts) fire(c.x + rs() * 1.6, y + 0.7 + Math.random() * 0.5, c.z + rs() * 1.6, rs(), 1.5 + Math.random() * 2, rs(), 1.2 + Math.random() * 1.3, 0.5 + Math.random() * 0.4, 0.7 + k * 0.6);
       if (Math.random() < dt * (5 + 9 * k) * q.parts) smoke(c.x + rs(), y + 1.3, c.z + rs(), rs() + 0.6, 2.4 + Math.random() * 1.5, rs() + 0.3, 1.6, 3.2, 3 + Math.random() * 2, 0.03, 0.7);
@@ -2374,6 +2375,7 @@ if (!HD && W.photos && window.PHOTO_ATLAS) {
   });
 }
 const buildingPolys = [];
+let ROAD_MATERIAL = null; // the street surface, shared with what is laid later (gx/boats.js: the ferry approaches)
 const landmarks = [];
 
 function buildCity() {
@@ -2740,7 +2742,7 @@ function buildGround() {
   ground.receiveShadow = true; scene.add(ground);
 
   const at = asphaltTex();
-  const roadMat = HD ? hd.roadMat() : new THREE.MeshLambertMaterial({ map: at, vertexColors: true });
+  const roadMat = HD ? hd.roadMat() : new THREE.MeshLambertMaterial({ map: at, vertexColors: true }); ROAD_MATERIAL = roadMat;
   const drive = new Buf(), foot = new Buf(), marks = new Buf();
   const cDrive = col(HD ? '#414144' : '#46404c'), cPrim = col(HD ? '#39393c' : '#3d3843'), cFoot = col('#a69d92'), cMark = col('#efe6cf');
   W.roads.forEach(r => {
@@ -3100,14 +3102,15 @@ class Car {
   }
   get speed() { return Math.hypot(this.vx, this.vz); }
   get fwd() { return [-Math.sin(this.h), -Math.cos(this.h)]; }
-  place(x, z, h) { this.x = x; this.z = z; this.h = h; this.vx = this.vz = 0; this.yb = undefined; this.yv = 0; this.air = 0; this.nitro = 0; this.sink = 0; if (this.phys) { this.phys.r = 0; this.phys.gear = 1; this.phys.ax = 0; } this.sync(); }
+  place(x, z, h) { this.x = x; this.z = z; this.h = h; this.vx = this.vz = 0; this.yb = undefined; this.yv = 0; this.air = 0; this.nitro = 0; this.sink = 0; this._sp = undefined; if (this.phys) { this.phys.r = 0; this.phys.gear = 1; this.phys.ax = 0; } this.sync(); }
   sync() {
-    const [fx, fz] = this.fwd, rx = -fz, rz = fx;
-    let hf = surfaceH(this.x + fx * 1.7, this.z + fz * 1.7), hb = surfaceH(this.x - fx * 1.7, this.z - fz * 1.7);
+    const [fx, fz] = this.fwd, rx = -fz, rz = fx, wb = this.bus ? 4.4 : 1.7; // (16 nov., user) the bus's axles are far apart: measured there, its ends no longer dig into a bump
+    let hf = surfaceH(this.x + fx * wb, this.z + fz * wb), hb = surfaceH(this.x - fx * wb, this.z - fz * wb);
     let hr = surfaceH(this.x + rx * 0.9, this.z + rz * 0.9), hl = surfaceH(this.x - rx * 0.9, this.z - rz * 0.9);
     if (this.sink > 0) { // in the Loire: floats a moment, then goes down nose first
       const d = this.sink < 0.6 ? 0.25 : 0.25 + (this.sink - 0.6) * 0.75;
-      this.mesh.position.set(this.x, WATER_Y + 0.25 - d, this.z); this.mesh.rotation.set(-Math.min(0.5, this.sink * 0.22), this.h, Math.sin(this.sink * 2.3) * 0.07, 'YXZ'); return;
+      if (this._sp === undefined) { this._sp = this.mesh.rotation.x; this._sr = this.mesh.rotation.z; } // (16 nov., user) it keeps the angle it hit the water at, then goes down nose first
+      this.mesh.position.set(this.x, WATER_Y + 0.25 - d, this.z); this.mesh.rotation.set(Math.max(-1.1, this._sp - Math.min(0.5, this.sink * 0.22)), this.h, this._sr + Math.sin(this.sink * 2.3) * 0.07, 'YXZ'); return;
     }
     // a wheel over a drop (the edge of the ferry's deck, a quay) does not lay the car on its side: the body leans as if
     // the ground went on a little lower, no more (15 Nov.: the car lay over on the deck's edge)
@@ -3120,13 +3123,13 @@ class Car {
     this.mesh.position.set(this.x, Math.max(surfaceH(this.x, this.z), (hf + hb) / 2) + 0.34 + (this.air || 0), this.z);
     if (this.air > 0.2) { this._ap = (this._ap ?? Math.atan2(hf - hb, 3.4)) - 0.35 * (1 / 60); this.mesh.rotation.set(Math.max(-0.5, this._ap), this.h, this.mesh.rotation.z * 0.98, 'YXZ'); return; }
     this._ap = undefined;
-    this.mesh.rotation.set(Math.atan2(hf - hb, 3.4), this.h, Math.atan2(hr - hl, 1.8), 'YXZ');
+    this.mesh.rotation.set(Math.atan2(hf - hb, wb * 2), this.h, Math.atan2(hr - hl, 1.8), 'YXZ');
   }
 }
 
 // a car in the river: it drifts on a little, goes under, and its driver is back on dry land a moment later
 function sinking(c, dt) {
-  c.sink += dt; const k = Math.exp(-2.2 * dt); c.vx *= k; c.vz *= k; c.x += c.vx * dt; c.z += c.vz * dt; c.air = 0; c.yv = 0;
+  c.sink += dt; const k = Math.exp(-4.5 * dt); // the water stops it within a few metres c.vx *= k; c.vz *= k; c.x += c.vx * dt; c.z += c.vz * dt; c.air = 0; c.yv = 0;
   if (Math.random() < dt * 9) spawnFx(c.x + (Math.random() - 0.5) * 2.4, WATER_Y + 0.2, c.z + (Math.random() - 0.5) * 3.4, 0.35, 0xe8f4f8, 0.25, 2, 1.2); // bubbles
   if (c.sink > 3.2 && c.alive) { c.alive = false; c.hp = 0; if (c.owner) c.owner.deadT = 1.4; if (!c.local) { c.wreck = 1.5; c.dead = 0; c.mesh.visible = false; c.vx = c.vz = 0; } } // a bot under water: gone, then back as a wreck would
   return 0;
@@ -3148,12 +3151,13 @@ function drive(c, inp, dt) {
     // arcade: strong gravity, damage only on big falls; realistic: 1.35 g, a hard landing hurts sooner
     const G = real ? 9.81 * PHYS.airG : 22, hurt = real ? 8 : 12, hk = real ? 3 : 1.5;
     let g = surfaceH(c.x, c.z);
-    // (16 nov., user: a very high jump coming onto the pont Anne-de-Bretagne from the side) the relief climbs to the bridge
-    // deck at 27° there, and the edge of a deck is a step: a car on the ground cannot drive up a bank steeper than ~23° or a
-    // step of more than 30 cm; it is stopped like at a wall instead of being thrown into the air at the top
-    if (c.yb !== undefined && (c.air || 0) < 0.2 && g > c.yb + 0.04) {
+    // (16 nov., user: a very high jump coming onto the pont Anne-de-Bretagne from the side) the edge of a deck is a step: a
+    // car on the ground cannot climb a step of more than 30 cm steeper than 45°; it is stopped like at a wall instead of being
+    // thrown into the air. Slopes stay drivable, the big bumps of the Misery quarry still throw it (user, the same day)
+    const run0 = Math.hypot(c.x - ox, c.z - oz);
+    if (c.yb !== undefined && (c.air || 0) < 0.2 && g > c.yb + 0.3 && g - c.yb > run0) {
       const gxs = (surfaceH(c.x + 1, c.z) - surfaceH(c.x - 1, c.z)) / 2, gzs = (surfaceH(c.x, c.z + 1) - surfaceH(c.x, c.z - 1)) / 2, gl = Math.hypot(gxs, gzs);
-      if (g > c.yb + 0.3 || gl > 0.42) {
+      {
         const nx = gl > 1e-3 ? gxs / gl : c.vx / (Math.hypot(c.vx, c.vz) || 1), nz = gl > 1e-3 ? gzs / gl : c.vz / (Math.hypot(c.vx, c.vz) || 1), u = c.vx * nx + c.vz * nz;
         if (u > 0) { c.vx -= nx * u * 1.25; c.vz -= nz * u * 1.25; if (c.local && u > 6) sfx.impact(u * 0.6); }
         c.x = ox; c.z = oz; g = surfaceH(c.x, c.z);
@@ -3167,7 +3171,7 @@ function drive(c, inp, dt) {
       // (16 nov., user: « sauts très étranges ») the climb rate comes from the grade of the ground under the wheels, capped and
       // smoothed over a few hundredths of a second: a kerb, the edge of a bridge deck or the top of the ferry ramp is a step of a
       // few tens of centimetres in one frame, which used to give up to 14 m/s upwards and a launch; a real slope still does
-      const run = Math.hypot(c.vx, c.vz) * dt, gr = Math.max(-0.5, Math.min(0.5, (g - c.yb) / Math.max(run, 0.02)));
+      const run = Math.hypot(c.vx, c.vz) * dt, gr = Math.max(-0.75, Math.min(0.75, (g - c.yb) / Math.max(run, 0.02)));
       c.gr = c.air > 0.4 ? 0 : (c.gr || 0) + (gr - (c.gr || 0)) * Math.min(1, dt * 12);
       c.yv = Math.max(-14, Math.min(14, c.gr * run / Math.max(dt, 1e-3))); c.yb = g; c.air = 0;
     }
@@ -7646,6 +7650,7 @@ const gx = !HD ? null : (() => {
     const L = locals[0], [x, z] = roadPoint(...at), n = nearestNodeTo(x, z), nb = G.adj[n].reduce((b, v) => !toward || Math.hypot(G.x[v] - toward[0], G.z[v] - toward[1]) < Math.hypot(G.x[b] - toward[0], G.z[b] - toward[1]) ? v : b, G.adj[n][0]);
     L.car.place(x, z, heading(x, z, G.x[nb], G.z[nb])); L.spawn = [x, z, L.car.h]; L.car.hp = 100; L.car.alive = true; L.car.vx = L.car.vz = 0; L.deadT = 0;
     const u = L.car.mesh.userData; if (u.mBody) u.mBody.color.setHex(u.base); if (u.mPaint) u.mPaint.color.setHex(u.paint);
+    { const [fx, fz] = L.car.fwd; L.cam.position.set(x - fx * 9, surfaceH(x, z) + 70, z - fz * 9); } // (16 nov.) the camera comes down from the sky, not across the district
   }
   const MISSIONS = [
     { id: 'retour', title: 'Retour au quartier', where: 'Boulevard de la Liberté',
@@ -7817,6 +7822,8 @@ const gx = !HD ? null : (() => {
     if (typeof showroom === 'function') showroom(true);
     for (const L of locals) scene.remove(L.car.mesh); locals = [];
     for (const c of npcs.slice()) removeNpc(c); for (const p of peds) p.on = false; crowd.begin(); crowd.end(); People.hideAll(); active = false; sfx.engine(0, false); sfx.siren(0);
+    // (16 nov., user) a fresh start next time: no challenge still running, no power-ups or mines lying about, no mode objects
+    try { actReset(); } catch (e) { } for (const mn of mines) scene.remove(mn.m); mines.length = 0; for (const pu of pus) { pu.on = false; if (pu.g) pu.g.visible = false; } try { stopMode(); } catch (e) { } SpawnMap.close();
   }
   function renderCampaign() {
     const box = $('campList'); if (!box) return; box.innerHTML = '';
@@ -8072,6 +8079,7 @@ const gx = !HD ? null : (() => {
   const MEDALS = [['Or', 20], ['Argent', 16], ['Bronze', 13]]; // average speed (m/s) for each medal on a race
   let acts = null, run = null, actHud = null, ghostMesh = null;
   const fmtT = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0') + '.' + Math.floor((s % 1) * 10);
+  function nearActStart(x, z, m) { actsBuild(); return acts.some(a => Math.hypot(a.start[0] - x, a.start[1] - z) < m); } // (spawnmap.js)
   function actsBuild() {
     if (acts) return; acts = [];
     for (const d of ACT_DEF) {
@@ -8088,6 +8096,7 @@ const gx = !HD ? null : (() => {
   function actMarkers() { // start markers (re-added when a mission cleared them)
     for (const a of acts) if (unlocked(a.id) && (!a.mk || !markers.includes(a.mk))) a.mk = addMarker(a.start[0], a.start[1], 6, a.kind === 'race' ? 0x3ac8ff : 0xff9a2a);
   }
+  function actReset() { if (acts) actHide(); if (run) { dropGhost(); actPanel(null); run = null; } after = null; hintOn = false; } // (16 nov.) back to the menu: nothing left running
   function actHide() { for (const a of acts || []) if (a.mk) { scene.remove(a.mk.beam, a.mk.ring); const i = markers.indexOf(a.mk); if (i >= 0) markers.splice(i, 1); a.mk = null; } }
   function actPanel(title, text) { // the mission panel (title, line, arrow to the target)
     if (!title) { objEl.hidden = true; objBar(null); objDir(null); return; }
@@ -8221,6 +8230,7 @@ const gx = !HD ? null : (() => {
   ];
   let discT = 0;
   const found = () => (Profile.cur ? Profile.cur.found : []);
+  function nearPostcard(x, z, m) { return SPOTS.some(s => Math.hypot(s.x - x, s.z - z) < s.r + m); } // (spawnmap.js keeps its starting points clear)
   function discoverStep(dt) {
     if (mode !== 'solo' || !locals.length || (discT -= dt) > 0) return; discT = 0.5;
     const c = locals[0].car; if (!c.alive || !Profile.cur) return;
@@ -8304,8 +8314,11 @@ const gx = !HD ? null : (() => {
       for (let x = x0 + 11; x < x1; x += 22) for (let z = z0 + 11; z < z1; z += 22) if (inside(x, z, p) && inside(x + 3, z, p) && inside(x - 3, z, p) && inside(x, z + 3, p) && inside(x, z - 3, p) && roadEdge(x, z)[0] > 2) pts.push([x, z, top]);
     }
     if (!pts.length) return;
+    // (16 nov., user) the roofs of the Nefs are not flat: each column goes up to the roof found straight above it
+    { const rc = new THREE.Raycaster(), up = new THREE.Vector3(0, 1, 0), meshes = []; scene.traverse(o => { if (o.isMesh && !o.isInstancedMesh) meshes.push(o); }); rc.far = 14;
+      for (const P of pts) { rc.set(new THREE.Vector3(P[0], P[2] - 0.3, P[1]), up); const h = rc.intersectObjects(meshes, false)[0]; if (h) P[2] = h.point.y + 0.05; } }
     const im = new THREE.InstancedMesh(new THREE.BoxGeometry(0.8, 1, 0.8), new THREE.MeshStandardMaterial({ color: hd.lin(0x55625f), roughness: 0.7, metalness: 0.35 }), pts.length), M = new THREE.Matrix4();
-    pts.forEach(([x, z, top], i) => { const g = groundH(x, z) - 0.3, h = top - g; M.makeScale(1, h, 1); M.setPosition(x, g + h / 2, z); im.setMatrixAt(i, M); gridAdd([x - 0.6, z, x + 0.6, z], 3.5); gridAdd([x, z - 0.6, x, z + 0.6], 3.5); hallColumns.push([x, z]); });
+    pts.forEach(([x, z, top], i) => { const g = groundH(x, z) - 0.3, h = top - g; M.makeScale(1, h, 1); M.setPosition(x, g + h / 2, z); im.setMatrixAt(i, M); gridAdd([x - 0.6, z, x + 0.6, z], 3.5); gridAdd([x, z - 0.6, x, z + 0.6], 3.5); hallColumns.push([x, z, top]); });
     im.castShadow = true; im.receiveShadow = true; im.userData.hdLinear = true; im.frustumCulled = false; scene.add(im);
   }
   const portCranes = [];
@@ -8756,6 +8769,14 @@ const gx = !HD ? null : (() => {
           m.position.set(0, -0.2, sl / 2); m.receiveShadow = true; m.castShadow = true; m.userData.hdLinear = true; hinge.add(m);
           hinge.position.set(L.x, L.y, L.z); hinge.rotation.order = 'YXZ'; hinge.rotation.y = Math.atan2(-ax, -az); L.slope = Math.atan2(L.y - WATER_Y - DECK_Y, L.len); hinge.rotation.x = L.slope;
           hinge.userData.hdLinear = true; scene.add(hinge); L.hinge = hinge;
+          // (16 nov., user) a strip of road from the top of the ramp to the nearest street, drawn like the streets: straight
+          // up the ramp's axis while that meets a street within 80 m, otherwise to the nearest point of a street
+          { let pts = null;
+            for (let s = 2; s < 80; s += 2) { const x = L.x + ax * s, z = L.z + az * s; if (roadEdge(x, z)[0] < -1) { pts = [L.x - ax * 0.5, L.z - az * 0.5, x + ax * 2, z + az * 2]; break; } }
+            if (!pts) { let bd = 1e9, bp = null; for (const r of W.roads) { if (!r.d || r.b) continue; for (let i = 0; i < r.p.length; i += 2) { const d = Math.hypot(r.p[i] - L.x, r.p[i + 1] - L.z); if (d < bd) { bd = d; bp = [r.p[i], r.p[i + 1]]; } } }
+              if (bp && bd < 150) pts = [L.x - ax * 0.5, L.z - az * 0.5, L.x + ax * 6, L.z + az * 6, bp[0], bp[1]]; }
+            if (pts && ROAD_MATERIAL) { const B = new Buf(); ribbon(B, pts, L.hw * 2, ROAD_Y.drive + 0.01, col(HD ? '#414144' : '#46404c'), 6); const gg = B.geo(); if (HD) hd.linearize(new THREE.Mesh(gg)); const m = new THREE.Mesh(gg, ROAD_MATERIAL); m.receiveShadow = true; m.userData.hdLinear = true; scene.add(m); } // (the streets' colours were made linear at start-up: this one by hand)
+            L.road = pts; }
           // (16 nov., user) a proper traffic light: a dark housing with red, orange and green, facing the ramp both ways
           const lx = L.x - az * (L.hw + 1.2), lz = L.z + ax * (L.hw + 1.2), gy = groundH(lx, lz), post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 4.2, 8), postM); post.position.set(lx, gy + 2.1, lz); post.userData.hdLinear = true; scene.add(post);
           const head = new THREE.Group(); head.position.set(lx, gy + 5.1, lz); head.rotation.y = Math.atan2(-ax, -az); scene.add(head);
@@ -8976,7 +8997,14 @@ const gx = !HD ? null : (() => {
         if (Math.abs(x - CX) > HX - 15 || Math.abs(z - CZ) > HZ - 15) { rejects.push([name, 'hors carte', CX, HX, CZ, HZ]); continue; }
         const [rx, rz] = roadPoint(x, z), n = nearestNodeTo(rx, rz);
         if (!nodeOk(n) || Math.hypot(rx - x, rz - z) > 120) { rejects.push([name, nodeOk(n), Math.round(rx), Math.round(rz)]); continue; }
-        spots.push({ name, x: rx, z: rz });
+        // (16 nov., user) a starting point on the start marker of a race or a challenge started it at once, or found a
+        // postcard: moved along the streets to the nearest node clear of both (25 m from a start, 10 m past a postcard)
+        let px = rx, pz = rz;
+        const busy = (x, z) => nearActStart(x, z, 25) || nearPostcard(x, z, 10);
+        if (busy(px, pz)) { const seen = new Set([n]), q = [n]; let found = null;
+          while (q.length && !found) { const a = q.shift(); for (const b of G.adj[a]) { if (seen.has(b)) continue; seen.add(b); if (Math.hypot(G.x[b] - rx, G.z[b] - rz) > 220) continue; if (nodeOk(b) && !busy(G.x[b], G.z[b])) { found = b; break; } q.push(b); } }
+          if (found != null) { px = G.x[found]; pz = G.z[found]; } }
+        spots.push({ name, x: px, z: pz });
       }
       return spots;
     }
@@ -9022,7 +9050,7 @@ const gx = !HD ? null : (() => {
       Busy.run(s.name, () => { placePlayer([s.x, s.z], nb != null ? [G.x[nb], G.z[nb]] : null); L.heat = 0; });
       flash(s.name, 'Conduite libre · G : changer de point de départ');
     }
-    return { show, close, get open() { return open; }, get spots() { return resolve(); }, rejects };
+    return { show, close, choose, get open() { return open; }, get spots() { return resolve(); }, rejects };
   })();
   // =====================================================================================
   // (16 nov., backlog « Loire, suite ») navigation lights on the boats at night (red to port, green to starboard, white
@@ -9116,7 +9144,7 @@ function startGame(kind, sub) {
   if (!HD) setNight(night);
   buildPlayerHuds(); layoutViews();
   $('title').hidden = true; started = true; paused = false; document.body.classList.add('ingame');
-  for (const L of locals) { L.cam.position.set(L.car.x, 20, L.car.z + 30); }
+  for (const L of locals) { const [fx, fz] = L.car.fwd; L.cam.position.set(L.car.x - fx * 9, surfaceH(L.car.x, L.car.z) + 70, L.car.z - fz * 9); } // (16 nov., user) down from the sky straight over the car: before, it came in from 30 m away through the buildings
   if (teamMode) for (const L of locals) { if (locals.length > 1) flashFor(L, TEAMS[L.team].short, baseName(L.team)); else flash(TEAMS[L.team].name, 'Base : ' + baseName(L.team) + ' · pas de tir ami'); }
   else if (kind === 'online') flash('Partie ' + Net.code.toUpperCase(), Net.isHost ? 'Code à donner aux amis · vous êtes l’hôte' : 'Bienvenue à Chantenay');
   else if (soloKind === 'free') flashAll('Conduite libre', 'Pas de chrono · courses, défis et missions sur la carte · G : carte');
@@ -9174,6 +9202,12 @@ function updateCamera(L, dt) {
     const along = mode === 2 ? (back ? -0.6 : 0.95) : (back ? -2.4 : 2.35), up = mode === 2 ? 1.36 : 0.62; // (15 nov.) hood: further forward, over the bonnet itself (from 0.5 m the inside of the body showed at the bottom of the screen)
     camPos.set(c.x + f[0] * along, y + up, c.z + f[1] * along);
     camLook.set(c.x + f[0] * (along + 20 * s), y + up - 0.6, c.z + f[1] * (along + 20 * s));
+    // (16 nov., user) the body pitches and rolls on its springs (accelerating, braking, cornering): the eye goes with the
+    // body, or the bonnet rises through it and the inside of the car shows
+    const bg = c.mesh && c.mesh.userData.bodyG;
+    if (bg && mode === 2 && c.mesh.parent) { c.mesh.updateMatrixWorld(true);
+      camPos.set(0, up, -along).sub(bg.position); bg.localToWorld(camPos);
+      camLook.set(0, up - 0.6, -(along + 20 * s)).sub(bg.position); bg.localToWorld(camLook); }
     k = 1; fov = 64 + Math.min(14, sp * 0.3);
   } else if (mode === 4) {
     const [fx, fz] = c.fwd;

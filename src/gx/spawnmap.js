@@ -35,7 +35,14 @@
         if (Math.abs(x - CX) > HX - 15 || Math.abs(z - CZ) > HZ - 15) { rejects.push([name, 'hors carte', CX, HX, CZ, HZ]); continue; }
         const [rx, rz] = roadPoint(x, z), n = nearestNodeTo(rx, rz);
         if (!nodeOk(n) || Math.hypot(rx - x, rz - z) > 120) { rejects.push([name, nodeOk(n), Math.round(rx), Math.round(rz)]); continue; }
-        spots.push({ name, x: rx, z: rz });
+        // (16 nov., user) a starting point on the start marker of a race or a challenge started it at once, or found a
+        // postcard: moved along the streets to the nearest node clear of both (25 m from a start, 10 m past a postcard)
+        let px = rx, pz = rz;
+        const busy = (x, z) => nearActStart(x, z, 25) || nearPostcard(x, z, 10);
+        if (busy(px, pz)) { const seen = new Set([n]), q = [n]; let found = null;
+          while (q.length && !found) { const a = q.shift(); for (const b of G.adj[a]) { if (seen.has(b)) continue; seen.add(b); if (Math.hypot(G.x[b] - rx, G.z[b] - rz) > 220) continue; if (nodeOk(b) && !busy(G.x[b], G.z[b])) { found = b; break; } q.push(b); } }
+          if (found != null) { px = G.x[found]; pz = G.z[found]; } }
+        spots.push({ name, x: px, z: pz });
       }
       return spots;
     }
@@ -81,5 +88,5 @@
       Busy.run(s.name, () => { placePlayer([s.x, s.z], nb != null ? [G.x[nb], G.z[nb]] : null); L.heat = 0; });
       flash(s.name, 'Conduite libre · G : changer de point de départ');
     }
-    return { show, close, get open() { return open; }, get spots() { return resolve(); }, rejects };
+    return { show, close, choose, get open() { return open; }, get spots() { return resolve(); }, rejects };
   })();
