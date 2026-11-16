@@ -25,6 +25,8 @@ Dernier retour d'essai de l'utilisateur (15 nov., soir) : Ultra tourne sans prob
 
 - [x] **Défi Destruction : le nombre de casses baissait et devenait négatif** (retour du 15 nov. au soir, corrigé par Fable) : le total était « objets cassés à l'instant moins ceux du départ », or le mobilier et les clôtures se réparent loin du joueur. Chaque nouvelle casse compte maintenant, les réparations sont ignorées (`src/gx/activities.js`).
 
+- [x] **Bac : plus aucune inclinaison au bord du pont, barrières jaunes qui basculent** (retours du 16 nov., Fable) : une roue au-delà du bord compte comme au niveau de la voiture ; les deux barrières jaunes du modèle, découpées par `tools/assets/bake_model.js` (option `part`), s'abaissent côté quai quand le bac est là et se relèvent deux secondes avant le départ (`b.gates` dans `src/gx/boats.js`). Elles sont un décor : elles n'arrêtent pas une voiture.
+
 ## Pour Opus 5.5 (dans cet ordre)
 
 1. [x] (fait le 15 nov. au soir : bandeaux bleus « POLICE NATIONALE » sur les murs du vrai bâtiment, drapeau, gyrophare, panneau et deux voitures garées devant, côté boulevard ; avant, le décor était près d'une rue de derrière) **Commissariat invisible devant la mairie** (x 170, z −343, `buildHQ` dans `src/gx/police.js`) : capture, puis le rendre visible et reconnaissable (pas masqué par un bâtiment OSM).

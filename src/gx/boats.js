@@ -62,6 +62,14 @@
         const b = fy = add('ferry', ferry, mat, 46, 9); b.t = 0; b.side = 0; b.wait = 20; b.v = 0; b.still = 0; b.came = [];
         const onDeck = (x, z) => { const dx = x - b.x, dz = z - b.z, s = Math.sin(b.h), c = Math.cos(b.h), lx = dx * c - dz * s, lz = dx * s + dz * c; return Math.abs(lx) < 8.2 && Math.abs(lz) < 21.5; };
         b.onDeck = onDeck;
+        // the yellow gates at both ends (cut out of the model by the bake tool): the one on the land side tips down onto
+        // the ramp while the boat is alongside, and comes back up before it leaves (user, 16 Nov.)
+        { const H = W.models.ferry, k = 44 / H.size[0]; b.gates = [];
+          for (const name of ['ferry_porte_a', 'ferry_porte_b']) { const gm = modelMesh(name), P = W.models[name]; if (!gm || !P.o) continue;
+            const hinge = new THREE.Group(), z = (P.o[0] - H.o[0]) * k;
+            gm.scale.setScalar(k); gm.rotation.y = -Math.PI / 2; gm.position.y = P.size[1] / 2 * k;
+            hinge.position.set(-(P.o[2] - H.o[2]) * k, (P.o[1] - P.size[1] / 2 - H.o[1]) * k + H.size[1] * k * (0.5 - 0.075), z); hinge.add(gm); b.g.add(hinge);
+            b.gates.push({ hinge, out: Math.sign(z), open: 0 }); } }
         DECKS.push((x, z) => onDeck(x, z) ? WATER_Y + DECK_Y : null);
         const lampG = new THREE.SphereGeometry(0.75, 12, 8), postM = new THREE.MeshLambertMaterial({ color: hd.lin(0x3a3f44) }), rampM = new THREE.MeshLambertMaterial({ color: hd.lin(0x70757a) });
         LAND.forEach((L, k) => {
@@ -129,6 +137,8 @@
             const vx = c.vx, vz = c.vz, sd = Math.sin(dh), cd = Math.cos(dh); c.vx = vx * cd + vz * sd; c.vz = -vx * sd + vz * cd;
           }
           for (let k = 0; k < 2; k++) LAND[k].lamp.material.color.setHex(b.side === k && b.wait > 3 ? 0x2cff4a : 0xff2a1a);
+          // dock 0 (Gare Maritime) is behind the boat (+z), dock 1 ahead (-z); closed again two seconds before leaving
+          for (const gt of b.gates || []) { const want = b.wait > 2 && gt.out === (b.side ? -1 : 1) ? 1 : 0; gt.open += (want - gt.open) * Math.min(1, dt * 1.6); gt.hinge.rotation.x = gt.out * 1.36 * gt.open; }
           b.wk.rotation.y = b.side ? Math.PI : 0; b.wk.position.z = b.side ? -20 : 20;
           roll = Math.sin(T * 0.45) * 0.006;
         }
