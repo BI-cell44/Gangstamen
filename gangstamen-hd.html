@@ -8087,12 +8087,14 @@ const gx = !HD ? null : (() => {
     const p0 = cloth.geometry.attributes.position.array.slice(); cloth.userData.p0 = p0;
     g.traverse(o => { o.userData.hdLinear = true; o.castShadow = !!o.geometry; }); scene.add(g); return g;
   }
+  // (17 nov., user) the Rapaces' flag on the place des Garennes, up the butte; the Chantenaysiens' in front of the town hall
+  const FLAG_AT = [[864, 30], [160, -440]];
   const CP_ROUTE = [[160, -440], [-150, -537], [-86, -374], [-200, -150], [-232, 352], [-300, 540], [45, 283], [100, 20]];
   function setupMode(k) {
     gm = { kind: k, t: 0, objs: [] };
     if (k === 2) { // flags at the two bases
       gm.score = [0, 0];
-      gm.flags = [0, 1].map(t => { const b = bases()[t], [x, z] = [b.x + b.ux * 14, b.z + b.uz * 14]; const m = addMarker(x, z, 4, TEAMS[t].body); return { team: t, home: [x, z], x, z, carrier: null, atHome: true, mesh: flagMesh(t), marker: m, idle: 0 }; });
+      gm.flags = [0, 1].map(t => { const [x, z] = roadPoint(...FLAG_AT[t]); const m = addMarker(x, z, 4, TEAMS[t].body); return { team: t, home: [x, z], x, z, carrier: null, atHome: true, mesh: flagMesh(t), marker: m, idle: 0 }; });
       Match.goal = 3;
     } else if (k === 3) {
       const [x, z] = roadPoint(...P.jeanMace); gm.hill = addMarker(x, z, 26, 0xf2c81e); gm.owner = null;
