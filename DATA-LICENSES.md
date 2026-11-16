@@ -6,7 +6,7 @@
 | Hauteurs des bâtiments (`data/bdtopo.json`) | IGN, BD TOPO® | Licence Ouverte 2.0 (Etalab) |
 | Relief (grille d'altitude dans `data/world_raw.json`) | IGN, RGE ALTI® | Licence Ouverte 2.0 (Etalab) |
 | Limites des parcelles (`data/cadastre.json`, clôtures cassables) | IGN, Parcellaire Express (PCI) | Licence Ouverte 2.0 (Etalab) |
-| Photos des façades (`data/facades/`) | Panoramax : Carto'Cité, Koreller, ludovelo44 (CC BY-SA 4.0), immergis (Licence Ouverte) | Textures redressées diffusées sous CC BY-SA 4.0 |
+| Photos des façades (`data/facades/`) | Panoramax : Carto'Cité, Koreller, ludovelo44 (CC BY-SA 4.0), immergis (Licence Ouverte) | Textures redressées diffusées sous CC BY-SA 4.0. Affichées seulement dans la version classique ; en HD et Ultra, seul l'espacement des fenêtres en est tiré (`data/facade_hints.json`) |
 
 `gangstamen.html` embarque ces données : sa redistribution doit conserver les mentions ci-dessus (elles sont affichées dans le jeu).
 

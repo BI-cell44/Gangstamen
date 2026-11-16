@@ -2322,6 +2322,10 @@ const shopSet = HD && W.shops ? hd.shopSet(W.shops) : null; // HD: the real shop
 BOOT.mark('enseignes des commerces');
 if (shopSet) wallMats.push(shopSet.mat); // lit like the windows at night
 const HINTS = new Map(); if (W.hints) for (const [bi, bay] of W.hints) HINTS.set(bi, bay); // window spacing measured in street photos
+if (HD) { // (16 nov., user) no facade photo is shown in HD and Ultra: only the window spacing above comes from them
+  const cr = document.getElementById('credit'); if (cr) cr.lastChild.textContent = ' · Hauteurs et relief © IGN · Fenêtres d’après photos Panoramax';
+  for (const f of document.querySelectorAll('.fine')) if (f.innerHTML.includes('Façades du boulevard')) f.innerHTML = f.innerHTML.replace(/Façades du boulevard[^;]*; ces textures sont diffusées sous CC BY-SA 4\.0\./, 'Espacement des fenêtres mesuré sur des photos 360° <a href="https://panoramax.fr" target="_blank" rel="noopener">Panoramax</a> de Carto’Cité, Koreller, ludovelo44 (CC BY-SA 4.0) et immergis (Licence Ouverte) ; aucune photo de façade n’est affichée.');
+}
 // each real shop goes on the nearest wall long enough to hold it: "building:edge" -> [{s0, s1, si}]
 function assignShops() {
   const by = new Map(); if (!shopSet) return by;

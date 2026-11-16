@@ -26,7 +26,7 @@ En HD, les façades sans photo exploitable sont dessinées en haute résolution 
 
 **Photo aérienne (HD)** : `data/ortho/ortho_raw.jpg` est la BD ORTHO de l'IGN (25 cm par pixel, service WMS de la Géoplateforme) ; `src/make_ortho.py` en tire `data/ortho/ortho.jpg`. Elle donne aux toits leurs vraies couleurs (ardoise, tuile, toits plats) et indique où sont les jardins. Elle n'est pas plaquée telle quelle au sol, car les toits et les arbres y débordent sur les trottoirs.
 
-**Façades photo** : `src/curate_facades.py` trie les morceaux de photos Panoramax de `data/facades` et ne garde que ceux qui sont nets et vus de face (environ 300 sur 1 077). Les autres (arbre devant, ciel, images dédoublées) sont remplacés par une façade dessinée, teintée avec la couleur du mur mesurée dans la photo. Le résultat est dans `data/facades_curated`, utilisé par le build.
+**Façades photo (version classique seulement)** : `src/curate_facades.py` trie les morceaux de photos Panoramax de `data/facades` et ne garde que ceux qui sont nets et vus de face (environ 300 sur 1 077). Les autres (arbre devant, ciel, images dédoublées) sont remplacés par une façade dessinée, teintée avec la couleur du mur mesurée dans la photo. Le résultat est dans `data/facades_curated`, utilisé par le build.
 
 **Arbres et lampadaires** : ils sont repoussés hors de la chaussée (les largeurs de rue sont estimées, donc certains arbres d'OpenStreetMap tombaient sur la route).
 
