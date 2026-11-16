@@ -74,7 +74,7 @@ Demandes du 16 nov. après-midi, dans l'ordre de traitement (priorité : ce qui 
 29. [x] (fait, sauf en ligne qui recharge encore) **« Quitter vers le menu »** : on revoit l'écran de chargement alors que tout est déjà chargé.
 30. [x] (fait) **Pause sur le bac** : le bac continue sans la voiture, qui se retrouve au-dessus de l'eau ; la pause doit arrêter le bac.
 31. [x] (fait : mobilier et tables de terrasse retirés de l'emprise des ateliers) **Mobilier dans les garages** : retirer les bancs et le mobilier qui se retrouvent à l'intérieur.
-28. [ ] **Chapiteau** sur le cirque (la crique) au bout de l'île de Nantes.
+28. [x] (fait : toit en chapiteau rayé rouge et crème, mâts, fanions et guirlande, posé sur le bâtiment rond du quai Wilson) **Chapiteau du Chapidock** : l'école de cirque au bout de l'île de Nantes, modélisée en cylindre à toit plat.
 29. [x] (fait, sauf en ligne qui recharge encore) **« Quitter vers le menu »** : revient au menu sans tout recharger (la page se rechargeait et repassait par l'écran de chargement).
 30. [x] (fait) **Pause sur le bac** : la pause doit arrêter le bac (la voiture restait au-dessus de l'eau pendant que le bac continuait).
 31. [x] (fait : mobilier et tables de terrasse retirés de l'emprise des ateliers) **Mobilier dans les garages** : retirer les bancs et le mobilier qui se retrouvent à l'intérieur des garages.

@@ -120,6 +120,30 @@
     g.traverse(o => { o.userData.hdLinear = true; o.castShadow = true; }); scene.add(g);
     gridAdd([x0 + nx * (half + 2), z0 + nz * (half + 2), x0 - nx * (half + 2), z0 - nz * (half + 2)], 3.5);
   }
+  // (16 nov., user request) the Chapidock, the circus school of the quai Wilson (a wooden big top of 2012, 12 m high): in
+  // OpenStreetMap a round building of 26 m, drawn as a cylinder with a flat roof; its tent goes on top: red and cream
+  // stripes, two masts with pennants, a string of bulbs round the eaves
+  function chapidock() {
+    let b = null, best = 1e9, cx = 0, cz = 0;
+    for (const o of buildingPolys) { const p = o.p; if (!p || p.length < 16) continue; let x = 0, z = 0; const n = p.length / 2; for (let k = 0; k < p.length; k += 2) { x += p[k]; z += p[k + 1]; } x /= n; z /= n;
+      const d = Math.hypot(x - 1413, z - 264); if (d < 25 && d < best) { best = d; b = o; cx = x; cz = z; } }
+    if (!b) return;
+    let R0 = 0; for (let k = 0; k < b.p.length; k += 2) R0 += Math.hypot(b.p[k] - cx, b.p[k + 1] - cz); R0 /= b.p.length / 2;
+    const y = b._top != null ? b._top : groundH(cx, cz) + (b.h || 6), g = new THREE.Group(); g.position.set(cx, y, cz);
+    const [cv, cg] = canvas(512, 64); for (let i = 0; i < 16; i++) { cg.fillStyle = i % 2 ? '#f1e6cf' : '#c41f2a'; cg.fillRect(i * 32, 0, 32, 64); }
+    const tx = new THREE.CanvasTexture(cv); tx.encoding = THREE.sRGBEncoding; tx.wrapS = THREE.RepeatWrapping; tx.repeat.set(2, 1);
+    const cloth = new THREE.MeshStandardMaterial({ map: tx, roughness: 0.8, side: THREE.DoubleSide }), mast = new THREE.MeshStandardMaterial({ color: hd.lin(0x2a2a2e), roughness: 0.5, metalness: 0.5 });
+    const rt = R0 * 0.32, skirt = new THREE.Mesh(new THREE.CylinderGeometry(rt, R0 + 0.5, 4.2, 32, 1, true), cloth); skirt.position.y = 2.1; g.add(skirt);
+    const lid = new THREE.Mesh(new THREE.CircleGeometry(R0 + 0.5, 32).rotateX(-Math.PI / 2), cloth); lid.position.y = 0.05; g.add(lid); // closes the old flat roof under the skirt
+    const top = new THREE.Mesh(new THREE.ConeGeometry(rt, 2.6, 32, 1, true), cloth); top.position.y = 4.2 + 1.3; g.add(top);
+    const flagM = new THREE.MeshStandardMaterial({ color: hd.lin(0xf2c81e), roughness: 0.6, side: THREE.DoubleSide });
+    for (const s of [-1, 1]) { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.14, 9, 8), mast); m.position.set(s * rt * 0.5, 4.5, 0); g.add(m);
+      const f = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 0.65), flagM); f.position.set(s * rt * 0.5 + 0.65, 8.6, 0); g.add(f); }
+    const bulb = new THREE.MeshBasicMaterial({ color: new THREE.Color(3, 2.6, 1.6) }), bg = new THREE.SphereGeometry(0.09, 6, 4);
+    for (let k = 0; k < 44; k++) { const a = k / 44 * 6.283, o = new THREE.Mesh(bg, bulb); o.position.set(Math.sin(a) * (R0 + 0.55), 0.1, Math.cos(a) * (R0 + 0.55)); g.add(o); }
+    g.traverse(o => { o.userData.hdLinear = true; if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); scene.add(g);
+    LM.chapidock = [cx, cz, y];
+  }
   function stairs() {
     const st = stoneTex(256, 256, 8, '#c9c0ae'), stepM = stdM(0xffffff, 0.9, 0, { map: st }), wallM = stdM(0xcbc2b0, 0.85), capM = stdM(0xe2dacb, 0.75), rail = stdM(0x1c1d22, 0.5, 0.7);
     const total = STAIRS.reduce((s, f) => s + f[4], 0), steps = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), stepM, total), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0);

@@ -138,6 +138,7 @@ function buildCity() {
     const insD = Math.max(1.2, Math.min(3.4, Math.sqrt(Math.abs(sa)) * 0.2));
     const inner = HD && !pitched && riseIn > 0.8 && kind !== 2 && n <= 14 && Math.abs(sa) < 1800 ? insetPoly(p, insD, sa) : null;
     const h = Math.max(y0 + 2.5, base + b.h + (pitched || inner ? 0 : riseIn * 0.45));
+    b._top = h; // (16 nov.) the top of the walls, for what sits on a roof (gx/landmarks.js: the Chapidock's tent)
     const nVar = HD ? HDW.upper[style].length : 1, vr = (hash(bi + 17) * nVar) | 0;
     const bayW = Math.max(2.4, Math.min(4.6, HINTS.get(bi) || (style === 1 ? 3.4 + hash(bi + 23) * 0.8 : style === 0 || style === 4 ? 2.8 + hash(bi + 23) * 1.1 : 4)));
     let acc = hash(bi + 3) * 16;
