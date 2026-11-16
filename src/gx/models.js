@@ -33,6 +33,27 @@
   // seeds: [x, z, towards the water x, z, model, turn of the boom in radians]
   const QUAY_CRANES = [[1480, 330, 0, 1, 'grue_vieille', 0.25], [1610, 330, 0, 1, 'grue_peinte', -0.3], [1740, 330, 0, 1, 'grue_vieille', 0.1], [1900, 330, 0, 1, 'grue_vieille', -0.15],
     [640, 400, 0.5, 0.87, 'grue_vieille', 0.3], [720, 350, 0.5, 0.87, 'grue_peinte', -0.2]];
+  // Open halls (b.o, set by make_belt.py: the Nefs): steel columns under the roof, round the edge and on a grid inside;
+  // each stops a car, the rest of the hall is free to drive through.
+  const hallColumns = [];
+  function buildHalls() {
+    const inside = (x, z, p) => { let c = false; for (let i = 0, n = p.length / 2, j = n - 1; i < n; j = i++) { const xi = p[2 * i], zi = p[2 * i + 1], xj = p[2 * j], zj = p[2 * j + 1]; if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) c = !c; } return c; };
+    const pts = [];
+    for (const b of W.buildings) {
+      if (!b.o || !b.u) continue; const p = b.p, n = p.length / 2; let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9, gmax = -1e9;
+      for (let i = 0; i < n; i++) { x0 = Math.min(x0, p[2 * i]); x1 = Math.max(x1, p[2 * i]); z0 = Math.min(z0, p[2 * i + 1]); z1 = Math.max(z1, p[2 * i + 1]); gmax = Math.max(gmax, groundH(p[2 * i], p[2 * i + 1])); }
+      const top = Math.max(gmax, b.b != null ? b.b : gmax) + b.u, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+      for (let i = 0; i < n; i++) { // round the edge, a little inside
+        const ax = p[2 * i], az = p[2 * i + 1], bx = p[2 * ((i + 1) % n)], bz = p[2 * ((i + 1) % n) + 1], L = Math.hypot(bx - ax, bz - az); if (L < 4) continue;
+        const m = Math.max(1, Math.round(L / 15)); for (let k = 0; k < m; k++) { const t = (k + 0.5) / m; let x = ax + (bx - ax) * t, z = az + (bz - az) * t; const d = Math.hypot(cx - x, cz - z) || 1; x += (cx - x) / d * 1.2; z += (cz - z) / d * 1.2; if (inside(x, z, p)) pts.push([x, z, top]); }
+      }
+      for (let x = x0 + 11; x < x1; x += 22) for (let z = z0 + 11; z < z1; z += 22) if (inside(x, z, p) && inside(x + 3, z, p) && inside(x - 3, z, p) && inside(x, z + 3, p) && inside(x, z - 3, p) && roadEdge(x, z)[0] > 2) pts.push([x, z, top]);
+    }
+    if (!pts.length) return;
+    const im = new THREE.InstancedMesh(new THREE.BoxGeometry(0.8, 1, 0.8), new THREE.MeshStandardMaterial({ color: hd.lin(0x55625f), roughness: 0.7, metalness: 0.35 }), pts.length), M = new THREE.Matrix4();
+    pts.forEach(([x, z, top], i) => { const g = groundH(x, z) - 0.3, h = top - g; M.makeScale(1, h, 1); M.setPosition(x, g + h / 2, z); im.setMatrixAt(i, M); gridAdd([x - 0.6, z, x + 0.6, z], 3.5); gridAdd([x, z - 0.6, x, z + 0.6], 3.5); hallColumns.push([x, z]); });
+    im.castShadow = true; im.receiveShadow = true; im.userData.hdLinear = true; im.frustumCulled = false; scene.add(im);
+  }
   const portCranes = [];
   function buildPortCranes() {
     for (const [sx, sz, dx, dz, name, turn] of QUAY_CRANES) {
