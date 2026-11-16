@@ -102,6 +102,24 @@
   const STAIRS = [[939.5, 101.8, 945, 106.9, 25], [946.4, 108.3, 952, 113.4, 25], [953.5, 114.8, 959.1, 119.9, 25], [960.5, 121.3, 963.4, 123.9, 15],
     [942.4, 98.9, 947.9, 104, 25], [949.3, 105.3, 954.9, 110.5, 25], [956.4, 111.9, 962, 117, 25], [963.4, 118.3, 966.2, 120.9, 15],
     [969.8, 122.1, 972.4, 119.2, 15], [974, 117.5, 976.5, 114.8, 14], [964.9, 127.5, 962.3, 130.3, 15], [960.8, 132, 958.2, 134.7, 14]];
+  // (16 nov.) « Route barrée » across the start of the pont des Trois-Continents: red and white barriers, a sign, a wall
+  function bridgeClosed() {
+    const ax = 2146, az = 340, bx = 2111, bz = 624, L = Math.hypot(bx - ax, bz - az), ux = (bx - ax) / L, uz = (bz - az) / L, nx = -uz, nz = ux, half = 7.5;
+    const x0 = ax + ux * 4, z0 = az + uz * 4, y0 = surfaceH(x0, z0), g = new THREE.Group();
+    const [cv, cg] = canvas(256, 32); for (let i = 0; i < 8; i++) { cg.fillStyle = i % 2 ? '#ffffff' : '#d42a2a'; cg.fillRect(i * 32, 0, 32, 32); }
+    const tx = new THREE.CanvasTexture(cv); tx.encoding = THREE.sRGBEncoding; tx.wrapS = THREE.RepeatWrapping; tx.repeat.set(3, 1);
+    const bar = new THREE.MeshStandardMaterial({ map: tx, roughness: 0.6 }), leg = new THREE.MeshStandardMaterial({ color: hd.lin(0xdddddd), roughness: 0.7 });
+    for (const row of [0, 2.2]) {
+      const bm = new THREE.Mesh(new THREE.BoxGeometry(half * 2, 0.3, 0.08), bar); bm.position.set(x0 + ux * row, y0 + 1.0, z0 + uz * row); bm.rotation.y = Math.atan2(nx, nz) + Math.PI / 2; g.add(bm);
+      for (let k = -half; k <= half + 0.01; k += 2.5) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.1, 0.5), leg); l.position.set(x0 + ux * row + nx * k, y0 + 0.55, z0 + uz * row + nz * k); l.rotation.y = Math.atan2(nx, nz); g.add(l); }
+    }
+    const [sc, sg] = canvas(256, 128); sg.fillStyle = '#ffffff'; sg.fillRect(0, 0, 256, 128); sg.strokeStyle = '#d42a2a'; sg.lineWidth = 14; sg.strokeRect(7, 7, 242, 114);
+    sg.fillStyle = '#1a1a1a'; sg.font = 'bold 40px Arial, sans-serif'; sg.textAlign = 'center'; sg.textBaseline = 'middle'; sg.fillText('ROUTE', 128, 46); sg.fillText('BARRÉE', 128, 90);
+    const st = new THREE.CanvasTexture(sc); st.encoding = THREE.sRGBEncoding;
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.9), new THREE.MeshStandardMaterial({ map: st, roughness: 0.6, side: THREE.DoubleSide })); sign.position.set(x0 - ux * 0.1, y0 + 1.75, z0 - uz * 0.1); sign.rotation.y = Math.atan2(-ux, -uz); g.add(sign);
+    g.traverse(o => { o.userData.hdLinear = true; o.castShadow = true; }); scene.add(g);
+    gridAdd([x0 + nx * (half + 2), z0 + nz * (half + 2), x0 - nx * (half + 2), z0 - nz * (half + 2)], 3.5);
+  }
   function stairs() {
     const st = stoneTex(256, 256, 8, '#c9c0ae'), stepM = stdM(0xffffff, 0.9, 0, { map: st }), wallM = stdM(0xcbc2b0, 0.85), capM = stdM(0xe2dacb, 0.75), rail = stdM(0x1c1d22, 0.5, 0.7);
     const total = STAIRS.reduce((s, f) => s + f[4], 0), steps = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), stepM, total), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0);

@@ -1,11 +1,17 @@
 // graph nodes a car can really reach: inside the play area (the barriers at the edges), south of the tram wall, on dry
 // land. Targets outside used to drive bots and traffic into the barriers, where they stayed stuck.
 let NODE_OK = null;
+// (16 nov., user request) the pont des Trois-Continents is closed: the map ends before Rezé, so no traffic on it
+const ROAD_CLOSED = [[2146, 340, 2111, 624, 9]];
+function roadClosed(x, z) {
+  for (const [ax, az, bx, bz, w] of ROAD_CLOSED) { const dx = bx - ax, dz = bz - az, t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz))); if (Math.hypot(x - ax - dx * t, z - az - dz * t) < w) return true; }
+  return false;
+}
 function nodeOk(n) {
   if (!NODE_OK) {
     NODE_OK = new Uint8Array(G.x.length);
     for (let i = 0; i < G.x.length; i++) { const x = G.x[i], z = G.z[i];
-      NODE_OK[i] = G.adj[i].length && Math.abs(x - CX) < HX - 9 && Math.abs(z - CZ) < HZ - 9 && z > tramWall(x) + 4 && (groundH(x, z) > WATER_Y + 1 || deckH(x, z) !== null) ? 1 : 0; } // (a bridge over the water is a road like any other: the traffic, the police and the Rapaces cross the Loire)
+      NODE_OK[i] = G.adj[i].length && Math.abs(x - CX) < HX - 9 && Math.abs(z - CZ) < HZ - 9 && z > tramWall(x) + 4 && !roadClosed(x, z) && (groundH(x, z) > WATER_Y + 1 || deckH(x, z) !== null) ? 1 : 0; } // (a bridge over the water is a road like any other: the traffic, the police and the Rapaces cross the Loire)
   }
   return NODE_OK[n] === 1;
 }

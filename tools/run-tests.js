@@ -253,9 +253,10 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
       const B = __gm.gx.Boats, g = __gm.groundH, s0 = B.list.map(b => [b.x, b.z]); let dry = 0, sides = new Set(), minD = 1e9;
       const fy = B.list.find(b => b.kind === 'ferry');
       for (let i = 0; i < 900; i++) { B.step(0.5); sides.add(fy.side); for (const b of B.list) { if (b.x > -400 && b.x < 1800 && b.z < 760 && g(b.x, b.z) > 0.45) dry++; if (b !== fy) minD = Math.min(minD, Math.hypot(b.x - fy.x, b.z - fy.z)); } }
-      return { bateaux: B.list.length, voiliers: B.list.filter(b => b.kind === 'sail').length, auSec: dry, rives: sides.size, ecartBac: Math.round(minD), avance: Math.round(Math.min(...B.list.filter(b => b.kind === 'sail').map((b, i) => Math.hypot(b.x - s0[i][0], b.z - s0[i][1])))), modeles: Object.keys(__gm.W.models || {}).join(',') };
+      return { bateaux: B.list.length, voiliers: B.list.filter(b => b.kind === 'sail').length, amarres: B.list.filter(b => b.kind === 'moor').length, // (16 nov.) the moored trawlers
+        auSec: dry, rives: sides.size, ecartBac: Math.round(minD), avance: Math.round(Math.min(...B.list.filter(b => b.kind === 'sail').map((b, i) => Math.hypot(b.x - s0[i][0], b.z - s0[i][1])))), modeles: Object.keys(__gm.W.models || {}).join(',') };
     });
-    expect(r.voiliers >= 3 && r.bateaux === r.voiliers + 1 && r.auSec === 0 && r.rives === 2 && r.ecartBac > 18 && r.avance > 50, JSON.stringify(r)); return r;
+    expect(r.voiliers >= 3 && r.bateaux === r.voiliers + 1 + r.amarres && r.amarres <= 2 && r.auSec === 0 && r.rives === 2 && r.ecartBac > 18 && r.avance > 50, JSON.stringify(r)); return r;
   });
   await check('piétons animés : personnages à squelette, marche, course', async () => {
     const r = await ev(() => {

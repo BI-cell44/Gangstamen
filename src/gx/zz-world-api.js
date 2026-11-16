@@ -3,6 +3,7 @@
     try { quays(); } catch (e) { console.warn('quays', e); }
     try { stAnne(); } catch (e) { console.warn('stAnne', e); }
     try { stairs(); } catch (e) { console.warn('stairs', e); }
+    try { bridgeClosed(); } catch (e) { console.warn('bridgeClosed', e); }
     // (the Misery quarry used to be a painted cliff past the map edge: the real slope of the butte is in the relief now)
     buildFurniture(); try { buildTerraces(); } catch (e) { console.warn('terraces', e); } try { Fences.build(); } catch (e) { console.warn('fences', e); } buildGarage(); finishFurniture();
     try { Boats.build(); } catch (e) { console.warn('boats', e); }

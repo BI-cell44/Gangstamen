@@ -31,6 +31,7 @@ Dernier retour d'essai de l'utilisateur (15 nov., soir) : Ultra tourne sans prob
 16. [ ] **Passagers à pied du bac** (16 nov.) : ils s'enfoncent dans le pont jusqu'aux genoux ; les placer sur les côtés, assis sur les bancs.
 17. [ ] **Piliers des Nefs** (16 nov.) : ils ne montent pas jusqu'au toit.
 18. [ ] **Tram T1 dans la montée vers du Chaffault** (16 nov.) : les voitures du tram font des marches d'escalier dans la pente ; elles doivent s'incliner pour la suivre.
+19. [x] **Pont des Trois-Continents fermé** (16 nov., fait par Opus) : barrières « Route barrée » et mur à l'entrée du pont, plus aucune voiture de la circulation dessus (`roadClosed` dans `src/ai/bots.js`) ; le trou au bout, côté Rezé, n'est donc plus atteignable.
 
 ## Pour Opus 5.5 (dans cet ordre)
 
