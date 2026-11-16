@@ -50,5 +50,6 @@ function togglePause() {
 $('pMap').addEventListener('click', () => { paused = false; pauseEl.hidden = true; if (gx && gx.SpawnMap) gx.SpawnMap.show(); });
 $('pResume').addEventListener('click', () => { paused = false; pauseEl.hidden = true; });
 $('pPhoto').addEventListener('click', () => PhotoMode.toggle(true));
-$('pQuit').addEventListener('click', () => { try { if (Net.room) Net.room.leave(); } catch (e) { } location.reload(); });
+// (16 nov., user) everything is loaded already: back to the menu in place, without the loading screen; online still reloads (network state)
+$('pQuit').addEventListener('click', () => { if (mode !== 'online' && gx && gx.toMenu) { pauseEl.hidden = true; PhotoMode.toggle && PhotoMode.toggle(false); try { gx.cleanupMission(); } catch (e) { } gx.toMenu('vMain'); const b = $('start'); if (b) b.focus(); return; } try { if (Net.room) Net.room.leave(); } catch (e) { } location.reload(); });
 

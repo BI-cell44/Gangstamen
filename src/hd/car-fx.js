@@ -30,7 +30,8 @@
     st.dead = 0;
     // tyre smoke and skid marks when the rear steps out, on handbrake turns and hard launches
     const slip = Math.abs(vr), spin = st.acc > 9 && Math.abs(vf) < 11, lock = st.acc < -16 && Math.abs(vf) > 6;
-    if ((slip > 3.2 && c.speed > 5) || spin || lock) {
+    // (16 nov., user) no marks from a car sinking in the Loire, nor on the ferry's deck, which moves away from them
+    if (((slip > 3.2 && c.speed > 5) || spin || lock) && !(c.sink > 0) && !c.onBoat && !((c.air || 0) > 0.3)) {
       const amt = Math.min(1, Math.max(slip / 9, spin || lock ? 0.6 : 0));
       if (Math.random() < dt * 50 * amt * q.parts) {
         const side = Math.random() < 0.5;

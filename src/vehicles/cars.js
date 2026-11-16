@@ -228,10 +228,10 @@ function sinking(c, dt) {
   return 0;
 }
 function drive(c, inp, dt) {
+  if (c.sink > 0) return sinking(c, dt); // (16 nov., user) in the water: no more throttle, brake or steering, it drifts and sinks
   const real = useRealPhysics(c);
   if (real) planarReal(c, inp, dt); else planarArcade(c, inp, dt);
   const ox = c.x, oz = c.z;
-  if (c.sink > 0) return sinking(c, dt);
   c.x += c.vx * dt; c.z += c.vz * dt;
   // The Loire. A bridge or the ferry carries the car. A player's car that leaves the quay, the ramp or the deck falls in
   // and sinks (Ultra, 15 Nov.); the others (bots, traffic, classic and HD builds) are still turned back at the water's edge.
@@ -243,13 +243,29 @@ function drive(c, inp, dt) {
   if (HD) { // vertical motion: crests and bridge ramps throw the car in the air at speed
     // arcade: strong gravity, damage only on big falls; realistic: 1.35 g, a hard landing hurts sooner
     const G = real ? 9.81 * PHYS.airG : 22, hurt = real ? 8 : 12, hk = real ? 3 : 1.5;
-    const g = surfaceH(c.x, c.z);
+    let g = surfaceH(c.x, c.z);
+    // (16 nov., user: a very high jump coming onto the pont Anne-de-Bretagne from the side) the relief climbs to the bridge
+    // deck at 27° there, and the edge of a deck is a step: a car on the ground cannot drive up a bank steeper than ~23° or a
+    // step of more than 30 cm; it is stopped like at a wall instead of being thrown into the air at the top
+    if (c.yb !== undefined && (c.air || 0) < 0.2 && g > c.yb + 0.04) {
+      const gxs = (surfaceH(c.x + 1, c.z) - surfaceH(c.x - 1, c.z)) / 2, gzs = (surfaceH(c.x, c.z + 1) - surfaceH(c.x, c.z - 1)) / 2, gl = Math.hypot(gxs, gzs);
+      if (g > c.yb + 0.3 || gl > 0.42) {
+        const nx = gl > 1e-3 ? gxs / gl : c.vx / (Math.hypot(c.vx, c.vz) || 1), nz = gl > 1e-3 ? gzs / gl : c.vz / (Math.hypot(c.vx, c.vz) || 1), u = c.vx * nx + c.vz * nz;
+        if (u > 0) { c.vx -= nx * u * 1.25; c.vz -= nz * u * 1.25; if (c.local && u > 6) sfx.impact(u * 0.6); }
+        c.x = ox; c.z = oz; g = surfaceH(c.x, c.z);
+      }
+    }
     if (c.yb === undefined || c.yb < g - 8) { c.yb = g; c.yv = 0; c.air = 0; } // (only when it ends up under the ground: a car flying off the quarry stays in the air)
     const ny = c.yb + (c.yv || 0) * dt - G / 2 * dt * dt;
     if (ny > g + 0.14) { c.yv -= G * dt; c.yb = ny; c.air = c.yb - g; }
     else {
       if (c.air > 0.4 && c.yv < -6) { spawnFx(c.x, 0.3, c.z, 0.5, 0xffe28a, 0.2, 2, 2); if (c.local) { sfx.impact(-c.yv * 0.8); rumbleFor(c.owner, 0.5, 0.5, 150); } if (c.yv < -hurt) damage(c, (-c.yv - hurt) * hk); }
-      c.yv = Math.max(-14, Math.min(14, (g - c.yb) / Math.max(dt, 1e-3))); c.yb = g; c.air = 0;
+      // (16 nov., user: « sauts très étranges ») the climb rate comes from the grade of the ground under the wheels, capped and
+      // smoothed over a few hundredths of a second: a kerb, the edge of a bridge deck or the top of the ferry ramp is a step of a
+      // few tens of centimetres in one frame, which used to give up to 14 m/s upwards and a launch; a real slope still does
+      const run = Math.hypot(c.vx, c.vz) * dt, gr = Math.max(-0.5, Math.min(0.5, (g - c.yb) / Math.max(run, 0.02)));
+      c.gr = c.air > 0.4 ? 0 : (c.gr || 0) + (gr - (c.gr || 0)) * Math.min(1, dt * 12);
+      c.yv = Math.max(-14, Math.min(14, c.gr * run / Math.max(dt, 1e-3))); c.yb = g; c.air = 0;
     }
     if (wet && canSink && c.yb < WATER_Y + 0.3 && groundH(c.x, c.z) < WATER_Y - 0.1) { // touches the water where it is deep enough
       c.sink = 0.001; c.air = 0; c.yv = 0; for (let i = 0; i < 4; i++) spawnFx(c.x + (Math.random() - 0.5) * 3, WATER_Y + 0.4, c.z + (Math.random() - 0.5) * 3, 1.1, 0xcfe4ee, 0.5, 5, 3);

@@ -97,10 +97,13 @@
         { // (16 nov.) wooden benches along both sides of the deck, where the foot passengers sit for the crossing
           const wood = new THREE.MeshLambertMaterial({ color: hd.lin(0x5e3b22) }), legM = new THREE.MeshLambertMaterial({ color: hd.lin(0x3a3f44) });
           // against the side walls of the model (|x| 8.25, measured), the seat at chair height like the terrace chairs
+          b.benches = [];
           for (const sd of [-1, 1]) for (const lz of BENCH_Z) {
+            const parts = [], n0 = b.g.children.length;
             const seat = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.05, 2.4), wood); seat.position.set(sd * 7.95, DECK_Y + 0.45, lz); b.g.add(seat);
             const back = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.45, 2.4), wood); back.position.set(sd * 8.2, DECK_Y + 0.72, lz); b.g.add(back);
             for (const e of [-1, 1]) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.43, 0.06), legM); l.position.set(sd * 7.95, DECK_Y + 0.21, lz + e * 1.05); b.g.add(l); }
+            b.benches.push({ sd, lz, parts: b.g.children.slice(n0), broken: false });
           }
           b.g.traverse(o => { if (o.isMesh && (o.material === wood || o.material === legM)) o.userData.hdLinear = true; });
         }
@@ -147,20 +150,58 @@
     // aboard when the boat is alongside, stand along the rail for the crossing, walk off and away on the other side.
     // They are drawn like the street's pedestrians (People) but live here: nobody else moves them.
     const pax = [];
+    // (16 nov., user) a car that drives into a bench breaks it; they are mended while the boat is alongside, out of sight
+    function breakBench(b, bn, c) {
+      bn.broken = true; for (const o of bn.parts) o.visible = false;
+      const sn = Math.sin(b.h), cs = Math.cos(b.h), lx = bn.sd * 7.9, x = b.x + lx * cs + bn.lz * sn, z = b.z - lx * sn + bn.lz * cs, y = b.g.position.y + DECK_Y + 0.4;
+      for (let k = 0; k < 5; k++) spawnFx(x + (R() - 0.5) * 2, y, z + (R() - 0.5) * 2, 0.35, 0x5e3b22, 0.5, 3 + R() * 3, 1.5);
+      if (c && c.local) { sfx.impact(6); addHeat(c, 0.02); }
+      for (const p of pax) if (p.st === 'ride' && Math.sign(p.lx) === bn.sd && Math.abs(p.lz - bn.lz) < 1.5) knock(p, c);
+    }
+    function knock(p, c) { // run over: down on the deck (or the quay) for a while, then back to the bench or away
+      const b = fy, sn = Math.sin(b.h), cs = Math.cos(b.h), dx = p.x - b.x, dz = p.z - b.z;
+      p.loc = b.onDeck(p.x, p.z) ? [dx * cs - dz * sn, dx * sn + dz * cs] : null; p.st = 'down'; p.t = 6 + R() * 3; p.state = 'down';
+      sfx.hit(); if (c && c.local) { oneStar(c, 0.45, 'La police l’a vu : piéton renversé'); shout(c, true); }
+    }
+    function scare(p, cars) { // the car closest to a foot passenger that comes at them: they run, or they are knocked down
+      if (p.st === 'gone' || p.st === 'down' || !p.on) return;
+      for (const c of cars) {
+        const dx = p.x - c.x, dz = p.z - c.z, d = Math.hypot(dx, dz), v = Math.hypot(c.vx, c.vz); if (d > 8 || v < 3) continue;
+        const toward = (c.vx * dx + c.vz * dz) / (d || 1); if (toward < 1.5) continue;
+        if (d < 1.7 && v > 4) { knock(p, c); return; }
+        if (p.st !== 'flee') { const b = fy, sn = Math.sin(b.h), cs = Math.cos(b.h), ex = p.x - b.x, ez = p.z - b.z; p.loc = b.onDeck(p.x, p.z) ? [ex * cs - ez * sn, ex * sn + ez * cs] : null; p.st = 'flee'; }
+        p.t = 1.6; p.fx = dx / (d || 1); p.fz = dz / (d || 1); // away from the car, a little to the side of its path
+        const side = Math.sign(c.vx * dz - c.vz * dx) || 1; p.fx += -c.vz / v * side * 0.8; p.fz += c.vx / v * side * 0.8; const l = Math.hypot(p.fx, p.fz); p.fx /= l; p.fz /= l; return;
+      }
+    }
     function paxInit() {
       if (!fy || !People.on) return;
       for (let i = 0; i < 6; i++) pax.push({ dock: i < 3 ? 0 : 1, st: 'wait', slot: i % 3, lx: (i % 2 ? 1 : -1) * 7.97, lz: BENCH_Z[[0, 2, 4][i % 3]] + (i < 3 ? -0.5 : 0.6), x: 0, y: 0, z: 0, h: 0, on: true, state: 'idle', speed: 1.35 + R() * 0.3, s: 0.94 + R() * 0.1, woman: R() < 0.5, old: false, kid: false, away: 0, tg: null, k: 0 });
     }
     const paxSpot = (p, L) => { const side = -1, a = L.hw + 2.2 + p.slot * 1.1; return [L.x + L.ax * (2 + p.slot * 0.8) + L.az * a * side, L.z + L.az * (2 + p.slot * 0.8) - L.ax * a * side]; }; // on the quay, on the side away from the lamp post
     const paxLane = (p, L, s) => { const lat = (p.lx > 0 ? 1 : -1) * 3.4; return [L.bx + L.ax * s + L.az * lat, L.bz + L.az * s - L.ax * lat]; }; // along the edge of the ramp, s metres up from the boat
-    function paxStep(dt) {
+    function paxStep(dt, cars) {
       const b = fy; if (!b || !pax.length) return;
       const sn = Math.sin(b.h), cs = Math.cos(b.h), deck = p => [b.x + p.lx * cs + p.lz * sn, b.z - p.lx * sn + p.lz * cs];
       // (16 nov., user) in step with the gate: they walk on or off only once it is flat, and the boat waits for them
       const landEnd = Math.sign((LAND[b.side].bx - b.x) * sn + (LAND[b.side].bz - b.z) * cs) || 1, gt = (b.gates || []).find(g => g.out === landEnd), docked = b.wait > 0 && gt && gt.open > 0.95;
       const aisle = (p, atBench) => { const lz = atBench ? p.lz : landEnd * 15, lx = (p.lx > 0 ? 1 : -1) * 5.5; return [b.x + lx * cs + lz * sn, b.z - lx * sn + lz * cs]; }; // inside the gate, then along to the bench
+      const toWorld = q => [b.x + q[0] * cs + q[1] * sn, b.z - q[0] * sn + q[1] * cs];
       for (const p of pax) {
         const L = LAND[p.dock];
+        if (dt > 0) scare(p, cars || []);
+        if (p.st === 'flee' || p.st === 'down') { // on the deck they stay on it (in the boat's frame), ashore they run free
+          p.t -= dt;
+          if (p.st === 'flee') {
+            const sp = 4.6 * dt;
+            if (p.loc) { const lfx = p.fx * cs - p.fz * sn, lfz = p.fx * sn + p.fz * cs; p.loc[0] = Math.max(-7.2, Math.min(7.2, p.loc[0] + lfx * sp)); p.loc[1] = Math.max(-18.8, Math.min(18.8, p.loc[1] + lfz * sp)); }
+            else { p.x += p.fx * sp; p.z += p.fz * sp; }
+            p.h += wrapA(Math.atan2(p.fx, p.fz) - p.h) * Math.min(1, dt * 10); p.state = 'flee';
+          } else p.state = 'down';
+          if (p.loc) { const q = toWorld(p.loc); p.x = q[0]; p.z = q[1]; }
+          if (p.t <= 0) { if (p.loc) { p.st = 'board'; p.tg = [null]; p.k = 0; } else { p.st = 'gone'; p.away = 12 + R() * 10; } p.loc = null; }
+          p.y = surfaceH(p.x, p.z) + 0.36; p.vis = true; People.draw(p); continue;
+        }
         if (p.st === 'gone') { p.away -= dt; p.on = false; if (p.away <= 0) { p.st = 'wait'; const q = paxSpot(p, L); p.x = q[0]; p.z = q[1]; p.h = Math.atan2(-L.ax, -L.az); } }
         else if (p.st === 'wait') { p.on = true; p.state = 'idle'; const q = paxSpot(p, L); p.x = q[0]; p.z = q[1];
           if (docked && b.side === p.dock && b.wait > 8 && b.wait < 23) { p.st = 'board'; p.tg = [paxLane(p, L, L.len - 1), paxLane(p, L, 0.5), aisle(p), aisle(p, true), null]; p.k = 0; } }
@@ -170,7 +211,7 @@
           let t = p.tg[p.k] || deck(p); const dx = t[0] - p.x, dz = t[1] - p.z, d = Math.hypot(dx, dz);
           p.state = 'walk'; if (d > 0.05) { const stp = Math.min(d, p.speed * dt); p.x += dx / d * stp; p.z += dz / d * stp; p.h += wrapA(Math.atan2(dx, dz) - p.h) * Math.min(1, dt * 8); }
           if (d < 0.35) { p.k++; if (p.k >= p.tg.length) { if (p.st === 'board') p.st = 'ride'; else { p.st = 'gone'; p.away = 14 + R() * 20; } } }
-          if (p.st === 'board' && b.side !== p.dock) { p.st = 'gone'; p.away = 4; } // missed it: back to the queue
+          if (p.st === 'board' && b.side !== p.dock && !b.onDeck(p.x, p.z)) { p.st = 'gone'; p.away = 4; } // missed it: back to the queue
         }
         if (p.st === 'ride') { // (16 nov.) on the bench: the seated pose of the terrace customers, on the deck (not in its side)
           p.vis = p.pose = true; p.state = 'sit'; p.y = b.g.position.y + DECK_Y + 0.08; p.h = b.h + (p.lx > 0 ? -1.57 : 1.57); People.drawCustomer(p); continue;
@@ -210,7 +251,7 @@
           } else {
             const left = Math.abs(goal - b.t), done = routeLen - left, want = Math.min(riders.length ? 11 : 8, 0.7 + left * 0.2, 0.7 + done * 0.3);
             b.v += (want - b.v) * Math.min(1, dt * 1.2); b.t += (b.side ? -1 : 1) * b.v * dt;
-            if (left < 0.6) { b.t = goal; b.side = 1 - b.side; b.wait = 25; b.v = 0; b.still = 0; b.came = riders.slice();
+            if (left < 0.6) { for (const bn of b.benches || []) if (bn.broken) { bn.broken = false; for (const o of bn.parts) o.visible = true; } b.t = goal; b.side = 1 - b.side; b.wait = 25; b.v = 0; b.still = 0; b.came = riders.slice();
               for (const L of locals) if (riders.includes(L.car)) flashFor(L, LAND[b.side].name.toUpperCase(), 'Feu vert : descends par la rampe'); }
           }
           const u = Math.min(1, Math.max(0, b.t / routeLen)), p = route.getPointAt(u), tg = route.getTangentAt(u);
@@ -225,6 +266,7 @@
           // the boat is alongside and its gate is down
           // the car is a box (4.3 x 2 m) turned on the deck: what it takes along each axis of the boat; the walls are the
           // benches along the sides, the lifeboat bay, the bulwarks at the ends; a gate lets cars through only once flat
+          for (const c of allCars) c.onBoat = b.onDeck(c.x, c.z); // (no skid marks there: they would stay behind on the water)
           { const sn = Math.sin(b.h), cs = Math.cos(b.h);
             for (const c of allCars) {
               const dx = c.x - b.x, dz = c.z - b.z; if (dx * dx + dz * dz > 900) continue;
@@ -232,7 +274,9 @@
               const r = c.h - b.h, ex = Math.abs(Math.sin(r)) * 2.15 + Math.abs(Math.cos(r)) * 1, ez = Math.abs(Math.cos(r)) * 2.15 + Math.abs(Math.sin(r)) * 1;
               const end = Math.sign(lz), gt = (b.gates || []).find(g => g.out === end), shut = !gt || gt.open < 0.9;
               if (Math.abs(lz) < 19.6 && Math.abs(lx) < 9.5) { // aboard
-                const lim = Math.abs(lz) > 15.5 ? 9 : lx < 0 && lz > -4 && lz < 1 ? 7 : 7.65;
+                const bn = (b.benches || []).find(q => !q.broken && q.sd === Math.sign(lx) && Math.abs(q.lz - lz) < 1.2 + ez);
+                if (bn && Math.abs(lx) + ex > 7.65 && Math.hypot(vx, vz) > 5) breakBench(b, bn, c);
+                const lim = Math.abs(lz) > 15.5 ? 9 : lx < 0 && lz > -4 && lz < 1 ? 7 : bn && !bn.broken ? 7.65 : 8.05;
                 if (Math.abs(lx) + ex > lim) { lx = Math.sign(lx) * (lim - ex); if (vx * lx > 0) vx *= -0.2; hit = true; }
                 if (shut && Math.abs(lz) + ez > 19.6) { lz = end * (19.6 - ez); if (vz * lz > 0) vz *= -0.2; hit = true; }
               } else if (shut && Math.abs(lx) < 9.5 + ex && Math.abs(lz) - ez < 19.6 && Math.abs(lz) < 24) { // against a closed gate from the ramp
@@ -240,7 +284,7 @@
               }
               if (hit) { c.x = b.x + lx * cs + lz * sn; c.z = b.z - lx * sn + lz * cs; c.vx = vx * cs + vz * sn; c.vz = -vx * sn + vz * cs; if (c.local && Math.hypot(vx, vz) > 4) sfx.impact(4); }
             } }
-          paxStep(dt);
+          paxStep(dt, allCars);
           // dock 0 (Gare Maritime) is behind the boat (+z), dock 1 ahead (-z); closed again two seconds before leaving
           // (16 nov.) the gate that goes down is the one at the end facing the ramp of the dock it is at, worked out from where
           // the gate actually is (the fixed end per dock only lowered the right one at one of the two docks)

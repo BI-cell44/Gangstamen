@@ -63,8 +63,21 @@ Dernier retour d'essai de l'utilisateur (15 nov., soir) : Ultra tourne sans prob
     - synchronisation : les piétons ne montent et ne descendent que barrière couchée, et le bac les attend barrière baissée ;
     - la passerelle du ponton est 4,5 m sous le quai : il faudrait un escalier pour qu'ils l'empruntent ; ils gardent le bord de la rampe.
 21. [x] **Maillé-Brézé solide** (16 nov.) : sa coque est un mur, on ne roule plus à travers.
-22. [ ] **Sauts étranges** (16 nov.) : par exemple en sortant du bac ou en arrivant sur le pont Anne-de-Bretagne.
-23. [ ] **Police et Rapaces dans l'eau** (16 nov.) : une voiture qui nous fonce dessus et qu'on évite doit pouvoir tomber dans la Loire.
+Demandes du 16 nov. après-midi, dans l'ordre de traitement (priorité : ce qui casse le jeu, puis ce qui se voit, puis l'ajout) :
+
+22. [x] (fait : la vitesse verticale suit la pente lissée et plafonnée, plus un saut de 14 m/s sur une marche ; une pente de plus de 23° ou une marche de plus de 30 cm arrête la voiture comme un mur, ce qui règle le talus à 27° qui monte au pont Anne-de-Bretagne) **Sauts étranges** : en sortant du bac, et en arrivant sur le pont Anne-de-Bretagne par le côté, là où il y a du vide (saut très haut). Hypothèse de l'utilisateur : le saut part quand on passe une « marche » entre deux niveaux qui ne se raccordent pas.
+23. [x] (fait) **Voiture dans l'eau** : plus d'accélération, de frein ni de direction une fois dans l'eau ; plus de traces de pneus non plus.
+24. [x] (fait : pas de traces sur le pont du bac ni en l'air) **Traces de pneus sur le bac** : elles restent sur l'eau quand il part.
+25. [x] (fait) **Barrières en haut des rampes du bac** (Gare Maritime et île de Nantes) : à retirer.
+26. [x] (fait : ils s'écartent de la voiture qui fonce sur eux, sinon renversés comme aux terrasses ; bancs cassés réparés à l'escale suivante) **Piétons du bac** : ils fuient la voiture ou se font renverser ; les bancs sont cassables.
+27. [ ] **Police et Rapaces dans l'eau** : une voiture qui nous fonce dessus et qu'on évite doit pouvoir tomber dans la Loire.
+29. [x] (fait, sauf en ligne qui recharge encore) **« Quitter vers le menu »** : on revoit l'écran de chargement alors que tout est déjà chargé.
+30. [x] (fait) **Pause sur le bac** : le bac continue sans la voiture, qui se retrouve au-dessus de l'eau ; la pause doit arrêter le bac.
+31. [ ] **Mobilier dans les garages** : retirer les bancs et le mobilier qui se retrouvent à l'intérieur.
+28. [ ] **Chapiteau** sur le cirque (la crique) au bout de l'île de Nantes.
+29. [x] (fait, sauf en ligne qui recharge encore) **« Quitter vers le menu »** : revient au menu sans tout recharger (la page se rechargeait et repassait par l'écran de chargement).
+30. [x] (fait) **Pause sur le bac** : la pause doit arrêter le bac (la voiture restait au-dessus de l'eau pendant que le bac continuait).
+31. [ ] **Mobilier dans les garages** : retirer les bancs et le mobilier qui se retrouvent à l'intérieur des garages.
 
 ## En attente d'un essai de l'utilisateur
 

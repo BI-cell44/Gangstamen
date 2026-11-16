@@ -23,6 +23,17 @@
         out.n.push(nx * ca - nz * sa, ny, nx * sa + nz * ca);
       }
     }
+    // the corridor of each ferry ramp, from the end of the boat alongside up onto the quay (Boats.ROUTE: its first and last
+    // legs give the boat's axis at each dock; Boats.LAND[k].end says which way the land is)
+    function nearFerryRamp(x, z) {
+      const R_ = Boats.ROUTE, n = R_.length;
+      for (const [P, Q, e] of [[R_[0], R_[1], Boats.LAND[0].end], [R_[n - 1], R_[n - 2], -Boats.LAND[1].end]]) {
+        let ax = (Q[0] - P[0]) * e, az = (Q[1] - P[1]) * e; const l = Math.hypot(ax, az) || 1; ax /= l; az /= l;
+        const dx = x - P[0], dz = z - P[1], s = dx * ax + dz * az, lat = dx * az - dz * ax;
+        if (s > 15 && s < 62 && Math.abs(lat) < 9) return true;
+      }
+      return false;
+    }
     function build() {
       if (built) return; built = true;
       const D = W.fences || { panels: [] };
@@ -36,6 +47,7 @@
       for (const [xi, zi, ai, kind, li] of D.panels) {
         const x = xi / 10, z = zi / 10, a = ai / 1000, L = li / 10, ca = Math.cos(a), sa = Math.sin(a), y = surfaceH(x, z) - 0.05;
         if (nearHQ(x, z)) continue; // the police station's forecourt stays clear
+        if (nearFerryRamp(x, z)) continue; // (16 nov., user) nor the tops of the ferry ramps
         const tk = Math.floor(x / TILE) + ',' + Math.floor(z / TILE);
         let T = acc.get(tk); if (!T) acc.set(tk, T = { cx: (Math.floor(x / TILE) + 0.5) * TILE, cz: (Math.floor(z / TILE) + 0.5) * TILE, g: {} });
         const pn = { x, z, a, L, kind, ca, sa, tile: tk, ranges: [], broken: false, t: 0, hk: 0.85 + ((xi * 7 + zi * 13) % 30) / 100 };
