@@ -8996,7 +8996,7 @@ const gx = !HD ? null : (() => {
       const sn = Math.sin(b.h), cs = Math.cos(b.h), W_ = (lx, lz) => [b.x + lx * cs + lz * sn, b.z - lx * sn + lz * cs];
       for (let i = 0; i < fcars.length; i++) { const f = fcars[i], c = f.c;
         if (f.st === 'away') { f.away -= dt; if (f.away <= 0) { const dock = R() < 0.5 ? 0 : 1; fcars[i] = fcarNew(dock, fcars.some(o => o !== f && o.st === 'queue' && o.dock === dock) ? 1 : 0); } continue; }
-        if (!c.alive || !npcs.includes(c)) { f.st = 'away'; f.away = 40 + R() * 40; continue; } // wrecked or cleared: another one later
+        if (!c.alive || !npcs.includes(c)) { f.st = 'away'; f.away = c.alive ? 4 + R() * 4 : 40 + R() * 40; continue; } // wrecked: another one later; cleared (a new game clears the traffic): back in a few seconds
         const L = LAND[f.dock], docked = b.wait > 0 && gateOpen;
         if (f.st === 'queue') { c.vx = c.vz = 0;
           if (docked && b.side === f.dock && b.wait > 7 && !fcars.some(o => o !== f && (o.st === 'board' || (o.st === 'leave' && o.k < 2)))) {
@@ -9024,9 +9024,12 @@ const gx = !HD ? null : (() => {
       if (c && c.local) { sfx.impact(6); addHeat(c, 0.02); }
       for (const p of pax) if (p.st === 'ride' && Math.sign(p.lx) === bn.sd && Math.abs(p.lz - bn.lz) < 1.5) knock(p, c);
     }
+    // (17 nov., user) aboard: inside the hull (a seated passenger is right against the side, outside onDeck), in the boat's
+    // frame; ashore: null. Someone running from a car on the crossing stays on the boat instead of running on the water
+    function aboardLoc(p) { const b = fy, sn = Math.sin(b.h), cs = Math.cos(b.h), dx = p.x - b.x, dz = p.z - b.z, lx = dx * cs - dz * sn, lz = dx * sn + dz * cs;
+      return Math.abs(lx) < 9.5 && Math.abs(lz) < 21.5 && (p.st === 'ride' || b.wait <= 0 || b.onDeck(p.x, p.z)) ? [Math.max(-7.2, Math.min(7.2, lx)), Math.max(-18.8, Math.min(18.8, lz))] : null; }
     function knock(p, c) { // run over: down on the deck (or the quay) for a while, then back to the bench or away
-      const b = fy, sn = Math.sin(b.h), cs = Math.cos(b.h), dx = p.x - b.x, dz = p.z - b.z;
-      p.loc = b.onDeck(p.x, p.z) ? [dx * cs - dz * sn, dx * sn + dz * cs] : null; p.st = 'down'; p.t = 6 + R() * 3; p.state = 'down';
+      p.loc = aboardLoc(p); p.st = 'down'; p.t = 6 + R() * 3; p.state = 'down';
       sfx.hit(); if (c && c.local) { oneStar(c, 0.45, 'La police l’a vu : piéton renversé'); shout(c, true); }
     }
     function scare(p, cars) { // the car closest to a foot passenger that comes at them: they run, or they are knocked down
@@ -9036,7 +9039,7 @@ const gx = !HD ? null : (() => {
         const dx = p.x - c.x, dz = p.z - c.z, d = Math.hypot(dx, dz), v = Math.hypot(c.vx, c.vz); if (d > 15 || v < 2.5) continue; // (16 nov., user) seen from further off: on the ramp they did not run
         const toward = (c.vx * dx + c.vz * dz) / (d || 1); if (toward < 1.2) continue;
         if (d < 1.7 && v > 4) { knock(p, c); return; }
-        if (p.st !== 'flee') { const b = fy, sn = Math.sin(b.h), cs = Math.cos(b.h), ex = p.x - b.x, ez = p.z - b.z; p.loc = b.onDeck(p.x, p.z) ? [ex * cs - ez * sn, ex * sn + ez * cs] : null; p.st = 'flee'; }
+        if (p.st !== 'flee') { p.loc = aboardLoc(p); p.st = 'flee'; }
         p.t = 1.6; p.fx = dx / (d || 1); p.fz = dz / (d || 1); // away from the car, a little to the side of its path
         const side = Math.sign(c.vx * dz - c.vz * dx) || 1; p.fx += -c.vz / v * side * 0.8; p.fz += c.vx / v * side * 0.8; const l = Math.hypot(p.fx, p.fz); p.fx /= l; p.fz /= l; return;
       }
@@ -9130,6 +9133,10 @@ const gx = !HD ? null : (() => {
             const vx = c.vx, vz = c.vz, sd = Math.sin(dh), cd = Math.cos(dh); c.vx = vx * cd + vz * sd; c.vz = -vx * sd + vz * cd;
             if (!c.alive) { c.vx *= 0.5; c.vz *= 0.5; if (c.sync) c.sync(); }
           }
+          // (17 nov., user) foot passengers walking on the deck (back to their bench after running from a car) are carried too
+          if (b.x !== x0 || b.z !== z0 || b.h !== h0) for (const p of pax) { if (p.st !== 'board' && p.st !== 'leave') continue;
+            const dx = p.x - x0, dz = p.z - z0, s0 = Math.sin(h0), c0 = Math.cos(h0), lx = dx * c0 - dz * s0, lz = dx * s0 + dz * c0; if (Math.abs(lx) > 9.5 || Math.abs(lz) > 21.5) continue;
+            const s1 = Math.sin(b.h), c1 = Math.cos(b.h); p.x = b.x + lx * c1 + lz * s1; p.z = b.z - lx * s1 + lz * c1; p.h += b.h - h0; }
           // (16 nov., user request) the sides of the deck hold the cars in; the ends too, except the one facing the ramp while
           // the boat is alongside and its gate is down
           // the car is a box (4.3 x 2 m) turned on the deck: what it takes along each axis of the boat; the walls are the
@@ -9176,7 +9183,7 @@ const gx = !HD ? null : (() => {
         b.wk.visible = b.v > 0.5; b.wk.scale.set(1, 1, Math.min(1, b.v / 3));
       }
     }
-    return { build, step, list, LAND, ROUTE, pax, get ferry() { return fy; }, get curve() { return curve; }, get moored() { return moored; }, DOCK };
+    return { build, step, list, LAND, ROUTE, pax, fcars: () => fcars, get ferry() { return fy; }, get curve() { return curve; }, get moored() { return moored; }, DOCK };
   })();
   // =====================================================================================
   // (16 nov., user request) free driving: a map of the area with starting points, at the start of the mode and at any
