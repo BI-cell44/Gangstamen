@@ -57,12 +57,13 @@
         return done ? 'win' : null;
       }, fail: 'La 205 de Nadia est détruite' },
     { id: 'vautour', title: 'Le Vautour', where: 'Église Saint-Martin',
-      intro: [['vautour', 'Alors c’est toi, le revenant ? Viens me chercher. Mes potes m’attendent au bord de Loire.'], ['nadia', 'Il file vers le boulevard de Cardiff, direction le quai de la Fosse. S’il y arrive, il est intouchable. Démolis-le avant !']],
+      intro: [['vautour', 'Alors c’est toi, le revenant ? Viens me chercher. Mes potes m’attendent au bord de Loire.'], ['nadia', 'Il file par le boulevard de Cardiff vers la Gare Maritime, pour sauter dans le bac. S’il embarque, il est intouchable. Démolis-le avant !']],
       outro: [['vautour', 'Argh… ma caisse… Le Grand Duc va me tuer.'], ['radio', 'Accrochage spectaculaire du côté de Saint-Martin. Le quartier respire un peu mieux ce soir.'], ['dede', 'Petit… tu as fait du bruit. Les flics commencent à poser des questions.']],
       setup(m) {
         placePlayer([-260, 330], P.cardiff);
         const [x, z] = roadPoint(...P.eglise); m.f = extraCar(0x2a2d33, 0xc8202f, 'saloon', { team: 0, hp: 150, bot: true });
-        m.rt = route(x, z, ...P.cardiff); m.f.place(x, z, headTo([x, z], m.rt[Math.min(2, m.rt.length - 1)])); m.f.maxV = 31; m.f.ri = 0;
+        // (16 nov.) the quai de la Fosse is in the map now: he no longer vanishes at Cardiff, he runs on to the ferry at the Gare Maritime
+        m.rt = route(x, z, ...roadPoint(1345, -420)); m.f.place(x, z, headTo([x, z], m.rt[Math.min(2, m.rt.length - 1)])); m.f.maxV = 31; m.f.ri = 0;
         m.dest = addMarker(...m.rt[m.rt.length - 1], 10, 0xff3b3b); m.t = 0;
       },
       update(m, dt) {
@@ -71,9 +72,9 @@
         const go = m.t > 3; const [inp, done] = followRoute(f, m.rt, dt, 26, { wait: !go });
         f.ai = { mode: 'hunt' }; drive(f, inp, dt);
         if (m.t > 5 && R() < dt * 1.1) { const c = locals[0].car, d = Math.hypot(c.x - f.x, c.z - f.z), [fx, fz] = f.fwd; if (d < 40 && ((c.x - f.x) * fx + (c.z - f.z) * fz) < 0) dropMineFrom(f); }
-        objective('Le Vautour', 'Démolis le Vautour avant le quai · ' + Math.round(f.hp / f.maxHp * 100) + ' %'); objBar(f.hp / f.maxHp); objDir(f.x, f.z);
+        objective('Le Vautour', 'Démolis le Vautour avant le bac · ' + Math.round(f.hp / f.maxHp * 100) + ' %'); objBar(f.hp / f.maxHp); objDir(f.x, f.z);
         return done ? 'fail' : null;
-      }, fail: 'Le Vautour a atteint le quai de la Fosse' },
+      }, fail: 'Le Vautour a sauté dans le bac à la Gare Maritime' },
     { id: 'police', title: 'Pin-pon', where: 'Boulevard de la Liberté', police: true,
       intro: () => [['radio', 'Avis à la population : la police nationale ratisse Chantenay à la recherche d’' + carWanted() + '.'], ['dede', 'C’est toi qu’ils cherchent. Sème-les, puis viens au garage : une peinture neuve et ils ne te reconnaîtront plus.']],
       outro: [['dede', 'Et voilà une caisse toute neuve. Les flics peuvent toujours courir.'], ['nadia', 'Bien joué. Maintenant, les Rapaces se cachent sur les quais, du côté de la Loire. Il va pleuvoir cette nuit…']],
