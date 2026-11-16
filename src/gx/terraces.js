@@ -105,7 +105,8 @@
   function crowdDraw() {
     crowd.begin();
     if (People.on) { People.begin(); for (const p of peds) People.draw(p); } else for (const p of peds) if (p.on && p.pose) crowd.draw(p, p.pose);
-    for (const c of customers) if (c.pose && c.vis) crowd.draw(c, c.pose, c.draw);
+    if (People.on) for (const c of customers) People.drawCustomer(c); // (16 nov.) skinned people at the tables too
+    else for (const c of customers) if (c.pose && c.vis) crowd.draw(c, c.pose, c.draw);
     crowd.end();
   }
   let shoutCd = 0;

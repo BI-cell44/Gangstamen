@@ -6237,8 +6237,29 @@ const gx = !HD ? null : (() => {
       m.visible = true; m.position.set(p.x, p.y - 0.36 + (down ? 0.22 : 0), p.z); m.rotation.set(down ? -Math.PI / 2 : 0, p.h, 0, 'YXZ'); m.scale.setScalar(p.s * o.k);
       pose(o, name, o.t);
     }
+    // (16 nov.) terrace customers as skinned people: seated = the idle clip with thighs forward and calves down (rotation
+    // about each bone's local z, checked on a render); standing up (fleeing, scared, walking back) goes through draw()
+    const qz = new THREE.Quaternion(), ZA = new THREE.Vector3(0, 0, 1);
+    function drawCustomer(c) {
+      if (!c.vis || !c.pose) { if (c._sk) c._sk.mesh.visible = false; return; }
+      if (c.state !== 'sit') {
+        const d = c.draw || { x: c.x, y: c.y, z: c.z, h: c.h }, px = c._px || (c._px = { on: true, s: c.s, old: c.old, woman: c.woman, kid: c.kid });
+        px._sk = c._sk; px.state = c.state === 'flee' ? 'flee' : c.state === 'down' ? 'down' : c.state === 'back' ? 'walk' : 'idle';
+        px.x = d.x; px.z = d.z; px.y = surfaceH(d.x, d.z) + 0.36; px.h = d.h; px.speed = c.state === 'back' ? 1.3 : 0;
+        draw(px); c._sk = px._sk; return;
+      }
+      let o = c._sk; if (!o) { init(); o = c._sk = make(c); }
+      const m = o.mesh; o.t += People.dt || 0;
+      if (o.clip !== 'seat') { o.clip = 'seat'; o.fade = 0; }
+      pose(o, o.sex + '_idle', o.t * 0.6);
+      for (const sd of ['L', 'R']) {
+        const th = o.bones.find(b => b.name === sd + ' Thigh'), ca = o.bones.find(b => b.name === sd + ' Calf');
+        if (th) th.quaternion.multiply(qz.setFromAxisAngle(ZA, 1.5)); if (ca) ca.quaternion.multiply(qz.setFromAxisAngle(ZA, -1.45));
+      }
+      m.visible = true; m.position.set(c.x, c.y - 0.06 - 0.42 * c.s, c.z); m.rotation.set(0, c.h, 0, 'YXZ'); m.scale.setScalar(c.s * o.k);
+    }
     function hideAll() { for (const o of all) o.mesh.visible = false; }
-    return { on, draw, begin, hideAll, all, clips, dt: 0, _pose: pose };
+    return { on, draw, drawCustomer, begin, hideAll, all, clips, dt: 0, _pose: pose };
   })();
   // ---------- batching: many identical small objects drawn as instances, per 250 m tile ----------
   // Batch.add(group): the group stays out of the scene, each of its meshes becomes one instance of an InstancedMesh
@@ -6390,7 +6411,8 @@ const gx = !HD ? null : (() => {
   function crowdDraw() {
     crowd.begin();
     if (People.on) { People.begin(); for (const p of peds) People.draw(p); } else for (const p of peds) if (p.on && p.pose) crowd.draw(p, p.pose);
-    for (const c of customers) if (c.pose && c.vis) crowd.draw(c, c.pose, c.draw);
+    if (People.on) for (const c of customers) People.drawCustomer(c); // (16 nov.) skinned people at the tables too
+    else for (const c of customers) if (c.pose && c.vis) crowd.draw(c, c.pose, c.draw);
     crowd.end();
   }
   let shoutCd = 0;
