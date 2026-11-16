@@ -28,7 +28,7 @@ Condition de la licence : le modèle peut être intégré à un produit tant que
 
 ## Photo aérienne
 
-`data/ortho/` (x −440 à 2 400 m depuis le 15 nov. 2026, z −1 000 à 760 m du jeu) : BD ORTHO® de l'IGN (couche `ORTHOIMAGERY.ORTHOPHOTOS` de la Géoplateforme, data.geopf.fr), sous Licence Ouverte Etalab 2.0. Mention : © IGN.
+`data/ortho/` (x −440 à 2 400 m depuis le 15 nov. 2026, z −1 000 à 760 m du jeu) : BD ORTHO® de l'IGN (couche `ORTHOIMAGERY.ORTHOPHOTOS` de la Géoplateforme, data.geopf.fr), sous Licence Ouverte Etalab 2.0. Mention : © IGN. L'Ultra embarque une copie réduite à 1 024 px (`ortho_1024.jpg`), qui ne sert qu'à choisir les toits dessinés et les pelouses.
 
 ## Photographies des cartes postales (16 nov.)
 

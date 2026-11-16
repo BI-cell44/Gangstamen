@@ -49,6 +49,13 @@ if os.path.isdir(d):
         if f.endswith('.jpg'):
             k = f[:-4]; c = cred.get(k, {})
             pc[k] = {'src': 'data:image/jpeg;base64,' + base64.b64encode(open(d + '/' + f, 'rb').read()).decode(), 'author': c.get('author', '?'), 'license': c.get('license', '?'), 'url': c.get('url', '')}
+# (16 nov., user) the aerial photo only steers the drawn roofs and lawns, read blurred: a 1024 px copy is enough in Ultra
+small = '../data/ortho/ortho_1024.jpg'
+if os.path.exists(small):
+    import re
+    o = base64.b64encode(open(small, 'rb').read()).decode()
+    t, n = re.subn(r'window\.ORTHO=\{src:"data:image/jpeg;base64,[^"]*"', lambda m: 'window.ORTHO={lod:2,src:"data:image/jpeg;base64,' + o + '"', t, count=1)  # lod: 4x smaller, two mip levels less
+    assert n == 1
 tag = '<script>window.PHOTO_ATLAS='
 assert t.count(tag) == 1, t.count(tag)
 t = t.replace(tag, '<script>window.POSTCARDS=' + json.dumps(pc, ensure_ascii=False) + ';</script>' + tag)

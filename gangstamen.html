@@ -1557,7 +1557,7 @@ const hd = !HD ? null : (() => {
     sh.uniforms.orthoMap = { value: t }; sh.uniforms.oBox = { value: orthoBox }; sh.uniforms.oOn = { value: t ? 1 : 0 };
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform vec4 oBox; varying vec2 vOrtho; varying vec3 vW; attribute float aRoad; varying float vRoad;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvW = position; vRoad = aRoad; vOrtho = vec2((position.x - oBox.x) / (oBox.z - oBox.x), 1.0 - (position.z - oBox.y) / (oBox.w - oBox.y));');
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D orthoMap; uniform float oOn; varying vec2 vOrtho; varying vec3 vW; varying float vRoad;\n' + extraDecl)
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D orthoMap; uniform float oOn; varying vec2 vOrtho; varying vec3 vW; varying float vRoad;\n#define OL ' /* textureLod levels are absolute: a smaller photo needs fewer (texture2D takes a bias, unchanged) */ + ((window.ORTHO && window.ORTHO.lod) || 0).toFixed(1) + '\n' + extraDecl)
       .replace('#include <color_fragment>', `float inO = oOn * step(0.0, vOrtho.x) * step(vOrtho.x, 1.0) * step(0.0, vOrtho.y) * step(vOrtho.y, 1.0);
         vec2 ouv = clamp(vOrtho, 0.0, 1.0);` + colourCode);
   }
@@ -1575,7 +1575,7 @@ const hd = !HD ? null : (() => {
         // fixed level of the aerial photo: with a bias on the automatic level, the lawns spread over the pavements when
         // seen from afar or at a low angle (intro shot by the town hall) and drew back when one came close
         #if __VERSION__ >= 300
-        vec3 oc = sRGBToLinear(textureLod(orthoMap, ouv, 1.6)).rgb, ol = sRGBToLinear(textureLod(orthoMap, ouv, 5.0)).rgb;
+        vec3 oc = sRGBToLinear(textureLod(orthoMap, ouv, max(0.0, 1.6 - OL))).rgb, ol = sRGBToLinear(textureLod(orthoMap, ouv, 5.0 - OL)).rgb;
         #else
         vec3 oc = sRGBToLinear(texture2D(orthoMap, ouv, 1.6)).rgb, ol = sRGBToLinear(texture2D(orthoMap, ouv, 5.0)).rgb;
         #endif
