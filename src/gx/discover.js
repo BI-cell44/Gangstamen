@@ -12,7 +12,6 @@
     { id: 'jeanMace', name: 'Place Jean-Macé', x: 45, z: 283, r: 28, text: 'Le cœur du quartier : commerces, terrasses et le boulevard.' },
     { id: 'misery', name: 'Carrière Misery', x: 670, z: 262, r: 45, text: 'L’ancienne carrière, creusée au pied de la butte.' },
     { id: 'gare', name: 'Gare de Chantenay', x: -322, z: 580, r: 32, text: 'La petite gare du quartier, au bord des voies.' },
-    { id: 'police', name: 'Commissariat', x: 170, z: -343, r: 30, text: 'Le commissariat de police nationale, près de la mairie : c’est d’ici que partent les patrouilles.' },
     { id: 'temple', name: 'Temple antoiniste', x: 89, z: -374, r: 26, text: 'Un temple antoiniste, une rareté dans l’Ouest.' },
     { id: 'maritime', name: 'Gare maritime', x: 1288, z: -395, r: 40, text: 'D’ici partaient les passagers des navires ; aujourd’hui, le bac pour l’île.' },
     { id: 'mailleBreze', name: 'Maillé-Brézé', x: 1388, z: -468, r: 42, text: 'L’escorteur d’escadre, amarré quai de la Fosse et devenu musée en 1988.' },
@@ -27,7 +26,7 @@
   const found = () => (Profile.cur ? Profile.cur.found : []);
   function nearPostcard(x, z, m) { return SPOTS.some(s => Math.hypot(s.x - x, s.z - z) < s.r + m); } // (spawnmap.js keeps its starting points clear)
   function discoverStep(dt) {
-    if (mode !== 'solo' || !locals.length || (discT -= dt) > 0) return; discT = 0.5;
+    if (mode !== 'solo' || soloKind !== 'free' || mission || !locals.length || (discT -= dt) > 0) return; discT = 0.5; // (16 nov., user) only in free driving
     const c = locals[0].car; if (!c.alive || !Profile.cur) return;
     for (const s of SPOTS) {
       if (found().includes(s.id) || Math.hypot(s.x - c.x, s.z - c.z) > s.r) continue;
@@ -54,7 +53,7 @@
     return nw.length ? nw.map(x => ({ sport: 'le coupé sport au garage', police: 'la voiture de police au garage'}[x])).join(', ') : null;
   }
   function discMinimap(add) { // nearby postcards not found yet show as white dots
-    if (mode !== 'solo' || !locals.length) return; const c = locals[0].car;
+    if (mode !== 'solo' || soloKind !== 'free' || mission || !locals.length) return; const c = locals[0].car;
     for (const s of SPOTS) if (!found().includes(s.id) && Math.hypot(s.x - c.x, s.z - c.z) < 220) add({ x: s.x, z: s.z }, '#ffffff');
   }
   // (16 nov., user) the card itself: the photograph (or a drawn card), the name, the text and the credit of the photo
@@ -78,4 +77,5 @@
       if (ok) c.addEventListener('click', () => showPostcard(s, 0)); g.append(c); }
     box.append(g);
   }
+  function postcardSpots() { return SPOTS.map(s => ({ s, x: s.x, z: s.z, found: found().includes(s.id) })); } // (spawnmap.js draws them)
   function postcards() { return SPOTS.map(s => ({ name: found().includes(s.id) ? s.name : '???', text: found().includes(s.id) ? s.text : '' })); }

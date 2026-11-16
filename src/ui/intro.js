@@ -34,16 +34,16 @@ const Intro = (() => {
   const el = $('intro'), cap1 = $('iCap1'), cap2 = $('iCap2'), gang = $('iGang'), ttl = $('iTitle'), flashEl = $('iFlash'), fadeEl = $('iFade');
   // boulevard de la Liberté, from the town hall down towards the Loire
   const BLVD = mkPath([176, -475, 174, -465, 169, -436, 164, -407, 160, -383, 146, -306, 140, -272, 131, -216, 124, -173, 118, -139, 114, -112, 80, 89, 77, 104, 64, 183, 58, 222, 55, 243, 56, 264, 58, 284, 63, 308, 72, 333, 79, 353, 105, 429]);
-  const S_HIT = 471, V = 28, T_HIT = 11 * BAR, T_END = 13 * BAR;
+  const S_HIT = 471, V = 28, T_HIT = 12 * BAR, T_END = 14 * BAR; // (16 nov.) one bar longer: the aerial move over Sainte-Anne takes two
   const SHOTS = [
     { t: 0, arr: 0, cap: ['Nantes · été 1996', 'Chantenay. Les chantiers ont fermé. Les usines aussi.'] },
     { t: 2 * BAR, arr: 1, cap: ['Il reste la rue.', 'Et deux bandes pour se la disputer.'] },
     { t: 4 * BAR, arr: 2, gang: 0, sub: 'Caisses noires. Ils tiennent le haut du quartier.' },
-    { t: 6 * BAR, arr: 3, gang: 1, sub: 'Nés sur le boulevard. Ils ne lâchent rien.' },
-    { t: 8 * BAR, arr: 3, cap: ['', 'Ce soir, il n’y a plus de place pour deux.'] },
-    { t: 9 * BAR, arr: 3, keep: true },
-    { t: 10 * BAR, arr: 3 },
-    { t: 10.5 * BAR, arr: 3 },
+    { t: 7 * BAR, arr: 3, gang: 1, sub: 'Nés sur le boulevard. Ils ne lâchent rien.' },
+    { t: 9 * BAR, arr: 3, cap: ['', 'Ce soir, il n’y a plus de place pour deux.'] },
+    { t: 10 * BAR, arr: 3, keep: true },
+    { t: 11 * BAR, arr: 3 },
+    { t: 11.5 * BAR, arr: 3 },
     { t: T_HIT, arr: -1, title: true },
   ];
   let stView = null;
@@ -158,15 +158,15 @@ const Intro = (() => {
       cam(p.x, Y(p.x, p.z) + 1.3 + u * 0.25, p.z, q.x, Y(q.x, q.z) + 3.5, q.z, 62, 0.04); eng = 12;
     } else if (i === 2) { // the Rapaces roll down from the butte, past the camera
       for (const c of C) park(c);
-      const s = 14 + 15 * u;
+      const uc = Math.max(0, u - 2 * BAR) + 0.8 * BAR, s = 14 + 15 * uc; // the cars: the last bar, already under way
       put(R[0], butte, s, -0.5, 1, 15, dt); put(R[1], butte, s - 8, 0.6, 1, 15, dt); put(R[2], butte, s - 16, -0.7, 1, 15, dt);
       // (16 nov., user) the shot opens on the church of Sainte-Anne, the top of the butte, seen from a clear spot below it,
       // then cuts to the cars rolling down
-      if (u < BAR && stView) { // (16 nov., user) an aerial move from the Sainte-Anne steps up the butte to the church
-        const e = sm(u / BAR), V_ = stView, lerp = (a, b) => a + (b - a) * e;
+      if (u < 2 * BAR && stView) { // (16 nov., user) an aerial move from the Sainte-Anne steps up the butte to the church
+        const e = sm(u / (2 * BAR)), V_ = stView, lerp = (a, b) => a + (b - a) * e;
         const px = lerp(V_.sx, V_.ex), pz = lerp(V_.sz, V_.ez), py = lerp(V_.sy, V_.ey);
         cam(px, py, pz, lerp(V_.lx0, V_.lx1), lerp(V_.ly0, V_.ly1), lerp(V_.lz0, V_.lz1), 50, 0.015); }
-      else { const p = pathPose(butte, Math.min(butte.len - 2, 52 + 5 * u), 2.5); cam(p.x, Y(p.x, p.z) + 0.75, p.z, R[0].x, R[0].mesh.position.y + 0.7, R[0].z, 48, 0.03); }
+      else { const p = pathPose(butte, Math.min(butte.len - 2, 52 + 5 * uc), 2.5); cam(p.x, Y(p.x, p.z) + 0.75, p.z, R[0].x, R[0].mesh.position.y + 0.7, R[0].z, 48, 0.03); }
       eng = 15;
     } else if (i === 3) { // the Chantenaysiens wait by the town hall, then pull away
       for (const c of R) park(c);
@@ -194,7 +194,7 @@ const Intro = (() => {
       if (!HD && Math.random() < dt * 9) spawnFx(m.x + (Math.random() - 0.5) * 4, 1.5, m.z + (Math.random() - 0.5) * 4, 1.1, Math.random() < 0.3 ? 0xff7a2a : 0x2a2228, 2, 4, 2.5);
     }
     // gunfire for the last two bars before the crash
-    if (t > 9.6 * BAR && t < T_HIT) {
+    if (t > 10.6 * BAR && t < T_HIT) {
       fireAcc += dt;
       if (fireAcc > 0.07) { fireAcc = 0; const k = (Math.random() * 3) | 0; burst(R[k], C[0], true); burst(C[(k + 1) % 3], R[0], false); sfx.gun(Math.random() < 0.5); }
     }

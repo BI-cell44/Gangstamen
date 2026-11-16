@@ -15,14 +15,16 @@
       if (el) return;
       el = document.createElement('div'); el.id = 'spawnMap'; el.hidden = true;
       el.style.cssText = 'position:fixed;inset:0;z-index:31;display:grid;place-items:center;background:rgba(13,10,20,.82)';
-      el.innerHTML = '<div class="card" style="display:flex;gap:18px;align-items:flex-start;max-width:96vw"><canvas width="640" height="560" style="max-width:62vw;max-height:80vh;border-radius:8px;cursor:pointer;background:#1c1a24"></canvas>'
+      el.innerHTML = '<div class="card" style="display:flex;gap:18px;align-items:flex-start;max-width:96vw"><canvas width="640" height="560" style="max-width:46vw;max-height:80vh;border-radius:8px;cursor:pointer;background:#1c1a24"></canvas>'
         + '<div style="display:flex;flex-direction:column;gap:6px;min-width:250px"><h2 style="margin:0 0 4px;font-family:var(--display);font-weight:normal;font-size:30px;color:var(--chalk);text-shadow:3px 3px 0 var(--magenta)">Où démarrer ?</h2>'
-        + '<p class="fine" style="margin:0 0 6px">Clique un point sur la carte ou choisis dans la liste. Touche G (ou Pause → Carte) pour revenir ici.</p><div class="spList" style="display:flex;flex-direction:column;gap:5px"></div></div></div>';
+        + '<p class="fine" style="margin:0 0 6px">Clique un point sur la carte ou choisis dans la liste. Touche G (ou Pause → Carte) pour revenir ici.</p><div class="spList" style="display:flex;flex-direction:column;gap:5px"></div></div>'
+        + '<div class="spSide fine" style="width:300px;max-height:80vh;overflow-y:auto;font-size:13px"></div></div>'; // (16 nov., user) records of the races and challenges, and the postcards, beside the map
       document.body.append(el); cv = el.querySelector('canvas');
       cv.addEventListener('click', e => {
         const r = cv.getBoundingClientRect(), mx = (e.clientX - r.left) * cv.width / r.width, my = (e.clientY - r.top) * cv.height / r.height;
         let best = null, bd = 26; for (const s of spots) { const [px, py] = toMap(s.x, s.z), d = Math.hypot(px - mx, py - my); if (d < bd) { bd = d; best = s; } }
         if (best) choose(best);
+        else { let pb = null, pd = 14; for (const p of postcardSpots()) { if (!p.found) continue; const [px, py] = toMap(p.x, p.z), d = Math.hypot(px - mx, py - my); if (d < pd) { pd = d; pb = p; } } if (pb) showPostcard(pb.s, 0); }
       });
       el.addEventListener('keydown', e => { if (e.code === 'Escape' || e.code === 'KeyG') { e.stopPropagation(); close(); } });
     }
@@ -59,6 +61,11 @@
         if (!r.d) continue; g.strokeStyle = r.w >= 9 ? '#d8cfbf' : '#8f8796'; g.lineWidth = Math.max(1, r.w * k * 0.9);
         g.beginPath(); for (let i = 0; i < r.p.length; i += 2) { const [px, py] = toMap(r.p[i], r.p[i + 1]); if (i) g.lineTo(px, py); else g.moveTo(px, py); } g.stroke();
       }
+      // (16 nov., user) the postcards on the map: a little card where one was found (click it to see it), « ? » where not yet
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      for (const p of postcardSpots()) { const [px, py] = toMap(p.x, p.z);
+        if (p.found) { g.save(); g.translate(px, py); g.rotate(-0.15); g.fillStyle = '#f6f0e2'; g.fillRect(-8, -6, 16, 12); g.strokeStyle = '#c41f2a'; g.lineWidth = 1.5; g.strokeRect(-8, -6, 16, 12); g.fillStyle = '#c41f2a'; g.fillRect(3, -4, 3, 3); g.restore(); }
+        else { g.fillStyle = 'rgba(246,240,226,.25)'; g.beginPath(); g.arc(px, py, 7, 0, Math.PI * 2); g.fill(); g.fillStyle = '#f6f0e2'; g.font = 'bold 11px Arial, sans-serif'; g.fillText('?', px, py + 0.5); } }
       const c = locals[0] && locals[0].car;
       if (c) { const [px, py] = toMap(c.x, c.z); g.fillStyle = '#f2c14e'; g.beginPath(); g.arc(px, py, 6, 0, Math.PI * 2); g.fill(); }
       g.font = 'bold 13px Arial, sans-serif'; g.textBaseline = 'middle';
@@ -78,6 +85,8 @@
         b.addEventListener('click', () => choose(s)); b.addEventListener('focus', () => draw(s)); b.addEventListener('mouseenter', () => draw(s));
         list.append(b);
       });
+      { const side = el.querySelector('.spSide'); side.innerHTML = '<b>Courses et défis</b> (balises bleues et orange) :<br>' + actRecords().map(r => (r.kind === 'race' ? '🏁 ' : '★ ') + r.name + ' : ' + (r.best || '—')).join('<br>');
+        const pc = postcards(), nf = pc.filter(p => p.text).length, h = document.createElement('div'); h.style.marginTop = '12px'; h.innerHTML = '<b>Cartes postales</b> : ' + nf + ' / ' + pc.length + ' lieux découverts. Sur la carte : une petite carte là où tu l’as trouvée (clique pour la revoir), « ? » là où il en reste une.'; side.append(h); postcardGallery(h); }
       open = true; blocking = true; el.hidden = false; draw(null); list.firstChild.focus();
     }
     function close() { if (!open) return; open = false; blocking = false; el.hidden = true; try { renderer.domElement.focus(); } catch (e) { } }

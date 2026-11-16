@@ -205,13 +205,7 @@
       box.prepend(d);
     }
     const prog = $('campProg'); if (prog) prog.textContent = done.length + ' / ' + MISSIONS.length + ' missions · respect en banque : ' + (settings.bank || 0);
-    // races and challenges of the open world, with the records of this save (cycle 11)
-    const rb = document.createElement('div'); rb.className = 'fine'; rb.style.marginTop = '10px';
-    rb.innerHTML = '<b>Courses et défis</b> (en partie solo, roule dans une balise bleue ou orange) :<br>' + actRecords().map(r => (r.kind === 'race' ? '🏁 ' : '★ ') + r.name + ' : ' + (r.best || '—')).join('<br>');
-    box.append(rb);
-    const pc = postcards(), nf = pc.filter(p => p.text).length, pb = document.createElement('div'); pb.className = 'fine'; pb.style.marginTop = '10px';
-    pb.innerHTML = '<b>Cartes postales</b> : ' + nf + ' / ' + pc.length + ' lieux découverts (roule jusqu’aux lieux emblématiques ; points blancs sur la minicarte quand tu es près)';
-    box.append(pb); postcardGallery(pb);
+    // (16 nov., user) the records of the races and challenges and the postcards are shown beside the map of free driving (spawnmap.js)
   }
 
   // =====================================================================================

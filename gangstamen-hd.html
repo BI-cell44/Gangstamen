@@ -259,6 +259,7 @@ body:not(.ingame) #objective { display: none; }
 .pcMini { all: unset; cursor: pointer; display: flex; flex-direction: column; background: #f6f0e2; color: #2a2420; padding: 4px; border-radius: 3px; box-shadow: 0 3px 8px rgba(0,0,0,.4); font-size: 11px; text-align: center; }
 .pcMini img, .pcMini i { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; display: flex; align-items: center; justify-content: center; font-style: normal; font-size: 24px; background: #d9c8a6; }
 .pcMini span { padding-top: 3px; }
+.spSide .pcGrid { grid-template-columns: repeat(3, 1fr); gap: 6px; } .spSide .pcMini { font-size: 10px; } .spSide .pcMini i { font-size: 16px; }
 .pcMini.locked { opacity: .45; cursor: default; }
 .pcMini:focus-visible { outline: 3px solid var(--sunset); }
 #gload { position: fixed; inset: 0; z-index: 40; cursor: progress; }
@@ -5342,16 +5343,16 @@ const Intro = (() => {
   const el = $('intro'), cap1 = $('iCap1'), cap2 = $('iCap2'), gang = $('iGang'), ttl = $('iTitle'), flashEl = $('iFlash'), fadeEl = $('iFade');
   // boulevard de la Liberté, from the town hall down towards the Loire
   const BLVD = mkPath([176, -475, 174, -465, 169, -436, 164, -407, 160, -383, 146, -306, 140, -272, 131, -216, 124, -173, 118, -139, 114, -112, 80, 89, 77, 104, 64, 183, 58, 222, 55, 243, 56, 264, 58, 284, 63, 308, 72, 333, 79, 353, 105, 429]);
-  const S_HIT = 471, V = 28, T_HIT = 11 * BAR, T_END = 13 * BAR;
+  const S_HIT = 471, V = 28, T_HIT = 12 * BAR, T_END = 14 * BAR; // (16 nov.) one bar longer: the aerial move over Sainte-Anne takes two
   const SHOTS = [
     { t: 0, arr: 0, cap: ['Nantes · été 1996', 'Chantenay. Les chantiers ont fermé. Les usines aussi.'] },
     { t: 2 * BAR, arr: 1, cap: ['Il reste la rue.', 'Et deux bandes pour se la disputer.'] },
     { t: 4 * BAR, arr: 2, gang: 0, sub: 'Caisses noires. Ils tiennent le haut du quartier.' },
-    { t: 6 * BAR, arr: 3, gang: 1, sub: 'Nés sur le boulevard. Ils ne lâchent rien.' },
-    { t: 8 * BAR, arr: 3, cap: ['', 'Ce soir, il n’y a plus de place pour deux.'] },
-    { t: 9 * BAR, arr: 3, keep: true },
-    { t: 10 * BAR, arr: 3 },
-    { t: 10.5 * BAR, arr: 3 },
+    { t: 7 * BAR, arr: 3, gang: 1, sub: 'Nés sur le boulevard. Ils ne lâchent rien.' },
+    { t: 9 * BAR, arr: 3, cap: ['', 'Ce soir, il n’y a plus de place pour deux.'] },
+    { t: 10 * BAR, arr: 3, keep: true },
+    { t: 11 * BAR, arr: 3 },
+    { t: 11.5 * BAR, arr: 3 },
     { t: T_HIT, arr: -1, title: true },
   ];
   let stView = null;
@@ -5466,15 +5467,15 @@ const Intro = (() => {
       cam(p.x, Y(p.x, p.z) + 1.3 + u * 0.25, p.z, q.x, Y(q.x, q.z) + 3.5, q.z, 62, 0.04); eng = 12;
     } else if (i === 2) { // the Rapaces roll down from the butte, past the camera
       for (const c of C) park(c);
-      const s = 14 + 15 * u;
+      const uc = Math.max(0, u - 2 * BAR) + 0.8 * BAR, s = 14 + 15 * uc; // the cars: the last bar, already under way
       put(R[0], butte, s, -0.5, 1, 15, dt); put(R[1], butte, s - 8, 0.6, 1, 15, dt); put(R[2], butte, s - 16, -0.7, 1, 15, dt);
       // (16 nov., user) the shot opens on the church of Sainte-Anne, the top of the butte, seen from a clear spot below it,
       // then cuts to the cars rolling down
-      if (u < BAR && stView) { // (16 nov., user) an aerial move from the Sainte-Anne steps up the butte to the church
-        const e = sm(u / BAR), V_ = stView, lerp = (a, b) => a + (b - a) * e;
+      if (u < 2 * BAR && stView) { // (16 nov., user) an aerial move from the Sainte-Anne steps up the butte to the church
+        const e = sm(u / (2 * BAR)), V_ = stView, lerp = (a, b) => a + (b - a) * e;
         const px = lerp(V_.sx, V_.ex), pz = lerp(V_.sz, V_.ez), py = lerp(V_.sy, V_.ey);
         cam(px, py, pz, lerp(V_.lx0, V_.lx1), lerp(V_.ly0, V_.ly1), lerp(V_.lz0, V_.lz1), 50, 0.015); }
-      else { const p = pathPose(butte, Math.min(butte.len - 2, 52 + 5 * u), 2.5); cam(p.x, Y(p.x, p.z) + 0.75, p.z, R[0].x, R[0].mesh.position.y + 0.7, R[0].z, 48, 0.03); }
+      else { const p = pathPose(butte, Math.min(butte.len - 2, 52 + 5 * uc), 2.5); cam(p.x, Y(p.x, p.z) + 0.75, p.z, R[0].x, R[0].mesh.position.y + 0.7, R[0].z, 48, 0.03); }
       eng = 15;
     } else if (i === 3) { // the Chantenaysiens wait by the town hall, then pull away
       for (const c of R) park(c);
@@ -5502,7 +5503,7 @@ const Intro = (() => {
       if (!HD && Math.random() < dt * 9) spawnFx(m.x + (Math.random() - 0.5) * 4, 1.5, m.z + (Math.random() - 0.5) * 4, 1.1, Math.random() < 0.3 ? 0xff7a2a : 0x2a2228, 2, 4, 2.5);
     }
     // gunfire for the last two bars before the crash
-    if (t > 9.6 * BAR && t < T_HIT) {
+    if (t > 10.6 * BAR && t < T_HIT) {
       fireAcc += dt;
       if (fireAcc > 0.07) { fireAcc = 0; const k = (Math.random() * 3) | 0; burst(R[k], C[0], true); burst(C[(k + 1) % 3], R[0], false); sfx.gun(Math.random() < 0.5); }
     }
@@ -7905,13 +7906,7 @@ const gx = !HD ? null : (() => {
       box.prepend(d);
     }
     const prog = $('campProg'); if (prog) prog.textContent = done.length + ' / ' + MISSIONS.length + ' missions · respect en banque : ' + (settings.bank || 0);
-    // races and challenges of the open world, with the records of this save (cycle 11)
-    const rb = document.createElement('div'); rb.className = 'fine'; rb.style.marginTop = '10px';
-    rb.innerHTML = '<b>Courses et défis</b> (en partie solo, roule dans une balise bleue ou orange) :<br>' + actRecords().map(r => (r.kind === 'race' ? '🏁 ' : '★ ') + r.name + ' : ' + (r.best || '—')).join('<br>');
-    box.append(rb);
-    const pc = postcards(), nf = pc.filter(p => p.text).length, pb = document.createElement('div'); pb.className = 'fine'; pb.style.marginTop = '10px';
-    pb.innerHTML = '<b>Cartes postales</b> : ' + nf + ' / ' + pc.length + ' lieux découverts (roule jusqu’aux lieux emblématiques ; points blancs sur la minicarte quand tu es près)';
-    box.append(pb); postcardGallery(pb);
+    // (16 nov., user) the records of the races and challenges and the postcards are shown beside the map of free driving (spawnmap.js)
   }
 
   // =====================================================================================
@@ -8289,7 +8284,6 @@ const gx = !HD ? null : (() => {
     { id: 'jeanMace', name: 'Place Jean-Macé', x: 45, z: 283, r: 28, text: 'Le cœur du quartier : commerces, terrasses et le boulevard.' },
     { id: 'misery', name: 'Carrière Misery', x: 670, z: 262, r: 45, text: 'L’ancienne carrière, creusée au pied de la butte.' },
     { id: 'gare', name: 'Gare de Chantenay', x: -322, z: 580, r: 32, text: 'La petite gare du quartier, au bord des voies.' },
-    { id: 'police', name: 'Commissariat', x: 170, z: -343, r: 30, text: 'Le commissariat de police nationale, près de la mairie : c’est d’ici que partent les patrouilles.' },
     { id: 'temple', name: 'Temple antoiniste', x: 89, z: -374, r: 26, text: 'Un temple antoiniste, une rareté dans l’Ouest.' },
     { id: 'maritime', name: 'Gare maritime', x: 1288, z: -395, r: 40, text: 'D’ici partaient les passagers des navires ; aujourd’hui, le bac pour l’île.' },
     { id: 'mailleBreze', name: 'Maillé-Brézé', x: 1388, z: -468, r: 42, text: 'L’escorteur d’escadre, amarré quai de la Fosse et devenu musée en 1988.' },
@@ -8304,7 +8298,7 @@ const gx = !HD ? null : (() => {
   const found = () => (Profile.cur ? Profile.cur.found : []);
   function nearPostcard(x, z, m) { return SPOTS.some(s => Math.hypot(s.x - x, s.z - z) < s.r + m); } // (spawnmap.js keeps its starting points clear)
   function discoverStep(dt) {
-    if (mode !== 'solo' || !locals.length || (discT -= dt) > 0) return; discT = 0.5;
+    if (mode !== 'solo' || soloKind !== 'free' || mission || !locals.length || (discT -= dt) > 0) return; discT = 0.5; // (16 nov., user) only in free driving
     const c = locals[0].car; if (!c.alive || !Profile.cur) return;
     for (const s of SPOTS) {
       if (found().includes(s.id) || Math.hypot(s.x - c.x, s.z - c.z) > s.r) continue;
@@ -8331,7 +8325,7 @@ const gx = !HD ? null : (() => {
     return nw.length ? nw.map(x => ({ sport: 'le coupé sport au garage', police: 'la voiture de police au garage'}[x])).join(', ') : null;
   }
   function discMinimap(add) { // nearby postcards not found yet show as white dots
-    if (mode !== 'solo' || !locals.length) return; const c = locals[0].car;
+    if (mode !== 'solo' || soloKind !== 'free' || mission || !locals.length) return; const c = locals[0].car;
     for (const s of SPOTS) if (!found().includes(s.id) && Math.hypot(s.x - c.x, s.z - c.z) < 220) add({ x: s.x, z: s.z }, '#ffffff');
   }
   // (16 nov., user) the card itself: the photograph (or a drawn card), the name, the text and the credit of the photo
@@ -8355,6 +8349,7 @@ const gx = !HD ? null : (() => {
       if (ok) c.addEventListener('click', () => showPostcard(s, 0)); g.append(c); }
     box.append(g);
   }
+  function postcardSpots() { return SPOTS.map(s => ({ s, x: s.x, z: s.z, found: found().includes(s.id) })); } // (spawnmap.js draws them)
   function postcards() { return SPOTS.map(s => ({ name: found().includes(s.id) ? s.name : '???', text: found().includes(s.id) ? s.text : '' })); }
   // =====================================================================================
   // Downloaded models baked by tools/assets/bake_model.js (W.models): decoding shared by the port cranes, the pontoons
@@ -9114,14 +9109,16 @@ const gx = !HD ? null : (() => {
       if (el) return;
       el = document.createElement('div'); el.id = 'spawnMap'; el.hidden = true;
       el.style.cssText = 'position:fixed;inset:0;z-index:31;display:grid;place-items:center;background:rgba(13,10,20,.82)';
-      el.innerHTML = '<div class="card" style="display:flex;gap:18px;align-items:flex-start;max-width:96vw"><canvas width="640" height="560" style="max-width:62vw;max-height:80vh;border-radius:8px;cursor:pointer;background:#1c1a24"></canvas>'
+      el.innerHTML = '<div class="card" style="display:flex;gap:18px;align-items:flex-start;max-width:96vw"><canvas width="640" height="560" style="max-width:46vw;max-height:80vh;border-radius:8px;cursor:pointer;background:#1c1a24"></canvas>'
         + '<div style="display:flex;flex-direction:column;gap:6px;min-width:250px"><h2 style="margin:0 0 4px;font-family:var(--display);font-weight:normal;font-size:30px;color:var(--chalk);text-shadow:3px 3px 0 var(--magenta)">Où démarrer ?</h2>'
-        + '<p class="fine" style="margin:0 0 6px">Clique un point sur la carte ou choisis dans la liste. Touche G (ou Pause → Carte) pour revenir ici.</p><div class="spList" style="display:flex;flex-direction:column;gap:5px"></div></div></div>';
+        + '<p class="fine" style="margin:0 0 6px">Clique un point sur la carte ou choisis dans la liste. Touche G (ou Pause → Carte) pour revenir ici.</p><div class="spList" style="display:flex;flex-direction:column;gap:5px"></div></div>'
+        + '<div class="spSide fine" style="width:300px;max-height:80vh;overflow-y:auto;font-size:13px"></div></div>'; // (16 nov., user) records of the races and challenges, and the postcards, beside the map
       document.body.append(el); cv = el.querySelector('canvas');
       cv.addEventListener('click', e => {
         const r = cv.getBoundingClientRect(), mx = (e.clientX - r.left) * cv.width / r.width, my = (e.clientY - r.top) * cv.height / r.height;
         let best = null, bd = 26; for (const s of spots) { const [px, py] = toMap(s.x, s.z), d = Math.hypot(px - mx, py - my); if (d < bd) { bd = d; best = s; } }
         if (best) choose(best);
+        else { let pb = null, pd = 14; for (const p of postcardSpots()) { if (!p.found) continue; const [px, py] = toMap(p.x, p.z), d = Math.hypot(px - mx, py - my); if (d < pd) { pd = d; pb = p; } } if (pb) showPostcard(pb.s, 0); }
       });
       el.addEventListener('keydown', e => { if (e.code === 'Escape' || e.code === 'KeyG') { e.stopPropagation(); close(); } });
     }
@@ -9158,6 +9155,11 @@ const gx = !HD ? null : (() => {
         if (!r.d) continue; g.strokeStyle = r.w >= 9 ? '#d8cfbf' : '#8f8796'; g.lineWidth = Math.max(1, r.w * k * 0.9);
         g.beginPath(); for (let i = 0; i < r.p.length; i += 2) { const [px, py] = toMap(r.p[i], r.p[i + 1]); if (i) g.lineTo(px, py); else g.moveTo(px, py); } g.stroke();
       }
+      // (16 nov., user) the postcards on the map: a little card where one was found (click it to see it), « ? » where not yet
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      for (const p of postcardSpots()) { const [px, py] = toMap(p.x, p.z);
+        if (p.found) { g.save(); g.translate(px, py); g.rotate(-0.15); g.fillStyle = '#f6f0e2'; g.fillRect(-8, -6, 16, 12); g.strokeStyle = '#c41f2a'; g.lineWidth = 1.5; g.strokeRect(-8, -6, 16, 12); g.fillStyle = '#c41f2a'; g.fillRect(3, -4, 3, 3); g.restore(); }
+        else { g.fillStyle = 'rgba(246,240,226,.25)'; g.beginPath(); g.arc(px, py, 7, 0, Math.PI * 2); g.fill(); g.fillStyle = '#f6f0e2'; g.font = 'bold 11px Arial, sans-serif'; g.fillText('?', px, py + 0.5); } }
       const c = locals[0] && locals[0].car;
       if (c) { const [px, py] = toMap(c.x, c.z); g.fillStyle = '#f2c14e'; g.beginPath(); g.arc(px, py, 6, 0, Math.PI * 2); g.fill(); }
       g.font = 'bold 13px Arial, sans-serif'; g.textBaseline = 'middle';
@@ -9177,6 +9179,8 @@ const gx = !HD ? null : (() => {
         b.addEventListener('click', () => choose(s)); b.addEventListener('focus', () => draw(s)); b.addEventListener('mouseenter', () => draw(s));
         list.append(b);
       });
+      { const side = el.querySelector('.spSide'); side.innerHTML = '<b>Courses et défis</b> (balises bleues et orange) :<br>' + actRecords().map(r => (r.kind === 'race' ? '🏁 ' : '★ ') + r.name + ' : ' + (r.best || '—')).join('<br>');
+        const pc = postcards(), nf = pc.filter(p => p.text).length, h = document.createElement('div'); h.style.marginTop = '12px'; h.innerHTML = '<b>Cartes postales</b> : ' + nf + ' / ' + pc.length + ' lieux découverts. Sur la carte : une petite carte là où tu l’as trouvée (clique pour la revoir), « ? » là où il en reste une.'; side.append(h); postcardGallery(h); }
       open = true; blocking = true; el.hidden = false; draw(null); list.firstChild.focus();
     }
     function close() { if (!open) return; open = false; blocking = false; el.hidden = true; try { renderer.domElement.focus(); } catch (e) { } }
