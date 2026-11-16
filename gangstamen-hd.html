@@ -5465,7 +5465,7 @@ const Intro = (() => {
       cam(p.x, Y(p.x, p.z) + 1.3 + u * 0.25, p.z, q.x, Y(q.x, q.z) + 3.5, q.z, 62, 0.04); eng = 12;
     } else if (i === 2) { // the Rapaces roll down from the butte, past the camera
       for (const c of C) park(c);
-      const uc = Math.max(0, u - 2 * BAR) + 0.8 * BAR, s = 14 + 15 * uc; // the cars: the last bar, already under way
+      const uc = Math.max(0, u - 2 * BAR) + 0.8 * BAR + 0.5, s = 14 + 15 * uc; // (16 nov., user) the shot opens 0.5 s later in the move: 0.5 s more at the end // the cars: the last bar, already under way
       if (u >= SHOTS[2].gangAt && !gang.classList.contains('on')) { setCap('', ''); showGang(SHOTS[2].gangOf, SHOTS[2].sub); }
       put(R[0], butte, s, -0.5, 1, 15, dt); put(R[1], butte, s - 8, 0.6, 1, 15, dt); put(R[2], butte, s - 16, -0.7, 1, 15, dt);
       // (16 nov., user) the shot opens on the church of Sainte-Anne, the top of the butte, seen from a clear spot below it,
