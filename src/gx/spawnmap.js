@@ -96,7 +96,7 @@
       const n = nearestNodeTo(s.x, s.z), A = (G.adj[n] || []).filter(m => nodeOk(m)), dir = m => s.fx == null ? 0 : ((G.x[m] - G.x[n]) * (s.fx - G.x[n]) + (G.z[m] - G.z[n]) * (s.fz - G.z[n])) / (Math.hypot(G.x[m] - G.x[n], G.z[m] - G.z[n]) || 1);
       const nb = A.length ? A.reduce((b, m) => dir(m) > dir(b) ? m : b, A[0]) : G.adj[n] && G.adj[n][0];
       close();
-      Busy.run(s.name, () => { placePlayer([s.x, s.z], s.fx != null ? [s.fx, s.fz] : nb != null ? [G.x[nb], G.z[nb]] : null); L.heat = 0; scatterRivals(170, 330); let k = 0; for (const r of rivals) r.calmT = 2 + 3 * k++; }); // (16 nov., user) the Rapaces start away from the new spot and come for the player within seconds
+      Busy.run(s.name, () => { placePlayer([s.x, s.z], s.fx != null ? [s.fx, s.fz] : nb != null ? [G.x[nb], G.z[nb]] : null); L.heat = 0; });
       flash(s.name, 'Conduite libre · G : changer de point de départ');
     }
     return { show, close, choose, get open() { return open; }, get spots() { return resolve(); }, rejects };

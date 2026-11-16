@@ -31,11 +31,8 @@ function minPlayerSight(c) { let d = 1e9; for (const p of allPlayerCars()) if (p
 function rivalInput(r, dt) {
   const ai = r.ai;
   let target = null, dp = 1e9;
-  if (r.calmT > 0) r.calmT -= dt; // just (re)started far away: cruise, leave the players alone (scatterRivals)
-  // (16 nov., user) free driving: the Rapaces always come for the player, steering their way through the streets
-  if (mode === 'solo' && soloKind === 'free' && !teamMode && r.calmT <= 0 && locals[0] && locals[0].car.alive) { const p = locals[0].car; ai.goal = ai.chase || (ai.chase = { x: 0, z: 0 }); ai.chase.x = p.x; ai.chase.z = p.z; }
-  else if (ai.chase) { if (ai.goal === ai.chase) ai.goal = null; ai.chase = null; }
-  const foes = [...(r.calmT > 0 ? [] : allPlayerCars()), ...(teamMode ? rivals : []), ...(gx ? gx.foes() : []), ...(gx && gx.copsOn ? gx.copsOn(r) : [])].filter(c => c.alive && enemies(r, c));
+  if (r.calmT > 0) r.calmT -= dt; // just (re)started far away: cruise, do not seek the players (scatterRivals); (16 nov., user) but one met on the way still attacks
+  const foes = [...allPlayerCars().filter(c => r.calmT <= 0 || Math.hypot(c.x - r.x, c.z - r.z) < 80), ...(teamMode ? rivals : []), ...(gx ? gx.foes() : []), ...(gx && gx.copsOn ? gx.copsOn(r) : [])].filter(c => c.alive && enemies(r, c));
   for (const c of foes) { const d = Math.hypot(c.x - r.x, c.z - r.z); if (d < dp) { dp = d; target = c; } }
   let los = false;
   if (target && dp < 110) los = segHit(r.x, r.z, (target.x - r.x) / dp, (target.z - r.z) / dp, dp) >= dp - 0.5;
@@ -50,11 +47,11 @@ function rivalInput(r, dt) {
     const T = ai.tgt; dp = Math.hypot(T.x - r.x, T.z - r.z);
     tx = T.x + T.vx * 0.6; tz = T.z + T.vz * 0.6; thr = dp < 14 ? 0.6 : 1;
   } else {
-    tx = G.x[ai.target]; tz = G.z[ai.target]; thr = ai.chase ? 0.95 : 0.75; // (16 nov.) on their way to the player, at speed
+    tx = G.x[ai.target]; tz = G.z[ai.target]; thr = 0.75;
     if (Math.hypot(tx - r.x, tz - r.z) < 7) {
       let opts = G.adj[ai.target].filter(n => n !== ai.prev && nodeOk(n)); if (!opts.length) opts = G.adj[ai.target].filter(n => nodeOk(n));
       let nx = opts.length ? opts[(rnd() * opts.length) | 0] : (ai.prev >= 0 ? ai.prev : ai.target);
-      if (ai.goal && opts.length && rnd() < (ai.chase ? 0.9 : 0.75)) nx = opts.reduce((b, n) => Math.hypot(G.x[n] - ai.goal.x, G.z[n] - ai.goal.z) < Math.hypot(G.x[b] - ai.goal.x, G.z[b] - ai.goal.z) ? n : b, opts[0]);
+      if (ai.goal && opts.length && rnd() < 0.75) nx = opts.reduce((b, n) => Math.hypot(G.x[n] - ai.goal.x, G.z[n] - ai.goal.z) < Math.hypot(G.x[b] - ai.goal.x, G.z[b] - ai.goal.z) ? n : b, opts[0]);
       ai.prev = ai.target; ai.target = nx;
     }
   }
