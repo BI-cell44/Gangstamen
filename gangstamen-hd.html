@@ -3191,7 +3191,7 @@ function drive(c, inp, dt) {
     // car on the ground cannot climb a step of more than 30 cm steeper than 45°; it is stopped like at a wall instead of being
     // thrown into the air. Slopes stay drivable, the big bumps of the Misery quarry still throw it (user, the same day)
     const run0 = Math.hypot(c.x - ox, c.z - oz);
-    if (c.yb !== undefined && (c.air || 0) < 0.2 && g > c.yb + 0.3 && g - c.yb > run0) {
+    if (c.yb !== undefined && (c.air || 0) < 0.2 && g > c.yb + 0.3 && g - c.yb > run0 && g - groundH(c.x, c.z) > 0.25) { // (16 nov., user) only the edge of a deck or a structure: the ground itself (the walls of the Misery quarry) can be climbed
       const gxs = (surfaceH(c.x + 1, c.z) - surfaceH(c.x - 1, c.z)) / 2, gzs = (surfaceH(c.x, c.z + 1) - surfaceH(c.x, c.z - 1)) / 2, gl = Math.hypot(gxs, gzs);
       {
         const nx = gl > 1e-3 ? gxs / gl : c.vx / (Math.hypot(c.vx, c.vz) || 1), nz = gl > 1e-3 ? gzs / gl : c.vz / (Math.hypot(c.vx, c.vz) || 1), u = c.vx * nx + c.vz * nz;

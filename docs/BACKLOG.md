@@ -104,6 +104,7 @@ Demandes du 16 nov. en fin d'après-midi, par priorité (d'abord ce que j'ai cas
 56. [x] (fait le 16 nov.) Grues du quai de l'île (près du Chapidock) reculées jusqu'à un sol plat, socle enfoncé dans le sol : il ne flotte plus.
 57. [x] (fait le 16 nov.) Police : une patrouille qui voit un joueur recherché (à moins de 85 m) le prend en chasse ; une voiture de police sur laquelle on tire réagit aussitôt.
 58. [x] (fait le 16 nov.) Bac : les piétons fuient la voiture de plus loin (15 m) ; les épaves sur le pont suivent le bac ; bancs remplacés par ceux de la rue, qui se cassent comme eux (morceaux qui volent et restent sur le pont en suivant le bac, remis à neuf au quai suivant).
+59. [x] (fait le 16 nov.) Sauts : la règle de la « marche » (arrêt comme contre un mur) ne vaut plus que pour le bord d'un tablier ou d'une structure ; les parois de la carrière Misery (sol) se remontent de nouveau.
 28. [x] (fait : toit en chapiteau rayé rouge et crème, mâts, fanions et guirlande, posé sur le bâtiment rond du quai Wilson) **Chapiteau du Chapidock** : l'école de cirque au bout de l'île de Nantes, modélisée en cylindre à toit plat.
 29. [x] (fait, sauf en ligne qui recharge encore) **« Quitter vers le menu »** : revient au menu sans tout recharger (la page se rechargeait et repassait par l'écran de chargement).
 30. [x] (fait) **Pause sur le bac** : la pause doit arrêter le bac (la voiture restait au-dessus de l'eau pendant que le bac continuait).
