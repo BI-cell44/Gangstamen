@@ -259,6 +259,7 @@ body:not(.ingame) #objective { display: none; }
 .pcMini { all: unset; cursor: pointer; display: flex; flex-direction: column; background: #f6f0e2; color: #2a2420; padding: 4px; border-radius: 3px; box-shadow: 0 3px 8px rgba(0,0,0,.4); font-size: 11px; text-align: center; }
 .pcMini img, .pcMini i { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; display: flex; align-items: center; justify-content: center; font-style: normal; font-size: 24px; background: #d9c8a6; }
 .pcMini span { padding-top: 3px; }
+.spCards .pcGrid { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; } .spCards .pcMini { font-size: 10px; } .spCards .pcMini i { font-size: 16px; }
 .spSide .pcGrid { grid-template-columns: repeat(3, 1fr); gap: 6px; } .spSide .pcMini { font-size: 10px; } .spSide .pcMini i { font-size: 16px; }
 .pcMini.locked { opacity: .45; cursor: default; }
 .pcMini:focus-visible { outline: 3px solid var(--sunset); }

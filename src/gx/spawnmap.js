@@ -15,7 +15,7 @@
       if (el) return;
       el = document.createElement('div'); el.id = 'spawnMap'; el.hidden = true;
       el.style.cssText = 'position:fixed;inset:0;z-index:31;display:grid;place-items:center;background:rgba(13,10,20,.82)';
-      el.innerHTML = '<div class="card" style="display:flex;gap:18px;align-items:flex-start;max-width:96vw"><canvas width="640" height="560" style="max-width:46vw;max-height:80vh;border-radius:8px;cursor:pointer;background:#1c1a24"></canvas>'
+      el.innerHTML = '<div class="card" style="display:flex;gap:18px;align-items:flex-start;max-width:96vw;max-height:94vh"><div style="display:flex;flex-direction:column;gap:8px;max-width:46vw"><canvas width="640" height="560" style="max-width:46vw;max-height:60vh;border-radius:8px;cursor:pointer;background:#1c1a24;align-self:center"></canvas><div class="spCards fine" style="max-height:26vh;overflow-y:auto;font-size:13px"></div></div>'
         + '<div style="display:flex;flex-direction:column;gap:6px;min-width:250px"><h2 style="margin:0 0 4px;font-family:var(--display);font-weight:normal;font-size:30px;color:var(--chalk);text-shadow:3px 3px 0 var(--magenta)">Où démarrer ?</h2>'
         + '<p class="fine" style="margin:0 0 6px">Clique un point sur la carte ou choisis dans la liste. Touche G (ou Pause → Carte) pour revenir ici.</p><div class="spList" style="display:flex;flex-direction:column;gap:5px"></div></div>'
         + '<div class="spSide fine" style="width:300px;max-height:80vh;overflow-y:auto;font-size:13px"></div></div>'; // (16 nov., user) records of the races and challenges, and the postcards, beside the map
@@ -86,7 +86,7 @@
         list.append(b);
       });
       { const side = el.querySelector('.spSide'); side.innerHTML = '<b>Courses et défis</b> (balises bleues et orange) :<br>' + actRecords().map(r => (r.kind === 'race' ? '🏁 ' : '★ ') + r.name + ' : ' + (r.best || '—')).join('<br>');
-        const pc = postcards(), nf = pc.filter(p => p.text).length, h = document.createElement('div'); h.style.marginTop = '12px'; h.innerHTML = '<b>Cartes postales</b> : ' + nf + ' / ' + pc.length + ' lieux découverts. Sur la carte : une petite carte là où tu l’as trouvée (clique pour la revoir), « ? » là où il en reste une.'; side.append(h); postcardGallery(h); }
+        const pc = postcards(), nf = pc.filter(p => p.text).length, h = document.createElement('div'); h.style.marginTop = '12px'; h.innerHTML = '<b>Cartes postales</b> : ' + nf + ' / ' + pc.length + ' lieux découverts. Sur la carte : une petite carte là où tu l’as trouvée (clique pour la revoir), « ? » là où il en reste une.'; const cards = el.querySelector('.spCards'); cards.innerHTML = ''; cards.append(h); h.style.marginTop = '0'; postcardGallery(h); } // (16 nov., user) the postcards under the map, races and challenges on the right
       open = true; blocking = true; el.hidden = false; draw(null); list.firstChild.focus();
     }
     function close() { if (!open) return; open = false; blocking = false; el.hidden = true; try { renderer.domElement.focus(); } catch (e) { } }

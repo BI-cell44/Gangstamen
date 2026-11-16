@@ -42,7 +42,7 @@ function frame(now) {
   if (started && mode === 'online') netTick(dt, now);
   if (started && locals.length && (!(paused || Match.over) || mode === 'online')) Soundscape.tick(dt, locals[0]); else Soundscape.hush();
   PhotoMode.tick(dt); Profile.tick(dt);
-  Tiles.lod(dt, started && locals.length ? locals.map(L => L.cam) : [camera]);
+  Tiles.lod(dt, started && locals.length ? locals.map(L => L.cam) : Intro.lodCams());
   render(dt);
   PerfHud.end();
 }
