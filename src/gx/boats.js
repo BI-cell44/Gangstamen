@@ -56,6 +56,20 @@
       for (let i = 0; i < CH.length; i++) pts.push(lane(i, 1));
       for (let i = CH.length - 1; i >= 0; i--) pts.push(lane(i, -1));
       curve = new THREE.CatmullRomCurve3(pts, true, 'catmullrom', 0.4); len = curve.getLength();
+      // (16 nov.) two trawlers moored along the quai de la Fosse (downloaded model, 4 500 triangles): the first water found
+      // off the quay, about 6 m out, parallel to the bank, away from the shuttle's ramps
+      const trawler = decode('chalutier', 22, 2, 0.16);
+      if (trawler) {
+        const spots = [], wet = (x, z) => groundH(x, z) < WATER_Y - 0.6;
+        for (const r of W.roads) { if (W.names[r.n] !== 'Quai de la Fosse') continue;
+          for (let k = 0; k < r.p.length; k += 2) { const x = r.p[k], z = r.p[k + 1];
+            if ([ROUTE[0], ROUTE[ROUTE.length - 1]].some(P => Math.hypot(P[0] - x, P[1] - z) < 90) || spots.some(s => Math.hypot(s[0] - x, s[1] - z) < 70)) continue;
+            for (let a = 0; a < 16; a++) { const dx = Math.cos(a / 16 * 6.283), dz = Math.sin(a / 16 * 6.283); let d = 2; while (d < 40 && !wet(x + dx * d, z + dz * d)) d += 1;
+              if (d < 40 && wet(x + dx * (d + 6), z + dz * (d + 6)) && wet(x + dx * (d + 10), z + dz * (d + 10)) && wet(x + dx * (d + 6) - dz * 12, z + dz * (d + 6) + dx * 12) && wet(x + dx * (d + 6) + dz * 12, z + dz * (d + 6) - dx * 12)) {
+                spots.push([x + dx * (d + 6), z + dz * (d + 6), Math.atan2(-dz, dx)]); break; } } }
+        }
+        for (const [x, z, h] of spots.slice(0, 2)) { const b = add('moor', trawler, mat, 20, 4); b.x = x; b.z = z; b.h = h; b.wk.visible = false; }
+      }
       if (sail) for (let i = 0; i < 4; i++) { const b = add('sail', sail, mat, 26, 2.2); b.s = (i * 0.25 + 0.06 + R() * 0.08) * len; b.v0 = 2.8 + R() * 1.6; b.v = b.v0; }
       if (ferry) {
         route = new THREE.CatmullRomCurve3(ROUTE.map(p => new THREE.Vector3(p[0], 0, p[1])), false, 'catmullrom', 0.5); routeLen = route.getLength();
@@ -131,7 +145,9 @@
       const T = performance.now() / 1000, fy = list.find(b => b.kind === 'ferry');
       for (const b of list) {
         let roll = 0, pitch = 0;
-        if (b.kind === 'sail') {
+        if (b.kind === 'moor') { // moored: only the swell
+          roll = Math.sin(T * 0.7 + b.ph) * 0.025; pitch = Math.sin(T * 0.5 + b.ph * 1.7) * 0.012;
+        } else if (b.kind === 'sail') {
           // give way to the ferry when it lies ahead
           let want = b.v0;
           if (fy) { const dx = fy.x - b.x, dz = fy.z - b.z, d = Math.hypot(dx, dz), ahead = -Math.sin(b.h) * dx - Math.cos(b.h) * dz; if (d < 95 && ahead > 0) want = d < 60 ? 0 : b.v0 * 0.35; }
