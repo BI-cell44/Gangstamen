@@ -4190,7 +4190,12 @@ function roadFrame(road, m) {
   const L = Math.hypot(x2 - p[m], z2 - p[m + 1]) || 1;
   return { x: p[m], z: p[m + 1], ux: sg * (x2 - p[m]) / L, uz: sg * (z2 - p[m + 1]) / L, road };
 }
+// (17 nov., user) capture the flag (HD): each team starts by its flag, the Rapaces on the place des Garennes, the
+// Chantenaysiens in front of the town hall (FLAG_AT in gx/modes.js)
+let CTF_BASES = null;
+function frameNear(x, z) { let best = null, bd = 1e18; for (const r of W.roads) { if (!r.d || r.b) continue; for (let k = 0; k < r.p.length - 2; k += 2) { const d = (r.p[k] - x) ** 2 + (r.p[k + 1] - z) ** 2; if (d < bd) { bd = d; best = [r, k]; } } } return roadFrame(best[0], best[1]); }
 function bases() {
+  if (HD && ((mode === 'split' && settings.gmode === 2) || (mode === 'online' && typeof Net !== 'undefined' && Net.gxm === 2))) return CTF_BASES || (CTF_BASES = [frameNear(864, 30), frameNear(160, -440)]);
   if (BASES) return BASES;
   let ni = W.names.indexOf('Boulevard de la Liberté'); if (ni < 0) ni = W.names.indexOf('Place Jean Macé');
   const road = W.roads.find(r => r.d && r.n === ni && !r.b) || W.roads.find(r => r.d && r.w >= 9);
