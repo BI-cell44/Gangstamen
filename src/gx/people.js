@@ -29,12 +29,14 @@
       g.setIndex(new THREE.BufferAttribute(bin(c.i, Uint16Array), 1)); g.computeVertexNormals(); g.computeBoundingSphere(); g.boundingSphere.radius *= 1.6; g.userData.shared = true;
       return geos[name] = g;
     }
+    // (16 nov., user request) casual_Female_K and casual_Male_K wear shorts: nobody in shorts in the rain
+    const SHORTS = { casual_Female_K: 1, casual_Male_K: 1 }, wet = () => !!(hd && hd.amb && hd.amb.rain > 0.3);
     function pick(p) {
-      const r = R();
+      const r = R(), w = wet();
       if (p.kid) return 'little_boy_B';
       if (p.old && p.woman) return 'elder_Female_A';
-      if (p.woman) return r < 0.5 ? 'casual_Female_G' : 'casual_Female_K';
-      return r < 0.07 ? 'tradesperson_man' : r < 0.14 ? 'worker_Male_constructor_B' : r < 0.57 ? 'casual_Male_G' : 'casual_Male_K';
+      if (p.woman) return r < 0.5 || w ? 'casual_Female_G' : 'casual_Female_K';
+      return r < 0.07 ? 'tradesperson_man' : r < 0.14 ? 'worker_Male_constructor_B' : r < 0.57 || w ? 'casual_Male_G' : 'casual_Male_K';
     }
     function make(p) {
       const name = pick(p), c = D.chars[name], mesh = new THREE.SkinnedMesh(geoOf(name), mats[(R() * mats.length) | 0]), bones = [], m4 = new THREE.Matrix4();
@@ -60,6 +62,9 @@
     function draw(p) { // one pedestrian of crowd.js, as it stands after pedStep
       let o = p._sk;
       if (!p.on) { if (o) o.mesh.visible = false; return; }
+      if (o && SHORTS[o.name] && wet()) { // it started raining: dressed again, in long clothes
+        o.mesh.visible = false; scene.remove(o.mesh); all.splice(all.indexOf(o), 1); o = p._sk = make(p);
+      }
       if (!o) { init(); o = p._sk = make(p); }
       const m = o.mesh, dt = People.dt || 0, run = p.state === 'flee' || p.state === 'panic', down = p.state === 'down';
       let kind = run ? 'run' : p.state === 'idle' || p.state === 'wait' || down ? (o.phone && o.sex === 'm' ? 'talk' : 'idle') : p.old ? 'slow' : o.phone ? 'phone' : 'walk';
