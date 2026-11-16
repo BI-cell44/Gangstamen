@@ -36,7 +36,9 @@ const paintNow = () => new Promise(r => { let done = false; const go = () => { i
   held.forEach(b => { b.disabled = false; });
   startBtn.disabled = false; startBtn.textContent = HD ? 'Chasse aux Rapaces · solo' : 'Solo · prendre le volant';
   { const f = $('startFree'); if (HD && f) { startBtn.className = 'mbtn'; f.focus(); } else startBtn.focus(); } // (16 nov., user) free driving first in the menu
-  startBtn.addEventListener('click', () => Busy.run(HD ? 'Chasse aux Rapaces' : 'partie solo', () => startGame('solo')));
+  // (16 nov., user) HD: « Chasse aux Rapaces » opens its own page (how it plays, KO and time), no longer set in the options
+  if (HD) { startBtn.addEventListener('click', () => showView('vHunt')); $('huntGo').addEventListener('click', () => Busy.run('Chasse aux Rapaces', () => startGame('solo'))); document.querySelectorAll('#vOpt .soloEnd').forEach(r => { r.hidden = true; }); }
+  else startBtn.addEventListener('click', () => Busy.run('partie solo', () => startGame('solo')));
   { const f = $('startFree'); if (f) f.addEventListener('click', () => Busy.run('Conduite libre', () => startGame('solo', 'free'))); }
   $('splitGo').addEventListener('click', () => Busy.run('écran partagé', () => startGame('split')));
   $('create').addEventListener('click', () => startOnline(null, true));

@@ -46,7 +46,7 @@
   function actMarkers() { // start markers (re-added when a mission cleared them)
     for (const a of acts) if (unlocked(a.id) && (!a.mk || !markers.includes(a.mk))) a.mk = addMarker(a.start[0], a.start[1], 6, a.kind === 'race' ? 0x3ac8ff : 0xff9a2a);
   }
-  function actReset() { if (acts) actHide(); if (run) { dropGhost(); actPanel(null); run = null; } after = null; hintOn = false; } // (16 nov.) back to the menu: nothing left running
+  function actReset() { if (acts) actHide(); if (run) { dropGhost(); run = null; } actPanel(null); after = null; hintOn = false; } // (16 nov.) back to the menu: nothing left running
   function actHide() { for (const a of acts || []) if (a.mk) { scene.remove(a.mk.beam, a.mk.ring); const i = markers.indexOf(a.mk); if (i >= 0) markers.splice(i, 1); a.mk = null; } }
   function actPanel(title, text) { // the mission panel (title, line, arrow to the target)
     if (!title) { objEl.hidden = true; objBar(null); objDir(null); return; }
@@ -99,7 +99,7 @@
   }
   function actStep(dt) {
     const free = mode === 'solo' && soloKind === 'free' && !mission && !gm && locals.length === 1; // (16 nov.) not in « Chasse aux Rapaces »
-    if (!free) { if (acts) actHide(); if (run) { dropGhost(); actPanel(null); run = null; } after = null; hintOn = false; return; }
+    if (!free) { if (run || after || hintOn) actReset(); else if (acts) actHide(); return; } // (16 nov., user) the hint panel too: it stayed up in « Chasse aux Rapaces »
     actsBuild(); const L = locals[0], c = L.car;
     if (!run) {
       actMarkers();

@@ -327,6 +327,14 @@ body.cine #logo, body.cine #credit { display: none; }
       <div class="fine">Prototype. Rues et emprises des bâtiments : <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© contributeurs OpenStreetMap</a> (ODbL). Hauteurs des bâtiments et relief : IGN, BD TOPO® et RGE ALTI® (Licence Ouverte 2.0). Façades du boulevard de la Liberté et de la rue de la Marseillaise : photos 360° <a href="https://panoramax.fr" target="_blank" rel="noopener">Panoramax</a> de Carto'Cité, Koreller, ludovelo44 (CC BY-SA 4.0) et immergis (Licence Ouverte), redressées ; ces textures sont diffusées sous CC BY-SA 4.0. Personnages, gangs et histoire sont fictifs.</div>
     </section>
 
+    <section id="vHunt" class="view" hidden>
+      <h2>Chasse aux Rapaces</h2>
+      <p>Les six caisses noires des Rapaces de la Butte tournent dans le quartier et te cherchent. Rentre-leur dedans, tire-leur dessus : chaque Rapace démoli compte un KO, et il revient plus loin. Ramasse les clés à molette pour réparer ta caisse et les bonus pour tes armes. Gare à la police si tu sèmes le désordre. Ni courses ni défis ici : la partie s’arrête au nombre de KO choisi ou à la fin du temps.</p>
+      <div class="row"><span class="lab">Fin de partie</span><div class="seg goalSeg"><button class="mbtn" data-g="10">10 KO</button><button class="mbtn" data-g="20">20 KO</button><button class="mbtn" data-g="30">30 KO</button><button class="mbtn" data-g="0">Sans</button></div></div>
+      <div class="row"><span class="lab">Durée</span><div class="seg limitSeg"><button class="mbtn" data-l="5">5 min</button><button class="mbtn" data-l="10">10 min</button><button class="mbtn" data-l="15">15 min</button><button class="mbtn" data-l="0">Sans</button></div></div>
+      <div class="menu"><button id="huntGo" class="big">Démarrer</button><button class="mbtn" data-go="vMain">Retour</button></div>
+    </section>
+
     <section id="vSplit" class="view" hidden>
       <h2>Écran partagé</h2>
       <div class="row"><span class="lab">Joueurs</span><div class="seg" id="nSeg"><button class="mbtn" data-n="2">2</button><button class="mbtn" data-n="3">3</button><button class="mbtn" data-n="4">4</button></div></div>
@@ -378,8 +386,8 @@ body.cine #logo, body.cine #credit { display: none; }
       <div class="row"><label class="lab" for="volMusic">Musique</label><input id="volMusic" type="range" min="0" max="100" step="5"><output id="volMusicV"></output></div>
       <div class="row"><label class="lab" for="volFx">Effets</label><input id="volFx" type="range" min="0" max="100" step="5"><output id="volFxV"></output></div>
       <div class="row"><label class="lab" for="volAmb">Ambiance</label><input id="volAmb" type="range" min="0" max="100" step="5"><output id="volAmbV"></output></div>
-      <div class="row"><span class="lab">Fin (solo)</span><div class="seg goalSeg"><button class="mbtn" data-g="10">10 KO</button><button class="mbtn" data-g="20">20 KO</button><button class="mbtn" data-g="30">30 KO</button><button class="mbtn" data-g="0">Sans</button></div></div>
-      <div class="row"><span class="lab">Durée</span><div class="seg limitSeg"><button class="mbtn" data-l="5">5 min</button><button class="mbtn" data-l="10">10 min</button><button class="mbtn" data-l="15">15 min</button><button class="mbtn" data-l="0">Sans</button></div></div>
+      <div class="row soloEnd"><span class="lab">Fin (solo)</span><div class="seg goalSeg"><button class="mbtn" data-g="10">10 KO</button><button class="mbtn" data-g="20">20 KO</button><button class="mbtn" data-g="30">30 KO</button><button class="mbtn" data-g="0">Sans</button></div></div>
+      <div class="row soloEnd"><span class="lab">Durée</span><div class="seg limitSeg"><button class="mbtn" data-l="5">5 min</button><button class="mbtn" data-l="10">10 min</button><button class="mbtn" data-l="15">15 min</button><button class="mbtn" data-l="0">Sans</button></div></div>
       <div class="row"><label class="lab" for="optRumble">Vibrations manette</label><input id="optRumble" type="checkbox"></div>
       <div class="row" id="retroRow"><label class="lab" for="optRetro">Pixels rétro</label><input id="optRetro" type="checkbox"></div>
       <div class="row hdOnly" hidden><span class="lab">Moment</span><div class="seg" id="todSeg"><button class="mbtn" data-v="day">Jour</button><button class="mbtn" data-v="sunset">Coucher</button><button class="mbtn" data-v="night">Nuit</button><button class="mbtn" data-v="cycle">Cycle</button></div></div>
@@ -3205,7 +3213,7 @@ function drive(c, inp, dt) {
     }
     if (wet && canSink && c.yb < WATER_Y + 0.3 && groundH(c.x, c.z) < WATER_Y - 0.1) { // touches the water where it is deep enough
       c.sink = 0.001; c.air = 0; c.yv = 0; for (let i = 0; i < 4; i++) spawnFx(c.x + (Math.random() - 0.5) * 3, WATER_Y + 0.4, c.z + (Math.random() - 0.5) * 3, 1.1, 0xcfe4ee, 0.5, 5, 3);
-      sfx.impact(9); rumbleFor(c.owner, 0.7, 0.4, 300); if (typeof flashFor === 'function') flashFor(c.owner, 'À L’EAU !', 'La voiture coule');
+      if (c.owner) { sfx.impact(9); rumbleFor(c.owner, 0.7, 0.4, 300); if (typeof flashFor === 'function') flashFor(c.owner, 'À L’EAU !', 'La voiture coule'); } // (16 nov., user) only for a player's car: a bot drowning far away showed it
     }
   }
   let impact = 0;
@@ -4266,11 +4274,11 @@ function spawnRival(r) {
 }
 // (15 nov.) at the start of a game the six Rapaces used to be where the menu left them, one of them always on the
 // player's starting grid, shooting at once: they now start far away and join the hunt one after the other
-function scatterRivals() {
+function scatterRivals(minD = 320, maxD = 1e9) {
   const [cx, cz] = playersCentre(); let k = 0;
   for (const r of rivals) {
     if (r.proxy || (teamMode && r.team >= 0)) continue;
-    let n = -1; for (let i = 0; i < 300 && n < 0; i++) { const j = (rnd() * G.x.length) | 0; if (nodeOk(j) && Math.hypot(G.x[j] - cx, G.z[j] - cz) > 320) n = j; }
+    let n = -1; for (let i = 0; i < 300 && n < 0; i++) { const j = (rnd() * G.x.length) | 0; if (nodeOk(j) && (d => d > minD && d < maxD)(Math.hypot(G.x[j] - cx, G.z[j] - cz))) n = j; }
     if (n < 0) { spawnRival(r); continue; }
     const nb = G.adj[n][0] ?? n; spawnRival(r);
     r.place(G.x[n], G.z[n], Math.atan2(-(G.x[nb] - G.x[n]), -(G.z[nb] - G.z[n]))); r.ai.target = nearestNode(r.x, r.z);
@@ -4819,6 +4827,9 @@ function rivalInput(r, dt) {
   const ai = r.ai;
   let target = null, dp = 1e9;
   if (r.calmT > 0) r.calmT -= dt; // just (re)started far away: cruise, leave the players alone (scatterRivals)
+  // (16 nov., user) free driving: the Rapaces always come for the player, steering their way through the streets
+  if (mode === 'solo' && soloKind === 'free' && !teamMode && r.calmT <= 0 && locals[0] && locals[0].car.alive) { const p = locals[0].car; ai.goal = ai.chase || (ai.chase = { x: 0, z: 0 }); ai.chase.x = p.x; ai.chase.z = p.z; }
+  else if (ai.chase) { if (ai.goal === ai.chase) ai.goal = null; ai.chase = null; }
   const foes = [...(r.calmT > 0 ? [] : allPlayerCars()), ...(teamMode ? rivals : []), ...(gx ? gx.foes() : []), ...(gx && gx.copsOn ? gx.copsOn(r) : [])].filter(c => c.alive && enemies(r, c));
   for (const c of foes) { const d = Math.hypot(c.x - r.x, c.z - r.z); if (d < dp) { dp = d; target = c; } }
   let los = false;
@@ -4834,11 +4845,11 @@ function rivalInput(r, dt) {
     const T = ai.tgt; dp = Math.hypot(T.x - r.x, T.z - r.z);
     tx = T.x + T.vx * 0.6; tz = T.z + T.vz * 0.6; thr = dp < 14 ? 0.6 : 1;
   } else {
-    tx = G.x[ai.target]; tz = G.z[ai.target]; thr = 0.75;
+    tx = G.x[ai.target]; tz = G.z[ai.target]; thr = ai.chase ? 0.95 : 0.75; // (16 nov.) on their way to the player, at speed
     if (Math.hypot(tx - r.x, tz - r.z) < 7) {
       let opts = G.adj[ai.target].filter(n => n !== ai.prev && nodeOk(n)); if (!opts.length) opts = G.adj[ai.target].filter(n => nodeOk(n));
       let nx = opts.length ? opts[(rnd() * opts.length) | 0] : (ai.prev >= 0 ? ai.prev : ai.target);
-      if (ai.goal && opts.length && rnd() < 0.75) nx = opts.reduce((b, n) => Math.hypot(G.x[n] - ai.goal.x, G.z[n] - ai.goal.z) < Math.hypot(G.x[b] - ai.goal.x, G.z[b] - ai.goal.z) ? n : b, opts[0]);
+      if (ai.goal && opts.length && rnd() < (ai.chase ? 0.9 : 0.75)) nx = opts.reduce((b, n) => Math.hypot(G.x[n] - ai.goal.x, G.z[n] - ai.goal.z) < Math.hypot(G.x[b] - ai.goal.x, G.z[b] - ai.goal.z) ? n : b, opts[0]);
       ai.prev = ai.target; ai.target = nx;
     }
   }
@@ -5979,13 +5990,29 @@ const gx = !HD ? null : (() => {
       const picked = []; for (const [a, o] of cand) { if (picked.length === 2) break; if (picked.some(([b]) => Math.abs(b - a) < 2.8) || !clear(a, o)) continue; picked.push([a, o]); }
       HQ.cars = [];
       for (const [a, off] of picked) {
-        const m = makeCar(0xeef0f2, 0x1b2f8a, false, 'saloon', { guns: false, police: true }), px = mx + nx * off + ux * a, pz = mz + nz * off + uz * a;
-        m.position.set(px, surfaceH(px, pz) + 0.34, pz); m.rotation.y = Math.atan2(nx, nz); scene.add(m);
-        HQ.cars.push([Math.round(px * 10) / 10, Math.round(pz * 10) / 10]);
-        gridAdd([px - nx * 2, pz - nz * 2, px + nx * 2, pz + nz * 2], 3.5);
+        // (16 nov., user) real police cars (hqParked below), not props: they sat above the ground and could not be destroyed
+        const px = mx + nx * off + ux * a, pz = mz + nz * off + uz * a;
+        HQ.cars.push([Math.round(px * 10) / 10, Math.round(pz * 10) / 10, Math.atan2(nx, nz)]);
       }
     }
     g.traverse(o => { o.userData.hdLinear = true; }); scene.add(g);
+  }
+  // the two cars parked in front of the station: police cars of the traffic, parked, brakes on, that can be hit and blown
+  // up; one destroyed comes back a minute later, out of sight; with the player wanted close by, they leave and give chase
+  const hqDown = [0, 0];
+  function hqParked(dt) {
+    if (!HQ.cars || !locals.length) return;
+    HQ.cars.forEach(([x, z, h], k) => {
+      const c = npcs.find(o => o.hqSpot === k), d = minPlayerDist(x, z);
+      if (c) { if (!c.alive) { c.hqSpot = -1; hqDown[k] = 60; } return; }
+      if ((hqDown[k] -= dt) > 0 || d > 250 || d < 70 || !policeOn()) return;
+      const o = makeNpc('cop'); o.place(x, z, h); o.hqSpot = k; o.parked = true; o.lost = 0; o.fireCd = 1; npcs.push(o);
+    });
+  }
+  function hqUnpark(c, dt) { // true while it stays parked
+    drive(c, { t: 0, s: 0, hb: true }, dt);
+    for (const L of locals) if (stars(L) > 0 && L.car.alive && Math.hypot(L.car.x - c.x, L.car.z - c.z) < 60) { c.parked = false; c.hqSpot = -1; c.ai = { mode: 'hunt' }; c.chase = L; c.lost = 0; return false; }
+    return true;
   }
   // (16 nov., user) roadblocks at four stars and more: two police cars parked across a street the player is heading for,
   // 120 to 220 m ahead, a little apart so a careful driver squeezes through and a fast one hits them; they stay put
@@ -6654,12 +6681,14 @@ const gx = !HD ? null : (() => {
     const civs = npcs.filter(c => c.npc === 'civ' && !c.bus).length;
     if (civs < Math.round(B.civ * densityNow()) && R() < dt * 4) spawnCiv();
     // a police patrol now and then (it goes for the Rapaces it sees; cycle 7)
-    if (policeOn() && !npcs.some(c => c.npc === 'cop' && !c.chase) && R() < dt * 0.05) spawnPatrol();
+    if (policeOn() && !npcs.some(c => c.npc === 'cop' && !c.chase && !c.parked) && R() < dt * 0.05) spawnPatrol();
+    hqParked(dt);
     for (const c of npcs.slice()) {
       const d = minPlayerDist(c.x, c.z);
       if (!c.alive) { c.dead += dt; c.vx *= 0.95; c.vz *= 0.95; c.x += c.vx * dt; c.z += c.vz * dt; if (c.dead > 12 || d > 300) removeNpc(c); continue; }
       if (c.ferry) continue; // (16 nov.) the cars that take the ferry are driven by gx/boats.js
       if (d > 340 || (c.npc === 'cop' && !c.chase && !c.prey && d > 260)) { removeNpc(c); continue; }
+      if (c.parked && hqUnpark(c, dt)) continue; // (16 nov.) the two cars in front of the station
       if (c.block) { // a roadblock: parked, brakes on; gone when far behind, after a while, or when the stars are down
         c.blockT -= dt; drive(c, { t: 0, s: 0, hb: true }, dt);
         if (c.blockT <= 0 && d > 120 || d > 320 || stars(c.block) < 3 && d > 90) removeNpc(c);
@@ -8183,7 +8212,7 @@ const gx = !HD ? null : (() => {
   function actMarkers() { // start markers (re-added when a mission cleared them)
     for (const a of acts) if (unlocked(a.id) && (!a.mk || !markers.includes(a.mk))) a.mk = addMarker(a.start[0], a.start[1], 6, a.kind === 'race' ? 0x3ac8ff : 0xff9a2a);
   }
-  function actReset() { if (acts) actHide(); if (run) { dropGhost(); actPanel(null); run = null; } after = null; hintOn = false; } // (16 nov.) back to the menu: nothing left running
+  function actReset() { if (acts) actHide(); if (run) { dropGhost(); run = null; } actPanel(null); after = null; hintOn = false; } // (16 nov.) back to the menu: nothing left running
   function actHide() { for (const a of acts || []) if (a.mk) { scene.remove(a.mk.beam, a.mk.ring); const i = markers.indexOf(a.mk); if (i >= 0) markers.splice(i, 1); a.mk = null; } }
   function actPanel(title, text) { // the mission panel (title, line, arrow to the target)
     if (!title) { objEl.hidden = true; objBar(null); objDir(null); return; }
@@ -8236,7 +8265,7 @@ const gx = !HD ? null : (() => {
   }
   function actStep(dt) {
     const free = mode === 'solo' && soloKind === 'free' && !mission && !gm && locals.length === 1; // (16 nov.) not in « Chasse aux Rapaces »
-    if (!free) { if (acts) actHide(); if (run) { dropGhost(); actPanel(null); run = null; } after = null; hintOn = false; return; }
+    if (!free) { if (run || after || hintOn) actReset(); else if (acts) actHide(); return; } // (16 nov., user) the hint panel too: it stayed up in « Chasse aux Rapaces »
     actsBuild(); const L = locals[0], c = L.car;
     if (!run) {
       actMarkers();
@@ -9130,7 +9159,8 @@ const gx = !HD ? null : (() => {
   // =====================================================================================
   const SpawnMap = (() => {
     const SPOTS = [ // (16 nov.) the list chosen by the user
-      ['Place Jean-Macé', 45, 283], ['Mairie de Chantenay', 160, -440], ['Gare de Chantenay', -300, 540],
+      ['Place Jean-Macé', 59, 228, 160, -440], // (16 nov., user) on the boulevard just above the place (its middle is the Dérapage start), facing up towards the town hall
+      ['Mairie de Chantenay', 160, -440], ['Gare de Chantenay', -300, 540],
       ['Place des Garennes · la butte', 864, 30],
       ['Gare Maritime · le bac', 1345, -420], ['Grue grise · pointe de l’île', 1218, 366], ['Nefs Dubigeon', 1958, -363],
     ];
@@ -9156,7 +9186,7 @@ const gx = !HD ? null : (() => {
     function resolve() { // snap every spot to a drivable street inside the play area
       if (spots) return spots;
       spots = [];
-      for (const [name, x0, z0] of SPOTS) {
+      for (const [name, x0, z0, fx, fz] of SPOTS) {
         let x = x0, z = z0;
         if (x == null || !isFinite(x)) continue;
         if (Math.abs(x - CX) > HX - 15 || Math.abs(z - CZ) > HZ - 15) { rejects.push([name, 'hors carte', CX, HX, CZ, HZ]); continue; }
@@ -9169,7 +9199,7 @@ const gx = !HD ? null : (() => {
         if (busy(px, pz)) { const seen = new Set([n]), q = [n]; let found = null;
           while (q.length && !found) { const a = q.shift(); for (const b of G.adj[a]) { if (seen.has(b)) continue; seen.add(b); if (Math.hypot(G.x[b] - rx, G.z[b] - rz) > 220) continue; if (nodeOk(b) && !busy(G.x[b], G.z[b])) { found = b; break; } q.push(b); } }
           if (found != null) { px = G.x[found]; pz = G.z[found]; } }
-        spots.push({ name, x: px, z: pz });
+        spots.push({ name, x: px, z: pz, fx, fz });
       }
       return spots;
     }
@@ -9217,9 +9247,10 @@ const gx = !HD ? null : (() => {
     function close() { if (!open) return; open = false; blocking = false; el.hidden = true; try { renderer.domElement.focus(); } catch (e) { } }
     function choose(s) {
       const L = locals[0]; if (!L) return close();
-      const n = nearestNodeTo(s.x, s.z), nb = G.adj[n] && G.adj[n][0];
+      const n = nearestNodeTo(s.x, s.z), A = (G.adj[n] || []).filter(m => nodeOk(m)), dir = m => s.fx == null ? 0 : ((G.x[m] - G.x[n]) * (s.fx - G.x[n]) + (G.z[m] - G.z[n]) * (s.fz - G.z[n])) / (Math.hypot(G.x[m] - G.x[n], G.z[m] - G.z[n]) || 1);
+      const nb = A.length ? A.reduce((b, m) => dir(m) > dir(b) ? m : b, A[0]) : G.adj[n] && G.adj[n][0];
       close();
-      Busy.run(s.name, () => { placePlayer([s.x, s.z], nb != null ? [G.x[nb], G.z[nb]] : null); L.heat = 0; });
+      Busy.run(s.name, () => { placePlayer([s.x, s.z], s.fx != null ? [s.fx, s.fz] : nb != null ? [G.x[nb], G.z[nb]] : null); L.heat = 0; scatterRivals(170, 330); let k = 0; for (const r of rivals) r.calmT = 2 + 3 * k++; }); // (16 nov., user) the Rapaces start away from the new spot and come for the player within seconds
       flash(s.name, 'Conduite libre · G : changer de point de départ');
     }
     return { show, close, choose, get open() { return open; }, get spots() { return resolve(); }, rejects };
@@ -10051,7 +10082,9 @@ const paintNow = () => new Promise(r => { let done = false; const go = () => { i
   held.forEach(b => { b.disabled = false; });
   startBtn.disabled = false; startBtn.textContent = HD ? 'Chasse aux Rapaces · solo' : 'Solo · prendre le volant';
   { const f = $('startFree'); if (HD && f) { startBtn.className = 'mbtn'; f.focus(); } else startBtn.focus(); } // (16 nov., user) free driving first in the menu
-  startBtn.addEventListener('click', () => Busy.run(HD ? 'Chasse aux Rapaces' : 'partie solo', () => startGame('solo')));
+  // (16 nov., user) HD: « Chasse aux Rapaces » opens its own page (how it plays, KO and time), no longer set in the options
+  if (HD) { startBtn.addEventListener('click', () => showView('vHunt')); $('huntGo').addEventListener('click', () => Busy.run('Chasse aux Rapaces', () => startGame('solo'))); document.querySelectorAll('#vOpt .soloEnd').forEach(r => { r.hidden = true; }); }
+  else startBtn.addEventListener('click', () => Busy.run('partie solo', () => startGame('solo')));
   { const f = $('startFree'); if (f) f.addEventListener('click', () => Busy.run('Conduite libre', () => startGame('solo', 'free'))); }
   $('splitGo').addEventListener('click', () => Busy.run('écran partagé', () => startGame('split')));
   $('create').addEventListener('click', () => startOnline(null, true));

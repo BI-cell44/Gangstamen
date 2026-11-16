@@ -68,13 +68,29 @@
       const picked = []; for (const [a, o] of cand) { if (picked.length === 2) break; if (picked.some(([b]) => Math.abs(b - a) < 2.8) || !clear(a, o)) continue; picked.push([a, o]); }
       HQ.cars = [];
       for (const [a, off] of picked) {
-        const m = makeCar(0xeef0f2, 0x1b2f8a, false, 'saloon', { guns: false, police: true }), px = mx + nx * off + ux * a, pz = mz + nz * off + uz * a;
-        m.position.set(px, surfaceH(px, pz) + 0.34, pz); m.rotation.y = Math.atan2(nx, nz); scene.add(m);
-        HQ.cars.push([Math.round(px * 10) / 10, Math.round(pz * 10) / 10]);
-        gridAdd([px - nx * 2, pz - nz * 2, px + nx * 2, pz + nz * 2], 3.5);
+        // (16 nov., user) real police cars (hqParked below), not props: they sat above the ground and could not be destroyed
+        const px = mx + nx * off + ux * a, pz = mz + nz * off + uz * a;
+        HQ.cars.push([Math.round(px * 10) / 10, Math.round(pz * 10) / 10, Math.atan2(nx, nz)]);
       }
     }
     g.traverse(o => { o.userData.hdLinear = true; }); scene.add(g);
+  }
+  // the two cars parked in front of the station: police cars of the traffic, parked, brakes on, that can be hit and blown
+  // up; one destroyed comes back a minute later, out of sight; with the player wanted close by, they leave and give chase
+  const hqDown = [0, 0];
+  function hqParked(dt) {
+    if (!HQ.cars || !locals.length) return;
+    HQ.cars.forEach(([x, z, h], k) => {
+      const c = npcs.find(o => o.hqSpot === k), d = minPlayerDist(x, z);
+      if (c) { if (!c.alive) { c.hqSpot = -1; hqDown[k] = 60; } return; }
+      if ((hqDown[k] -= dt) > 0 || d > 250 || d < 70 || !policeOn()) return;
+      const o = makeNpc('cop'); o.place(x, z, h); o.hqSpot = k; o.parked = true; o.lost = 0; o.fireCd = 1; npcs.push(o);
+    });
+  }
+  function hqUnpark(c, dt) { // true while it stays parked
+    drive(c, { t: 0, s: 0, hb: true }, dt);
+    for (const L of locals) if (stars(L) > 0 && L.car.alive && Math.hypot(L.car.x - c.x, L.car.z - c.z) < 60) { c.parked = false; c.hqSpot = -1; c.ai = { mode: 'hunt' }; c.chase = L; c.lost = 0; return false; }
+    return true;
   }
   // (16 nov., user) roadblocks at four stars and more: two police cars parked across a street the player is heading for,
   // 120 to 220 m ahead, a little apart so a careful driver squeezes through and a fast one hits them; they stay put

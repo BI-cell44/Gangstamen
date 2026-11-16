@@ -271,7 +271,7 @@ function drive(c, inp, dt) {
     }
     if (wet && canSink && c.yb < WATER_Y + 0.3 && groundH(c.x, c.z) < WATER_Y - 0.1) { // touches the water where it is deep enough
       c.sink = 0.001; c.air = 0; c.yv = 0; for (let i = 0; i < 4; i++) spawnFx(c.x + (Math.random() - 0.5) * 3, WATER_Y + 0.4, c.z + (Math.random() - 0.5) * 3, 1.1, 0xcfe4ee, 0.5, 5, 3);
-      sfx.impact(9); rumbleFor(c.owner, 0.7, 0.4, 300); if (typeof flashFor === 'function') flashFor(c.owner, 'À L’EAU !', 'La voiture coule');
+      if (c.owner) { sfx.impact(9); rumbleFor(c.owner, 0.7, 0.4, 300); if (typeof flashFor === 'function') flashFor(c.owner, 'À L’EAU !', 'La voiture coule'); } // (16 nov., user) only for a player's car: a bot drowning far away showed it
     }
   }
   let impact = 0;

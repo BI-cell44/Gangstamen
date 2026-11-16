@@ -5,7 +5,8 @@
   // =====================================================================================
   const SpawnMap = (() => {
     const SPOTS = [ // (16 nov.) the list chosen by the user
-      ['Place Jean-Macé', 45, 283], ['Mairie de Chantenay', 160, -440], ['Gare de Chantenay', -300, 540],
+      ['Place Jean-Macé', 59, 228, 160, -440], // (16 nov., user) on the boulevard just above the place (its middle is the Dérapage start), facing up towards the town hall
+      ['Mairie de Chantenay', 160, -440], ['Gare de Chantenay', -300, 540],
       ['Place des Garennes · la butte', 864, 30],
       ['Gare Maritime · le bac', 1345, -420], ['Grue grise · pointe de l’île', 1218, 366], ['Nefs Dubigeon', 1958, -363],
     ];
@@ -31,7 +32,7 @@
     function resolve() { // snap every spot to a drivable street inside the play area
       if (spots) return spots;
       spots = [];
-      for (const [name, x0, z0] of SPOTS) {
+      for (const [name, x0, z0, fx, fz] of SPOTS) {
         let x = x0, z = z0;
         if (x == null || !isFinite(x)) continue;
         if (Math.abs(x - CX) > HX - 15 || Math.abs(z - CZ) > HZ - 15) { rejects.push([name, 'hors carte', CX, HX, CZ, HZ]); continue; }
@@ -44,7 +45,7 @@
         if (busy(px, pz)) { const seen = new Set([n]), q = [n]; let found = null;
           while (q.length && !found) { const a = q.shift(); for (const b of G.adj[a]) { if (seen.has(b)) continue; seen.add(b); if (Math.hypot(G.x[b] - rx, G.z[b] - rz) > 220) continue; if (nodeOk(b) && !busy(G.x[b], G.z[b])) { found = b; break; } q.push(b); } }
           if (found != null) { px = G.x[found]; pz = G.z[found]; } }
-        spots.push({ name, x: px, z: pz });
+        spots.push({ name, x: px, z: pz, fx, fz });
       }
       return spots;
     }
@@ -92,9 +93,10 @@
     function close() { if (!open) return; open = false; blocking = false; el.hidden = true; try { renderer.domElement.focus(); } catch (e) { } }
     function choose(s) {
       const L = locals[0]; if (!L) return close();
-      const n = nearestNodeTo(s.x, s.z), nb = G.adj[n] && G.adj[n][0];
+      const n = nearestNodeTo(s.x, s.z), A = (G.adj[n] || []).filter(m => nodeOk(m)), dir = m => s.fx == null ? 0 : ((G.x[m] - G.x[n]) * (s.fx - G.x[n]) + (G.z[m] - G.z[n]) * (s.fz - G.z[n])) / (Math.hypot(G.x[m] - G.x[n], G.z[m] - G.z[n]) || 1);
+      const nb = A.length ? A.reduce((b, m) => dir(m) > dir(b) ? m : b, A[0]) : G.adj[n] && G.adj[n][0];
       close();
-      Busy.run(s.name, () => { placePlayer([s.x, s.z], nb != null ? [G.x[nb], G.z[nb]] : null); L.heat = 0; });
+      Busy.run(s.name, () => { placePlayer([s.x, s.z], s.fx != null ? [s.fx, s.fz] : nb != null ? [G.x[nb], G.z[nb]] : null); L.heat = 0; scatterRivals(170, 330); let k = 0; for (const r of rivals) r.calmT = 2 + 3 * k++; }); // (16 nov., user) the Rapaces start away from the new spot and come for the player within seconds
       flash(s.name, 'Conduite libre · G : changer de point de départ');
     }
     return { show, close, choose, get open() { return open; }, get spots() { return resolve(); }, rejects };

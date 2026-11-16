@@ -8,12 +8,14 @@
     const civs = npcs.filter(c => c.npc === 'civ' && !c.bus).length;
     if (civs < Math.round(B.civ * densityNow()) && R() < dt * 4) spawnCiv();
     // a police patrol now and then (it goes for the Rapaces it sees; cycle 7)
-    if (policeOn() && !npcs.some(c => c.npc === 'cop' && !c.chase) && R() < dt * 0.05) spawnPatrol();
+    if (policeOn() && !npcs.some(c => c.npc === 'cop' && !c.chase && !c.parked) && R() < dt * 0.05) spawnPatrol();
+    hqParked(dt);
     for (const c of npcs.slice()) {
       const d = minPlayerDist(c.x, c.z);
       if (!c.alive) { c.dead += dt; c.vx *= 0.95; c.vz *= 0.95; c.x += c.vx * dt; c.z += c.vz * dt; if (c.dead > 12 || d > 300) removeNpc(c); continue; }
       if (c.ferry) continue; // (16 nov.) the cars that take the ferry are driven by gx/boats.js
       if (d > 340 || (c.npc === 'cop' && !c.chase && !c.prey && d > 260)) { removeNpc(c); continue; }
+      if (c.parked && hqUnpark(c, dt)) continue; // (16 nov.) the two cars in front of the station
       if (c.block) { // a roadblock: parked, brakes on; gone when far behind, after a while, or when the stars are down
         c.blockT -= dt; drive(c, { t: 0, s: 0, hb: true }, dt);
         if (c.blockT <= 0 && d > 120 || d > 320 || stars(c.block) < 3 && d > 90) removeNpc(c);

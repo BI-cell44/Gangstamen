@@ -327,6 +327,14 @@ body.cine #logo, body.cine #credit { display: none; }
       <div class="fine">Prototype. Rues et emprises des bâtiments : <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© contributeurs OpenStreetMap</a> (ODbL). Hauteurs des bâtiments et relief : IGN, BD TOPO® et RGE ALTI® (Licence Ouverte 2.0). Façades du boulevard de la Liberté et de la rue de la Marseillaise : photos 360° <a href="https://panoramax.fr" target="_blank" rel="noopener">Panoramax</a> de Carto'Cité, Koreller, ludovelo44 (CC BY-SA 4.0) et immergis (Licence Ouverte), redressées ; ces textures sont diffusées sous CC BY-SA 4.0. Personnages, gangs et histoire sont fictifs.</div>
     </section>
 
+    <section id="vHunt" class="view" hidden>
+      <h2>Chasse aux Rapaces</h2>
+      <p>Les six caisses noires des Rapaces de la Butte tournent dans le quartier et te cherchent. Rentre-leur dedans, tire-leur dessus : chaque Rapace démoli compte un KO, et il revient plus loin. Ramasse les clés à molette pour réparer ta caisse et les bonus pour tes armes. Gare à la police si tu sèmes le désordre. Ni courses ni défis ici : la partie s’arrête au nombre de KO choisi ou à la fin du temps.</p>
+      <div class="row"><span class="lab">Fin de partie</span><div class="seg goalSeg"><button class="mbtn" data-g="10">10 KO</button><button class="mbtn" data-g="20">20 KO</button><button class="mbtn" data-g="30">30 KO</button><button class="mbtn" data-g="0">Sans</button></div></div>
+      <div class="row"><span class="lab">Durée</span><div class="seg limitSeg"><button class="mbtn" data-l="5">5 min</button><button class="mbtn" data-l="10">10 min</button><button class="mbtn" data-l="15">15 min</button><button class="mbtn" data-l="0">Sans</button></div></div>
+      <div class="menu"><button id="huntGo" class="big">Démarrer</button><button class="mbtn" data-go="vMain">Retour</button></div>
+    </section>
+
     <section id="vSplit" class="view" hidden>
       <h2>Écran partagé</h2>
       <div class="row"><span class="lab">Joueurs</span><div class="seg" id="nSeg"><button class="mbtn" data-n="2">2</button><button class="mbtn" data-n="3">3</button><button class="mbtn" data-n="4">4</button></div></div>
@@ -378,8 +386,8 @@ body.cine #logo, body.cine #credit { display: none; }
       <div class="row"><label class="lab" for="volMusic">Musique</label><input id="volMusic" type="range" min="0" max="100" step="5"><output id="volMusicV"></output></div>
       <div class="row"><label class="lab" for="volFx">Effets</label><input id="volFx" type="range" min="0" max="100" step="5"><output id="volFxV"></output></div>
       <div class="row"><label class="lab" for="volAmb">Ambiance</label><input id="volAmb" type="range" min="0" max="100" step="5"><output id="volAmbV"></output></div>
-      <div class="row"><span class="lab">Fin (solo)</span><div class="seg goalSeg"><button class="mbtn" data-g="10">10 KO</button><button class="mbtn" data-g="20">20 KO</button><button class="mbtn" data-g="30">30 KO</button><button class="mbtn" data-g="0">Sans</button></div></div>
-      <div class="row"><span class="lab">Durée</span><div class="seg limitSeg"><button class="mbtn" data-l="5">5 min</button><button class="mbtn" data-l="10">10 min</button><button class="mbtn" data-l="15">15 min</button><button class="mbtn" data-l="0">Sans</button></div></div>
+      <div class="row soloEnd"><span class="lab">Fin (solo)</span><div class="seg goalSeg"><button class="mbtn" data-g="10">10 KO</button><button class="mbtn" data-g="20">20 KO</button><button class="mbtn" data-g="30">30 KO</button><button class="mbtn" data-g="0">Sans</button></div></div>
+      <div class="row soloEnd"><span class="lab">Durée</span><div class="seg limitSeg"><button class="mbtn" data-l="5">5 min</button><button class="mbtn" data-l="10">10 min</button><button class="mbtn" data-l="15">15 min</button><button class="mbtn" data-l="0">Sans</button></div></div>
       <div class="row"><label class="lab" for="optRumble">Vibrations manette</label><input id="optRumble" type="checkbox"></div>
       <div class="row" id="retroRow"><label class="lab" for="optRetro">Pixels rétro</label><input id="optRetro" type="checkbox"></div>
       <div class="row hdOnly" hidden><span class="lab">Moment</span><div class="seg" id="todSeg"><button class="mbtn" data-v="day">Jour</button><button class="mbtn" data-v="sunset">Coucher</button><button class="mbtn" data-v="night">Nuit</button><button class="mbtn" data-v="cycle">Cycle</button></div></div>
