@@ -238,6 +238,16 @@ body:not(.ingame) #objective { display: none; }
 #intro.play #iSkip { display: flex; }
 #iSplash { inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 26px; text-align: center; background: radial-gradient(ellipse at center, rgba(13,10,20,.55), rgba(13,10,20,.94)); }
 #intro.splash #iSplash { display: flex; }
+#intro.loading { cursor: progress; }
+#gload { position: fixed; inset: 0; z-index: 40; cursor: progress; }
+#gload:not([hidden]), #iLoad { inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 26px; text-align: center; background: radial-gradient(ellipse at 50% 120%, rgba(255,138,61,.35), #0d0a14 70%); }
+#intro.loading #iLoad { display: flex; }
+#iLoad h1, #gload h1 { margin: 0; font-family: var(--display); font-weight: normal; line-height: .9; color: var(--chalk); text-shadow: 6px 6px 0 var(--magenta), 12px 12px 0 #000; font-size: clamp(46px, 11vw, 120px); transform: rotate(-3deg); }
+#iLoad p, #gload p { margin: 0; font-family: var(--data); font-size: clamp(18px, 2.4vw, 24px); letter-spacing: .1em; color: rgba(243,234,216,.8); }
+#iLoad .lbar, #gload .lbar { width: min(420px, 70vw); height: 10px; border: 2px solid var(--chalk); background: rgba(0,0,0,.5); }
+#gload .lbar i { display: block; height: 100%; width: 30%; background: var(--sunset); animation: lslide 1s ease-in-out infinite alternate; }
+@keyframes lslide { from { margin-left: 0; } to { margin-left: 70%; } }
+#iLoad .lbar i { display: block; height: 100%; width: 0; background: var(--sunset); transition: width .25s; }
 #iSplash h1 { font-size: clamp(46px, 11vw, 120px); transform: rotate(-3deg); }
 #iSplash p { margin: 0; font-family: var(--data); font-size: clamp(20px, 3vw, 30px); letter-spacing: .14em; text-transform: uppercase; color: var(--sunset); text-shadow: 2px 2px 0 #000; animation: blink 1.1s steps(2, jump-none) infinite; }
 @keyframes blink { from { opacity: 1; } to { opacity: .25; } }
@@ -272,7 +282,7 @@ body.cine #logo, body.cine #credit { display: none; }
   <div class="grp"><button id="tSpec" aria-label="Arme spéciale" hidden>SPÉ</button><button id="tHb" aria-label="Frein à main" hidden>F.M.</button><button id="tFire" aria-label="Tirer">FEU</button><button id="tBrake" aria-label="Frein">FREIN</button><button id="tGas" aria-label="Accélérer">GAZ</button></div>
 </div>
 
-<div id="title">
+<div id="title" hidden>
   <div class="card">
     <div class="tag">Nantes · Chantenay · été 1996</div>
     <h1>Gangstamen</h1>
@@ -375,13 +385,15 @@ body.cine #logo, body.cine #credit { display: none; }
     </section>
   </div>
 </div>
-<div id="intro" hidden>
+<div id="gload" hidden><h1>Gangstamen</h1><p id="gloadTxt">Chargement…</p><div class="lbar"><i></i></div></div>
+<div id="intro" class="loading">
   <div class="ibar t"></div><div class="ibar b"></div>
   <div id="iCap"><div id="iCap1"></div><div id="iCap2"></div></div>
   <div id="iGang"><b></b><span></span></div>
   <div id="iTitle"><h1>Gangstamen</h1><p>Chantenay · 1996</p></div>
   <div id="iFlash"></div><div id="iFade"></div>
   <div id="iSkip">Échap · passer</div>
+  <div id="iLoad"><h1>Gangstamen</h1><p id="iLoadTxt">Chargement du quartier…</p><div class="lbar"><i id="iLoadBar"></i></div></div>
   <div id="iSplash"><h1>Gangstamen</h1><p>Clique ou appuie sur une touche</p></div>
 </div>
 <div id="board" class="hud" hidden></div>

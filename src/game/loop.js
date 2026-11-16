@@ -38,7 +38,7 @@ function frame(now) {
   Intro.update(dt);
   if (HD) hd.perf(now);
   if (gx) gx.landmarkTick();
-  if (started && (!paused || mode === 'online')) { const t0 = performance.now(); step(dt, now); PerfHud.sim(performance.now() - t0); }
+  if (started && !Busy.on && (!paused || mode === 'online')) { const t0 = performance.now(); step(dt, now); PerfHud.sim(performance.now() - t0); }
   if (started && mode === 'online') netTick(dt, now);
   if (started && locals.length && (!(paused || Match.over) || mode === 'online')) Soundscape.tick(dt, locals[0]); else Soundscape.hush();
   PhotoMode.tick(dt); Profile.tick(dt);

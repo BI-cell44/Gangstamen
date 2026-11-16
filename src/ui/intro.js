@@ -13,6 +13,23 @@ function pathPose(P, s, lat) {
   const a = pathAt(P, s - 5), b = pathAt(P, s + 5), c = pathAt(P, s); let tx = b[0] - a[0], tz = b[1] - a[1]; const L = Math.hypot(tx, tz) || 1; tx /= L; tz /= L;
   return { x: c[0] - tz * lat, z: c[1] + tx * lat, tx, tz };
 }
+// (16 nov., user request) a loading panel while a game starts or the car is moved: the first images at street level
+// are slow (detailed tiles, shaders, textures); the panel stays up, the game held, until the frames are smooth again
+const Busy = (() => {
+  let on = false;
+  const tick = () => new Promise(r => { let done = false; const go = () => { if (!done) { done = true; r(); } }; requestAnimationFrame(go); setTimeout(go, 120); });
+  async function run(label, fn) {
+    if (on) { fn(); return; }
+    on = true; const el = $('gload'); $('gloadTxt').textContent = 'Chargement · ' + label + '…'; el.hidden = false;
+    await tick(); await tick(); // the panel is painted before the slow part
+    try { fn(); } catch (e) { console.warn(label, e); }
+    try { renderer.compile(scene, locals[0] ? locals[0].cam : camera); } catch (e) { }
+    const t0 = performance.now(); let prev = t0, calm = 0;
+    while (calm < 3 && performance.now() - t0 < 6000) { await tick(); const n = performance.now(); calm = n - prev < 70 ? calm + 1 : 0; prev = n; }
+    el.hidden = true; on = false;
+  }
+  return { run, get on() { return on; } };
+})();
 const Intro = (() => {
   const el = $('intro'), cap1 = $('iCap1'), cap2 = $('iCap2'), gang = $('iGang'), ttl = $('iTitle'), flashEl = $('iFlash'), fadeEl = $('iFade');
   // boulevard de la Liberté, from the town hall down towards the Loire
@@ -199,6 +216,13 @@ const Intro = (() => {
     setTimeout(() => { if (state === 'off') { el.hidden = true; el.className = ''; } }, 700);
   }
   function stop() { if (state === 'off') return; reset(); el.hidden = true; el.className = ''; } // a game starts: no menu
+  // the loading screen is the intro element with class 'loading', shown from the first byte of the page
+  function progress(k, label) { const t = $('iLoadTxt'), b = $('iLoadBar'); if (t) t.textContent = 'Chargement · ' + label + '…'; if (b) b.style.width = Math.round(k * 100) + '%'; }
+  function loaded(withIntro) {
+    progress(1, 'prêt');
+    if (withIntro) { splash(); return; }
+    el.hidden = true; el.className = ''; showMenu();
+  }
   function splash() { state = 'splash'; fromMenu = false; $('title').hidden = true; el.hidden = false; el.className = 'splash'; document.body.classList.add('cine'); }
   function play(menu) {
     sfx.init(); build();
@@ -218,7 +242,7 @@ const Intro = (() => {
   }
   addEventListener('keydown', e => { if (state === 'off' || e.repeat || ['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) return; if (key(e)) e.preventDefault(); });
   el.addEventListener('pointerdown', e => { e.preventDefault(); key(null); });
-  return { update, splash, play, finish, stop, key, focusCar, get state() { return state; }, get playing() { return state === 'play'; }, T_END, BAR };
+  return { update, progress, loaded, splash, play, finish, stop, key, focusCar, get state() { return state; }, get playing() { return state === 'play'; }, T_END, BAR };
 })();
 
 /*@GX_MODULE@*/

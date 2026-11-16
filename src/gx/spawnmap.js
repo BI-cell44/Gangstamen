@@ -77,8 +77,9 @@
     function choose(s) {
       const L = locals[0]; if (!L) return close();
       const n = nearestNodeTo(s.x, s.z), nb = G.adj[n] && G.adj[n][0];
-      placePlayer([s.x, s.z], nb != null ? [G.x[nb], G.z[nb]] : null); L.heat = 0;
-      close(); flash(s.name, 'Conduite libre · G : changer de point de départ');
+      close();
+      Busy.run(s.name, () => { placePlayer([s.x, s.z], nb != null ? [G.x[nb], G.z[nb]] : null); L.heat = 0; });
+      flash(s.name, 'Conduite libre · G : changer de point de départ');
     }
     return { show, close, get open() { return open; }, get spots() { return resolve(); }, rejects };
   })();

@@ -53,7 +53,7 @@ Dernier retour d'essai de l'utilisateur (15 nov., soir) : Ultra tourne sans prob
 16. [x] (fait : « La police l'a vu : piéton renversé », au moins une étoile, aussi pour les clients des terrasses) **Une étoile quand on écrase un piéton** (15 nov.) : message « La police l'a vu » et passage à une étoile.
 17. [x] (fait : caméra avancée au-dessus du capot, plus de bande sombre en bas de l'écran) **Vue capot** (15 nov.) : on voit un peu le dessous du capot ; remonter ou avancer la caméra.
 18. [x] (fait le 16 nov. : les deux modèles en short, casual_Female_K et casual_Male_K, sont remplacés par des tenues longues dès qu'il pleut ; mesure : 29 personnes en short au sec, 0 sous la pluie) **Pas de piétons en short sous la pluie ou l'orage** (15 nov.), si possible : tenues longues, parapluies éventuels. Il faut d'abord repérer lesquels des 8 modèles du pack (`pick()` dans `src/gx/people.js`, champ `name` ajouté) sont en short : une capture de chacun, puis les écarter quand `hd.amb.rain` est fort.
-19. [ ] **Démarrage dans l'ordre** (16 nov.) : on ne doit pas voir les boutons du menu apparaître un à un pendant le chargement ; enchaîner l'écran de chargement, puis « Appuie sur une touche », puis la cinématique, puis le menu.
+19. [x] (fait le 16 nov. : écran de chargement avec barre, menu caché jusqu'au bout ; même panneau « Chargement » au lancement d'une partie, d'une mission et au choix du point de départ, jeu figé tant que les images ne sont pas fluides) **Démarrage dans l'ordre** (16 nov.) : on ne doit pas voir les boutons du menu apparaître un à un pendant le chargement ; enchaîner l'écran de chargement, puis « Appuie sur une touche », puis la cinématique, puis le menu.
 
 ## En attente d'un essai de l'utilisateur
 

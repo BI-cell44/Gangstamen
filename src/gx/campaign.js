@@ -131,6 +131,7 @@
   function dropMineFrom(c) { if (mines.filter(m => m.owner === c).length < 6) dropMine(c); }
   const camp = () => settings.camp || (settings.camp = { done: [] });
   let cur = null;
+  const launchMission = i => Busy.run('mission · ' + MISSIONS[i].title, () => startMission(i));
   function startMission(i) {
     const M = MISSIONS[i]; if (!M) return;
     if (!started || mode !== 'solo') startGame('solo');
@@ -167,8 +168,8 @@
       mEl.querySelector('p').textContent = win ? m.title + ' · +' + (200 + i * 50) + ' respect' : res === 'dead' ? 'Ta caisse est en morceaux. La mission reprend depuis le début.' : (m.fail || 'Ce n’est que partie remise');
       const menu = mEl.querySelector('.menu');
       const btn = (t, f, big) => { const b = document.createElement('button'); b.className = big ? 'big' : 'mbtn'; b.textContent = t; b.addEventListener('click', () => { mEl.hidden = true; blocking = false; f(); }); menu.append(b); return b; };
-      const first = next ? btn('Mission suivante · ' + next.title, () => startMission(i + 1), true) : btn(win ? 'Rouler librement' : 'Réessayer', () => win ? freeRoam() : startMission(i), true);
-      if (next || !win) btn(win ? 'Rejouer' : 'Rouler librement', () => win ? startMission(i) : freeRoam());
+      const first = next ? btn('Mission suivante · ' + next.title, () => launchMission(i + 1), true) : btn(win ? 'Rouler librement' : 'Réessayer', () => win ? freeRoam() : launchMission(i), true);
+      if (next || !win) btn(win ? 'Rejouer' : 'Rouler librement', () => win ? launchMission(i) : freeRoam());
       btn('Menu de la campagne', () => { cleanupMission(); toMenu(); });
       first.focus();
     };
@@ -189,7 +190,7 @@
       const b = document.createElement('button'); b.className = 'mbtn campBtn';
       b.innerHTML = '<b></b><span></span>'; b.children[0].textContent = (i + 1) + '. ' + M.title + (done.includes(M.id) ? '  ✓' : '');
       b.children[1].textContent = open ? M.where : 'Verrouillée'; b.disabled = !open;
-      b.addEventListener('click', () => startMission(i));
+      b.addEventListener('click', () => launchMission(i));
       box.append(b);
     });
     { // difficulty switch (15 nov.)

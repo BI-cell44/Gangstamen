@@ -238,6 +238,16 @@ body:not(.ingame) #objective { display: none; }
 #intro.play #iSkip { display: flex; }
 #iSplash { inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 26px; text-align: center; background: radial-gradient(ellipse at center, rgba(13,10,20,.55), rgba(13,10,20,.94)); }
 #intro.splash #iSplash { display: flex; }
+#intro.loading { cursor: progress; }
+#gload { position: fixed; inset: 0; z-index: 40; cursor: progress; }
+#gload:not([hidden]), #iLoad { inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 26px; text-align: center; background: radial-gradient(ellipse at 50% 120%, rgba(255,138,61,.35), #0d0a14 70%); }
+#intro.loading #iLoad { display: flex; }
+#iLoad h1, #gload h1 { margin: 0; font-family: var(--display); font-weight: normal; line-height: .9; color: var(--chalk); text-shadow: 6px 6px 0 var(--magenta), 12px 12px 0 #000; font-size: clamp(46px, 11vw, 120px); transform: rotate(-3deg); }
+#iLoad p, #gload p { margin: 0; font-family: var(--data); font-size: clamp(18px, 2.4vw, 24px); letter-spacing: .1em; color: rgba(243,234,216,.8); }
+#iLoad .lbar, #gload .lbar { width: min(420px, 70vw); height: 10px; border: 2px solid var(--chalk); background: rgba(0,0,0,.5); }
+#gload .lbar i { display: block; height: 100%; width: 30%; background: var(--sunset); animation: lslide 1s ease-in-out infinite alternate; }
+@keyframes lslide { from { margin-left: 0; } to { margin-left: 70%; } }
+#iLoad .lbar i { display: block; height: 100%; width: 0; background: var(--sunset); transition: width .25s; }
 #iSplash h1 { font-size: clamp(46px, 11vw, 120px); transform: rotate(-3deg); }
 #iSplash p { margin: 0; font-family: var(--data); font-size: clamp(20px, 3vw, 30px); letter-spacing: .14em; text-transform: uppercase; color: var(--sunset); text-shadow: 2px 2px 0 #000; animation: blink 1.1s steps(2, jump-none) infinite; }
 @keyframes blink { from { opacity: 1; } to { opacity: .25; } }
@@ -272,7 +282,7 @@ body.cine #logo, body.cine #credit { display: none; }
   <div class="grp"><button id="tSpec" aria-label="Arme spéciale" hidden>SPÉ</button><button id="tHb" aria-label="Frein à main" hidden>F.M.</button><button id="tFire" aria-label="Tirer">FEU</button><button id="tBrake" aria-label="Frein">FREIN</button><button id="tGas" aria-label="Accélérer">GAZ</button></div>
 </div>
 
-<div id="title">
+<div id="title" hidden>
   <div class="card">
     <div class="tag">Nantes · Chantenay · été 1996</div>
     <h1>Gangstamen</h1>
@@ -375,13 +385,15 @@ body.cine #logo, body.cine #credit { display: none; }
     </section>
   </div>
 </div>
-<div id="intro" hidden>
+<div id="gload" hidden><h1>Gangstamen</h1><p id="gloadTxt">Chargement…</p><div class="lbar"><i></i></div></div>
+<div id="intro" class="loading">
   <div class="ibar t"></div><div class="ibar b"></div>
   <div id="iCap"><div id="iCap1"></div><div id="iCap2"></div></div>
   <div id="iGang"><b></b><span></span></div>
   <div id="iTitle"><h1>Gangstamen</h1><p>Chantenay · 1996</p></div>
   <div id="iFlash"></div><div id="iFade"></div>
   <div id="iSkip">Échap · passer</div>
+  <div id="iLoad"><h1>Gangstamen</h1><p id="iLoadTxt">Chargement du quartier…</p><div class="lbar"><i id="iLoadBar"></i></div></div>
   <div id="iSplash"><h1>Gangstamen</h1><p>Clique ou appuie sur une touche</p></div>
 </div>
 <div id="board" class="hud" hidden></div>
@@ -5261,6 +5273,23 @@ function pathPose(P, s, lat) {
   const a = pathAt(P, s - 5), b = pathAt(P, s + 5), c = pathAt(P, s); let tx = b[0] - a[0], tz = b[1] - a[1]; const L = Math.hypot(tx, tz) || 1; tx /= L; tz /= L;
   return { x: c[0] - tz * lat, z: c[1] + tx * lat, tx, tz };
 }
+// (16 nov., user request) a loading panel while a game starts or the car is moved: the first images at street level
+// are slow (detailed tiles, shaders, textures); the panel stays up, the game held, until the frames are smooth again
+const Busy = (() => {
+  let on = false;
+  const tick = () => new Promise(r => { let done = false; const go = () => { if (!done) { done = true; r(); } }; requestAnimationFrame(go); setTimeout(go, 120); });
+  async function run(label, fn) {
+    if (on) { fn(); return; }
+    on = true; const el = $('gload'); $('gloadTxt').textContent = 'Chargement · ' + label + '…'; el.hidden = false;
+    await tick(); await tick(); // the panel is painted before the slow part
+    try { fn(); } catch (e) { console.warn(label, e); }
+    try { renderer.compile(scene, locals[0] ? locals[0].cam : camera); } catch (e) { }
+    const t0 = performance.now(); let prev = t0, calm = 0;
+    while (calm < 3 && performance.now() - t0 < 6000) { await tick(); const n = performance.now(); calm = n - prev < 70 ? calm + 1 : 0; prev = n; }
+    el.hidden = true; on = false;
+  }
+  return { run, get on() { return on; } };
+})();
 const Intro = (() => {
   const el = $('intro'), cap1 = $('iCap1'), cap2 = $('iCap2'), gang = $('iGang'), ttl = $('iTitle'), flashEl = $('iFlash'), fadeEl = $('iFade');
   // boulevard de la Liberté, from the town hall down towards the Loire
@@ -5447,6 +5476,13 @@ const Intro = (() => {
     setTimeout(() => { if (state === 'off') { el.hidden = true; el.className = ''; } }, 700);
   }
   function stop() { if (state === 'off') return; reset(); el.hidden = true; el.className = ''; } // a game starts: no menu
+  // the loading screen is the intro element with class 'loading', shown from the first byte of the page
+  function progress(k, label) { const t = $('iLoadTxt'), b = $('iLoadBar'); if (t) t.textContent = 'Chargement · ' + label + '…'; if (b) b.style.width = Math.round(k * 100) + '%'; }
+  function loaded(withIntro) {
+    progress(1, 'prêt');
+    if (withIntro) { splash(); return; }
+    el.hidden = true; el.className = ''; showMenu();
+  }
   function splash() { state = 'splash'; fromMenu = false; $('title').hidden = true; el.hidden = false; el.className = 'splash'; document.body.classList.add('cine'); }
   function play(menu) {
     sfx.init(); build();
@@ -5466,7 +5502,7 @@ const Intro = (() => {
   }
   addEventListener('keydown', e => { if (state === 'off' || e.repeat || ['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) return; if (key(e)) e.preventDefault(); });
   el.addEventListener('pointerdown', e => { e.preventDefault(); key(null); });
-  return { update, splash, play, finish, stop, key, focusCar, get state() { return state; }, get playing() { return state === 'play'; }, T_END, BAR };
+  return { update, progress, loaded, splash, play, finish, stop, key, focusCar, get state() { return state; }, get playing() { return state === 'play'; }, T_END, BAR };
 })();
 
 // >>> GAMEPLAY MODULE (HD build)
@@ -7692,6 +7728,7 @@ const gx = !HD ? null : (() => {
   function dropMineFrom(c) { if (mines.filter(m => m.owner === c).length < 6) dropMine(c); }
   const camp = () => settings.camp || (settings.camp = { done: [] });
   let cur = null;
+  const launchMission = i => Busy.run('mission · ' + MISSIONS[i].title, () => startMission(i));
   function startMission(i) {
     const M = MISSIONS[i]; if (!M) return;
     if (!started || mode !== 'solo') startGame('solo');
@@ -7728,8 +7765,8 @@ const gx = !HD ? null : (() => {
       mEl.querySelector('p').textContent = win ? m.title + ' · +' + (200 + i * 50) + ' respect' : res === 'dead' ? 'Ta caisse est en morceaux. La mission reprend depuis le début.' : (m.fail || 'Ce n’est que partie remise');
       const menu = mEl.querySelector('.menu');
       const btn = (t, f, big) => { const b = document.createElement('button'); b.className = big ? 'big' : 'mbtn'; b.textContent = t; b.addEventListener('click', () => { mEl.hidden = true; blocking = false; f(); }); menu.append(b); return b; };
-      const first = next ? btn('Mission suivante · ' + next.title, () => startMission(i + 1), true) : btn(win ? 'Rouler librement' : 'Réessayer', () => win ? freeRoam() : startMission(i), true);
-      if (next || !win) btn(win ? 'Rejouer' : 'Rouler librement', () => win ? startMission(i) : freeRoam());
+      const first = next ? btn('Mission suivante · ' + next.title, () => launchMission(i + 1), true) : btn(win ? 'Rouler librement' : 'Réessayer', () => win ? freeRoam() : launchMission(i), true);
+      if (next || !win) btn(win ? 'Rejouer' : 'Rouler librement', () => win ? launchMission(i) : freeRoam());
       btn('Menu de la campagne', () => { cleanupMission(); toMenu(); });
       first.focus();
     };
@@ -7750,7 +7787,7 @@ const gx = !HD ? null : (() => {
       const b = document.createElement('button'); b.className = 'mbtn campBtn';
       b.innerHTML = '<b></b><span></span>'; b.children[0].textContent = (i + 1) + '. ' + M.title + (done.includes(M.id) ? '  ✓' : '');
       b.children[1].textContent = open ? M.where : 'Verrouillée'; b.disabled = !open;
-      b.addEventListener('click', () => startMission(i));
+      b.addEventListener('click', () => launchMission(i));
       box.append(b);
     });
     { // difficulty switch (15 nov.)
@@ -8835,8 +8872,9 @@ const gx = !HD ? null : (() => {
     function choose(s) {
       const L = locals[0]; if (!L) return close();
       const n = nearestNodeTo(s.x, s.z), nb = G.adj[n] && G.adj[n][0];
-      placePlayer([s.x, s.z], nb != null ? [G.x[nb], G.z[nb]] : null); L.heat = 0;
-      close(); flash(s.name, 'Conduite libre · G : changer de point de départ');
+      close();
+      Busy.run(s.name, () => { placePlayer([s.x, s.z], nb != null ? [G.x[nb], G.z[nb]] : null); L.heat = 0; });
+      flash(s.name, 'Conduite libre · G : changer de point de départ');
     }
     return { show, close, get open() { return open; }, get spots() { return resolve(); }, rejects };
   })();
@@ -9136,7 +9174,7 @@ function frame(now) {
   Intro.update(dt);
   if (HD) hd.perf(now);
   if (gx) gx.landmarkTick();
-  if (started && (!paused || mode === 'online')) { const t0 = performance.now(); step(dt, now); PerfHud.sim(performance.now() - t0); }
+  if (started && !Busy.on && (!paused || mode === 'online')) { const t0 = performance.now(); step(dt, now); PerfHud.sim(performance.now() - t0); }
   if (started && mode === 'online') netTick(dt, now);
   if (started && locals.length && (!(paused || Match.over) || mode === 'online')) Soundscape.tick(dt, locals[0]); else Soundscape.hush();
   PhotoMode.tick(dt); Profile.tick(dt);
@@ -9650,6 +9688,7 @@ const paintNow = () => new Promise(r => { let done = false; const go = () => { i
   for (let i = 0; i < BOOT_STEPS.length; i++) {
     const [label, fn] = BOOT_STEPS[i];
     startBtn.textContent = 'Chargement ' + Math.round(i / BOOT_STEPS.length * 100) + ' % · ' + label + '…';
+    Intro.progress(i / BOOT_STEPS.length, label);
     await paintNow();
     try { fn(); } catch (e) { console.warn(label, e); }
     BOOT.mark(label);
@@ -9659,12 +9698,12 @@ const paintNow = () => new Promise(r => { let done = false; const go = () => { i
   held.forEach(b => { b.disabled = false; });
   startBtn.disabled = false; startBtn.textContent = HD ? 'Chasse aux Rapaces · solo' : 'Solo · prendre le volant';
   startBtn.focus();
-  startBtn.addEventListener('click', () => startGame('solo'));
-  { const f = $('startFree'); if (f) f.addEventListener('click', () => startGame('solo', 'free')); }
-  $('splitGo').addEventListener('click', () => startGame('split'));
+  startBtn.addEventListener('click', () => Busy.run(HD ? 'Chasse aux Rapaces' : 'partie solo', () => startGame('solo')));
+  { const f = $('startFree'); if (f) f.addEventListener('click', () => Busy.run('Conduite libre', () => startGame('solo', 'free'))); }
+  $('splitGo').addEventListener('click', () => Busy.run('écran partagé', () => startGame('split')));
   $('create').addEventListener('click', () => startOnline(null, true));
   netInit();
-  if (settings.intro !== false && !window.__noIntro) Intro.splash();
+  Intro.loaded(settings.intro !== false && !window.__noIntro); // loading screen → « appuie sur une touche » → cinematic → menu; the menu is never seen half-built
 })();
 window.__gm = { get paused() { return paused; }, roadEdge, segHit, get started() { return started; }, renderer, scene, camera, PerfHud, Tiles, W, BOOT, planarReal, planarArcade, VEHICLES, engineState, Soundscape, sfx, PhotoMode, updateCamera, CAM_MODES, G, nodeOk, groundH, Profile, makeCar, saveSettingsHook: () => saveSettings(), surfaceH, Intro, hd, gx, settings, trams, edges, tramS, tramWall, EDGE, cellOf, collideWalls, muzzleOf, shoot, damage, applyHit, locals: () => locals, rivals: () => rivals, Net, Match, step: s => step(s, performance.now()), start: (k, sub) => startGame(k || 'solo', sub), codes };
 })();
