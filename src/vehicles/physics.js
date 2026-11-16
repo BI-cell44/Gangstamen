@@ -48,6 +48,8 @@ function planarReal(c, inp, dt) {
   // steering: smoothed input, less lock at speed (keyboard friendly)
   c.steer += (inp.s - c.steer) * Math.min(1, dt * 8);
   const n = Math.max(1, Math.ceil(dt / 0.008)), h = dt / n;
+  // after the handbrake, the rear tyres and the stability aid come back over about a second, not at once
+  ph.aidT = inp.hb ? 0 : Math.min(1, (ph.aidT === undefined ? 1 : ph.aidT) + dt / 1.0); const aid = ph.aidT * ph.aidT * (3 - 2 * ph.aidT);
   const power = (c.accK || 1) * (c.nitro > 0 ? 1.55 : 1), vmax = (c.maxV || 44) * (c.nitro > 0 ? 1.25 : 1);
   for (let s = 0; s < n; s++) {
     const spd = Math.abs(u), delta = c.steer * PHYS.steer / (1 + (spd / PHYS.steerV) ** 2); // speed-sensitive steering
@@ -91,9 +93,16 @@ function planarReal(c, inp, dt) {
       // sideways" reported by the user, in reverse and at the end of every hard braking that ran into reverse.)
       const af = sgn * delta - Math.atan2(v + V.a * r, spd), ar = -Math.atan2(v - V.b * r, spd);
       Fyf = tyreY(af, Math.max(0, Fzf), mu) * Math.sqrt(Math.max(0, 1 - (Fxf / (capF || 1)) ** 2));
-      Fyr = tyreYRear(ar, Math.max(0, Fzr), mu * (inp.hb ? 0.45 : 1)) * Math.sqrt(Math.max(0.15, 1 - (Fxr / (capR || 1)) ** 2));
+      Fyr = tyreYRear(ar, Math.max(0, Fzr), mu * (0.45 + 0.55 * aid)) * Math.sqrt(Math.max(0.15, 1 - (Fxr / (capR || 1)) ** 2));
+      // a tyre that slides holds less than one that rolls, and takes a moment to bite again: once the car is well
+      // sideways (more than about 7 degrees) the side grip falls by up to 82 %, then comes back over about a second.
+      // Without this the game's strong grip stopped an 11 m/s slide in a quarter of a second (user, 15 Nov.: too abrupt);
+      // measured after: about 0.8 s, the last 4 m/s in half a second.
+      const beta = Math.atan2(Math.abs(v), spd), want = beta > 0.12 ? Math.min(1, (beta - 0.12) / 0.13) : 0;
+      ph.sl = (ph.sl || 0) + (want - (ph.sl || 0)) * (1 - Math.exp(-h / (want > (ph.sl || 0) ? 0.04 : 1.0)));
+      Fyf *= 1 - 0.82 * ph.sl; Fyr *= 1 - 0.82 * ph.sl;
       ph.slipR = Math.abs(ar);
-    } else ph.slipR = 0;
+    } else { ph.slipR = 0; ph.sl = 0; }
     // resistances
     const Fres = -(0.5 * 1.2 * V.cda * u * Math.abs(u) + PHYS.roll * m * g * Math.sign(u) * Math.min(1, spd));
     // equations of motion in the car frame
@@ -109,9 +118,9 @@ function planarReal(c, inp, dt) {
     u += du * h; v += dv * h; r += dr * h;
     // stability aid (like ESP): without the handbrake the car never turns faster than its grip allows at that speed,
     // and the slide is gently brought back; the handbrake switches it off for drifts
-    if (!inp.hb && spd > 5) { const rMax = 1.15 * mu * g / spd; if (Math.abs(r) > rMax) r = Math.sign(r) * rMax; if (Math.abs(v) > 0.25 * spd) v *= Math.exp(-3 * h); }
+    if (!inp.hb && spd > 5) { const rMax = 1.15 * mu * g / spd; if (Math.abs(r) > rMax) r += (Math.sign(r) * rMax - r) * (1 - Math.exp(-(1.5 + 10 * aid) * h)); if (Math.abs(v) > 0.25 * spd) v *= Math.exp(-3 * aid * h); } // brought back progressively after a handbrake slide (15 Nov.)
     if (!inp.hb && u < -1.5 && Math.abs(v) > 0.3 * spd) v *= Math.exp(-8 * h); // reversing: no drifting backwards
-    if (!inp.hb && spd < 7) { v *= Math.exp(-(7 - spd) * 1.2 * h); r *= Math.exp(-(7 - spd) * 0.25 * h * (Math.abs(c.steer) < 0.2 ? 1 : 0)); } // slowing down: the slide dies out with the speed instead of ending in a sideways drift
+    if (!inp.hb && spd < 7) { v *= Math.exp(-(7 - spd) * 1.2 * aid * h); r *= Math.exp(-(7 - spd) * 0.25 * h * (Math.abs(c.steer) < 0.2 ? 1 : 0)); } // slowing down: the slide dies out with the speed instead of ending in a sideways drift
     if (inp.t === 0 && Fbrake === 0 && Math.abs(u) < 0.3) u *= Math.exp(-6 * h); // comes to rest
     const axTrue = Math.max(-1.5 * g, Math.min(1.5 * g, Fx / m)); // weight transfer follows the real longitudinal acceleration (forces / mass), not du, which carries the v·r turning term
     ph.ax = ph.ax + (axTrue - ph.ax) * Math.min(1, h * 10);
