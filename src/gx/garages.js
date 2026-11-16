@@ -101,6 +101,13 @@
     const W2 = WD / 2, Pt = (u, v) => [ox + ux * u + nx * v, oz + uz * u + nz * v];
     const seg = (a1, b1) => gridAdd([...Pt(...a1), ...Pt(...b1)], 3.5);
     seg([-W2, DP], [W2, DP]); seg([-W2, 0], [-W2, DP]); seg([W2, 0], [W2, DP]); seg([-W2, 0], [-DOOR / 2, 0]); seg([DOOR / 2, 0], [W2, 0]);
+    // (16 nov., user) street furniture and café tables that the workshop was put over go away (before Batch.build: their
+    // instances are zeroed), with the customers of those tables
+    { const inS = (x, z) => { const dx = x - ox, dz = z - oz, v = dx * nx + dz * nz, u = dx * ux + dz * uz; return v > -0.5 && v < DP + 0.8 && Math.abs(u) < W2 + 0.8; };
+      for (let k = furniture.length - 1; k >= 0; k--) { const f = furniture[k]; if (!inS(f.x, f.z)) continue;
+        for (const [e, i] of f.g.userData.batch || []) e.m[i] = new THREE.Matrix4().makeScale(0, 0, 0);
+        if (f.g.parent) f.g.parent.remove(f.g); furniture.splice(k, 1);
+        for (let j = customers.length - 1; j >= 0; j--) if (customers[j].table === f) { const c = customers[j]; if (c._sk) c._sk.mesh.visible = false; customers.splice(j, 1); } } }
     G.door = Pt(0, -2); G.shop = { ox, oz, nx, nz, ux, uz, WD, DP };
     G.inside = car => { const dx = car.x - ox, dz = car.z - oz, v = dx * nx + dz * nz, u = dx * ux + dz * uz; return v > 3 && v < DP - 1.5 && Math.abs(u) < W2 - 0.8; };
     // the forecourt pad moves in front of the door (missions lead there)

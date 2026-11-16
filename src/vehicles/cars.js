@@ -224,7 +224,7 @@ class Car {
 function sinking(c, dt) {
   c.sink += dt; const k = Math.exp(-2.2 * dt); c.vx *= k; c.vz *= k; c.x += c.vx * dt; c.z += c.vz * dt; c.air = 0; c.yv = 0;
   if (Math.random() < dt * 9) spawnFx(c.x + (Math.random() - 0.5) * 2.4, WATER_Y + 0.2, c.z + (Math.random() - 0.5) * 3.4, 0.35, 0xe8f4f8, 0.25, 2, 1.2); // bubbles
-  if (c.sink > 3.2 && c.alive) { c.alive = false; c.hp = 0; if (c.owner) c.owner.deadT = 1.4; }
+  if (c.sink > 3.2 && c.alive) { c.alive = false; c.hp = 0; if (c.owner) c.owner.deadT = 1.4; if (!c.local) { c.wreck = 1.5; c.dead = 0; c.mesh.visible = false; c.vx = c.vz = 0; } } // a bot under water: gone, then back as a wreck would
   return 0;
 }
 function drive(c, inp, dt) {
@@ -235,7 +235,7 @@ function drive(c, inp, dt) {
   c.x += c.vx * dt; c.z += c.vz * dt;
   // The Loire. A bridge or the ferry carries the car. A player's car that leaves the quay, the ramp or the deck falls in
   // and sinks (Ultra, 15 Nov.); the others (bots, traffic, classic and HD builds) are still turned back at the water's edge.
-  const wet = groundH(c.x, c.z) < WATER_Y + 0.9 && deckH(c.x, c.z) === null, canSink = HD && ULTRA && c.local;
+  const wet = groundH(c.x, c.z) < WATER_Y + 0.9 && deckH(c.x, c.z) === null, canSink = HD && ULTRA && (c.local || ((!c.npc || c.npc === 'cop') && Math.hypot(c.vx, c.vz) > 10)); // (16 nov., user) a Rapace or a police car that comes at you fast and misses goes in too; the traffic is still turned back
   if (wet && !canSink) {
     c.x = ox; c.z = oz; c.vx *= -0.3; c.vz *= -0.3;
     if (c.player && Math.random() < 0.3) spawnFx(c.x, 0.5, c.z, 0.6, 0x9fc4d8, 0.4, 3, 2);

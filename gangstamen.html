@@ -3127,7 +3127,7 @@ class Car {
 function sinking(c, dt) {
   c.sink += dt; const k = Math.exp(-2.2 * dt); c.vx *= k; c.vz *= k; c.x += c.vx * dt; c.z += c.vz * dt; c.air = 0; c.yv = 0;
   if (Math.random() < dt * 9) spawnFx(c.x + (Math.random() - 0.5) * 2.4, WATER_Y + 0.2, c.z + (Math.random() - 0.5) * 3.4, 0.35, 0xe8f4f8, 0.25, 2, 1.2); // bubbles
-  if (c.sink > 3.2 && c.alive) { c.alive = false; c.hp = 0; if (c.owner) c.owner.deadT = 1.4; }
+  if (c.sink > 3.2 && c.alive) { c.alive = false; c.hp = 0; if (c.owner) c.owner.deadT = 1.4; if (!c.local) { c.wreck = 1.5; c.dead = 0; c.mesh.visible = false; c.vx = c.vz = 0; } } // a bot under water: gone, then back as a wreck would
   return 0;
 }
 function drive(c, inp, dt) {
@@ -3138,7 +3138,7 @@ function drive(c, inp, dt) {
   c.x += c.vx * dt; c.z += c.vz * dt;
   // The Loire. A bridge or the ferry carries the car. A player's car that leaves the quay, the ramp or the deck falls in
   // and sinks (Ultra, 15 Nov.); the others (bots, traffic, classic and HD builds) are still turned back at the water's edge.
-  const wet = groundH(c.x, c.z) < WATER_Y + 0.9 && deckH(c.x, c.z) === null, canSink = HD && ULTRA && c.local;
+  const wet = groundH(c.x, c.z) < WATER_Y + 0.9 && deckH(c.x, c.z) === null, canSink = HD && ULTRA && (c.local || ((!c.npc || c.npc === 'cop') && Math.hypot(c.vx, c.vz) > 10)); // (16 nov., user) a Rapace or a police car that comes at you fast and misses goes in too; the traffic is still turned back
   if (wet && !canSink) {
     c.x = ox; c.z = oz; c.vx *= -0.3; c.vz *= -0.3;
     if (c.player && Math.random() < 0.3) spawnFx(c.x, 0.5, c.z, 0.6, 0x9fc4d8, 0.4, 3, 2);
@@ -4227,7 +4227,7 @@ function spawnRival(r) {
     const n = farNode(cx, cz, 200), nb = G.adj[n][0] ?? n;
     r.place(G.x[n], G.z[n], Math.atan2(-(G.x[nb] - G.x[n]), -(G.z[nb] - G.z[n])));
   }
-  r.hp = 60; r.alive = true; r.wreck = 0;
+  r.hp = 60; r.alive = true; r.wreck = 0; r.mesh.visible = true; // (hidden if it sank)
   r.mesh.userData.mBody.color.setHex(r.mesh.userData.base); r.mesh.userData.mPaint.color.setHex(r.mesh.userData.paint);
   r.ai = { mode: 'cruise', target: nearestNode(r.x, r.z), prev: -1, stuck: 0, back: 0, lost: 0, burst: 0, firing: 0 };
 }
@@ -6905,6 +6905,13 @@ const gx = !HD ? null : (() => {
     const W2 = WD / 2, Pt = (u, v) => [ox + ux * u + nx * v, oz + uz * u + nz * v];
     const seg = (a1, b1) => gridAdd([...Pt(...a1), ...Pt(...b1)], 3.5);
     seg([-W2, DP], [W2, DP]); seg([-W2, 0], [-W2, DP]); seg([W2, 0], [W2, DP]); seg([-W2, 0], [-DOOR / 2, 0]); seg([DOOR / 2, 0], [W2, 0]);
+    // (16 nov., user) street furniture and café tables that the workshop was put over go away (before Batch.build: their
+    // instances are zeroed), with the customers of those tables
+    { const inS = (x, z) => { const dx = x - ox, dz = z - oz, v = dx * nx + dz * nz, u = dx * ux + dz * uz; return v > -0.5 && v < DP + 0.8 && Math.abs(u) < W2 + 0.8; };
+      for (let k = furniture.length - 1; k >= 0; k--) { const f = furniture[k]; if (!inS(f.x, f.z)) continue;
+        for (const [e, i] of f.g.userData.batch || []) e.m[i] = new THREE.Matrix4().makeScale(0, 0, 0);
+        if (f.g.parent) f.g.parent.remove(f.g); furniture.splice(k, 1);
+        for (let j = customers.length - 1; j >= 0; j--) if (customers[j].table === f) { const c = customers[j]; if (c._sk) c._sk.mesh.visible = false; customers.splice(j, 1); } } }
     G.door = Pt(0, -2); G.shop = { ox, oz, nx, nz, ux, uz, WD, DP };
     G.inside = car => { const dx = car.x - ox, dz = car.z - oz, v = dx * nx + dz * nz, u = dx * ux + dz * uz; return v > 3 && v < DP - 1.5 && Math.abs(u) < W2 - 0.8; };
     // the forecourt pad moves in front of the door (missions lead there)

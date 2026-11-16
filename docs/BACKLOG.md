@@ -70,14 +70,14 @@ Demandes du 16 nov. après-midi, dans l'ordre de traitement (priorité : ce qui 
 24. [x] (fait : pas de traces sur le pont du bac ni en l'air) **Traces de pneus sur le bac** : elles restent sur l'eau quand il part.
 25. [x] (fait) **Barrières en haut des rampes du bac** (Gare Maritime et île de Nantes) : à retirer.
 26. [x] (fait : ils s'écartent de la voiture qui fonce sur eux, sinon renversés comme aux terrasses ; bancs cassés réparés à l'escale suivante) **Piétons du bac** : ils fuient la voiture ou se font renverser ; les bancs sont cassables.
-27. [ ] **Police et Rapaces dans l'eau** : une voiture qui nous fonce dessus et qu'on évite doit pouvoir tomber dans la Loire.
+27. [x] (fait : au-dessus de 36 km/h une voiture de police ou des Rapaces qui rate le quai tombe et coule, puis revient comme après une épave ; la circulation reste retenue au bord) **Police et Rapaces dans l'eau** : une voiture qui nous fonce dessus et qu'on évite doit pouvoir tomber dans la Loire.
 29. [x] (fait, sauf en ligne qui recharge encore) **« Quitter vers le menu »** : on revoit l'écran de chargement alors que tout est déjà chargé.
 30. [x] (fait) **Pause sur le bac** : le bac continue sans la voiture, qui se retrouve au-dessus de l'eau ; la pause doit arrêter le bac.
-31. [ ] **Mobilier dans les garages** : retirer les bancs et le mobilier qui se retrouvent à l'intérieur.
+31. [x] (fait : mobilier et tables de terrasse retirés de l'emprise des ateliers) **Mobilier dans les garages** : retirer les bancs et le mobilier qui se retrouvent à l'intérieur.
 28. [ ] **Chapiteau** sur le cirque (la crique) au bout de l'île de Nantes.
 29. [x] (fait, sauf en ligne qui recharge encore) **« Quitter vers le menu »** : revient au menu sans tout recharger (la page se rechargeait et repassait par l'écran de chargement).
 30. [x] (fait) **Pause sur le bac** : la pause doit arrêter le bac (la voiture restait au-dessus de l'eau pendant que le bac continuait).
-31. [ ] **Mobilier dans les garages** : retirer les bancs et le mobilier qui se retrouvent à l'intérieur des garages.
+31. [x] (fait : mobilier et tables de terrasse retirés de l'emprise des ateliers) **Mobilier dans les garages** : retirer les bancs et le mobilier qui se retrouvent à l'intérieur des garages.
 
 ## En attente d'un essai de l'utilisateur
 

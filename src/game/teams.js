@@ -93,7 +93,7 @@ function spawnRival(r) {
     const n = farNode(cx, cz, 200), nb = G.adj[n][0] ?? n;
     r.place(G.x[n], G.z[n], Math.atan2(-(G.x[nb] - G.x[n]), -(G.z[nb] - G.z[n])));
   }
-  r.hp = 60; r.alive = true; r.wreck = 0;
+  r.hp = 60; r.alive = true; r.wreck = 0; r.mesh.visible = true; // (hidden if it sank)
   r.mesh.userData.mBody.color.setHex(r.mesh.userData.base); r.mesh.userData.mPaint.color.setHex(r.mesh.userData.paint);
   r.ai = { mode: 'cruise', target: nearestNode(r.x, r.z), prev: -1, stuck: 0, back: 0, lost: 0, burst: 0, firing: 0 };
 }
