@@ -143,6 +143,17 @@ for r in w['roads']:
 for bi, n in _hit.items():
     b = w['buildings'][bi]; pp = b['p']; area = abs(sum(pp[2 * i] * pp[(2 * i + 3) % len(pp)] - pp[(2 * i + 2) % len(pp)] * pp[2 * i + 1] for i in range(len(pp) // 2))) / 2
     if n >= 3 and area < 800 and b['h'] > 8: b['u'] = 5.4; print('building over a street:', bi, round(area), 'm2')
+# The way to the pont Anne-de-Bretagne. In town the quai de la Fosse runs north of the tram, which is the edge of the map:
+# the bridge was cut off from Chantenay (nothing but 400 m of bare quay between the place de Jacksonville and its head).
+# A stretch of quay road is laid along the river side of the tram, on the open quay, to join them (16 Nov. 2026).
+_a = next((r for r in w['roads'] if not r.get('x') and r.get('d') and any(abs(r["p"][k] - 1356.7) < 0.3 and abs(r["p"][k + 1] + 526.0) < 0.3 for k in range(0, len(r['p']), 2))), None)
+_b = next((r for r in w['roads'] if not r.get('x') and r.get('d') and abs(r['p'][0] - 1716.4) < 0.6 and abs(r['p'][1] + 703.3) < 0.6), None)
+if _a and _b:
+    _k = next(k for k in range(0, len(_a['p']), 2) if abs(_a["p"][k] - 1356.7) < 0.3 and abs(_a["p"][k + 1] + 526.0) < 0.3)
+    _pts = [_a['p'][_k], _a['p'][_k + 1], 1393, -544, 1429, -561, 1464, -579, 1500, -597, 1536, -614, 1572, -632, 1608, -650, 1644, -668, 1680, -685, _b['p'][0], _b['p'][1]]
+    _n = w['names'].index('Quai de la Fosse') if 'Quai de la Fosse' in w['names'] else _b.get('n')
+    w['roads'].append({'w': 7.0, 'd': 1, 'n': _n, 'b': 0, 'p': _pts, 'q': 1}); print('quay road to the pont Anne-de-Bretagne: added,', len(_pts) // 2, 'points')
+else: print('quay road to the pont Anne-de-Bretagne: ends not found, NOT added')
 # Open halls: the Nefs of the old shipyards on the île de Nantes are a roof on steel columns, one drives and walks under it.
 # 'o' marks them (the game adds the columns), 'u' lifts the walls: only a band under the roof remains.
 for bi, b in enumerate(w['buildings']):

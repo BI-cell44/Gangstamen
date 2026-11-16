@@ -5,7 +5,7 @@ function nodeOk(n) {
   if (!NODE_OK) {
     NODE_OK = new Uint8Array(G.x.length);
     for (let i = 0; i < G.x.length; i++) { const x = G.x[i], z = G.z[i];
-      NODE_OK[i] = G.adj[i].length && Math.abs(x - CX) < HX - 9 && Math.abs(z - CZ) < HZ - 9 && z > tramWall(x) + 4 && groundH(x, z) > WATER_Y + 1 ? 1 : 0; }
+      NODE_OK[i] = G.adj[i].length && Math.abs(x - CX) < HX - 9 && Math.abs(z - CZ) < HZ - 9 && z > tramWall(x) + 4 && (groundH(x, z) > WATER_Y + 1 || deckH(x, z) !== null) ? 1 : 0; } // (a bridge over the water is a road like any other: the traffic, the police and the Rapaces cross the Loire)
   }
   return NODE_OK[n] === 1;
 }

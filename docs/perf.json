@@ -810,5 +810,47 @@
   "simMs": 10.06,
   "loadS": 26,
   "failed": 0
+ },
+ {
+  "date": "2026-11-16T07:28",
+  "label": "Fable : ponts ouverts aux IA",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 800,
+  "trianglesK": 1175,
+  "meshes": 3620,
+  "geometries": 3121,
+  "materials": 481,
+  "heapMB": 347,
+  "simMs": 9.91,
+  "loadS": 25,
+  "failed": 1
+ },
+ {
+  "date": "2026-11-16T07:45",
+  "label": "Fable : ponts ouverts aux IA, quai vers le pont",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 817,
+  "trianglesK": 1173,
+  "meshes": 3626,
+  "geometries": 3121,
+  "materials": 485,
+  "heapMB": 326,
+  "simMs": 9.64,
+  "loadS": 33,
+  "failed": 1
+ },
+ {
+  "date": "2026-11-16T07:56",
+  "label": "Fable : ponts ouverts aux IA, quai vers le pont",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 834,
+  "trianglesK": 1170,
+  "meshes": 3624,
+  "geometries": 3127,
+  "materials": 484,
+  "heapMB": 368,
+  "simMs": 8.15,
+  "loadS": 22,
+  "failed": 0
  }
 ]

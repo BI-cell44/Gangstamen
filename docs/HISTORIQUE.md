@@ -82,6 +82,7 @@ Ce qui a été construit, dans l'ordre. Le détail de chaque changement est dans
 | 16 nov. 2026 | Fable 5.2 : barrières du bac articulées ; pont Anne-de-Bretagne en un seul ouvrage ; plus de trottoirs à l'intérieur des bâtiments | ultra |
 | 16 nov. 2026 | Fable 5.2 : Nefs de l'île de Nantes en halle ouverte (toit sur colonnes, on roule dessous) | ultra |
 | 16 nov. 2026 | Fable 5.2 : passagers à pied sur le bac (embarquent, traversent, débarquent) | ultra |
+| 16 nov. 2026 | Fable 5.2 : route de quai jusqu'au pont Anne-de-Bretagne (l'île est reliée par la route), ponts sur l'eau ouverts à la circulation, à la police et aux Rapaces | ultra |
 
 ## Annexe : feuille de route Ultra, détail des cycles et des retours (14 et 15 nov. 2026)
 

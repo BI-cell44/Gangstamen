@@ -207,6 +207,19 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
     });
     expect(r.quais >= 4 && r.auSec === r.quais && r.jaune === 1 && r.grise === 1 && /grue_peinte/.test(r.modeles) && /ponton/.test(r.modeles), JSON.stringify(r)); return r;
   });
+  await check('ponts sur l’eau : ouverts aux voitures du jeu (circulation, police, Rapaces)', async () => {
+    const r = await ev(() => {
+      const G = __gm.G, g = __gm.groundH; let onBridge = 0, ok = 0, island = 0, wetOk = 0;
+      for (let i = 0; i < G.x.length; i++) { if (!G.adj[i].length) continue; const x = G.x[i], z = G.z[i], w = g(x, z) < 1.4, d = __gm.surfaceH(x, z) > g(x, z) + 2;
+        if (w && d) { onBridge++; if (__gm.nodeOk(i)) ok++; } else if (w && __gm.nodeOk(i)) wetOk++; if (x > 1300 && z < 300 && z > -500 && __gm.nodeOk(i)) island++; }
+      // a way from the town to the island along nodes that are all allowed
+      const start = [...Array(G.x.length).keys()].filter(i => __gm.nodeOk(i)).reduce((a, i) => Math.hypot(G.x[i] - 170, G.z[i] + 343) < Math.hypot(G.x[a] - 170, G.z[a] + 343) ? i : a);
+      const seen = new Uint8Array(G.x.length), st = [start]; seen[start] = 1; let reach = 0, reachIsland = 0;
+      while (st.length) { const u = st.pop(); reach++; if (G.x[u] > 1500 && G.z[u] > -350 && G.z[u] < 300) reachIsland++; for (const e of G.adj[u]) { const v = e.n !== undefined ? e.n : (Array.isArray(e) ? e[0] : e); if (!seen[v] && __gm.nodeOk(v)) { seen[v] = 1; st.push(v); } } }
+      return { noeudsSurPont: onBridge, autorises: ok, dansLEau: wetOk, ile: island, atteints: reach, atteintsSurLIle: reachIsland };
+    });
+    expect(r.noeudsSurPont > 3 && r.autorises === r.noeudsSurPont && r.dansLEau === 0 && r.atteintsSurLIle > 20, JSON.stringify(r)); return r;
+  });
   await check('pont Anne-de-Bretagne : on traverse la Loire en voiture jusqu’à l’île', async () => {
     const r = await ev(() => {
       const c = __gm.locals()[0].car, home = [c.x, c.z, c.h], A = [1749, -693], Z = [1836, -571], L = Math.hypot(Z[0] - A[0], Z[1] - A[1]), ux = (Z[0] - A[0]) / L, uz = (Z[1] - A[1]) / L;
