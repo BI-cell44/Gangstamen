@@ -221,8 +221,25 @@ function buildCity() {
         roofs.tri(U0, E1, U1, [0, -1, 0], null, null, null, eaveC); roofs.tri(U0, E0, E1, [0, -1, 0], null, null, null, eaveC);
       }
     }
-    if (b.u) { const [pts, tris] = triangulate(p), uc = col('#6a665f'); for (const [i0, i1, i2] of tris) { const A = [pts[i0].x, y0, pts[i0].y], B = [pts[i1].x, y0, pts[i1].y], C = [pts[i2].x, y0, pts[i2].y]; roofs.tri(A, B, C, [0, -1, 0], null, null, null, uc); roofs.tri(A, C, B, [0, -1, 0], null, null, null, uc); } } // underside
+    if (b.u && !b.o) { const [pts, tris] = triangulate(p), uc = col('#6a665f'); for (const [i0, i1, i2] of tris) { const A = [pts[i0].x, y0, pts[i0].y], B = [pts[i1].x, y0, pts[i1].y], C = [pts[i2].x, y0, pts[i2].y]; roofs.tri(A, B, C, [0, -1, 0], null, null, null, uc); roofs.tri(A, C, B, [0, -1, 0], null, null, null, uc); } } // underside
     const rc = shade(col(ROOF_TINTS[kind] || ROOF_TINTS[0]), 0.85 + hash(bi + 11) * 0.3);
+    if (b.o) {
+      // An open hall (the Nefs): seen from the end the roof is a broken line, a row of gables side by side like a
+      // factory's (user, 16 Nov.). Ridges along the longest side, one nave every 20 m or so; laid in short strips kept
+      // where they fall inside the outline; the same folds show from underneath, in dark steel.
+      let Lm = 0, ux = 1, uz = 0; for (let i = 0; i < n; i++) { const ax = p[2 * i], az = p[2 * i + 1], bx = p[2 * ((i + 1) % n)], bz = p[2 * ((i + 1) % n) + 1], l = Math.hypot(bx - ax, bz - az); if (l > Lm) { Lm = l; ux = (bx - ax) / l; uz = (bz - az) / l; } }
+      const vx = -uz, vz = ux; let s0 = 1e9, s1 = -1e9, t0 = 1e9, t1 = -1e9;
+      for (let i = 0; i < n; i++) { const s = p[2 * i] * ux + p[2 * i + 1] * uz, t = p[2 * i] * vx + p[2 * i + 1] * vz; s0 = Math.min(s0, s); s1 = Math.max(s1, s); t0 = Math.min(t0, t); t1 = Math.max(t1, t); }
+      const bays = Math.max(2, Math.round((t1 - t0) / 20)), bw = (t1 - t0) / bays, rise = Math.min(5.5, bw * 0.3), under = col('#3d4644');
+      const P3 = (s, t, y) => [ux * s + vx * t, y, uz * s + vz * t];
+      const quad = (A, B, C, D) => { const e1 = [B[0] - A[0], B[1] - A[1], B[2] - A[2]], e2 = [C[0] - A[0], C[1] - A[1], C[2] - A[2]]; let nn = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]]; const l = Math.hypot(nn[0], nn[1], nn[2]) || 1; nn = nn.map(q => q / l);
+        if (nn[1] < 0) { const T = B; B = D; D = T; nn = nn.map(q => -q); }
+        roofs.tri(A, B, C, nn, null, null, null, rc); roofs.tri(A, C, D, nn, null, null, null, rc);
+        const dn = nn.map(q => -q), lo = q => [q[0], q[1] - 0.12, q[2]]; roofs.tri(lo(A), lo(C), lo(B), dn, null, null, null, under); roofs.tri(lo(A), lo(D), lo(C), dn, null, null, null, under); };
+      for (let k = 0; k < bays * 2; k++) { const ta = t0 + k * bw / 2, tb = ta + bw / 2, ya = k % 2 ? h + rise : h, yb = k % 2 ? h : h + rise;
+        for (let s = s0; s < s1 - 0.01; s += 6) { const s2 = Math.min(s1, s + 6), c = P3((s + s2) / 2, (ta + tb) / 2, 0); if (!pointInPoly(c[0], c[2], p)) continue;
+          quad(P3(s, ta, ya), P3(s2, ta, ya), P3(s2, tb, yb), P3(s, tb, yb)); } }
+    } else
     // Pitched slate roof on small four-sided buildings (typical faubourg houses)
     if (pitched) {
       const P = i => [p[2 * (i % 4)], p[2 * (i % 4) + 1]];

@@ -768,5 +768,33 @@
   "simMs": 9.16,
   "loadS": 25,
   "failed": 0
+ },
+ {
+  "date": "2026-11-16T06:30",
+  "label": "Fable : Nefs ouvertes",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 798,
+  "trianglesK": 1157,
+  "meshes": 3605,
+  "geometries": 3122,
+  "materials": 479,
+  "heapMB": 347,
+  "simMs": 9.53,
+  "loadS": 20,
+  "failed": 1
+ },
+ {
+  "date": "2026-11-16T06:43",
+  "label": "Fable : Nefs ouvertes",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 829,
+  "trianglesK": 1170,
+  "meshes": 3603,
+  "geometries": 3124,
+  "materials": 480,
+  "heapMB": 368,
+  "simMs": 9.03,
+  "loadS": 22,
+  "failed": 0
  }
 ]

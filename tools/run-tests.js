@@ -179,6 +179,19 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
     });
     expect(r.lance && r.apresReparations === r.depart && r.apresCasses === r.depart + 4, JSON.stringify(r)); return r; // (the traffic may break something of its own during the countdown)
   });
+  await check('Nefs : halle ouverte, on roule dessous entre les colonnes', async () => {
+    const r = await ev(() => {
+      const X = __gm.gx, b = __gm.W.buildings.find(q => q.o), c = __gm.locals()[0].car, home = [c.x, c.z, c.h]; if (!b) return { halle: false };
+      const p = b.p, n = p.length / 2; let cx = 0, cz = 0; for (let i = 0; i < n; i++) { cx += p[2 * i] / n; cz += p[2 * i + 1] / n; }
+      // from outside, straight through the middle of the hall, to the other side
+      const ax = p[0], az = p[1], d = Math.hypot(cx - ax, cz - az), ux = (cx - ax) / d, uz = (cz - az) / d, sx = ax - ux * 14, sz = az - uz * 14;
+      c.place(sx, sz, Math.atan2(-ux, -uz)); c.hp = 100; let far = 0, stuck = 0;
+      for (let i = 0; i < 500; i++) { c.vx = ux * 10; c.vz = uz * 10; const px = c.x, pz = c.z; __gm.step(1 / 30); far = (c.x - sx) * ux + (c.z - sz) * uz; if (Math.hypot(c.x - px, c.z - pz) < 0.05) { stuck++; c.x += -uz * 0.6; c.z += ux * 0.6; } if (far > d + 20) break; }
+      const res = { halle: true, nom: b.n, hauteurLibre: b.u, colonnes: X.hallColumns.length, traverse: Math.round(far), aFaire: Math.round(d + 20), ecartsDeColonne: stuck, hp: Math.round(c.hp) };
+      c.place(home[0], home[1], home[2]); return res;
+    });
+    expect(r.halle && r.hauteurLibre >= 6 && r.colonnes > 25 && r.traverse >= r.aFaire && r.ecartsDeColonne < 40, JSON.stringify(r)); return r;
+  });
   await check('grues : modèles téléchargés sur les Titan et sur les quais, les pieds au sec', async () => {
     const r = await ev(() => {
       const g = __gm.gx, big = o => { let n = 0; o.traverse(m => { if (m.isMesh && m.geometry.index && m.geometry.index.count > 9000) n++; }); return n; };
@@ -204,7 +217,7 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
       c.place(A.x + A.ax * 4, A.z + A.az * 4, Math.atan2(A.ax, A.az)); c.hp = 100;
       for (let i = 0; i < 500; i++) { c.vx = -A.ax * 7; c.vz = -A.az * 7; __gm.step(1 / 30); if (f.onDeck(c.x, c.z) && Math.hypot(c.x - f.x, c.z - f.z) < 7) break; }
       const boarded = f.onDeck(c.x, c.z), yDeck = +__gm.surfaceH(c.x, c.z).toFixed(1); let off = 0, n = 0;
-      for (let i = 0; i < 6000 && !(f.side === 1 && f.wait > 0); i++) { c.vx = c.vz = 0; B.step(0.2); __gm.step(1 / 60); n++; if (!f.onDeck(c.x, c.z)) off++; }
+      for (let i = 0; i < 6000 && !(f.side === 1 && f.wait > 0); i++) { c.vx = c.vz = 0; c.hp = 100; c.shield = 30; B.step(0.2); __gm.step(1 / 60); n++; if (!f.onDeck(c.x, c.z)) off++; } // (shield: the Rapaces shoot at a car that sits still for two minutes)
       const arrived = f.side === 1, rouge = A.lamp.material.color.getHex() === 0xff2a1a;
       for (let i = 0; i < 600; i++) { c.vx = Z.ax * 7; c.vz = Z.az * 7; __gm.step(1 / 30); if ((c.x - Z.x) * Z.ax + (c.z - Z.z) * Z.az > 6) break; }
       const landed = [+g(c.x, c.z).toFixed(1), Math.round(Math.hypot(c.x - Z.x, c.z - Z.z))], p = [c.x, c.z];

@@ -80,6 +80,7 @@ Ce qui a été construit, dans l'ordre. Le détail de chaque changement est dans
 | 15 nov. 2026 | Fable 5.2 : grues refaites avec le modèle acheté (haut des deux Titan, cinq grues de quai), pontons en bois près des rampes du bac | ultra |
 | 15 nov. 2026 | Fable 5.2 : fin de dérapage progressive ; on tombe et on coule dans la Loire ; rampe du bac solide en permanence ; plus de voiture couchée au bord du pont | ultra |
 | 16 nov. 2026 | Fable 5.2 : barrières du bac articulées ; pont Anne-de-Bretagne en un seul ouvrage ; plus de trottoirs à l'intérieur des bâtiments | ultra |
+| 16 nov. 2026 | Fable 5.2 : Nefs de l'île de Nantes en halle ouverte (toit sur colonnes, on roule dessous) | ultra |
 
 ## Annexe : feuille de route Ultra, détail des cycles et des retours (14 et 15 nov. 2026)
 

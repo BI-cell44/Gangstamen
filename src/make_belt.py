@@ -143,5 +143,9 @@ for r in w['roads']:
 for bi, n in _hit.items():
     b = w['buildings'][bi]; pp = b['p']; area = abs(sum(pp[2 * i] * pp[(2 * i + 3) % len(pp)] - pp[(2 * i + 2) % len(pp)] * pp[2 * i + 1] for i in range(len(pp) // 2))) / 2
     if n >= 3 and area < 800 and b['h'] > 8: b['u'] = 5.4; print('building over a street:', bi, round(area), 'm2')
+# Open halls: the Nefs of the old shipyards on the île de Nantes are a roof on steel columns, one drives and walks under it.
+# 'o' marks them (the game adds the columns), 'u' lifts the walls: only a band under the roof remains.
+for bi, b in enumerate(w['buildings']):
+    if b.get('n', '').startswith('Nefs'): b['o'] = 1; b['u'] = round(max(6.0, b['h'] - 3.5), 1); print('open hall:', bi, b['n'], 'clear height', b['u'])
 json.dump(w, open('world.json', 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
 print('belt:', len(new_b), 'buildings,', len(new_r), 'streets,', len(new_t) // 2, 'trees')
