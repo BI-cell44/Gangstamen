@@ -6003,7 +6003,12 @@ const gx = !HD ? null : (() => {
       const c = npcs.find(o => o.hqSpot === k), d = minPlayerDist(x, z);
       if (c) { if (!c.alive) { c.hqSpot = -1; hqDown[k] = 60; } return; }
       if ((hqDown[k] -= dt) > 0 || d > 250 || d < 70 || !policeOn()) return;
-      const o = makeNpc('cop'); o.place(x, z, h); o.hqSpot = k; o.parked = true; o.lost = 0; o.fireCd = 1; npcs.push(o);
+      const o = makeNpc('cop'); o.place(x, z, h); o.hqSpot = k; o.parked = true; o.lost = 0; o.fireCd = 1;
+      // (16 nov.) its place in the street graph, as placeOnGraph gives the others: copInput and civInput read it once it
+      // drives off (without it the game stopped as soon as it gave chase)
+      const n = nearestNodeTo(x, z), a = G.adj[n].find(m => nodeOk(m)) ?? G.adj[n][0];
+      o.nav = { a, b: n, c: nextNode(a, n), wait: 0, honk: 0, panic: 0, stuck: 0, back: 0, lane: 1.7, pass: 0, hold: 0, stopDone: -1 };
+      npcs.push(o);
     });
   }
   function hqUnpark(c, dt) { // true while it stays parked
