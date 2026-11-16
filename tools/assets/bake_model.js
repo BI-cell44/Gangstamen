@@ -43,7 +43,13 @@ const { NodeIO } = req('@gltf-transform/core'), { MeshoptSimplifier } = req('mes
         }
         continue;
       }
-      for (let i = 0; i < n; i++) I.push(base + (idx ? idx.getScalar(i) : i));
+      // opt.part: {box: [x0, x1, y0, y1, z0, z1], yellow: true, invert: false}: keep only the triangles in the box (and yellow),
+      // or all the others: to take a moving piece out of a model delivered in one block (the gates of the ferry)
+      const inPart = (a, b, c) => { const q = opt.part, bx = q.box, m = k => (P[a * 3 + k] + P[b * 3 + k] + P[c * 3 + k]) / 3, x = m(0), y = m(1), z = m(2);
+        let ok = x >= bx[0] && x <= bx[1] && y >= bx[2] && y <= bx[3] && z >= bx[4] && z <= bx[5];
+        if (ok && q.yellow) { const r = (C[a * 3] + C[b * 3] + C[c * 3]) / 3, g = (C[a * 3 + 1] + C[b * 3 + 1] + C[c * 3 + 1]) / 3, bl = (C[a * 3 + 2] + C[b * 3 + 2] + C[c * 3 + 2]) / 3; ok = r > 150 && g > 110 && bl < 90 && r > bl * 1.9; }
+        return ok !== !!q.invert; };
+      for (let i = 0; i < n; i += 3) { const a = base + (idx ? idx.getScalar(i) : i), b = base + (idx ? idx.getScalar(i + 1) : i + 1), c = base + (idx ? idx.getScalar(i + 2) : i + 2); if (!opt.part || inPart(a, b, c)) I.push(a, b, c); }
     }
   }
   if (opt.grad) { // colours by height (fraction of the height, bottom to top) when the model comes without usable textures
@@ -64,7 +70,7 @@ const { NodeIO } = req('@gltf-transform/core'), { MeshoptSimplifier } = req('mes
   let idx = []; for (let i = 0; i < I.length; i += 3) { const a = remap[I[i]], b = remap[I[i + 1]], c = remap[I[i + 2]]; if (a !== b && b !== c && a !== c) idx.push(a, b, c); }
   await MeshoptSimplifier.ready;
   const target = (opt.tris || 6000) * 3;
-  let [out, err] = MeshoptSimplifier.simplifyWithAttributes(new Uint32Array(idx), new Float32Array(p2), 3, new Float32Array(c2), 3, [opt.cw || 0.5, opt.cw || 0.5, opt.cw || 0.5], null, target, 0.05, []);
+  let [out, err] = idx.length <= target ? [new Uint32Array(idx), 0] : MeshoptSimplifier.simplifyWithAttributes(new Uint32Array(idx), new Float32Array(p2), 3, new Float32Array(c2), 3, [opt.cw || 0.5, opt.cw || 0.5, opt.cw || 0.5], null, target, 0.05, []);
   if (out.length > target * 1.15) { [out, err] = MeshoptSimplifier.simplifySloppy(new Uint32Array(out), new Float32Array(p2), 3, null, target, 0.05); console.log('sloppy pass'); }
   // compact, orient (length along +x, up +y, keel on y = 0 at the water line given by opt.draft), scale to opt.len metres
   const used = new Map(), fp = [], fc = [], fi = [];
@@ -75,7 +81,8 @@ const { NodeIO } = req('@gltf-transform/core'), { MeshoptSimplifier } = req('mes
   const s = 32767 / Math.max(...size), pq = new Int16Array(fp.length);
   for (let i = 0; i < fp.length; i++) pq[i] = Math.round((fp[i] - (mn[i % 3] + mx[i % 3]) / 2) * s);
   const b64 = a => Buffer.from(a.buffer, a.byteOffset, a.byteLength).toString('base64');
-  const res = { n: fp.length / 3, t: fi.length / 3, size: size.map(v => +v.toFixed(4)), p: b64(pq), c: b64(new Uint8Array(fc)), i: b64(fp.length / 3 > 65535 ? new Uint32Array(fi) : new Uint16Array(fi)) };
+  // o: centre of the box in the model's own coordinates (to put a cut-out piece back in place)
+  const res = { n: fp.length / 3, t: fi.length / 3, size: size.map(v => +v.toFixed(4)), o: mn.map((v, k) => +((v + mx[k]) / 2).toFixed(4)), p: b64(pq), c: b64(new Uint8Array(fc)), i: b64(fp.length / 3 > 65535 ? new Uint32Array(fi) : new Uint16Array(fi)) };
   fs.writeFileSync(dst, JSON.stringify(res));
   console.log(path.basename(dst), 'tris', res.t, 'verts', res.n, 'size', res.size, 'err', err.toFixed(4), 'bytes', fs.statSync(dst).size);
 })().catch(e => { console.error(e); process.exit(1); });

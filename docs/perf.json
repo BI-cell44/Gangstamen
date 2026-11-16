@@ -740,5 +740,19 @@
   "simMs": 10.93,
   "loadS": 26,
   "failed": 0
+ },
+ {
+  "date": "2026-11-16T00:17",
+  "label": "Fable : barrières du bac",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 783,
+  "trianglesK": 1044,
+  "meshes": 3416,
+  "geometries": 3072,
+  "materials": 467,
+  "heapMB": 347,
+  "simMs": 9.29,
+  "loadS": 25,
+  "failed": 0
  }
 ]
