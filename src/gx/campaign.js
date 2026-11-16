@@ -174,7 +174,7 @@
     say(win ? 'Mission réussie !' : 'Mission ratée.', { cancel: true, pitch: 1.05 });
     if (win) dialogue(m.outro, show); else if (res === 'dead') setTimeout(show, 600); else show();
   }
-  function freeRoam() { cleanupMission(); scatterRivals(); setupMatch(settings.goal, settings.limit); flash('Chantenay', 'Bac à sable · roule librement'); }
+  function freeRoam() { cleanupMission(); scatterRivals(); soloKind = 'free'; setupMatch(0, 0); flash('Chantenay', 'Bac à sable · roule librement'); }
   function toMenu() { // back to the title screen without reloading
     started = false; paused = false; document.body.classList.remove('ingame', 'split'); $('title').hidden = false; renderCampaign(); showView('vCamp');
     for (const L of locals) scene.remove(L.car.mesh); locals = [];

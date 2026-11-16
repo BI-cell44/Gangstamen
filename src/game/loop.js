@@ -33,7 +33,7 @@ function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   PerfHud.begin();
   pollPads();
-  if (Intro.state !== 'off') { if (pads.some(P => P.press && (P.press[0] || P.press[9]))) Intro.key(null); } else if (!(gx && gx.blocking)) menuPadNav(dt);
+  if (Intro.state !== 'off') { if (pads.some(P => P.press && (P.press[0] || P.press[9]))) Intro.key(null); } else if (!(gx && gx.blocking) || (gx.SpawnMap && gx.SpawnMap.open)) menuPadNav(dt);
   if (gx) gx.tick(dt);
   Intro.update(dt);
   if (HD) hd.perf(now);

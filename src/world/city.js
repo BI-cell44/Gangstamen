@@ -366,6 +366,12 @@ function roadSegAdd(ax, az, bx, bz, w, n) {
 }
 
 // distance from a point to the nearest carriageway edge (negative: on the road) and the direction away from it
+// (16 nov., user request) nothing planted in front of the police station: no trees, no fences in its forecourt
+let HQ_C = null;
+function nearHQ(x, z, r = 20) {
+  if (HQ_C === null) { const b = W.buildings.find(o => o.n === 'Police nationale'); HQ_C = b ? [b.p.filter((_, i) => !(i & 1)).reduce((a, v) => a + v, 0) / (b.p.length / 2), b.p.filter((_, i) => i & 1).reduce((a, v) => a + v, 0) / (b.p.length / 2)] : false; }
+  return !!HQ_C && Math.hypot(x - HQ_C[0], z - HQ_C[1]) < r;
+}
 function roadEdge(x, z) {
   const segs = roadSegs.get(key(Math.floor(x / RCELL), Math.floor(z / RCELL)));
   let bd = 1e9, nx = 0, nz = 0;
@@ -576,7 +582,7 @@ function buildGround() {
   const T = [];
   for (const src of [W.trees, parkTrees]) for (let i = 0; i < src.length; i += 2) { // keep trunks out of the traffic
     const q = offRoad(src[i], src[i + 1], 0.9);
-    if (q && !buildingPolys.some(b => pointInPoly(q[0], q[1], b.p))) T.push(q[0], q[1]);
+    if (q && !nearHQ(q[0], q[1]) && !buildingPolys.some(b => pointInPoly(q[0], q[1], b.p))) T.push(q[0], q[1]);
   }
   const nt = T.length / 2;
   const crownG = HD ? hd.crownGeo() : new THREE.IcosahedronGeometry(2.6, 0), trunkG = new THREE.CylinderGeometry(0.22, 0.3, 3, 5);

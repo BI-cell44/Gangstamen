@@ -138,7 +138,7 @@ let navCool = 0;
 function menuPadNav(dt) {
   navCool -= dt;
   const P = pads.find(p => p.gp); if (!P) return;
-  const visible = !$('title').hidden ? '#title .view:not([hidden])' : (!pauseEl.hidden ? '#pause' : !resEl.hidden ? '#results' : null);
+  const sm = $('spawnMap'), visible = !$('title').hidden ? '#title .view:not([hidden])' : (!pauseEl.hidden ? '#pause' : !resEl.hidden ? '#results' : sm && !sm.hidden ? '#spawnMap' : null);
   if (!visible) return;
   const els = [...document.querySelectorAll(visible + ' button:not([disabled]), ' + visible + ' input')].filter(e => !e.hidden);
   if (!els.length) return;

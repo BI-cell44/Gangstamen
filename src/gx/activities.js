@@ -96,7 +96,7 @@
     dropGhost(); actPanel(null); run = null;
   }
   function actStep(dt) {
-    const free = mode === 'solo' && !mission && !gm && locals.length === 1;
+    const free = mode === 'solo' && soloKind === 'free' && !mission && !gm && locals.length === 1; // (16 nov.) not in « Chasse aux Rapaces »
     if (!free) { if (acts) actHide(); if (run) { dropGhost(); actPanel(null); run = null; } after = null; hintOn = false; return; }
     actsBuild(); const L = locals[0], c = L.car;
     if (!run) {

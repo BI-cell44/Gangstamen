@@ -35,6 +35,7 @@
       const acc = new Map();
       for (const [xi, zi, ai, kind, li] of D.panels) {
         const x = xi / 10, z = zi / 10, a = ai / 1000, L = li / 10, ca = Math.cos(a), sa = Math.sin(a), y = surfaceH(x, z) - 0.05;
+        if (nearHQ(x, z)) continue; // the police station's forecourt stays clear
         const tk = Math.floor(x / TILE) + ',' + Math.floor(z / TILE);
         let T = acc.get(tk); if (!T) acc.set(tk, T = { cx: (Math.floor(x / TILE) + 0.5) * TILE, cz: (Math.floor(z / TILE) + 0.5) * TILE, g: {} });
         const pn = { x, z, a, L, kind, ca, sa, tile: tk, ranges: [], broken: false, t: 0, hk: 0.85 + ((xi * 7 + zi * 13) % 30) / 100 };

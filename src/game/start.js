@@ -1,5 +1,9 @@
 // ---------- game start ----------
-function startGame(kind) {
+// (16 nov., user request) two solo modes: « Chasse aux Rapaces » (the match, KO and time limit, no races or challenges)
+// and « Conduite libre » (no clock, no score, races, challenges and missions on the map, start point chosen on a map)
+let soloKind = 'hunt';
+function startGame(kind, sub) {
+  soloKind = kind === 'solo' && sub === 'free' ? 'free' : 'hunt';
   Intro.stop();
   sfx.init();
   if (HD) showroom(false);
@@ -8,7 +12,7 @@ function startGame(kind) {
   locals = [];
   if (kind === 'split') teamMode = !!settings.teams;
   else if (kind === 'solo') teamMode = false;
-  if (kind !== 'online') setupMatch(settings.goal, settings.limit);
+  if (kind !== 'online') { if (soloKind === 'free') setupMatch(0, 0); else setupMatch(settings.goal, settings.limit); }
   document.body.classList.toggle('teams', teamMode);
   setBotTeams();
   if (kind === 'split') {
@@ -29,8 +33,10 @@ function startGame(kind) {
   for (const L of locals) { L.cam.position.set(L.car.x, 20, L.car.z + 30); }
   if (teamMode) for (const L of locals) { if (locals.length > 1) flashFor(L, TEAMS[L.team].short, baseName(L.team)); else flash(TEAMS[L.team].name, 'Base : ' + baseName(L.team) + ' · pas de tir ami'); }
   else if (kind === 'online') flash('Partie ' + Net.code.toUpperCase(), Net.isHost ? 'Code à donner aux amis · vous êtes l’hôte' : 'Bienvenue à Chantenay');
-  else flashAll('Gangstamen', locals.length > 1 ? 'Chacun pour soi · les Rapaces rôdent' : 'Boulevard de la Liberté · les Rapaces rôdent');
+  else if (soloKind === 'free') flashAll('Conduite libre', 'Pas de chrono · courses, défis et missions sur la carte · G : carte');
+  else flashAll('Chasse aux Rapaces', locals.length > 1 ? 'Chacun pour soi · les Rapaces rôdent' : 'Boulevard de la Liberté · les Rapaces rôdent');
   if (gx) gx.start(kind);
+  if (gx && gx.SpawnMap && soloKind === 'free') gx.SpawnMap.show();
   try { renderer.domElement.focus(); } catch (e) { }
 }
 

@@ -281,6 +281,7 @@ body.cine #logo, body.cine #credit { display: none; }
       <p>Les Rapaces de la Butte ont pris le quartier. Six caisses noires tournent entre la place Jean-Macé et les quais de Loire. Reprends les rues de Chantenay : rentre-leur dedans, arrose-les, et ramasse les clés à molette pour réparer ta caisse.</p>
       <div class="menu">
         <button id="start" class="big" disabled>Chargement du quartier…</button>
+        <button class="mbtn hdOnly" id="startFree" hidden>Conduite libre · sans chrono, choisis où démarrer</button>
         <button class="mbtn hdOnly" data-go="vCamp" hidden>Campagne · 7 missions</button>
         <button class="mbtn" data-go="vSplit">Écran partagé · 2 à 4 joueurs</button>
         <button class="mbtn" data-go="vOnline">En ligne · jusqu'à 12 joueurs</button>
@@ -2602,6 +2603,12 @@ function roadSegAdd(ax, az, bx, bz, w, n) {
 }
 
 // distance from a point to the nearest carriageway edge (negative: on the road) and the direction away from it
+// (16 nov., user request) nothing planted in front of the police station: no trees, no fences in its forecourt
+let HQ_C = null;
+function nearHQ(x, z, r = 20) {
+  if (HQ_C === null) { const b = W.buildings.find(o => o.n === 'Police nationale'); HQ_C = b ? [b.p.filter((_, i) => !(i & 1)).reduce((a, v) => a + v, 0) / (b.p.length / 2), b.p.filter((_, i) => i & 1).reduce((a, v) => a + v, 0) / (b.p.length / 2)] : false; }
+  return !!HQ_C && Math.hypot(x - HQ_C[0], z - HQ_C[1]) < r;
+}
 function roadEdge(x, z) {
   const segs = roadSegs.get(key(Math.floor(x / RCELL), Math.floor(z / RCELL)));
   let bd = 1e9, nx = 0, nz = 0;
@@ -2812,7 +2819,7 @@ function buildGround() {
   const T = [];
   for (const src of [W.trees, parkTrees]) for (let i = 0; i < src.length; i += 2) { // keep trunks out of the traffic
     const q = offRoad(src[i], src[i + 1], 0.9);
-    if (q && !buildingPolys.some(b => pointInPoly(q[0], q[1], b.p))) T.push(q[0], q[1]);
+    if (q && !nearHQ(q[0], q[1]) && !buildingPolys.some(b => pointInPoly(q[0], q[1], b.p))) T.push(q[0], q[1]);
   }
   const nt = T.length / 2;
   const crownG = HD ? hd.crownGeo() : new THREE.IcosahedronGeometry(2.6, 0), trunkG = new THREE.CylinderGeometry(0.22, 0.3, 3, 5);
@@ -3687,6 +3694,9 @@ const Soundscape = (() => {
       const P = [[0, 13], [0.32, 18], [0.45, 20], [0.53, 21], [0.6, 22], [0.88, 29], [0.94, 30], [0.97, 31], [1, 37]], c = hd.amb.clock;
       for (let i = 1; i < P.length; i++) if (c <= P[i][0]) return Math.floor(P[i - 1][1] + (P[i][1] - P[i - 1][1]) * (c - P[i - 1][0]) / (P[i][0] - P[i - 1][0])) % 24;
     }
+    // (16 nov.) a fixed time of day sets the hour too: terraces, crowds and bells used the computer's clock, so at 1 am
+    // under a sunset sky the terraces were empty
+    if (HD && typeof settings !== 'undefined' && { day: 1, sunset: 1, night: 1 }[settings.tod]) return { day: 13, sunset: 19, night: 22 }[settings.tod];
     return new Date().getHours();
   }
   let stPos = null; // the church (a landmark in HD; in the classic build, the building of that name)
@@ -3907,6 +3917,7 @@ addEventListener('keydown', e => {
     else { const on = sfx.toggle(); flashAll(on ? 'Radio ON' : 'Radio OFF', on ? 'Chantenay FM 92.4' : ''); }
   }
   if (e.key && e.key.toLowerCase() === 'p' && !e.repeat) toggleRetro();
+  if (e.code === 'KeyG' && !e.repeat && gx && gx.SpawnMap && mode === 'solo' && soloKind === 'free' && !gx.blocking) gx.SpawnMap.show(); // (16 nov.) free driving: the start map
   if (e.code === 'Tab') $('board').hidden = false;
   if (gx && !e.repeat && /^Digit[1-6]$/.test(e.code) && (mode === 'online' || locals.length > 1)) gx.quickChat(locals.find(L => schemeOf(L.ctl) && schemeOf(L.ctl).name === 'Clavier 1') || locals[0], +e.code[5] - 1);
   for (const L of locals) {
@@ -4515,7 +4526,7 @@ function toggleRetro() {
 const pauseEl = document.createElement('div');
 pauseEl.id = 'pause'; pauseEl.hidden = true;
 pauseEl.style.cssText = 'position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:rgba(13,10,20,.75)';
-pauseEl.innerHTML = '<div class="card" style="display:flex;flex-direction:column;gap:12px;align-items:flex-start"><h2 style="margin:0;font-family:var(--display);font-weight:normal;font-size:40px;color:var(--chalk);text-shadow:3px 3px 0 var(--magenta)">Pause</h2><button class="big" id="pResume">Reprendre</button><button class="mbtn" id="pPhoto">Mode photo (F2)</button><button class="mbtn" id="pQuit">Quitter vers le menu</button></div>';
+pauseEl.innerHTML = '<div class="card" style="display:flex;flex-direction:column;gap:12px;align-items:flex-start"><h2 style="margin:0;font-family:var(--display);font-weight:normal;font-size:40px;color:var(--chalk);text-shadow:3px 3px 0 var(--magenta)">Pause</h2><button class="big" id="pResume">Reprendre</button><button class="mbtn" id="pMap" hidden>Carte · démarrer ailleurs (G)</button><button class="mbtn" id="pPhoto">Mode photo (F2)</button><button class="mbtn" id="pQuit">Quitter vers le menu</button></div>';
 document.body.append(pauseEl);
 function togglePause() {
   if (!started || Match.over) return;
@@ -4523,7 +4534,9 @@ function togglePause() {
     paused = !paused; pauseEl.hidden = !paused; if (paused) $('pResume').focus(); return;
   }
   paused = !paused; pauseEl.hidden = !paused; if (paused) $('pResume').focus();
+  $('pMap').hidden = !(gx && gx.SpawnMap && mode === 'solo' && soloKind === 'free');
 }
+$('pMap').addEventListener('click', () => { paused = false; pauseEl.hidden = true; if (gx && gx.SpawnMap) gx.SpawnMap.show(); });
 $('pResume').addEventListener('click', () => { paused = false; pauseEl.hidden = true; });
 $('pPhoto').addEventListener('click', () => PhotoMode.toggle(true));
 $('pQuit').addEventListener('click', () => { try { if (Net.room) Net.room.leave(); } catch (e) { } location.reload(); });
@@ -5096,7 +5109,7 @@ let navCool = 0;
 function menuPadNav(dt) {
   navCool -= dt;
   const P = pads.find(p => p.gp); if (!P) return;
-  const visible = !$('title').hidden ? '#title .view:not([hidden])' : (!pauseEl.hidden ? '#pause' : !resEl.hidden ? '#results' : null);
+  const sm = $('spawnMap'), visible = !$('title').hidden ? '#title .view:not([hidden])' : (!pauseEl.hidden ? '#pause' : !resEl.hidden ? '#results' : sm && !sm.hidden ? '#spawnMap' : null);
   if (!visible) return;
   const els = [...document.querySelectorAll(visible + ' button:not([disabled]), ' + visible + ' input')].filter(e => !e.hidden);
   if (!els.length) return;
@@ -5719,7 +5732,7 @@ const gx = !HD ? null : (() => {
   function policeOn() { return !(mission && mission.noPolice); }
   // (user request) the real police station near the town hall (OpenStreetMap amenity=police, « Police nationale ») is
   // the base: patrols and reinforcements leave from its door when it is not right under the player's nose
-  const HQ = { x: 170, z: -343, node: -1, built: false };
+  const HQ = { x: 170, z: -343, node: -1, built: false, cars: null };
   function hqNode(minD = 70, maxD = 520) {
     if (HQ.node < 0) { let bd = 1e18; for (let i = 0; i < G.x.length; i++) { if (!nodeOk(i) || !G.out[i].length) continue; const d = (G.x[i] - HQ.x) ** 2 + (G.z[i] - HQ.z) ** 2; if (d < bd) { bd = d; HQ.node = i; } } }
     const d = minPlayerDist(G.x[HQ.node], G.z[HQ.node]);
@@ -5765,9 +5778,17 @@ const gx = !HD ? null : (() => {
       const sign = new THREE.Mesh(new THREE.BoxGeometry(3, 0.75, 0.1), [post, post, post, post, sm, sm]); sign.position.set(sx, sy + 3.2, sz); sign.rotation.y = Math.atan2(nx, nz); g.add(sign);
       const pl = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 3.2, 8), post); pl.position.set(sx, sy + 1.6, sz); pl.castShadow = true; g.add(pl);
       gridAdd([sx - 0.1, sz, sx + 0.1, sz], 0.4);
-      for (const k of [-1, 1]) {
-        const m = makeCar(0xeef0f2, 0x1b2f8a, false, 'saloon', { guns: false, police: true }), px = mx + nx * 4.5 + ux * k * 1.6, pz = mz + nz * 4.5 + uz * k * 1.6;
+      // (16 nov.) two clear spots in the forecourt, side by side, nearest the door: before, one stood half inside a building
+      const inB = (x, z) => buildingPolys.some(o => pointInPoly(x, z, o.p || o));
+      const clear = (a, o) => [[-2.4, -1], [-2.4, 1], [2.4, -1], [2.4, 1], [0, 0]].every(([d, c]) => !inB(mx + nx * (o + d) + ux * (a + c), mz + nz * (o + d) + uz * (a + c)));
+      const cand = []; for (let a = -8; a <= 8; a += 0.8) for (let o = 3.6; o <= 9; o += 0.6) cand.push([a, o]);
+      cand.sort((p, q) => Math.abs(p[0]) + p[1] - Math.abs(q[0]) - q[1]);
+      const picked = []; for (const [a, o] of cand) { if (picked.length === 2) break; if (picked.some(([b]) => Math.abs(b - a) < 2.8) || !clear(a, o)) continue; picked.push([a, o]); }
+      HQ.cars = [];
+      for (const [a, off] of picked) {
+        const m = makeCar(0xeef0f2, 0x1b2f8a, false, 'saloon', { guns: false, police: true }), px = mx + nx * off + ux * a, pz = mz + nz * off + uz * a;
         m.position.set(px, surfaceH(px, pz) + 0.34, pz); m.rotation.y = Math.atan2(nx, nz); scene.add(m);
+        HQ.cars.push([Math.round(px * 10) / 10, Math.round(pz * 10) / 10]);
         gridAdd([px - nx * 2, pz - nz * 2, px + nx * 2, pz + nz * 2], 3.5);
       }
     }
@@ -7228,6 +7249,7 @@ const gx = !HD ? null : (() => {
       const acc = new Map();
       for (const [xi, zi, ai, kind, li] of D.panels) {
         const x = xi / 10, z = zi / 10, a = ai / 1000, L = li / 10, ca = Math.cos(a), sa = Math.sin(a), y = surfaceH(x, z) - 0.05;
+        if (nearHQ(x, z)) continue; // the police station's forecourt stays clear
         const tk = Math.floor(x / TILE) + ',' + Math.floor(z / TILE);
         let T = acc.get(tk); if (!T) acc.set(tk, T = { cx: (Math.floor(x / TILE) + 0.5) * TILE, cz: (Math.floor(z / TILE) + 0.5) * TILE, g: {} });
         const pn = { x, z, a, L, kind, ca, sa, tile: tk, ranges: [], broken: false, t: 0, hk: 0.85 + ((xi * 7 + zi * 13) % 30) / 100 };
@@ -7586,7 +7608,7 @@ const gx = !HD ? null : (() => {
     say(win ? 'Mission réussie !' : 'Mission ratée.', { cancel: true, pitch: 1.05 });
     if (win) dialogue(m.outro, show); else if (res === 'dead') setTimeout(show, 600); else show();
   }
-  function freeRoam() { cleanupMission(); scatterRivals(); setupMatch(settings.goal, settings.limit); flash('Chantenay', 'Bac à sable · roule librement'); }
+  function freeRoam() { cleanupMission(); scatterRivals(); soloKind = 'free'; setupMatch(0, 0); flash('Chantenay', 'Bac à sable · roule librement'); }
   function toMenu() { // back to the title screen without reloading
     started = false; paused = false; document.body.classList.remove('ingame', 'split'); $('title').hidden = false; renderCampaign(); showView('vCamp');
     for (const L of locals) scene.remove(L.car.mesh); locals = [];
@@ -7913,7 +7935,7 @@ const gx = !HD ? null : (() => {
     dropGhost(); actPanel(null); run = null;
   }
   function actStep(dt) {
-    const free = mode === 'solo' && !mission && !gm && locals.length === 1;
+    const free = mode === 'solo' && soloKind === 'free' && !mission && !gm && locals.length === 1; // (16 nov.) not in « Chasse aux Rapaces »
     if (!free) { if (acts) actHide(); if (run) { dropGhost(); actPanel(null); run = null; } after = null; hintOn = false; return; }
     actsBuild(); const L = locals[0], c = L.car;
     if (!run) {
@@ -8485,6 +8507,90 @@ const gx = !HD ? null : (() => {
     }
     return { build, step, list, LAND, ROUTE, get ferry() { return fy; }, get curve() { return curve; }, get moored() { return moored; }, DOCK };
   })();
+  // =====================================================================================
+  // (16 nov., user request) free driving: a map of the area with starting points, at the start of the mode and at any
+  // time after (G key, or « Carte » in the pause menu). Click a point on the map, or pick it in the list (keyboard or
+  // gamepad). The world waits while the map is open.
+  // =====================================================================================
+  const SpawnMap = (() => {
+    const SPOTS = [ // (16 nov.) the list chosen by the user
+      ['Place Jean-Macé', 45, 283], ['Mairie de Chantenay', 160, -440], ['Gare de Chantenay', -300, 540],
+      ['Place des Garennes · la butte', 864, 30],
+      ['Gare Maritime · le bac', 1345, -420], ['Grue grise · pointe de l’île', 1218, 366], ['Nefs Dubigeon', 1958, -363],
+    ];
+    const rejects = [];
+    let el = null, cv = null, spots = null, open = false, view = null;
+    function build() {
+      if (el) return;
+      el = document.createElement('div'); el.id = 'spawnMap'; el.hidden = true;
+      el.style.cssText = 'position:fixed;inset:0;z-index:31;display:grid;place-items:center;background:rgba(13,10,20,.82)';
+      el.innerHTML = '<div class="card" style="display:flex;gap:18px;align-items:flex-start;max-width:96vw"><canvas width="640" height="560" style="max-width:62vw;max-height:80vh;border-radius:8px;cursor:pointer;background:#1c1a24"></canvas>'
+        + '<div style="display:flex;flex-direction:column;gap:6px;min-width:250px"><h2 style="margin:0 0 4px;font-family:var(--display);font-weight:normal;font-size:30px;color:var(--chalk);text-shadow:3px 3px 0 var(--magenta)">Où démarrer ?</h2>'
+        + '<p class="fine" style="margin:0 0 6px">Clique un point sur la carte ou choisis dans la liste. Touche G (ou Pause → Carte) pour revenir ici.</p><div class="spList" style="display:flex;flex-direction:column;gap:5px"></div></div></div>';
+      document.body.append(el); cv = el.querySelector('canvas');
+      cv.addEventListener('click', e => {
+        const r = cv.getBoundingClientRect(), mx = (e.clientX - r.left) * cv.width / r.width, my = (e.clientY - r.top) * cv.height / r.height;
+        let best = null, bd = 26; for (const s of spots) { const [px, py] = toMap(s.x, s.z), d = Math.hypot(px - mx, py - my); if (d < bd) { bd = d; best = s; } }
+        if (best) choose(best);
+      });
+      el.addEventListener('keydown', e => { if (e.code === 'Escape' || e.code === 'KeyG') { e.stopPropagation(); close(); } });
+    }
+    function resolve() { // snap every spot to a drivable street inside the play area
+      if (spots) return spots;
+      spots = [];
+      for (const [name, x0, z0] of SPOTS) {
+        let x = x0, z = z0;
+        if (x == null || !isFinite(x)) continue;
+        if (Math.abs(x - CX) > HX - 15 || Math.abs(z - CZ) > HZ - 15) { rejects.push([name, 'hors carte', CX, HX, CZ, HZ]); continue; }
+        const [rx, rz] = roadPoint(x, z), n = nearestNodeTo(rx, rz);
+        if (!nodeOk(n) || Math.hypot(rx - x, rz - z) > 120) { rejects.push([name, nodeOk(n), Math.round(rx), Math.round(rz)]); continue; }
+        spots.push({ name, x: rx, z: rz });
+      }
+      return spots;
+    }
+    function toMap(x, z) { return [(x - view.x0) * view.k + view.ox, (z - view.z0) * view.k + view.oy]; }
+    function draw(sel) {
+      const g = cv.getContext('2d'), W_ = cv.width, H_ = cv.height;
+      const x0 = CX - HX, x1 = CX + HX, z0 = CZ - HZ, z1 = CZ + HZ, k = Math.min((W_ - 30) / (x1 - x0), (H_ - 30) / (z1 - z0));
+      view = { x0, z0, k, ox: (W_ - (x1 - x0) * k) / 2, oy: (H_ - (z1 - z0) * k) / 2 };
+      g.fillStyle = '#1c1a24'; g.fillRect(0, 0, W_, H_);
+      g.fillStyle = '#25395a'; // the Loire: points below the water line, sampled coarsely
+      for (let x = x0; x < x1; x += 12) for (let z = z0; z < z1; z += 12) if (groundH(x, z) < WATER_Y + 0.3) { const [px, py] = toMap(x, z); g.fillRect(px, py, 12 * k + 1, 12 * k + 1); }
+      g.lineCap = 'round'; g.lineJoin = 'round';
+      for (const r of W.roads) {
+        if (!r.d) continue; g.strokeStyle = r.w >= 9 ? '#d8cfbf' : '#8f8796'; g.lineWidth = Math.max(1, r.w * k * 0.9);
+        g.beginPath(); for (let i = 0; i < r.p.length; i += 2) { const [px, py] = toMap(r.p[i], r.p[i + 1]); if (i) g.lineTo(px, py); else g.moveTo(px, py); } g.stroke();
+      }
+      const c = locals[0] && locals[0].car;
+      if (c) { const [px, py] = toMap(c.x, c.z); g.fillStyle = '#f2c14e'; g.beginPath(); g.arc(px, py, 6, 0, Math.PI * 2); g.fill(); }
+      g.font = 'bold 13px Arial, sans-serif'; g.textBaseline = 'middle';
+      spots.forEach((s, i) => {
+        const [px, py] = toMap(s.x, s.z), on = s === sel;
+        g.fillStyle = on ? '#ff4fa3' : '#3a8aff'; g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.arc(px, py, on ? 11 : 9, 0, Math.PI * 2); g.fill(); g.stroke();
+        g.fillStyle = '#fff'; g.textAlign = 'center'; g.fillText(String(i + 1), px, py + 0.5);
+        if (on) { g.textAlign = px > W_ - 160 ? 'right' : 'left'; g.fillStyle = '#fff'; g.strokeStyle = '#000'; g.lineWidth = 3; const tx = px + (g.textAlign === 'left' ? 15 : -15); g.strokeText(s.name, tx, py); g.fillText(s.name, tx, py); }
+      });
+    }
+    function show() {
+      if (!locals[0] || mission) return;
+      build(); resolve(); if (!spots.length) return;
+      const list = el.querySelector('.spList'); list.innerHTML = '';
+      spots.forEach((s, i) => {
+        const b = document.createElement('button'); b.className = 'mbtn'; b.style.textAlign = 'left'; b.textContent = (i + 1) + '. ' + s.name;
+        b.addEventListener('click', () => choose(s)); b.addEventListener('focus', () => draw(s)); b.addEventListener('mouseenter', () => draw(s));
+        list.append(b);
+      });
+      open = true; blocking = true; el.hidden = false; draw(null); list.firstChild.focus();
+    }
+    function close() { if (!open) return; open = false; blocking = false; el.hidden = true; try { renderer.domElement.focus(); } catch (e) { } }
+    function choose(s) {
+      const L = locals[0]; if (!L) return close();
+      const n = nearestNodeTo(s.x, s.z), nb = G.adj[n] && G.adj[n][0];
+      placePlayer([s.x, s.z], nb != null ? [G.x[nb], G.z[nb]] : null); L.heat = 0;
+      close(); flash(s.name, 'Conduite libre · G : changer de point de départ');
+    }
+    return { show, close, get open() { return open; }, get spots() { return resolve(); }, rejects };
+  })();
   function world() {
     try { church(); } catch (e) { console.warn('church', e); }
     try { quays(); } catch (e) { console.warn('quays', e); }
@@ -8504,7 +8610,7 @@ const gx = !HD ? null : (() => {
   { const el = $('ammo'); if (el) { el.style.pointerEvents = 'auto'; el.style.cursor = 'pointer'; el.addEventListener('pointerdown', e => { e.preventDefault(); if (locals[0]) cycleWeapon(locals[0]); }); } }
   const api = { netIn, dj, cycleWeapon, hearShot, quickChat, chatIn, step: gameStep, world, landmarkTick, tick: dt => { tick(dt); Boats.step(dt); }, Boats, People, portCranes, LM, walks: () => { if (!walks) buildWalks(); return walks; }, start: startHook, cars: () => npcs.concat(extras), copsOn, shieldHit, makeBus, policeHQ: HQ, hqNode, spots: SPOTS, unlocked, postcards, acts: () => (actsBuild(), acts), actRun: () => run, startAct, hearCars: carsHearShot, traffic: TF, Fences, LightPoles, lightState, roadRules, makeNpc, placeOnGraph, nextNode, spawnPatrol, npcs: () => npcs, damage: damageNpc, addHeat, say, peds: () => peds, stars, special, startMission, renderCampaign, cleanupMission, MISSIONS,
     get gmode() { return gm ? gm.kind : 0; }, mines: () => mines, customers: () => customers, teamScores: modeTeamScores, goalText, rematch: rematchMode,
-    get blocking() { return blocking; }, get mission() { return mission; }, foes: () => extras.filter(c => c.alive && c.team === 1), saveBank, pus: () => pus, furniture: () => furniture, garage: GARAGE, garages: GARAGES, campDiff, copBump: c => oneStar(c, 0.1, 'Tu as percuté la police'),
+    get blocking() { return blocking; }, get mission() { return mission; }, foes: () => extras.filter(c => c.alive && c.team === 1), saveBank, pus: () => pus, furniture: () => furniture, garage: GARAGE, garages: GARAGES, campDiff, SpawnMap, copBump: c => oneStar(c, 0.1, 'Tu as percuté la police'),
     get onGarage() { return gx_onGarage; }, get objTarget() { return objEl.hidden ? null : objTgt; },
     minimap(me, add) { minimap(me, add); actMinimap(add); discMinimap(add); for (const pu of pus) if (pu.on) add(pu, '#' + new THREE.Color(PU_COL[pu.kind]).getHexString()); for (const c of extras) if (c.alive) add(c, c.friendly ? '#f2c81e' : '#ff3b3b'); for (const m of markers) add(m, '#ffffff'); if (GARAGE.pad && mode === 'solo') for (const G of GARAGES) add(G, '#3a8aff'); } };
   return api;
@@ -8513,7 +8619,11 @@ const gx = !HD ? null : (() => {
 
 
 // ---------- game start ----------
-function startGame(kind) {
+// (16 nov., user request) two solo modes: « Chasse aux Rapaces » (the match, KO and time limit, no races or challenges)
+// and « Conduite libre » (no clock, no score, races, challenges and missions on the map, start point chosen on a map)
+let soloKind = 'hunt';
+function startGame(kind, sub) {
+  soloKind = kind === 'solo' && sub === 'free' ? 'free' : 'hunt';
   Intro.stop();
   sfx.init();
   if (HD) showroom(false);
@@ -8522,7 +8632,7 @@ function startGame(kind) {
   locals = [];
   if (kind === 'split') teamMode = !!settings.teams;
   else if (kind === 'solo') teamMode = false;
-  if (kind !== 'online') setupMatch(settings.goal, settings.limit);
+  if (kind !== 'online') { if (soloKind === 'free') setupMatch(0, 0); else setupMatch(settings.goal, settings.limit); }
   document.body.classList.toggle('teams', teamMode);
   setBotTeams();
   if (kind === 'split') {
@@ -8543,8 +8653,10 @@ function startGame(kind) {
   for (const L of locals) { L.cam.position.set(L.car.x, 20, L.car.z + 30); }
   if (teamMode) for (const L of locals) { if (locals.length > 1) flashFor(L, TEAMS[L.team].short, baseName(L.team)); else flash(TEAMS[L.team].name, 'Base : ' + baseName(L.team) + ' · pas de tir ami'); }
   else if (kind === 'online') flash('Partie ' + Net.code.toUpperCase(), Net.isHost ? 'Code à donner aux amis · vous êtes l’hôte' : 'Bienvenue à Chantenay');
-  else flashAll('Gangstamen', locals.length > 1 ? 'Chacun pour soi · les Rapaces rôdent' : 'Boulevard de la Liberté · les Rapaces rôdent');
+  else if (soloKind === 'free') flashAll('Conduite libre', 'Pas de chrono · courses, défis et missions sur la carte · G : carte');
+  else flashAll('Chasse aux Rapaces', locals.length > 1 ? 'Chacun pour soi · les Rapaces rôdent' : 'Boulevard de la Liberté · les Rapaces rôdent');
   if (gx) gx.start(kind);
+  if (gx && gx.SpawnMap && soloKind === 'free') gx.SpawnMap.show();
   try { renderer.domElement.focus(); } catch (e) { }
 }
 
@@ -8738,7 +8850,7 @@ function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   PerfHud.begin();
   pollPads();
-  if (Intro.state !== 'off') { if (pads.some(P => P.press && (P.press[0] || P.press[9]))) Intro.key(null); } else if (!(gx && gx.blocking)) menuPadNav(dt);
+  if (Intro.state !== 'off') { if (pads.some(P => P.press && (P.press[0] || P.press[9]))) Intro.key(null); } else if (!(gx && gx.blocking) || (gx.SpawnMap && gx.SpawnMap.open)) menuPadNav(dt);
   if (gx) gx.tick(dt);
   Intro.update(dt);
   if (HD) hd.perf(now);
@@ -9261,14 +9373,15 @@ const paintNow = () => new Promise(r => { let done = false; const go = () => { i
   requestAnimationFrame(t => { BOOT.mark('attente de la première image'); requestAnimationFrame(() => { BOOT.mark('première image'); BOOT.total = Math.round(performance.now() - BOOT.t0); }); });
   requestAnimationFrame(frame);
   held.forEach(b => { b.disabled = false; });
-  startBtn.disabled = false; startBtn.textContent = 'Solo · prendre le volant';
+  startBtn.disabled = false; startBtn.textContent = HD ? 'Chasse aux Rapaces · solo' : 'Solo · prendre le volant';
   startBtn.focus();
   startBtn.addEventListener('click', () => startGame('solo'));
+  { const f = $('startFree'); if (f) f.addEventListener('click', () => startGame('solo', 'free')); }
   $('splitGo').addEventListener('click', () => startGame('split'));
   $('create').addEventListener('click', () => startOnline(null, true));
   netInit();
   if (settings.intro !== false && !window.__noIntro) Intro.splash();
 })();
-window.__gm = { get paused() { return paused; }, roadEdge, segHit, get started() { return started; }, renderer, scene, camera, PerfHud, Tiles, W, BOOT, planarReal, planarArcade, VEHICLES, engineState, Soundscape, sfx, PhotoMode, updateCamera, CAM_MODES, G, nodeOk, groundH, Profile, makeCar, saveSettingsHook: () => saveSettings(), surfaceH, Intro, hd, gx, settings, trams, edges, tramS, tramWall, EDGE, cellOf, collideWalls, muzzleOf, shoot, damage, applyHit, locals: () => locals, rivals: () => rivals, Net, Match, step: s => step(s, performance.now()), start: k => startGame(k || 'solo'), codes };
+window.__gm = { get paused() { return paused; }, roadEdge, segHit, get started() { return started; }, renderer, scene, camera, PerfHud, Tiles, W, BOOT, planarReal, planarArcade, VEHICLES, engineState, Soundscape, sfx, PhotoMode, updateCamera, CAM_MODES, G, nodeOk, groundH, Profile, makeCar, saveSettingsHook: () => saveSettings(), surfaceH, Intro, hd, gx, settings, trams, edges, tramS, tramWall, EDGE, cellOf, collideWalls, muzzleOf, shoot, damage, applyHit, locals: () => locals, rivals: () => rivals, Net, Match, step: s => step(s, performance.now()), start: (k, sub) => startGame(k || 'solo', sub), codes };
 })();
 </script>

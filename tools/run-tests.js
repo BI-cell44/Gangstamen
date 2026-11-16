@@ -336,6 +336,7 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
     });
     await check('courses et défis : départ, points de passage, record, défis', async () => {
       await skipDialogue();
+      await ev(() => { __gm.start('solo', 'free'); __gm.gx.SpawnMap.close(); }); // (16 nov.) races and challenges only in « Conduite libre »
       const r = await ev(() => {
         const X = __gm.gx, A = X.acts(), L = __gm.locals()[0], c = L.car, out = { activites: A.length };
         L.ammo = { rockets: 2 }; __gm.step(1 / 30); out.armes = /2/.test(document.getElementById('ammo').textContent); // the weapon line still updates (a function of the activities once replaced it)

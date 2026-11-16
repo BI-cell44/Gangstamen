@@ -21,6 +21,9 @@ const Soundscape = (() => {
       const P = [[0, 13], [0.32, 18], [0.45, 20], [0.53, 21], [0.6, 22], [0.88, 29], [0.94, 30], [0.97, 31], [1, 37]], c = hd.amb.clock;
       for (let i = 1; i < P.length; i++) if (c <= P[i][0]) return Math.floor(P[i - 1][1] + (P[i][1] - P[i - 1][1]) * (c - P[i - 1][0]) / (P[i][0] - P[i - 1][0])) % 24;
     }
+    // (16 nov.) a fixed time of day sets the hour too: terraces, crowds and bells used the computer's clock, so at 1 am
+    // under a sunset sky the terraces were empty
+    if (HD && typeof settings !== 'undefined' && { day: 1, sunset: 1, night: 1 }[settings.tod]) return { day: 13, sunset: 19, night: 22 }[settings.tod];
     return new Date().getHours();
   }
   let stPos = null; // the church (a landmark in HD; in the classic build, the building of that name)

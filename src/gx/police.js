@@ -14,7 +14,7 @@
   function policeOn() { return !(mission && mission.noPolice); }
   // (user request) the real police station near the town hall (OpenStreetMap amenity=police, « Police nationale ») is
   // the base: patrols and reinforcements leave from its door when it is not right under the player's nose
-  const HQ = { x: 170, z: -343, node: -1, built: false };
+  const HQ = { x: 170, z: -343, node: -1, built: false, cars: null };
   function hqNode(minD = 70, maxD = 520) {
     if (HQ.node < 0) { let bd = 1e18; for (let i = 0; i < G.x.length; i++) { if (!nodeOk(i) || !G.out[i].length) continue; const d = (G.x[i] - HQ.x) ** 2 + (G.z[i] - HQ.z) ** 2; if (d < bd) { bd = d; HQ.node = i; } } }
     const d = minPlayerDist(G.x[HQ.node], G.z[HQ.node]);
@@ -60,9 +60,17 @@
       const sign = new THREE.Mesh(new THREE.BoxGeometry(3, 0.75, 0.1), [post, post, post, post, sm, sm]); sign.position.set(sx, sy + 3.2, sz); sign.rotation.y = Math.atan2(nx, nz); g.add(sign);
       const pl = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 3.2, 8), post); pl.position.set(sx, sy + 1.6, sz); pl.castShadow = true; g.add(pl);
       gridAdd([sx - 0.1, sz, sx + 0.1, sz], 0.4);
-      for (const k of [-1, 1]) {
-        const m = makeCar(0xeef0f2, 0x1b2f8a, false, 'saloon', { guns: false, police: true }), px = mx + nx * 4.5 + ux * k * 1.6, pz = mz + nz * 4.5 + uz * k * 1.6;
+      // (16 nov.) two clear spots in the forecourt, side by side, nearest the door: before, one stood half inside a building
+      const inB = (x, z) => buildingPolys.some(o => pointInPoly(x, z, o.p || o));
+      const clear = (a, o) => [[-2.4, -1], [-2.4, 1], [2.4, -1], [2.4, 1], [0, 0]].every(([d, c]) => !inB(mx + nx * (o + d) + ux * (a + c), mz + nz * (o + d) + uz * (a + c)));
+      const cand = []; for (let a = -8; a <= 8; a += 0.8) for (let o = 3.6; o <= 9; o += 0.6) cand.push([a, o]);
+      cand.sort((p, q) => Math.abs(p[0]) + p[1] - Math.abs(q[0]) - q[1]);
+      const picked = []; for (const [a, o] of cand) { if (picked.length === 2) break; if (picked.some(([b]) => Math.abs(b - a) < 2.8) || !clear(a, o)) continue; picked.push([a, o]); }
+      HQ.cars = [];
+      for (const [a, off] of picked) {
+        const m = makeCar(0xeef0f2, 0x1b2f8a, false, 'saloon', { guns: false, police: true }), px = mx + nx * off + ux * a, pz = mz + nz * off + uz * a;
         m.position.set(px, surfaceH(px, pz) + 0.34, pz); m.rotation.y = Math.atan2(nx, nz); scene.add(m);
+        HQ.cars.push([Math.round(px * 10) / 10, Math.round(pz * 10) / 10]);
         gridAdd([px - nx * 2, pz - nz * 2, px + nx * 2, pz + nz * 2], 3.5);
       }
     }

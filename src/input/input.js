@@ -41,6 +41,7 @@ addEventListener('keydown', e => {
     else { const on = sfx.toggle(); flashAll(on ? 'Radio ON' : 'Radio OFF', on ? 'Chantenay FM 92.4' : ''); }
   }
   if (e.key && e.key.toLowerCase() === 'p' && !e.repeat) toggleRetro();
+  if (e.code === 'KeyG' && !e.repeat && gx && gx.SpawnMap && mode === 'solo' && soloKind === 'free' && !gx.blocking) gx.SpawnMap.show(); // (16 nov.) free driving: the start map
   if (e.code === 'Tab') $('board').hidden = false;
   if (gx && !e.repeat && /^Digit[1-6]$/.test(e.code) && (mode === 'online' || locals.length > 1)) gx.quickChat(locals.find(L => schemeOf(L.ctl) && schemeOf(L.ctl).name === 'Clavier 1') || locals[0], +e.code[5] - 1);
   for (const L of locals) {

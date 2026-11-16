@@ -33,14 +33,15 @@ const paintNow = () => new Promise(r => { let done = false; const go = () => { i
   requestAnimationFrame(t => { BOOT.mark('attente de la première image'); requestAnimationFrame(() => { BOOT.mark('première image'); BOOT.total = Math.round(performance.now() - BOOT.t0); }); });
   requestAnimationFrame(frame);
   held.forEach(b => { b.disabled = false; });
-  startBtn.disabled = false; startBtn.textContent = 'Solo · prendre le volant';
+  startBtn.disabled = false; startBtn.textContent = HD ? 'Chasse aux Rapaces · solo' : 'Solo · prendre le volant';
   startBtn.focus();
   startBtn.addEventListener('click', () => startGame('solo'));
+  { const f = $('startFree'); if (f) f.addEventListener('click', () => startGame('solo', 'free')); }
   $('splitGo').addEventListener('click', () => startGame('split'));
   $('create').addEventListener('click', () => startOnline(null, true));
   netInit();
   if (settings.intro !== false && !window.__noIntro) Intro.splash();
 })();
-window.__gm = { get paused() { return paused; }, roadEdge, segHit, get started() { return started; }, renderer, scene, camera, PerfHud, Tiles, W, BOOT, planarReal, planarArcade, VEHICLES, engineState, Soundscape, sfx, PhotoMode, updateCamera, CAM_MODES, G, nodeOk, groundH, Profile, makeCar, saveSettingsHook: () => saveSettings(), surfaceH, Intro, hd, gx, settings, trams, edges, tramS, tramWall, EDGE, cellOf, collideWalls, muzzleOf, shoot, damage, applyHit, locals: () => locals, rivals: () => rivals, Net, Match, step: s => step(s, performance.now()), start: k => startGame(k || 'solo'), codes };
+window.__gm = { get paused() { return paused; }, roadEdge, segHit, get started() { return started; }, renderer, scene, camera, PerfHud, Tiles, W, BOOT, planarReal, planarArcade, VEHICLES, engineState, Soundscape, sfx, PhotoMode, updateCamera, CAM_MODES, G, nodeOk, groundH, Profile, makeCar, saveSettingsHook: () => saveSettings(), surfaceH, Intro, hd, gx, settings, trams, edges, tramS, tramWall, EDGE, cellOf, collideWalls, muzzleOf, shoot, damage, applyHit, locals: () => locals, rivals: () => rivals, Net, Match, step: s => step(s, performance.now()), start: (k, sub) => startGame(k || 'solo', sub), codes };
 })();
 </script>
