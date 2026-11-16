@@ -5382,11 +5382,13 @@ const Intro = (() => {
     if (cars) return;
     R = [actor(0, true), actor(0, false), actor(0, false)]; C = [actor(1, true), actor(1, false), actor(1, false)];
     cars = [...R, ...C]; butte = buttePath();
-    // a spot 40 to 60 m from Sainte-Anne with nothing in between, on the ground, for the opening of the Rapaces' shot
+    // the aerial move of the Rapaces' shot: from over the river in front of the Sainte-Anne steps (bottom 965,135, top
+    // 940,100), up the slope and over the roofs to the church; the aim slides from the steps to the bell tower
     const st = landmarks.find(o => o.k === 'stAnne');
-    if (st) for (const D of [50, 40, 60, 32]) { if (stView) break; for (let k = 0; k < 24; k++) { const a = k / 24 * 6.283, dx = Math.cos(a), dz = Math.sin(a), x = st.x + dx * D, z = st.z + dz * D;
-      if (groundH(x, z) < WATER_Y + 1 || segHit(x, z, -dx, -dz, D - 14) < D - 14.5 || segHit(x, z, dx, dz, 7) < 7) continue;
-      stView = { x, z, y: Y(x, z), dx: -dx, dz: -dz, tx: st.x, ty: Y(st.x, st.z) + 14, tz: st.z }; break; } }
+    if (st) { const bx = 966, bz = 132, tx = 942, tz = 102, ux = (bx - tx) / Math.hypot(bx - tx, bz - tz), uz = (bz - tz) / Math.hypot(bx - tx, bz - tz);
+      const sx = bx + ux * 55, sz = bz + uz * 55, mx = (tx + st.x) / 2, mz = (tz + st.z) / 2;
+      stView = { sx, sz, sy: Math.max(Y(sx, sz), WATER_Y) + 14, ex: mx + ux * 25, ez: mz + uz * 25, ey: Y(mx, mz) + 38,
+        lx0: (bx + tx) / 2, ly0: (Y(bx, bz) + Y(tx, tz)) / 2, lz0: (bz + tz) / 2, lx1: st.x, ly1: Y(st.x, st.z) + 20, lz1: st.z }; }
   }
   // place an actor on a path: dir 1 drives towards increasing s, -1 the other way; v is its speed
   function put(c, P, s, lat, dir, v, dt) {
@@ -5468,7 +5470,10 @@ const Intro = (() => {
       put(R[0], butte, s, -0.5, 1, 15, dt); put(R[1], butte, s - 8, 0.6, 1, 15, dt); put(R[2], butte, s - 16, -0.7, 1, 15, dt);
       // (16 nov., user) the shot opens on the church of Sainte-Anne, the top of the butte, seen from a clear spot below it,
       // then cuts to the cars rolling down
-      if (u < 1.5 && stView) { const e = sm(u / 1.5); cam(stView.x + stView.dx * e * 6, stView.y + 1.5 + e * 2, stView.z + stView.dz * e * 6, stView.tx, stView.ty, stView.tz, 52, 0.02); }
+      if (u < BAR && stView) { // (16 nov., user) an aerial move from the Sainte-Anne steps up the butte to the church
+        const e = sm(u / BAR), V_ = stView, lerp = (a, b) => a + (b - a) * e;
+        const px = lerp(V_.sx, V_.ex), pz = lerp(V_.sz, V_.ez), py = lerp(V_.sy, V_.ey);
+        cam(px, py, pz, lerp(V_.lx0, V_.lx1), lerp(V_.ly0, V_.ly1), lerp(V_.lz0, V_.lz1), 50, 0.015); }
       else { const p = pathPose(butte, Math.min(butte.len - 2, 52 + 5 * u), 2.5); cam(p.x, Y(p.x, p.z) + 0.75, p.z, R[0].x, R[0].mesh.position.y + 0.7, R[0].z, 48, 0.03); }
       eng = 15;
     } else if (i === 3) { // the Chantenaysiens wait by the town hall, then pull away
