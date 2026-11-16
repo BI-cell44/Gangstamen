@@ -8584,7 +8584,8 @@ const gx = !HD ? null : (() => {
     // the ramps (no teleporting, user's request of 15 Nov.): from the quay down to the end of the boat when it is alongside;
     // s: where the ramp starts on land, the boat's end is worked out from the route. A big light at the top says go or wait.
     const LAND = [{ name: 'Gare Maritime', end: -1 }, { name: 'Île de Nantes', end: 1 }];
-    const DECK_Y = 1.55, DOCK = [ROUTE[0], ROUTE[ROUTE.length - 1]];
+    const DECK_Y = 1.76, DOCK = [ROUTE[0], ROUTE[ROUTE.length - 1]];
+    const BENCH_Z = [-10.5, -6.5, 4, 8, 12]; // clear of the lifeboat bay (x < -7, z -3.5 to 0.5)
     const MOORED = [1388, -468, Math.atan2(-0.69, 0.72)];
     let curve = null, len = 0, built = false, wakeM = null, moored = null, route = null, routeLen = 0, fy = null;
     function decode(name, length, axis, waterline) { // -> geometry in metres, bow towards -z, y = 0 at the water line
@@ -8651,19 +8652,28 @@ const gx = !HD ? null : (() => {
         b.onDeck = onDeck;
         // the yellow gates at both ends (cut out of the model by the bake tool): the one on the land side tips down onto
         // the ramp while the boat is alongside, and comes back up before it leaves (user, 16 Nov.)
-        { const H = W.models.ferry, k = 44 / H.size[0]; b.gates = [];
-          for (const name of ['ferry_porte_a', 'ferry_porte_b']) { const gm = modelMesh(name), P = W.models[name]; if (!gm || !P.o) continue;
-            const hinge = new THREE.Group(), z = (P.o[0] - H.o[0]) * k;
-            gm.scale.setScalar(k); gm.rotation.y = -Math.PI / 2; gm.position.y = P.size[1] / 2 * k;
-            hinge.position.set(-(P.o[2] - H.o[2]) * k, (P.o[1] - P.size[1] / 2 - H.o[1]) * k + H.size[1] * k * (0.5 - 0.075), z); hinge.add(gm); b.g.add(hinge);
-            b.gates.push({ hinge, out: Math.sign(z), open: 0 }); } }
+        // (16 nov., user) the gates of the model came in pieces (only the middle one could tip, its side panels stayed in the
+        // hull): what stands in the gateways is taken out of the hull and each gate is drawn whole, 18 m wide, hinged at the deck
+        { const g = ferry, P = g.attributes.position, C = g.attributes.color, I = g.index, yel = v => { const z = Math.abs(P.getZ(v)), y = P.getY(v); return z > 18.4 && z < 21 && y > DECK_Y + 0.04 && y < DECK_Y + 1.7 && Math.abs(P.getX(v)) < 9.25; }; // the gate's volume
+          for (let t = 0; t < I.count; t += 3) { const a = I.getX(t), c2 = I.getX(t + 1), d = I.getX(t + 2); if (yel(a) && yel(c2) && yel(d)) { I.setX(t + 1, a); I.setX(t + 2, a); } }
+          I.needsUpdate = true; }
+        b.gates = [];
+        { const yM = new THREE.MeshLambertMaterial({ color: hd.lin(0xe8b818) }), dM = new THREE.MeshLambertMaterial({ color: hd.lin(0x3a3226) });
+          for (const out of [-1, 1]) {
+            const hinge = new THREE.Group(), gg = new THREE.Group(); hinge.position.set(0, DECK_Y, out * 19.7); hinge.add(gg);
+            const box = (w, h, d, x, y, m) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, 0); o.castShadow = true; gg.add(o); };
+            box(18, 0.16, 0.22, 0, 0.08, yM); box(18, 0.16, 0.22, 0, 1.12, yM); box(18, 0.12, 0.16, 0, 0.6, yM); // rails
+            for (let x = -9; x <= 9.01; x += 1.5) box(0.14, 1.2, 0.2, x, 0.6, Math.abs(x) % 3 < 0.1 ? yM : dM); // posts
+            gg.traverse(o => { o.userData.hdLinear = true; }); b.g.add(hinge);
+            b.gates.push({ hinge, out, open: 0 }); } }
         DECKS.push((x, z) => onDeck(x, z) ? WATER_Y + DECK_Y : null);
         { // (16 nov.) wooden benches along both sides of the deck, where the foot passengers sit for the crossing
           const wood = new THREE.MeshLambertMaterial({ color: hd.lin(0x5e3b22) }), legM = new THREE.MeshLambertMaterial({ color: hd.lin(0x3a3f44) });
-          for (const sd of [-1, 1]) for (const lz of [-9, -2, 5, 12]) {
-            const seat = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 2.4), wood); seat.position.set(sd * 6.55, DECK_Y + 0.45, lz); b.g.add(seat);
-            const back = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.45, 2.4), wood); back.position.set(sd * 6.82, DECK_Y + 0.75, lz); b.g.add(back);
-            for (const e of [-1, 1]) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.45, 0.08), legM); l.position.set(sd * 6.55, DECK_Y + 0.22, lz + e * 1.05); b.g.add(l); }
+          // against the side walls of the model (|x| 8.25, measured), the seat at chair height like the terrace chairs
+          for (const sd of [-1, 1]) for (const lz of BENCH_Z) {
+            const seat = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.05, 2.4), wood); seat.position.set(sd * 7.95, DECK_Y + 0.45, lz); b.g.add(seat);
+            const back = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.45, 2.4), wood); back.position.set(sd * 8.2, DECK_Y + 0.72, lz); b.g.add(back);
+            for (const e of [-1, 1]) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.43, 0.06), legM); l.position.set(sd * 7.95, DECK_Y + 0.21, lz + e * 1.05); b.g.add(l); }
           }
           b.g.traverse(o => { if (o.isMesh && (o.material === wood || o.material === legM)) o.userData.hdLinear = true; });
         }
@@ -8680,17 +8690,30 @@ const gx = !HD ? null : (() => {
           m.position.set(0, -0.2, sl / 2); m.receiveShadow = true; m.castShadow = true; m.userData.hdLinear = true; hinge.add(m);
           hinge.position.set(L.x, L.y, L.z); hinge.rotation.order = 'YXZ'; hinge.rotation.y = Math.atan2(-ax, -az); L.slope = Math.atan2(L.y - WATER_Y - DECK_Y, L.len); hinge.rotation.x = L.slope;
           hinge.userData.hdLinear = true; scene.add(hinge); L.hinge = hinge;
-          const lx = L.x - az * (L.hw + 1.2), lz = L.z + ax * (L.hw + 1.2), post = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 5, 8), postM); post.position.set(lx, groundH(lx, lz) + 2.5, lz); post.userData.hdLinear = true; scene.add(post);
-          L.lamp = new THREE.Mesh(lampG, new THREE.MeshBasicMaterial({ color: 0xff2a1a })); L.lamp.position.set(lx, groundH(lx, lz) + 5.4, lz); L.lamp.userData.hdLinear = true; scene.add(L.lamp);
+          // (16 nov., user) a proper traffic light: a dark housing with red, orange and green, facing the ramp both ways
+          const lx = L.x - az * (L.hw + 1.2), lz = L.z + ax * (L.hw + 1.2), gy = groundH(lx, lz), post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 4.2, 8), postM); post.position.set(lx, gy + 2.1, lz); post.userData.hdLinear = true; scene.add(post);
+          const head = new THREE.Group(); head.position.set(lx, gy + 5.1, lz); head.rotation.y = Math.atan2(-ax, -az); scene.add(head);
+          const hous = new THREE.Mesh(new THREE.BoxGeometry(0.75, 2.1, 0.55), postM); head.add(hous);
+          const visor = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.06, 0.3), postM);
+          L.lights = [0xff2a1a, 0xffa020, 0x2cff4a].map((col, i) => {
+            const y = 0.65 - i * 0.65, m = new THREE.MeshBasicMaterial({ color: col });
+            for (const f of [1, -1]) { const d = new THREE.Mesh(lampG, m); d.scale.set(0.3, 0.3, 0.12); d.position.set(0, y, f * 0.28); head.add(d); const v = visor.clone(); v.position.set(0, y + 0.3, f * 0.42); head.add(v); }
+            return { m, col }; });
+          head.traverse(o => { o.userData.hdLinear = true; }); L.lamp = head;
           gridAdd([lx - 0.3, lz, lx + 0.3, lz], 3.5);
           // a wooden landing stage beside the ramp (downloaded model), its stem towards the land
           const pt = modelMesh('ponton'); if (pt) { const S = 1.5, ps = pt.geometry.userData.size, ox = L.bx + az * (L.hw + 9) + ax * 3, oz = L.bz - ax * (L.hw + 9) + az * 3;
-            pt.scale.setScalar(S); pt.position.set(ox, WATER_Y + ps[1] / 2 * S - 0.6, oz); pt.rotation.y = Math.atan2(ax, az); scene.add(pt); }
+            pt.scale.setScalar(S); pt.position.set(ox, WATER_Y + ps[1] / 2 * S - 0.6, oz); pt.rotation.y = Math.atan2(ax, az); scene.add(pt); L.pt = pt; }
         });
       }
       // the Maillé-Brézé, museum ship of the quai de la Fosse, moored where OpenStreetMap draws her (132 m, bow upstream)
       const esc = decode('escorteur', 132, 2, 0.09);
-      if (esc) { const m = new THREE.Mesh(esc, mat); m.position.set(MOORED[0], WATER_Y, MOORED[1]); m.rotation.y = MOORED[2]; m.castShadow = true; m.userData.shared = true; m.userData.hdLinear = true; scene.add(m); moored = m; }
+      if (esc) { const m = new THREE.Mesh(esc, mat); m.position.set(MOORED[0], WATER_Y, MOORED[1]); m.rotation.y = MOORED[2]; m.castShadow = true; m.userData.shared = true; m.userData.hdLinear = true; scene.add(m); moored = m;
+        // (16 nov., user) solid: her outline is a wall, so a car that reaches her bounces off instead of driving through
+        esc.computeBoundingBox(); const bb = esc.boundingBox, hw = Math.max(-bb.min.x, bb.max.x) * 0.95, hl = Math.max(-bb.min.z, bb.max.z) * 0.98, sn = Math.sin(MOORED[2]), cs = Math.cos(MOORED[2]);
+        const at = (u, v) => [MOORED[0] + u * hw * cs + v * hl * sn, MOORED[1] - u * hw * sn + v * hl * cs];
+        const O = [[0, -1], [0.55, -0.75], [0.95, -0.35], [1, 0.2], [0.95, 0.75], [0.7, 1], [-0.7, 1], [-0.95, 0.75], [-1, 0.2], [-0.95, -0.35], [-0.55, -0.75]];
+        for (let i = 0; i < O.length; i++) { const a = at(...O[i]), c = at(...O[(i + 1) % O.length]); gridAdd([a[0], a[1], c[0], c[1]], 9); } }
       paxInit(); step(0);
     }
     // Foot passengers of the ferry (backlog « autres passagers »): a few people wait at the top of each ramp, walk
@@ -8699,28 +8722,31 @@ const gx = !HD ? null : (() => {
     const pax = [];
     function paxInit() {
       if (!fy || !People.on) return;
-      for (let i = 0; i < 6; i++) pax.push({ dock: i < 3 ? 0 : 1, st: 'wait', slot: i % 3, lx: (i % 2 ? 1 : -1) * 6.1, lz: [-9, -2, 5][i % 3] + (i < 3 ? 0 : 0.9), x: 0, y: 0, z: 0, h: 0, on: true, state: 'idle', speed: 1.35 + R() * 0.3, s: 0.94 + R() * 0.1, woman: R() < 0.5, old: false, kid: false, away: 0, tg: null, k: 0 });
+      for (let i = 0; i < 6; i++) pax.push({ dock: i < 3 ? 0 : 1, st: 'wait', slot: i % 3, lx: (i % 2 ? 1 : -1) * 7.97, lz: BENCH_Z[[0, 2, 4][i % 3]] + (i < 3 ? -0.5 : 0.6), x: 0, y: 0, z: 0, h: 0, on: true, state: 'idle', speed: 1.35 + R() * 0.3, s: 0.94 + R() * 0.1, woman: R() < 0.5, old: false, kid: false, away: 0, tg: null, k: 0 });
     }
     const paxSpot = (p, L) => { const side = -1, a = L.hw + 2.2 + p.slot * 1.1; return [L.x + L.ax * (2 + p.slot * 0.8) + L.az * a * side, L.z + L.az * (2 + p.slot * 0.8) - L.ax * a * side]; }; // on the quay, on the side away from the lamp post
     const paxLane = (p, L, s) => { const lat = (p.lx > 0 ? 1 : -1) * 3.4; return [L.bx + L.ax * s + L.az * lat, L.bz + L.az * s - L.ax * lat]; }; // along the edge of the ramp, s metres up from the boat
     function paxStep(dt) {
       const b = fy; if (!b || !pax.length) return;
-      const sn = Math.sin(b.h), cs = Math.cos(b.h), deck = p => [b.x + p.lx * cs + p.lz * sn, b.z - p.lx * sn + p.lz * cs], docked = b.wait > 0;
+      const sn = Math.sin(b.h), cs = Math.cos(b.h), deck = p => [b.x + p.lx * cs + p.lz * sn, b.z - p.lx * sn + p.lz * cs];
+      // (16 nov., user) in step with the gate: they walk on or off only once it is flat, and the boat waits for them
+      const landEnd = Math.sign((LAND[b.side].bx - b.x) * sn + (LAND[b.side].bz - b.z) * cs) || 1, gt = (b.gates || []).find(g => g.out === landEnd), docked = b.wait > 0 && gt && gt.open > 0.95;
+      const aisle = (p, atBench) => { const lz = atBench ? p.lz : landEnd * 15, lx = (p.lx > 0 ? 1 : -1) * 5.5; return [b.x + lx * cs + lz * sn, b.z - lx * sn + lz * cs]; }; // inside the gate, then along to the bench
       for (const p of pax) {
         const L = LAND[p.dock];
         if (p.st === 'gone') { p.away -= dt; p.on = false; if (p.away <= 0) { p.st = 'wait'; const q = paxSpot(p, L); p.x = q[0]; p.z = q[1]; p.h = Math.atan2(-L.ax, -L.az); } }
         else if (p.st === 'wait') { p.on = true; p.state = 'idle'; const q = paxSpot(p, L); p.x = q[0]; p.z = q[1];
-          if (docked && b.side === p.dock && b.wait > 6 && b.wait < 21) { p.st = 'board'; p.tg = [paxLane(p, L, L.len - 1), paxLane(p, L, 0.5), null]; p.k = 0; } }
+          if (docked && b.side === p.dock && b.wait > 8 && b.wait < 23) { p.st = 'board'; p.tg = [paxLane(p, L, L.len - 1), paxLane(p, L, 0.5), aisle(p), aisle(p, true), null]; p.k = 0; } }
         else if (p.st === 'ride') { const q = deck(p); p.x = q[0]; p.z = q[1]; p.state = 'idle'; p.h = b.h + (p.lx > 0 ? -1.57 : 1.57); // (16 nov.) seated on a bench along the side, facing the deck
-          if (docked && b.side !== p.dock) { p.dock = b.side; const M = LAND[p.dock]; p.st = 'leave'; p.tg = [paxLane(p, M, 0.5), paxLane(p, M, M.len - 1), [M.x + M.ax * 16 + M.az * p.lx * 0.4, M.z + M.az * 16 - M.ax * p.lx * 0.4]]; p.k = 0; } }
+          if (docked && b.side !== p.dock) { p.dock = b.side; const M = LAND[p.dock]; p.st = 'leave'; p.tg = [aisle(p, true), aisle(p), paxLane(p, M, 0.5), paxLane(p, M, M.len - 1), [M.x + M.ax * 16 + M.az * p.lx * 0.4, M.z + M.az * 16 - M.ax * p.lx * 0.4]]; p.k = 0; } }
         else { // walking aboard or ashore: from one point to the next
           let t = p.tg[p.k] || deck(p); const dx = t[0] - p.x, dz = t[1] - p.z, d = Math.hypot(dx, dz);
           p.state = 'walk'; if (d > 0.05) { const stp = Math.min(d, p.speed * dt); p.x += dx / d * stp; p.z += dz / d * stp; p.h += wrapA(Math.atan2(dx, dz) - p.h) * Math.min(1, dt * 8); }
           if (d < 0.35) { p.k++; if (p.k >= p.tg.length) { if (p.st === 'board') p.st = 'ride'; else { p.st = 'gone'; p.away = 14 + R() * 20; } } }
-          if (p.st === 'board' && (!docked || b.side !== p.dock)) { p.st = 'gone'; p.away = 4; } // missed it: back to the queue
+          if (p.st === 'board' && b.side !== p.dock) { p.st = 'gone'; p.away = 4; } // missed it: back to the queue
         }
         if (p.st === 'ride') { // (16 nov.) on the bench: the seated pose of the terrace customers, on the deck (not in its side)
-          p.vis = p.pose = true; p.state = 'sit'; p.y = b.g.position.y + DECK_Y + 0.06; p.h = b.h + (p.lx > 0 ? -1.57 : 1.57); People.drawCustomer(p); continue;
+          p.vis = p.pose = true; p.state = 'sit'; p.y = b.g.position.y + DECK_Y + 0.08; p.h = b.h + (p.lx > 0 ? -1.57 : 1.57); People.drawCustomer(p); continue;
         }
         p.y = surfaceH(p.x, p.z) + 0.36; People.draw(p);
       }
@@ -8744,14 +8770,15 @@ const gx = !HD ? null : (() => {
         } else {
           // b.t: metres along the route from the Gare Maritime; b.side: the dock it is at, or leaving from
           const goal = b.side ? 0 : routeLen, cars = typeof locals !== 'undefined' ? locals.map(L => L.car).filter(c => c && c.alive) : [], x0 = b.x, z0 = b.z, h0 = b.h;
-          const riders = cars.filter(c => b.onDeck(c.x, c.z));
+          const riders = cars.filter(c => b.onDeck(c.x, c.z)), allCars = cars.concat(gx && typeof npcs !== 'undefined' ? npcs.filter(c => c && c.alive !== false) : []);
+          const landEnd = (() => { const P = LAND[b.side], sn = Math.sin(b.h), cs = Math.cos(b.h); return Math.sign((P.bx - b.x) * sn + (P.bz - b.z) * cs) || 1; })();
           if (b.wait > 0) {
             b.v = 0; const P = LAND[b.side];
             // nobody halfway up the ramp when it lifts; riders stopped on board: no need to wait for the timetable
-            const onRamp = cars.some(c => { const dx = c.x - P.bx, dz = c.z - P.bz, s = dx * P.ax + dz * P.az; return s > -1 && s < P.len + 2 && Math.abs(dx * P.az - dz * P.ax) < P.hw + 1 && !b.onDeck(c.x, c.z); });
+            const onRamp = cars.some(c => { const dx = c.x - P.bx, dz = c.z - P.bz, s = dx * P.ax + dz * P.az; return s > -4 && s < P.len + 2 && Math.abs(dx * P.az - dz * P.ax) < P.hw + 1; }); // includes a car astride the gate
             b.still = riders.length && riders.every(c => Math.hypot(c.vx, c.vz) < 0.8) ? b.still + dt : 0;
             b.wait -= dt; if (b.still > 4 && b.wait > 2 && riders.some(c => !b.came.includes(c))) b.wait = 2; // only for those who came aboard here: who stays on after a crossing waits for the timetable
-            if ((onRamp || pax.some(p => p.st === 'board')) && b.wait < 1.5) b.wait = 1.5; // (and for the foot passengers still on the ramp)
+            if ((onRamp || pax.some(p => p.st === 'board' || (p.st === 'leave' && p.k < 4))) && b.wait < 3) b.wait = 3; // (16 nov.) held with the gate down while a car or a foot passenger is on the ramp
             if (b.wait <= 0 && riders.length) for (const L of locals) if (riders.includes(L.car)) flashFor(L, 'NAVETTE', 'Cap sur ' + LAND[1 - b.side].name);
           } else {
             const left = Math.abs(goal - b.t), done = routeLen - left, want = Math.min(riders.length ? 11 : 8, 0.7 + left * 0.2, 0.7 + done * 0.3);
@@ -8769,20 +8796,32 @@ const gx = !HD ? null : (() => {
           }
           // (16 nov., user request) the sides of the deck hold the cars in; the ends too, except the one facing the ramp while
           // the boat is alongside and its gate is down
-          { const P = LAND[b.side], sn = Math.sin(b.h), cs = Math.cos(b.h), landZ = Math.sign((P.bx - b.x) * sn + (P.bz - b.z) * cs), open = b.wait > 2;
-            for (const c of riders) {
-              const dx = c.x - b.x, dz = c.z - b.z; let lx = dx * cs - dz * sn, lz = dx * sn + dz * cs; let vx = c.vx * cs - c.vz * sn, vz = c.vx * sn + c.vz * cs, hit = false;
-              if (Math.abs(lx) > 7.3) { lx = Math.sign(lx) * 7.3; if (vx * lx > 0) vx *= -0.2; hit = true; }
-              if (Math.abs(lz) > 20.4 && !(open && Math.sign(lz) === landZ)) { lz = Math.sign(lz) * 20.4; if (vz * lz > 0) vz *= -0.2; hit = true; }
+          // the car is a box (4.3 x 2 m) turned on the deck: what it takes along each axis of the boat; the walls are the
+          // benches along the sides, the lifeboat bay, the bulwarks at the ends; a gate lets cars through only once flat
+          { const sn = Math.sin(b.h), cs = Math.cos(b.h);
+            for (const c of allCars) {
+              const dx = c.x - b.x, dz = c.z - b.z; if (dx * dx + dz * dz > 900) continue;
+              let lx = dx * cs - dz * sn, lz = dx * sn + dz * cs; let vx = c.vx * cs - c.vz * sn, vz = c.vx * sn + c.vz * cs, hit = false;
+              const r = c.h - b.h, ex = Math.abs(Math.sin(r)) * 2.15 + Math.abs(Math.cos(r)) * 1, ez = Math.abs(Math.cos(r)) * 2.15 + Math.abs(Math.sin(r)) * 1;
+              const end = Math.sign(lz), gt = (b.gates || []).find(g => g.out === end), shut = !gt || gt.open < 0.9;
+              if (Math.abs(lz) < 19.6 && Math.abs(lx) < 9.5) { // aboard
+                const lim = Math.abs(lz) > 15.5 ? 9 : lx < 0 && lz > -4 && lz < 1 ? 7 : 7.65;
+                if (Math.abs(lx) + ex > lim) { lx = Math.sign(lx) * (lim - ex); if (vx * lx > 0) vx *= -0.2; hit = true; }
+                if (shut && Math.abs(lz) + ez > 19.6) { lz = end * (19.6 - ez); if (vz * lz > 0) vz *= -0.2; hit = true; }
+              } else if (shut && Math.abs(lx) < 9.5 + ex && Math.abs(lz) - ez < 19.6 && Math.abs(lz) < 24) { // against a closed gate from the ramp
+                lz = end * (19.6 + ez); if (vz * lz < 0) vz *= -0.2; hit = true;
+              }
               if (hit) { c.x = b.x + lx * cs + lz * sn; c.z = b.z - lx * sn + lz * cs; c.vx = vx * cs + vz * sn; c.vz = -vx * sn + vz * cs; if (c.local && Math.hypot(vx, vz) > 4) sfx.impact(4); }
             } }
           paxStep(dt);
-          for (let k = 0; k < 2; k++) LAND[k].lamp.material.color.setHex(b.side === k && b.wait > 3 ? 0x2cff4a : 0xff2a1a);
           // dock 0 (Gare Maritime) is behind the boat (+z), dock 1 ahead (-z); closed again two seconds before leaving
           // (16 nov.) the gate that goes down is the one at the end facing the ramp of the dock it is at, worked out from where
           // the gate actually is (the fixed end per dock only lowered the right one at one of the two docks)
-          { const P = LAND[b.side], sn = Math.sin(b.h), cs = Math.cos(b.h), landZ = (P.bx - b.x) * sn + (P.bz - b.z) * cs;
-            for (const gt of b.gates || []) { const want = b.wait > 2 && gt.out === Math.sign(landZ) ? 1 : 0; gt.open += (want - gt.open) * Math.min(1, dt * 1.6); gt.hinge.rotation.x = gt.out * 1.36 * gt.open; } }
+          for (const gt of b.gates || []) { const want = b.wait > 2 && gt.out === landEnd ? 1 : 0; gt.open = want ? Math.min(1, gt.open + dt * 0.5) : Math.max(0, gt.open - dt * 0.5); gt.hinge.rotation.x = gt.out * Math.PI / 2 * (gt.open * gt.open * (3 - 2 * gt.open)); }
+          // green: gate down, come; orange: the gate is moving or about to lift; red: no boat, or leaving
+          for (let k = 0; k < 2; k++) { const here = b.side === k && b.wait > 0, gt = here && (b.gates || []).find(g => g.out === landEnd), o = gt ? gt.open : 0;
+            const st = !here ? 0 : o > 0.95 && b.wait > 6 ? 2 : o > 0.05 || b.wait > 2 ? 1 : 0;
+            LAND[k].lights.forEach((l, i) => l.m.color.setHex(i === st ? l.col : new THREE.Color(l.col).multiplyScalar(0.12).getHex())); }
           b.wk.rotation.y = b.side ? Math.PI : 0; b.wk.position.z = b.side ? -20 : 20;
           roll = Math.sin(T * 0.45) * 0.006;
         }

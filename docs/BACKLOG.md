@@ -54,6 +54,17 @@ Dernier retour d'essai de l'utilisateur (15 nov., soir) : Ultra tourne sans prob
 17. [x] (fait : caméra avancée au-dessus du capot, plus de bande sombre en bas de l'écran) **Vue capot** (15 nov.) : on voit un peu le dessous du capot ; remonter ou avancer la caméra.
 18. [x] (fait le 16 nov. : les deux modèles en short, casual_Female_K et casual_Male_K, sont remplacés par des tenues longues dès qu'il pleut ; mesure : 29 personnes en short au sec, 0 sous la pluie) **Pas de piétons en short sous la pluie ou l'orage** (15 nov.), si possible : tenues longues, parapluies éventuels. Il faut d'abord repérer lesquels des 8 modèles du pack (`pick()` dans `src/gx/people.js`, champ `name` ajouté) sont en short : une capture de chacun, puis les écarter quand `hd.amb.rain` est fort.
 19. [x] (fait le 16 nov. : écran de chargement avec barre, menu caché jusqu'au bout ; même panneau « Chargement » au lancement d'une partie, d'une mission et au choix du point de départ, jeu figé tant que les images ne sont pas fluides) **Démarrage dans l'ordre** (16 nov.) : on ne doit pas voir les boutons du menu apparaître un à un pendant le chargement ; enchaîner l'écran de chargement, puis « Appuie sur une touche », puis la cinématique, puis le menu.
+20. [x] **Bac, deuxième passe** (16 nov., fait le jour même) :
+    - limites : la voiture compte comme une boîte de 4,3 × 2 m ; elle bute sur les bancs, la baie du canot et les barrières fermées, que ce soit depuis le pont ou depuis la rampe ;
+    - le pont est relevé à sa vraie hauteur (1,76 m au-dessus de l'eau, mesurée sur le modèle) ; les voitures et les piétons ne passent plus dessous ;
+    - barrières : celles du modèle étaient en morceaux, elles sont retirées de la coque et redessinées d'un seul tenant (18 m) ; elles se couchent à plat ;
+    - bancs plaqués contre les parois ; les passagers sont assis au fond, à la hauteur des chaises des terrasses ;
+    - feu à trois couleurs dans un boîtier : rouge, orange quand la barrière bouge ou va remonter, vert ;
+    - synchronisation : les piétons ne montent et ne descendent que barrière couchée, et le bac les attend barrière baissée ;
+    - la passerelle du ponton est 4,5 m sous le quai : il faudrait un escalier pour qu'ils l'empruntent ; ils gardent le bord de la rampe.
+21. [x] **Maillé-Brézé solide** (16 nov.) : sa coque est un mur, on ne roule plus à travers.
+22. [ ] **Sauts étranges** (16 nov.) : par exemple en sortant du bac ou en arrivant sur le pont Anne-de-Bretagne.
+23. [ ] **Police et Rapaces dans l'eau** (16 nov.) : une voiture qui nous fonce dessus et qu'on évite doit pouvoir tomber dans la Loire.
 
 ## En attente d'un essai de l'utilisateur
 
