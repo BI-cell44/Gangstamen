@@ -184,7 +184,7 @@
     for (const L of locals) scene.remove(L.car.mesh); locals = [];
     for (const c of npcs.slice()) removeNpc(c); for (const p of peds) p.on = false; crowd.begin(); crowd.end(); People.hideAll(); active = false; sfx.engine(0, false); sfx.siren(0);
     // (16 nov., user) a fresh start next time: no challenge still running, no power-ups or mines lying about, no mode objects
-    try { actReset(); } catch (e) { } for (const mn of mines) scene.remove(mn.m); mines.length = 0; for (const pu of pus) { pu.on = false; if (pu.g) pu.g.visible = false; } try { stopMode(); } catch (e) { } SpawnMap.close();
+    try { actReset(); } catch (e) { } { const t = $('ticker'); if (t) t.classList.remove('on'); } { const p = $('postcard'); if (p) p.hidden = true; } for (const mn of mines) scene.remove(mn.m); mines.length = 0; for (const pu of pus) { pu.on = false; if (pu.g) pu.g.visible = false; } try { stopMode(); } catch (e) { } SpawnMap.close();
   }
   function renderCampaign() {
     const box = $('campList'); if (!box) return; box.innerHTML = '';
@@ -210,8 +210,8 @@
     rb.innerHTML = '<b>Courses et défis</b> (en partie solo, roule dans une balise bleue ou orange) :<br>' + actRecords().map(r => (r.kind === 'race' ? '🏁 ' : '★ ') + r.name + ' : ' + (r.best || '—')).join('<br>');
     box.append(rb);
     const pc = postcards(), nf = pc.filter(p => p.text).length, pb = document.createElement('div'); pb.className = 'fine'; pb.style.marginTop = '10px';
-    pb.innerHTML = '<b>Cartes postales</b> : ' + nf + ' / ' + pc.length + ' lieux découverts (roule jusqu’aux lieux emblématiques ; points blancs sur la minicarte quand tu es près)<br>' + pc.map(p => '✉ ' + p.name).join(' · ');
-    box.append(pb);
+    pb.innerHTML = '<b>Cartes postales</b> : ' + nf + ' / ' + pc.length + ' lieux découverts (roule jusqu’aux lieux emblématiques ; points blancs sur la minicarte quand tu es près)';
+    box.append(pb); postcardGallery(pb);
   }
 
   // =====================================================================================

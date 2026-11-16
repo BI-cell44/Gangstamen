@@ -111,7 +111,7 @@ Demandes du 16 nov. en fin d'après-midi, par priorité (d'abord ce que j'ai cas
 - Mairie (fronton à horloge supposé, dos et côtés), toits et rez-de-chaussée étranges, jardins, vrais noms des enseignes nationales.
 - Enseignes lumineuses, marché de la butte, sorties d'école.
 - Garage : autocollants années 90, vitrine tournante, réglage de suspension.
-- Cartes postales : plus de lieux, textes relus, photos en mode photo.
+- Cartes postales : (fait le 16 nov.) 19 lieux revus avec l'agrandissement ; carte affichée à la découverte et galerie dans le menu de la campagne ; 16 vraies photos libres de Wikimedia Commons (crédits sur la carte et dans DATA-LICENSES.md) ; reste sans photo : Chapidock, commissariat, place Jean-Macé (carte dessinée).
 - Tram et bus : intérieur visible, portes qui s'ouvrent aux arrêts.
 - Performances si la machine le demande : niveau de détail des voitures au-delà de 120 m, distance d'affichage du mobilier selon la qualité, moins de programmes de shaders, première image du menu.
 - Brouillard et atmosphère selon la météo ; rive d'en face de la Loire ; bâtiments du fond plus simples si la fluidité baisse.

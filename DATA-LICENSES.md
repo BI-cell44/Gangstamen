@@ -29,3 +29,26 @@ Condition de la licence : le modèle peut être intégré à un produit tant que
 ## Photo aérienne
 
 `data/ortho/` (x −440 à 2 400 m depuis le 15 nov. 2026, z −1 000 à 760 m du jeu) : BD ORTHO® de l'IGN (couche `ORTHOIMAGERY.ORTHOPHOTOS` de la Géoplateforme, data.geopf.fr), sous Licence Ouverte Etalab 2.0. Mention : © IGN.
+
+## Photographies des cartes postales (16 nov.)
+
+Photos libres de Wikimedia Commons, réduites et recadrées pour le jeu (œuvres dérivées sous la même licence quand elle l'impose). Le crédit est aussi affiché sur chaque carte dans le jeu.
+
+| Fichier | Source et auteur | Licence |
+| --- | --- | --- |
+| `data/postcards/stAnne.jpg` (carte postale « Église Sainte-Anne », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Nantes_(44)_Église_Sainte-Anne_-_Extérieur_-_04.jpg ; auteur : GO69 | CC BY-SA 4.0 |
+| `data/postcards/escalier.jpg` (carte postale « Escalier Sainte-Anne », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Nantes_-_France_-_Escalier_Sainte-Anne_vu_du_quai_Marquis-d'Aiguillon.jpg ; auteur : Rehtse | CC BY-SA 4.0 |
+| `data/postcards/julesVerne.jpg` (carte postale « Musée Jules Verne », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Mirdi_Jules_Verne_Naoned.JPG ; auteur : Gwendal | CC BY-SA 3.0 |
+| `data/postcards/planetarium.jpg` (carte postale « Planétarium », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Façade_du_planétarium.jpg ; auteur : Danielaudeon | CC BY-SA 4.0 |
+| `data/postcards/mairie.jpg` (carte postale « Mairie de Chantenay », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Nantes_(44)_Mairie_annexe_de_Chantenay.jpg ; auteur : GO69 | CC BY-SA 4.0 |
+| `data/postcards/stMartin.jpg` (carte postale « Église Saint-Martin », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Église_Saint-Martin_-_02_-_Chantenay,_Nantes.jpg ; auteur : Koreller | CC BY-SA 4.0 |
+| `data/postcards/misery.jpg` (carte postale « Carrière Misery », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Carrière_de_Miséry_-_Nantes_-_03.jpg ; auteur : François de Dijon | CC BY-SA 4.0 |
+| `data/postcards/gare.jpg` (carte postale « Gare de Chantenay », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Gare-chantenay.JPG ; auteur : Patricia Ripnel | CC BY-SA 3.0 |
+| `data/postcards/temple.jpg` (carte postale « Temple antoiniste », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Temple_antoiniste_Nantes.jpg ; auteur : Europe22 | CC BY-SA 4.0 |
+| `data/postcards/maritime.jpg` (carte postale « Gare maritime », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Gare_Maritime,_Nantes_(7935918926).jpg ; auteur : Guilhem Vellut | CC BY 2.0 |
+| `data/postcards/mailleBreze.jpg` (carte postale « Maillé-Brézé », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Escorteur_d'escadre_Maillé-Brézé.jpg ; auteur : François de Dijon | CC BY-SA 4.0 |
+| `data/postcards/transbordeur.jpg` (carte postale « Pont transbordeur », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Nantes-pont-transbordeur-CP165LL.jpg ; auteur : carte postale ancienne (scan Bruno Corpet) | domaine public |
+| `data/postcards/titan.jpg` (carte postale « Grue Titan jaune », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Grue_Titan_jaune_-_201008_(1).jpg ; auteur : Symac | CC BY-SA 3.0 |
+| `data/postcards/nefs.jpg` (carte postale « Chantiers Dubigeon », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Anciens_chantiers_navals_Nantes.jpg ; auteur : Duch | CC BY-SA 4.0 |
+| `data/postcards/hangarBananes.jpg` (carte postale « Hangar à bananes », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Hangar_bananes_1.JPG ; auteur : Jibi44 | CC BY-SA 3.0 |
+| `data/postcards/grueGrise.jpg` (carte postale « Grue Titan grise », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Grue_Titan_grise_-_panoramio.jpg ; auteur : franek2 | CC BY-SA 3.0 |

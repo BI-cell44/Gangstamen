@@ -39,6 +39,19 @@ python3 - <<'PY'
 t = open('gangstamen-hd.html', encoding='utf-8').read()
 assert t.count('const ULTRA = false;') == 1 and t.count('<title>Gangstamen HD</title>') == 1
 t = t.replace('const ULTRA = false;', 'const ULTRA = true;').replace('<title>Gangstamen HD</title>', '<title>Gangstamen Ultra</title>')
+# postcard photographs (data/postcards/<id>.jpg, credits in data/postcards/credits.json), inlined before the game code
+import json, os, base64
+pc = {}
+d = '../data/postcards'
+if os.path.isdir(d):
+    cred = json.load(open(d + '/credits.json', encoding='utf-8')) if os.path.exists(d + '/credits.json') else {}
+    for f in sorted(os.listdir(d)):
+        if f.endswith('.jpg'):
+            k = f[:-4]; c = cred.get(k, {})
+            pc[k] = {'src': 'data:image/jpeg;base64,' + base64.b64encode(open(d + '/' + f, 'rb').read()).decode(), 'author': c.get('author', '?'), 'license': c.get('license', '?'), 'url': c.get('url', '')}
+tag = '<script>window.PHOTO_ATLAS='
+assert t.count(tag) == 1, t.count(tag)
+t = t.replace(tag, '<script>window.POSTCARDS=' + json.dumps(pc, ensure_ascii=False) + ';</script>' + tag)
 open('gangstamen-ultra.html', 'w', encoding='utf-8').write(t)
 PY
 cp gangstamen.html gangstamen-hd.html gangstamen-ultra.html ..
