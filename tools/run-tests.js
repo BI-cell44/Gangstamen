@@ -161,6 +161,7 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
     expect(r.rouleSur >= r.rampe - 2 && r.tombe && r.sousLEau < -1 && r.coule > 2 && r.retour > 2 && r.hp === 100 && r.sink === 0 && r.roulisAuBord < 20, JSON.stringify(r)); return r;
   });
   await check('défi Destruction : chaque casse compte, les réparations ne font pas baisser le total', async () => {
+    await ev(() => { __gm.start('solo', 'free'); __gm.gx.SpawnMap.close(); }); // (16 nov.) challenges only in « Conduite libre »
     const r = await ev(() => {
       const X = __gm.gx, c = __gm.locals()[0].car, a = X.acts().find(q => q.id === 'd_smash'), P = X.Fences.panels, home = [c.x, c.z, c.h];
       const was = [0, 1, 2, 3, 4, 5, 10, 11, 12, 13].map(i => P[i].broken);
