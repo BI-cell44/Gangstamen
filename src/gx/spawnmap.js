@@ -17,8 +17,8 @@
       el.style.cssText = 'position:fixed;inset:0;z-index:31;display:grid;place-items:center;background:rgba(13,10,20,.82)';
       el.innerHTML = '<div class="card" style="display:flex;gap:18px;align-items:flex-start;max-width:96vw;max-height:94vh"><div style="display:flex;flex-direction:column;gap:8px;max-width:46vw"><canvas width="640" height="560" style="max-width:46vw;max-height:60vh;border-radius:8px;cursor:pointer;background:#1c1a24;align-self:center"></canvas><div class="spCards fine" style="max-height:26vh;overflow-y:auto;font-size:13px"></div></div>'
         + '<div style="display:flex;flex-direction:column;gap:6px;min-width:250px"><h2 style="margin:0 0 4px;font-family:var(--display);font-weight:normal;font-size:30px;color:var(--chalk);text-shadow:3px 3px 0 var(--magenta)">Où démarrer ?</h2>'
-        + '<p class="fine" style="margin:0 0 6px">Clique un point sur la carte ou choisis dans la liste. Touche G (ou Pause → Carte) pour revenir ici.</p><div class="spList" style="display:flex;flex-direction:column;gap:5px"></div></div>'
-        + '<div class="spSide fine" style="width:300px;max-height:80vh;overflow-y:auto;font-size:13px"></div></div>'; // (16 nov., user) records of the races and challenges, and the postcards, beside the map
+        + '<p class="fine" style="margin:0 0 6px">Clique un point sur la carte ou choisis dans la liste. Touche G (ou Pause → Carte) pour revenir ici.</p><div class="spList" style="display:flex;flex-direction:column;gap:5px"></div>'
+        + '<div class="spSide fine" style="margin-top:12px;max-height:30vh;overflow-y:auto;font-size:13px"></div></div></div>'; // (16 nov., user) races and challenges under the list of places, beside the postcards // (16 nov., user) records of the races and challenges, and the postcards, beside the map
       document.body.append(el); cv = el.querySelector('canvas');
       cv.addEventListener('click', e => {
         const r = cv.getBoundingClientRect(), mx = (e.clientX - r.left) * cv.width / r.width, my = (e.clientY - r.top) * cv.height / r.height;

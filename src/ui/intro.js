@@ -38,7 +38,7 @@ const Intro = (() => {
   const SHOTS = [
     { t: 0, arr: 0, cap: ['Nantes · été 1996', 'Chantenay. Les chantiers ont fermé. Les usines aussi.'] },
     { t: 2 * BAR, arr: 1, cap: ['Il reste la rue.', 'Et deux bandes pour se la disputer.'] },
-    { t: 4 * BAR, arr: 2, cap: ['La butte Sainte-Anne.', 'Tout en haut, au-dessus de la Loire, quelqu’un veille.'], gangAt: 2 * BAR, gangOf: 0, sub: 'Caisses noires. Ils tiennent le haut du quartier.' }, // (16 nov., user) the Rapaces' card only with their cars
+    { t: 4 * BAR, arr: 2, cap: ['La butte Sainte-Anne.', 'Tout en haut, au-dessus de la Loire…'], gangAt: 2 * BAR, gangOf: 0, sub: 'Caisses noires. Ils tiennent le haut du quartier.' }, // (16 nov., user) the Rapaces' card only with their cars
     { t: 7 * BAR, arr: 3, gang: 1, sub: 'Nés sur le boulevard. Ils ne lâchent rien.' },
     { t: 9 * BAR, arr: 3, cap: ['', 'Ce soir, il n’y a plus de place pour deux.'] },
     { t: 10 * BAR, arr: 3, keep: true },
@@ -51,10 +51,12 @@ const Intro = (() => {
   const focus = new THREE.Vector3(), focusCar = { mesh: { position: focus } }, look = new THREE.Vector3();
   const sm = k => { k = Math.max(0, Math.min(1, k)); return k * k * (3 - 2 * k); };
 
-  // (16 nov., user) the Rapaces come up the place des Garennes from the foot of the Sainte-Anne steps, the Loire behind
-  // them, towards a camera at the top of the square
-  const GARENNES = mkPath([936, 96, 898, 60, 893, 56, 864, 30, 862, 33, 855, 40, 830, 60, 791, 71]), GCAM = [851, 15];
-  const pre = [{ position: { x: 0, z: 0 } }, { position: { x: 0, z: 0 } }]; // where the cuts of shots 2 go: their tiles stay drawn
+  // (16 nov., user) the Rapaces come up the place des Garennes from the foot of the Sainte-Anne steps and keep straight
+  // on up the avenue Sainte-Anne towards the church; the camera of the first version: low by the kerb, they come in on
+  // the left, it turns to follow the lead car and they shoot off to the right
+  const GARENNES = mkPath([936, 96, 898, 60, 864, 30, 800, -30, 785, -42]);
+  // where the next cuts go (the Sainte-Anne steps, the place des Garennes, the town hall): their tiles stay drawn
+  const pre = [0, 1, 2].map(() => ({ position: { x: 0, z: 0 } }));
   function actor(team, lead) {
     const T = TEAMS[team], c = new Car(makeCar(lead && team === 1 ? T.body : T.botBody, lead && team === 1 ? T.stripe : T.botStripe, false, lead ? 'saloon' : 'hatch'), false);
     c.team = team; c.actor = true; return c;
@@ -63,7 +65,7 @@ const Intro = (() => {
     if (cars) return;
     R = [actor(0, true), actor(0, false), actor(0, false)]; C = [actor(1, true), actor(1, false), actor(1, false)];
     cars = [...R, ...C]; butte = GARENNES;
-    pre[1].position.x = GCAM[0]; pre[1].position.z = GCAM[1];
+    { const q = pathPose(GARENNES, 68, 2.5), r = pathPose(BLVD, 76, -5.5); pre[1].position.x = q.x; pre[1].position.z = q.z; pre[2].position.x = r.x; pre[2].position.z = r.z; }
     // the aerial move of the Rapaces' shot: from over the river in front of the Sainte-Anne steps (bottom 965,135, top
     // 940,100), up the slope and over the roofs to the church; the aim slides from the steps to the bell tower
     const st = landmarks.find(o => o.k === 'stAnne');
@@ -149,7 +151,7 @@ const Intro = (() => {
       cam(p.x, Y(p.x, p.z) + 1.3 + u * 0.25, p.z, q.x, Y(q.x, q.z) + 3.5, q.z, 62, 0.04); eng = 12;
     } else if (i === 2) { // the Rapaces roll down from the butte, past the camera
       for (const c of C) park(c);
-      const uc = Math.max(0, u - 2 * BAR) + 0.8 * BAR, s = 28 + 15 * uc; // the cars: the last bar, already under way
+      const uc = Math.max(0, u - 2 * BAR) + 0.8 * BAR, s = 14 + 15 * uc; // the cars: the last bar, already under way
       if (u >= SHOTS[2].gangAt && !gang.classList.contains('on')) { setCap('', ''); showGang(SHOTS[2].gangOf, SHOTS[2].sub); }
       put(R[0], butte, s, -0.5, 1, 15, dt); put(R[1], butte, s - 8, 0.6, 1, 15, dt); put(R[2], butte, s - 16, -0.7, 1, 15, dt);
       // (16 nov., user) the shot opens on the church of Sainte-Anne, the top of the butte, seen from a clear spot below it,
@@ -158,8 +160,7 @@ const Intro = (() => {
         const e = sm(u / (2 * BAR)), V_ = stView, lerp = (a, b) => a + (b - a) * e;
         const px = lerp(V_.sx, V_.ex), pz = lerp(V_.sz, V_.ez), py = lerp(V_.sy, V_.ey);
         cam(px, py, pz, lerp(V_.lx0, V_.lx1), lerp(V_.ly0, V_.ly1), lerp(V_.lz0, V_.lz1), 50, 0.015); }
-      else { // from the top of the place des Garennes: the cars come up at the camera, the Loire behind them
-        const [px, pz] = GCAM; cam(px, Y(px, pz) + 2.4, pz, R[0].x, R[0].mesh.position.y + 0.6, R[0].z, 40, 0.03); }
+      else { const p = pathPose(butte, Math.min(butte.len - 2, 52 + 5 * uc), 2.5); cam(p.x, Y(p.x, p.z) + 0.75, p.z, R[0].x, R[0].mesh.position.y + 0.7, R[0].z, 48, 0.03); }
       eng = 15;
     } else if (i === 3) { // the Chantenaysiens wait by the town hall, then pull away
       for (const c of R) park(c);
@@ -249,7 +250,7 @@ const Intro = (() => {
   }
   addEventListener('keydown', e => { if (state === 'off' || e.repeat || ['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) return; if (key(e)) e.preventDefault(); });
   el.addEventListener('pointerdown', e => { e.preventDefault(); key(null); });
-  const lodCams = () => state === 'play' && shot <= 2 ? [camera, ...pre] : [camera];
+  const lodCams = () => state === 'play' && shot <= 3 ? [camera, ...pre.slice(Math.max(0, shot - 1))] : [camera];
   return { update, progress, loaded, splash, play, finish, stop, key, focusCar, lodCams, get state() { return state; }, get playing() { return state === 'play'; }, T_END, BAR };
 })();
 
