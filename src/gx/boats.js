@@ -215,6 +215,7 @@
     function scare(p, cars) { // the car closest to a foot passenger that comes at them: they run, or they are knocked down
       if (p.st === 'gone' || p.st === 'down' || !p.on) return;
       for (const c of cars) {
+        if (c.ferry) continue; // the cars taking the ferry drive slowly among them
         const dx = p.x - c.x, dz = p.z - c.z, d = Math.hypot(dx, dz), v = Math.hypot(c.vx, c.vz); if (d > 8 || v < 3) continue;
         const toward = (c.vx * dx + c.vz * dz) / (d || 1); if (toward < 1.5) continue;
         if (d < 1.7 && v > 4) { knock(p, c); return; }
@@ -244,7 +245,7 @@
           if (p.st === 'flee') {
             const sp = 4.6 * dt;
             if (p.loc) { const lfx = p.fx * cs - p.fz * sn, lfz = p.fx * sn + p.fz * cs; p.loc[0] = Math.max(-7.2, Math.min(7.2, p.loc[0] + lfx * sp)); p.loc[1] = Math.max(-18.8, Math.min(18.8, p.loc[1] + lfz * sp)); }
-            else { p.x += p.fx * sp; p.z += p.fz * sp; }
+            else { const nx = p.x + p.fx * sp, nz = p.z + p.fz * sp; if (groundH(nx, nz) > WATER_Y + 0.9 || deckH(nx, nz) !== null) { p.x = nx; p.z = nz; } } // never into the Loire
             p.h += wrapA(Math.atan2(p.fx, p.fz) - p.h) * Math.min(1, dt * 10); p.state = 'flee';
           } else p.state = 'down';
           if (p.loc) { const q = toWorld(p.loc); p.x = q[0]; p.z = q[1]; }
