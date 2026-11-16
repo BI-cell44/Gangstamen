@@ -754,5 +754,19 @@
   "simMs": 9.29,
   "loadS": 25,
   "failed": 0
+ },
+ {
+  "date": "2026-11-16T00:44",
+  "label": "Fable : pont unique, trottoirs hors des murs",
+  "build": "gangstamen-ultra.html",
+  "drawCalls": 816,
+  "trianglesK": 1164,
+  "meshes": 3577,
+  "geometries": 3120,
+  "materials": 478,
+  "heapMB": 326,
+  "simMs": 9.16,
+  "loadS": 25,
+  "failed": 0
  }
 ]
