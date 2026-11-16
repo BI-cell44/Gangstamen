@@ -126,6 +126,23 @@ print('dry land raised', raised)
 
 D2 = {'nx': NX, 'nz': NZ, 'step': S, 'x0': x0, 'z0': z0, 'h': [round(v * 10) for v in G]}
 w['dem'] = D2
+# One bridge, not three (user, 15 Nov.: the pont Anne-de-Bretagne): OpenStreetMap draws the pavements and cycle tracks of a
+# big bridge as ways of their own beside the carriageway. A footbridge that runs alongside a road bridge for most of its
+# length is dropped, and the road bridge is widened to carry its pavements.
+_road = [b for b in bridges if b['d']]
+def _near(b, d, reach=38):
+    q = d['p']; n = hit = 0
+    for i in range(0, len(b['p']), 3):
+        n += 1
+        if any(math.hypot(b['p'][i] - q[j], b['p'][i + 1] - q[j + 1]) < reach for j in range(0, len(q), 3)): hit += 1
+    return hit / max(1, n)
+_keep = []
+for b in bridges:
+    L = sum(math.hypot(b['p'][i + 3] - b['p'][i], b['p'][i + 4] - b['p'][i + 1]) for i in range(0, len(b['p']) - 3, 3))
+    host = None if b['d'] or L < 40 else next((d for d in _road if _near(b, d) >= 0.7), None)
+    if host: host['w'] = max(host['w'], 17); print('footbridge merged into the road bridge beside it:', round(L), 'm')
+    else: _keep.append(b)
+bridges = _keep
 w['bridges'] = bridges
 json.dump(w, open('world.json', 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
 print('bridges', len(bridges)); print('grid', NX, 'x', NZ, 'at', S, 'm; road samples', len(samples), '; grid points flattened', len(best))

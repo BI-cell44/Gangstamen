@@ -19,8 +19,8 @@ Dernier retour d'essai de l'utilisateur (15 nov., soir) : Ultra tourne sans prob
 9. [ ] **Partie en ligne robuste** : prédiction et correction, synchronisation de la circulation, du tram, des bonus et du bac, capture du drapeau tenue par l'hôte, reprise après coupure. Jamais testée à plusieurs.
 10. [ ] **Toits plus jolis** (15 nov.) : remplacer la photo aérienne des toits par des textures dessinées, plus belles mais inspirées de la photo (couleurs, motifs : tuiles, ardoise, zinc, toits plats). **D'abord un essai sur une petite zone**, montré à l'utilisateur avant de l'étendre.
 11. [ ] **Piétons, suite** (possible pour Opus) : évitement entre piétons, groupes, foule selon le lieu et l'heure, respect du feu piéton aux carrefours à feux.
-12. [ ] **Pont Anne-de-Bretagne : un seul pont** (15 nov.) : il est dessiné comme trois ponts côte à côte, c'est un seul ouvrage.
-13. [ ] **Piétons en fuite qui entrent dans les bâtiments** (15 nov.) : en fuyant, certains traversent encore les murs ; les garder sur le réseau de trottoirs.
+12. [x] (fait le 16 nov. : `src/carve.py` supprime les passerelles qui longent un pont routier et élargit celui-ci à 17 m ; cinq passerelles fusionnées, dont celles du pont des Trois-Continents) **Pont Anne-de-Bretagne : un seul pont** (15 nov.) : il est dessiné comme trois ponts côte à côte, c'est un seul ouvrage.
+13. [x] (fait le 16 nov. : cause trouvée dans le réseau lui-même : 1 534 points de trottoir tombaient à l'intérieur d'un bâtiment, là où une maison borde la rue de près ; ils sont retirés à la construction du réseau, `buildWalks`) **Piétons en fuite qui entrent dans les bâtiments** (15 nov.) : en fuyant, certains traversent encore les murs ; les garder sur le réseau de trottoirs.
 
 
 - [x] **Défi Destruction : le nombre de casses baissait et devenait négatif** (retour du 15 nov. au soir, corrigé par Fable) : le total était « objets cassés à l'instant moins ceux du départ », or le mobilier et les clôtures se réparent loin du joueur. Chaque nouvelle casse compte maintenant, les réparations sont ignorées (`src/gx/activities.js`).

@@ -7,7 +7,13 @@
     const X = [], Z = [], E = [], run = [], ends = [], grid = new Map(), CK = 12;
     const node = (x, z, r) => { X.push(x); Z.push(z); E.push([]); run.push(r); const k = Math.floor(x / CK) + ',' + Math.floor(z / CK); let c = grid.get(k); if (!c) grid.set(k, c = []); c.push(X.length - 1); return X.length - 1; };
     const link = (a, b, k) => { if (a === b || E[a].some(e => e[0] === b)) return; E[a].push([b, k]); E[b].push([a, k]); };
-    const ok = (x, z) => !(Math.abs(x - CX) > HX - 5 || Math.abs(z - CZ) > HZ - 5 || groundH(x, z) < WATER_Y + 1);
+    // no point inside a building: where a house stands close to the street, the pavement line ran through its ground floor
+    // and people walked (and fled) inside the walls, since a line between two points indoors crosses no wall (user, 15 Nov.)
+    const BG = new Map(), BC = 40; for (const b of buildingPolys) { const p = b.p || b; if (b.u) continue; let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9; for (let i = 0; i < p.length; i += 2) { x0 = Math.min(x0, p[i]); x1 = Math.max(x1, p[i]); z0 = Math.min(z0, p[i + 1]); z1 = Math.max(z1, p[i + 1]); }
+      for (let i = Math.floor(x0 / BC); i <= Math.floor(x1 / BC); i++) for (let j = Math.floor(z0 / BC); j <= Math.floor(z1 / BC); j++) { const k = i + ',' + j; let a = BG.get(k); if (!a) BG.set(k, a = []); a.push(p); } }
+    const indoors = (x, z) => { const a = BG.get(Math.floor(x / BC) + ',' + Math.floor(z / BC)); if (a) for (const p of a) if (pointInPoly(x, z, p)) return true; return false; };
+    let dropped = 0;
+    const ok = (x, z) => { if (Math.abs(x - CX) > HX - 5 || Math.abs(z - CZ) > HZ - 5 || groundH(x, z) < WATER_Y + 1) return false; if (indoors(x, z)) { dropped++; return false; } return true; };
     const clear = (ax, az, bx, bz) => { const l = Math.hypot(bx - ax, bz - az); return l < 0.05 || segHit(ax, az, (bx - ax) / l, (bz - az) / l, l) >= l; };
     const near = (x, z, rad, fn) => { const c0 = Math.floor((x - rad) / CK), c1 = Math.floor((x + rad) / CK), d0 = Math.floor((z - rad) / CK), d1 = Math.floor((z + rad) / CK); for (let c = c0; c <= c1; c++) for (let d = d0; d <= d1; d++) { const l = grid.get(c + ',' + d); if (l) for (const j of l) { const dd = Math.hypot(X[j] - x, Z[j] - z); if (dd <= rad) fn(j, dd); } } };
     let rid = 0;
@@ -41,7 +47,7 @@
     const comp = new Int32Array(X.length).fill(-1), size = []; for (let s = 0; s < X.length; s++) { if (comp[s] >= 0) continue; const st = [s]; comp[s] = size.length; let c = 0; while (st.length) { const u = st.pop(); c++; for (const [v] of E[u]) if (comp[v] < 0) { comp[v] = size.length; st.push(v); } } size.push(c); }
     const spawn = []; for (let i = 0; i < X.length; i++) if (E[i].length && size[comp[i]] >= 25) spawn.push(i);
     let nc = 0, ne = 0; for (const es of E) for (const e of es) { ne++; if (e[1] === 1) nc++; }
-    walks = { x: X, z: Z, e: E, spawn, length: spawn.length, stats: { nodes: X.length, edges: ne / 2, crossings: nc / 2, parts: size.filter(s => s >= 25).length, biggest: Math.max(0, ...size) } };
+    walks = { x: X, z: Z, e: E, spawn, length: spawn.length, indoors, stats: { indoors: dropped, nodes: X.length, edges: ne / 2, crossings: nc / 2, parts: size.filter(s => s >= 25).length, biggest: Math.max(0, ...size) } };
   }
   // where a walker goes next when reaching the node p.b: not back unless it is a dead end; `away` (a point to flee): the
   // edge that leads away from it, never a crossing if it can be avoided
