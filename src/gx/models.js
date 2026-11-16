@@ -42,7 +42,7 @@
     for (const b of W.buildings) {
       if (!b.o || !b.u) continue; const p = b.p, n = p.length / 2; let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9, gmax = -1e9;
       for (let i = 0; i < n; i++) { x0 = Math.min(x0, p[2 * i]); x1 = Math.max(x1, p[2 * i]); z0 = Math.min(z0, p[2 * i + 1]); z1 = Math.max(z1, p[2 * i + 1]); gmax = Math.max(gmax, groundH(p[2 * i], p[2 * i + 1])); }
-      const top = Math.max(gmax, b.b != null ? b.b : gmax) + b.u, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+      const top = b._roofY != null ? b._roofY : Math.max(gmax, b.b != null ? b.b : gmax) + b.u, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2; // (16 nov.) up to the roof: they stopped where the walls of an ordinary building start
       for (let i = 0; i < n; i++) { // round the edge, a little inside
         const ax = p[2 * i], az = p[2 * i + 1], bx = p[2 * ((i + 1) % n)], bz = p[2 * ((i + 1) % n) + 1], L = Math.hypot(bx - ax, bz - az); if (L < 4) continue;
         const m = Math.max(1, Math.round(L / 15)); for (let k = 0; k < m; k++) { const t = (k + 0.5) / m; let x = ax + (bx - ax) * t, z = az + (bz - az) * t; const d = Math.hypot(cx - x, cz - z) || 1; x += (cx - x) / d * 1.2; z += (cz - z) / d * 1.2; if (inside(x, z, p)) pts.push([x, z, top]); }

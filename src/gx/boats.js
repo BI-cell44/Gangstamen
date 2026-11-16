@@ -85,6 +85,15 @@
             hinge.position.set(-(P.o[2] - H.o[2]) * k, (P.o[1] - P.size[1] / 2 - H.o[1]) * k + H.size[1] * k * (0.5 - 0.075), z); hinge.add(gm); b.g.add(hinge);
             b.gates.push({ hinge, out: Math.sign(z), open: 0 }); } }
         DECKS.push((x, z) => onDeck(x, z) ? WATER_Y + DECK_Y : null);
+        { // (16 nov.) wooden benches along both sides of the deck, where the foot passengers sit for the crossing
+          const wood = new THREE.MeshLambertMaterial({ color: hd.lin(0x5e3b22) }), legM = new THREE.MeshLambertMaterial({ color: hd.lin(0x3a3f44) });
+          for (const sd of [-1, 1]) for (const lz of [-9, -2, 5, 12]) {
+            const seat = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 2.4), wood); seat.position.set(sd * 6.55, DECK_Y + 0.45, lz); b.g.add(seat);
+            const back = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.45, 2.4), wood); back.position.set(sd * 6.82, DECK_Y + 0.75, lz); b.g.add(back);
+            for (const e of [-1, 1]) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.45, 0.08), legM); l.position.set(sd * 6.55, DECK_Y + 0.22, lz + e * 1.05); b.g.add(l); }
+          }
+          b.g.traverse(o => { if (o.isMesh && (o.material === wood || o.material === legM)) o.userData.hdLinear = true; });
+        }
         const lampG = new THREE.SphereGeometry(0.75, 12, 8), postM = new THREE.MeshLambertMaterial({ color: hd.lin(0x3a3f44) }), rampM = new THREE.MeshLambertMaterial({ color: hd.lin(0x70757a) });
         LAND.forEach((L, k) => {
           // the boat's pose at this dock, the end of its deck that touches the land, and the ramp from there up the bank
@@ -117,7 +126,7 @@
     const pax = [];
     function paxInit() {
       if (!fy || !People.on) return;
-      for (let i = 0; i < 6; i++) pax.push({ dock: i < 3 ? 0 : 1, st: 'wait', slot: i % 3, lx: (i % 2 ? 1 : -1) * 7.3, lz: -9 + (i % 3) * 7 + (i < 3 ? 0 : 3), x: 0, y: 0, z: 0, h: 0, on: true, state: 'idle', speed: 1.35 + R() * 0.3, s: 0.94 + R() * 0.1, woman: R() < 0.5, old: false, kid: false, away: 0, tg: null, k: 0 });
+      for (let i = 0; i < 6; i++) pax.push({ dock: i < 3 ? 0 : 1, st: 'wait', slot: i % 3, lx: (i % 2 ? 1 : -1) * 6.1, lz: [-9, -2, 5][i % 3] + (i < 3 ? 0 : 0.9), x: 0, y: 0, z: 0, h: 0, on: true, state: 'idle', speed: 1.35 + R() * 0.3, s: 0.94 + R() * 0.1, woman: R() < 0.5, old: false, kid: false, away: 0, tg: null, k: 0 });
     }
     const paxSpot = (p, L) => { const side = -1, a = L.hw + 2.2 + p.slot * 1.1; return [L.x + L.ax * (2 + p.slot * 0.8) + L.az * a * side, L.z + L.az * (2 + p.slot * 0.8) - L.ax * a * side]; }; // on the quay, on the side away from the lamp post
     const paxLane = (p, L, s) => { const lat = (p.lx > 0 ? 1 : -1) * 3.4; return [L.bx + L.ax * s + L.az * lat, L.bz + L.az * s - L.ax * lat]; }; // along the edge of the ramp, s metres up from the boat
@@ -129,13 +138,16 @@
         if (p.st === 'gone') { p.away -= dt; p.on = false; if (p.away <= 0) { p.st = 'wait'; const q = paxSpot(p, L); p.x = q[0]; p.z = q[1]; p.h = Math.atan2(-L.ax, -L.az); } }
         else if (p.st === 'wait') { p.on = true; p.state = 'idle'; const q = paxSpot(p, L); p.x = q[0]; p.z = q[1];
           if (docked && b.side === p.dock && b.wait > 6 && b.wait < 21) { p.st = 'board'; p.tg = [paxLane(p, L, L.len - 1), paxLane(p, L, 0.5), null]; p.k = 0; } }
-        else if (p.st === 'ride') { const q = deck(p); p.x = q[0]; p.z = q[1]; p.state = 'idle'; p.h = b.h + (p.lx > 0 ? -1.57 : 1.57) + Math.PI; // looking out over the rail
+        else if (p.st === 'ride') { const q = deck(p); p.x = q[0]; p.z = q[1]; p.state = 'idle'; p.h = b.h + (p.lx > 0 ? -1.57 : 1.57); // (16 nov.) seated on a bench along the side, facing the deck
           if (docked && b.side !== p.dock) { p.dock = b.side; const M = LAND[p.dock]; p.st = 'leave'; p.tg = [paxLane(p, M, 0.5), paxLane(p, M, M.len - 1), [M.x + M.ax * 16 + M.az * p.lx * 0.4, M.z + M.az * 16 - M.ax * p.lx * 0.4]]; p.k = 0; } }
         else { // walking aboard or ashore: from one point to the next
           let t = p.tg[p.k] || deck(p); const dx = t[0] - p.x, dz = t[1] - p.z, d = Math.hypot(dx, dz);
           p.state = 'walk'; if (d > 0.05) { const stp = Math.min(d, p.speed * dt); p.x += dx / d * stp; p.z += dz / d * stp; p.h += wrapA(Math.atan2(dx, dz) - p.h) * Math.min(1, dt * 8); }
           if (d < 0.35) { p.k++; if (p.k >= p.tg.length) { if (p.st === 'board') p.st = 'ride'; else { p.st = 'gone'; p.away = 14 + R() * 20; } } }
           if (p.st === 'board' && (!docked || b.side !== p.dock)) { p.st = 'gone'; p.away = 4; } // missed it: back to the queue
+        }
+        if (p.st === 'ride') { // (16 nov.) on the bench: the seated pose of the terrace customers, on the deck (not in its side)
+          p.vis = p.pose = true; p.state = 'sit'; p.y = b.g.position.y + DECK_Y + 0.06; p.h = b.h + (p.lx > 0 ? -1.57 : 1.57); People.drawCustomer(p); continue;
         }
         p.y = surfaceH(p.x, p.z) + 0.36; People.draw(p);
       }
@@ -182,10 +194,22 @@
             c.x = b.x + lx * c1 + lz * s1; c.z = b.z - lx * s1 + lz * c1; c.h += dh;
             const vx = c.vx, vz = c.vz, sd = Math.sin(dh), cd = Math.cos(dh); c.vx = vx * cd + vz * sd; c.vz = -vx * sd + vz * cd;
           }
+          // (16 nov., user request) the sides of the deck hold the cars in; the ends too, except the one facing the ramp while
+          // the boat is alongside and its gate is down
+          { const P = LAND[b.side], sn = Math.sin(b.h), cs = Math.cos(b.h), landZ = Math.sign((P.bx - b.x) * sn + (P.bz - b.z) * cs), open = b.wait > 2;
+            for (const c of riders) {
+              const dx = c.x - b.x, dz = c.z - b.z; let lx = dx * cs - dz * sn, lz = dx * sn + dz * cs; let vx = c.vx * cs - c.vz * sn, vz = c.vx * sn + c.vz * cs, hit = false;
+              if (Math.abs(lx) > 7.3) { lx = Math.sign(lx) * 7.3; if (vx * lx > 0) vx *= -0.2; hit = true; }
+              if (Math.abs(lz) > 20.4 && !(open && Math.sign(lz) === landZ)) { lz = Math.sign(lz) * 20.4; if (vz * lz > 0) vz *= -0.2; hit = true; }
+              if (hit) { c.x = b.x + lx * cs + lz * sn; c.z = b.z - lx * sn + lz * cs; c.vx = vx * cs + vz * sn; c.vz = -vx * sn + vz * cs; if (c.local && Math.hypot(vx, vz) > 4) sfx.impact(4); }
+            } }
           paxStep(dt);
           for (let k = 0; k < 2; k++) LAND[k].lamp.material.color.setHex(b.side === k && b.wait > 3 ? 0x2cff4a : 0xff2a1a);
           // dock 0 (Gare Maritime) is behind the boat (+z), dock 1 ahead (-z); closed again two seconds before leaving
-          for (const gt of b.gates || []) { const want = b.wait > 2 && gt.out === (b.side ? -1 : 1) ? 1 : 0; gt.open += (want - gt.open) * Math.min(1, dt * 1.6); gt.hinge.rotation.x = gt.out * 1.36 * gt.open; }
+          // (16 nov.) the gate that goes down is the one at the end facing the ramp of the dock it is at, worked out from where
+          // the gate actually is (the fixed end per dock only lowered the right one at one of the two docks)
+          { const P = LAND[b.side], sn = Math.sin(b.h), cs = Math.cos(b.h), landZ = (P.bx - b.x) * sn + (P.bz - b.z) * cs;
+            for (const gt of b.gates || []) { const want = b.wait > 2 && gt.out === Math.sign(landZ) ? 1 : 0; gt.open += (want - gt.open) * Math.min(1, dt * 1.6); gt.hinge.rotation.x = gt.out * 1.36 * gt.open; } }
           b.wk.rotation.y = b.side ? Math.PI : 0; b.wk.position.z = b.side ? -20 : 20;
           roll = Math.sin(T * 0.45) * 0.006;
         }

@@ -203,7 +203,10 @@ function tramStep(dt) {
     for (let k = 0; k < T.segs.length; k++) {
       const s = T.segs[k], xa = T.x - T.dir * (k * T.SEG), xb = xa - T.dir * T.SEG, za = track(xa), zb = track(xb);
       const mx = (xa + xb) / 2, mz = (za + zb) / 2; s.visible = true;
-      s.position.set(mx, surfaceH(mx, mz) + 0.05, mz); s.rotation.y = Math.atan2(xa - xb, za - zb);
+      // (16 nov.) each section leans with the slope (from the rail height at both of its ends): flat sections stepped
+      // like a staircase up the climb towards the rue du Chaffault
+      const ya = surfaceH(xa, za), yb = surfaceH(xb, zb);
+      s.position.set(mx, (ya + yb) / 2 + 0.05, mz); s.rotation.order = 'YXZ'; s.rotation.y = Math.atan2(xa - xb, za - zb); s.rotation.x = -Math.atan2(ya - yb, Math.hypot(xa - xb, za - zb));
       if (k === 0 && s.userData.tail) s.userData.tail.forEach(o => { o.visible = false; });
       if (k === T.segs.length - 1 && s.userData.tail) s.userData.tail.forEach(o => { o.visible = true; });
     }

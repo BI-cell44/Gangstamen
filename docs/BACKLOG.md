@@ -26,11 +26,11 @@ Dernier retour d'essai de l'utilisateur (15 nov., soir) : Ultra tourne sans prob
 - [x] **Défi Destruction : le nombre de casses baissait et devenait négatif** (retour du 15 nov. au soir, corrigé par Fable) : le total était « objets cassés à l'instant moins ceux du départ », or le mobilier et les clôtures se réparent loin du joueur. Chaque nouvelle casse compte maintenant, les réparations sont ignorées (`src/gx/activities.js`).
 
 - [x] **Bac : plus aucune inclinaison au bord du pont, barrières jaunes qui basculent** (retours du 16 nov., Fable) : une roue au-delà du bord compte comme au niveau de la voiture ; les deux barrières jaunes du modèle, découpées par `tools/assets/bake_model.js` (option `part`), s'abaissent côté quai quand le bac est là et se relèvent deux secondes avant le départ (`b.gates` dans `src/gx/boats.js`). Elles sont un décor : elles n'arrêtent pas une voiture.
-14. [ ] **Bords du bac qui bloquent la voiture** (16 nov.) : sauf du côté ouvert quand il est à quai, pour qu'on puisse monter.
-15. [ ] **Barrières jaunes du bac baissées à quai** (16 nov.) : elles doivent s'abaisser quand le bac est à quai (Fable n'y était pas arrivé).
-16. [ ] **Passagers à pied du bac** (16 nov.) : ils s'enfoncent dans le pont jusqu'aux genoux ; les placer sur les côtés, assis sur les bancs.
-17. [ ] **Piliers des Nefs** (16 nov.) : ils ne montent pas jusqu'au toit.
-18. [ ] **Tram T1 dans la montée vers du Chaffault** (16 nov.) : les voitures du tram font des marches d'escalier dans la pente ; elles doivent s'incliner pour la suivre.
+14. [x] (fait le 16 nov. par Opus : les côtés du pont retiennent les voitures, les bouts aussi sauf celui de la rampe quand la barrière est baissée) **Bords du bac qui bloquent la voiture** (16 nov.) : sauf du côté ouvert quand il est à quai, pour qu'on puisse monter.
+15. [x] (fait : la barrière qui s'abaisse est celle du bout tourné vers la rampe, calculée d'après sa vraie position ; avant, la mauvaise s'ouvrait à l'un des deux quais) **Barrières jaunes du bac baissées à quai** (16 nov.) : elles doivent s'abaisser quand le bac est à quai (Fable n'y était pas arrivé).
+16. [x] (fait : huit bancs en bois le long des bords du pont, les passagers y sont assis pendant la traversée) **Passagers à pied du bac** (16 nov.) : ils s'enfoncent dans le pont jusqu'aux genoux ; les placer sur les côtés, assis sur les bancs.
+17. [x] (fait : les colonnes montent jusqu'au toit) **Piliers des Nefs** (16 nov.) : ils ne montent pas jusqu'au toit.
+18. [x] (fait : chaque voiture du tram s'incline selon la pente des rails) **Tram T1 dans la montée vers du Chaffault** (16 nov.) : les voitures du tram font des marches d'escalier dans la pente ; elles doivent s'incliner pour la suivre.
 19. [x] **Pont des Trois-Continents fermé** (16 nov., fait par Opus) : barrières « Route barrée » et mur à l'entrée du pont, plus aucune voiture de la circulation dessus (`roadClosed` dans `src/ai/bots.js`) ; le trou au bout, côté Rezé, n'est donc plus atteignable.
 
 ## Pour Opus 5.5 (dans cet ordre)
@@ -53,6 +53,7 @@ Dernier retour d'essai de l'utilisateur (15 nov., soir) : Ultra tourne sans prob
 16. [x] (fait : « La police l'a vu : piéton renversé », au moins une étoile, aussi pour les clients des terrasses) **Une étoile quand on écrase un piéton** (15 nov.) : message « La police l'a vu » et passage à une étoile.
 17. [x] (fait : caméra avancée au-dessus du capot, plus de bande sombre en bas de l'écran) **Vue capot** (15 nov.) : on voit un peu le dessous du capot ; remonter ou avancer la caméra.
 18. [x] (fait le 16 nov. : les deux modèles en short, casual_Female_K et casual_Male_K, sont remplacés par des tenues longues dès qu'il pleut ; mesure : 29 personnes en short au sec, 0 sous la pluie) **Pas de piétons en short sous la pluie ou l'orage** (15 nov.), si possible : tenues longues, parapluies éventuels. Il faut d'abord repérer lesquels des 8 modèles du pack (`pick()` dans `src/gx/people.js`, champ `name` ajouté) sont en short : une capture de chacun, puis les écarter quand `hd.amb.rain` est fort.
+19. [ ] **Démarrage dans l'ordre** (16 nov.) : on ne doit pas voir les boutons du menu apparaître un à un pendant le chargement ; enchaîner l'écran de chargement, puis « Appuie sur une touche », puis la cinématique, puis le menu.
 
 ## En attente d'un essai de l'utilisateur
 

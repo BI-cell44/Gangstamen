@@ -224,6 +224,7 @@ function buildCity() {
     if (b.u && !b.o) { const [pts, tris] = triangulate(p), uc = col('#6a665f'); for (const [i0, i1, i2] of tris) { const A = [pts[i0].x, y0, pts[i0].y], B = [pts[i1].x, y0, pts[i1].y], C = [pts[i2].x, y0, pts[i2].y]; roofs.tri(A, B, C, [0, -1, 0], null, null, null, uc); roofs.tri(A, C, B, [0, -1, 0], null, null, null, uc); } } // underside
     const rc = shade(col(ROOF_TINTS[kind] || ROOF_TINTS[0]), 0.85 + hash(bi + 11) * 0.3);
     if (b.o) {
+      b._roofY = h; // (16 nov.) the columns of the hall (gx/models.js) go up to here
       // An open hall (the Nefs): seen from the end the roof is a broken line, a row of gables side by side like a
       // factory's (user, 16 Nov.). Ridges along the longest side, one nave every 20 m or so; laid in short strips kept
       // where they fall inside the outline; the same folds show from underneath, in dark steel.
