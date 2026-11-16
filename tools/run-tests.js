@@ -158,7 +158,7 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
       const s = Math.sin(f.h), co = Math.cos(f.h); c.place(f.x + 7.6 * co, f.z - 7.6 * s, f.h); c.sync(); out.roulisAuBord = Math.round(Math.abs(c.mesh.rotation.z) * 57.3);
       c.place(L0.spawn[0], L0.spawn[1], L0.spawn[2]); return out;
     });
-    expect(r.rouleSur >= r.rampe - 2 && r.tombe && r.sousLEau < -1 && r.coule > 2 && r.retour > 2 && r.hp === 100 && r.sink === 0 && r.roulisAuBord < 20, JSON.stringify(r)); return r;
+    expect(r.rouleSur >= r.rampe - 2 && r.tombe && r.sousLEau < -1 && r.coule > 2 && r.retour > 2 && r.hp === 100 && r.sink === 0 && r.roulisAuBord === 0, JSON.stringify(r)); return r;
   });
   await check('défi Destruction : chaque casse compte, les réparations ne font pas baisser le total', async () => {
     const r = await ev(() => {

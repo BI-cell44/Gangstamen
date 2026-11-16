@@ -207,7 +207,12 @@ class Car {
     }
     // a wheel over a drop (the edge of the ferry's deck, a quay) does not lay the car on its side: the body leans as if
     // the ground went on a little lower, no more (15 Nov.: the car lay over on the deck's edge)
-    { const h0 = surfaceH(this.x, this.z); hr = Math.max(hr, h0 - 0.35); hl = Math.max(hl, h0 - 0.35); if (groundH(this.x, this.z) < WATER_Y + 0.9) { hf = Math.max(hf, h0 - 0.5); hb = Math.max(hb, h0 - 0.5); } } // (front and rear only over the water: slopes and kerbs keep their pitch)
+    { const h0 = surfaceH(this.x, this.z); hr = Math.max(hr, h0 - 0.35); hl = Math.max(hl, h0 - 0.35);
+      if (groundH(this.x, this.z) < WATER_Y + 0.9) { // over the water (ferry, ramp, bridge): a wheel past the edge counts as level with the car, no lean at all (user, 16 Nov.)
+        const void_ = (x, z) => groundH(x, z) < WATER_Y + 0.9 && deckH(x, z) === null;
+        if (void_(this.x + fx * 1.7, this.z + fz * 1.7)) hf = h0; if (void_(this.x - fx * 1.7, this.z - fz * 1.7)) hb = h0;
+        if (void_(this.x + rx * 0.9, this.z + rz * 0.9)) hr = h0; if (void_(this.x - rx * 0.9, this.z - rz * 0.9)) hl = h0;
+      } }
     this.mesh.position.set(this.x, Math.max(surfaceH(this.x, this.z), (hf + hb) / 2) + 0.34 + (this.air || 0), this.z);
     if (this.air > 0.2) { this._ap = (this._ap ?? Math.atan2(hf - hb, 3.4)) - 0.35 * (1 / 60); this.mesh.rotation.set(Math.max(-0.5, this._ap), this.h, this.mesh.rotation.z * 0.98, 'YXZ'); return; }
     this._ap = undefined;
