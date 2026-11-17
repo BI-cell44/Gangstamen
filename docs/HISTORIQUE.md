@@ -87,6 +87,7 @@ Ce qui a été construit, dans l'ordre. Le détail de chaque changement est dans
 | 17 nov. 2026 | Capture du drapeau : chevron vert sur la minicarte de chaque joueur (base, porteur adverse, drapeau tombé ou drapeau adverse) | ultra |
 | 17 nov. 2026 | Écran partagé : chevrons de la minicarte agrandis (objectif ×1,9, adversaires ×1,4) | ultra |
 | 17 nov. 2026 | Menu principal plus court (boutons par paires avec étiquettes Solo / Multijoueur / Ton profil / Paramètres, choix Arcade / Réaliste sur la première page) ; carte « Où démarrer ? » : icônes des courses et défis, loupe et molette pour zoomer, records à hauteur des cartes postales ; Tour de la butte démarre au sud-est ; retour au menu en un clic après Échap dans Options ; commandes tactiles cachées hors jeu, « F.M. » renommé « Frein à main » | ultra |
+| 17 nov. 2026 | Menu : étiquettes en beige comme « Conduite » ; tactile : bouton ♪ pour changer de station de radio (`radioNext` dans `src/input/input.js`, aussi touche M) | ultra |
 
 ## Annexe : feuille de route Ultra, détail des cycles et des retours (14 et 15 nov. 2026)
 

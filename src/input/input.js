@@ -38,10 +38,7 @@ addEventListener('keydown', e => {
   if (paused) return;
   if (e.code === 'KeyN') { if (HD) cycleTod(); else setNight(!night); }
   if (e.code === 'KeyB' && HD && !e.repeat) cycleRain();
-  if (e.code === 'Semicolon' || (e.key && e.key.toLowerCase() === 'm' && !e.repeat)) {
-    if (HD) { const st = sfx.nextStation(); flashAll(st ? st.name : 'Radio OFF', st ? st.style + ' · M : station suivante' : 'M : rallumer'); if (st && gx) gx.dj('station', st); }
-    else { const on = sfx.toggle(); flashAll(on ? 'Radio ON' : 'Radio OFF', on ? 'Chantenay FM 92.4' : ''); }
-  }
+  if (e.code === 'Semicolon' || (e.key && e.key.toLowerCase() === 'm' && !e.repeat)) radioNext('M');
   if (e.key && e.key.toLowerCase() === 'p' && !e.repeat) toggleRetro();
   if (e.code === 'KeyG' && !e.repeat && gx && gx.SpawnMap && mode === 'solo' && soloKind === 'free' && !gx.blocking) gx.SpawnMap.show(); // (16 nov.) free driving: the start map
   if (e.code === 'Tab') $('board').hidden = false;
@@ -61,6 +58,13 @@ const bindTouch = (id, f) => {
   const off = e => { e.preventDefault(); touch[f] = 0; el.classList.remove('on'); };
   el.addEventListener('pointerdown', on); el.addEventListener('pointerup', off); el.addEventListener('pointercancel', off); el.addEventListener('pointerleave', off);
 };
+// next radio station (M key, ♪ touch button); after the last one the radio goes off
+function radioNext(key) {
+  if (HD) { const st = sfx.nextStation(); flashAll(st ? st.name : 'Radio OFF', st ? st.style + ' · ' + key + ' : station suivante' : key + ' : rallumer'); if (st && gx) gx.dj('station', st); }
+  else { const on = sfx.toggle(); flashAll(on ? 'Radio ON' : 'Radio OFF', on ? 'Chantenay FM 92.4' : ''); }
+}
+// (17 nov., user) the radio on touch screens: a tap on ♪
+$('tRadio').addEventListener('pointerdown', e => { e.preventDefault(); if (started && !paused) radioNext('♪'); });
 bindTouch('tLeft', 'l'); bindTouch('tRight', 'r'); bindTouch('tGas', 'g'); bindTouch('tBrake', 'b'); bindTouch('tFire', 'f');
 if (HD) { // virtual joystick: left/right steer, up accelerates, down brakes; extra buttons for the handbrake and the special weapon
   bindTouch('tSpec', 'sp'); bindTouch('tHb', 'hb'); $('tSpec').hidden = $('tHb').hidden = false; $('joy').hidden = false; document.body.classList.add('joy');

@@ -76,7 +76,7 @@ body { background: var(--ink); color: var(--chalk); font-family: var(--body); ov
 .view { display: flex; flex-direction: column; gap: 14px; }
 .menu { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
 .menu .pair { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-.menu .pLab { width: 8.2em; font-family: var(--data); font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: var(--sunset); text-shadow: 2px 2px 0 #000; }
+.menu .pLab { width: 8.2em; font-family: var(--data); font-size: 20px; font-weight: 700; letter-spacing: .04em; color: var(--chalk); } /* (17 nov., user) like « Conduite » */
 .mainGrid { display: flex; flex-wrap: wrap; gap: 18px 34px; align-items: flex-start; }
 .mainGrid { position: relative; }
 @media (min-width: 1180px) { .drvBox { position: absolute; left: calc(100% + 30px); top: 0; } } /* on the right of the menu, outside the column of the title */
@@ -172,6 +172,7 @@ body.touch #plate { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
 #touch button { width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--chalk); background: var(--panel); color: var(--chalk); font-family: var(--data); font-size: 20px; touch-action: none; }
 #touch button.on { background: var(--magenta); }
 #touch #tHb { font-size: 11px; line-height: 1.15; }
+#touch #tRadio { width: 46px; height: 46px; font-size: 24px; line-height: 1; align-self: flex-start; padding: 0; }
 #joy { pointer-events: auto; position: relative; width: 150px; height: 150px; border-radius: 50%; border: 3px solid rgba(243,234,216,.7); background: radial-gradient(circle, rgba(13,10,20,.35), rgba(13,10,20,.65)); touch-action: none; margin-bottom: -40px; }
 #joyKnob { position: absolute; left: 50%; top: 50%; width: 62px; height: 62px; margin: -31px 0 0 -31px; border-radius: 50%; background: var(--magenta); border: 3px solid var(--chalk); box-shadow: 0 0 12px rgba(226,51,122,.6); }
 body.touch.joy #tBrake, body.touch.joy #tGas, body.touch.joy #tPadL { display: none; }
@@ -315,7 +316,7 @@ body.cine #logo, body.cine #credit { display: none; }
 <div id="touch">
   <div class="grp" id="tPadL"><button id="tLeft" aria-label="Gauche">◀</button><button id="tRight" aria-label="Droite">▶</button></div>
   <div id="joy" hidden aria-label="Joystick : direction, gaz et frein"><div id="joyKnob"></div></div>
-  <div class="grp"><button id="tSpec" aria-label="Arme spéciale" hidden>SPÉ</button><button id="tHb" aria-label="Frein à main : dérape dans les virages" hidden>FREIN<br>À MAIN</button><button id="tFire" aria-label="Tirer">FEU</button><button id="tBrake" aria-label="Frein">FREIN</button><button id="tGas" aria-label="Accélérer">GAZ</button></div>
+  <div class="grp"><button id="tRadio" aria-label="Radio : station suivante">♪</button><button id="tSpec" aria-label="Arme spéciale" hidden>SPÉ</button><button id="tHb" aria-label="Frein à main : dérape dans les virages" hidden>FREIN<br>À MAIN</button><button id="tFire" aria-label="Tirer">FEU</button><button id="tBrake" aria-label="Frein">FREIN</button><button id="tGas" aria-label="Accélérer">GAZ</button></div>
 </div>
 
 <div id="title" hidden>
