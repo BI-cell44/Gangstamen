@@ -1,6 +1,24 @@
   // ---------- frame rendering ----------
   const focus = new THREE.Vector3();
   let dofRT = null;
+  // (17 nov., user) black picture on Firefox for Android (Galaxy S23) while the classic build works: if every sampled pixel
+  // of the screen stays black, step down (no MSAA, then 8-bit targets, then no post-processing), keep the level in the
+  // settings; « Qualité graphique » in the options starts again from level 0
+  const bk = { n: 0, black: 0, good: 0 };
+  function setSafe(l) {
+    safe = Math.max(0, Math.min(3, l | 0)); RT_TYPE = safe >= 2 || !floatRT ? THREE.UnsignedByteType : THREE.HalfFloatType;
+    renderer.toneMapping = safe >= 3 ? THREE.ACESFilmicToneMapping : THREE.NoToneMapping; renderer.outputEncoding = safe >= 3 ? THREE.sRGBEncoding : THREE.LinearEncoding;
+    bk.n = bk.black = bk.good = 0; setQuality(qi);
+  }
+  function watchBlack() {
+    if (safe >= 3 || bk.good >= 3 || ++bk.n % 8) return;
+    const gl = renderer.getContext(), px = new Uint8Array(4); let sum = 0;
+    for (const [fx, fy] of [[0.5, 0.5], [0.25, 0.3], [0.75, 0.3], [0.3, 0.75], [0.7, 0.75]]) { gl.readPixels(Math.floor(gl.drawingBufferWidth * fx), Math.floor(gl.drawingBufferHeight * fy), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); sum += px[0] + px[1] + px[2]; }
+    if (sum > 30) { bk.good++; bk.black = 0; return; }
+    if (++bk.black < 5) return;
+    setSafe(safe + 1); settings.hdSafe = safe; saveSettings();
+    console.warn('HD: black picture, safe level', safe); try { feed('Écran noir détecté : affichage simplifié (niveau ' + safe + ' / 3)'); } catch (e) { }
+  }
   function render(views) {
     const pr = renderer.getPixelRatio();
     skyU.time.value = time; finalMat.uniforms.time.value = time;
@@ -22,9 +40,15 @@
       sun.position.copy(focus).add(SUN_OFF); sun.target.position.copy(focus); sun.target.updateMatrixWorld();
       const sc = v.h * pr * 0.5 * v.cam.projectionMatrix.elements[5];
       ptsSmoke.material.uniforms.uScale.value = sc; ptsGlow.material.uniforms.uScale.value = sc;
+      if (safe >= 3) { // no post-processing: straight to the screen, tone mapping by three.js
+        renderer.setRenderTarget(null); const y = innerHeight - v.y - v.h;
+        renderer.setViewport(v.x, y, v.w, v.h); renderer.setScissor(v.x, y, v.w, v.h); renderer.setScissorTest(views.length > 1);
+        renderer.render(scene, v.cam); continue;
+      }
       renderer.setRenderTarget(sceneRT);
       renderer.render(scene, v.cam);
     }
+    if (safe >= 3) { renderer.setScissorTest(false); renderer.setViewport(0, 0, innerWidth, innerHeight); return; }
     // bloom: bright pass, then a blurred mip chain
     brightMat.uniforms.t.value = sceneRT.texture; pass(brightMat, bB[0]);
     for (let i = 0; i < bA.length; i++) {
@@ -46,5 +70,6 @@
     renderer.setRenderTarget(null); renderer.setScissorTest(false); renderer.setViewport(0, 0, innerWidth, innerHeight);
     pass(finalMat, null);
     u.exposure.value = ex0;
+    watchBlack();
   }
 

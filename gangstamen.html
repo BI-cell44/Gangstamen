@@ -594,7 +594,9 @@ function noise(g, w, h, a) {
 const hd = !HD ? null : (() => {
   const isGL2 = renderer.capabilities.isWebGL2;
   const floatRT = isGL2 && !!renderer.extensions.get('EXT_color_buffer_float');
-  const RT_TYPE = floatRT ? THREE.HalfFloatType : THREE.UnsignedByteType;
+  let RT_TYPE = floatRT ? THREE.HalfFloatType : THREE.UnsignedByteType;
+  // (17 nov.) safe levels when the picture stays black (frame.js, watchBlack): 1 no MSAA, 2 8-bit targets, 3 no post-processing
+  let safe = 0;
   const QUAL = [
     { name: 'Basse', scale: 0.6, dpr: 1, msaa: 0, shadow: 1024, bloom: 3, parts: 0.5 },
     { name: 'Moyenne', scale: 0.8, dpr: 1.25, msaa: 2, shadow: 2048, bloom: 4, parts: 0.75 },
@@ -694,7 +696,7 @@ const hd = !HD ? null : (() => {
   }
   function pass(mat, target) { fsQuad.material = mat; renderer.setRenderTarget(target); renderer.render(fsScene, fsCam); }
   function setQuality(i) {
-    qi = Math.max(0, Math.min(QUAL.length - 1, i | 0)); q = QUAL[qi];
+    qi = Math.max(0, Math.min(QUAL.length - 1, i | 0)); q = safe ? Object.assign({}, QUAL[qi], { msaa: 0 }) : QUAL[qi];
     sun.shadow.mapSize.set(q.shadow, q.shadow);
     if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; }
     resize();
@@ -1214,6 +1216,24 @@ const hd = !HD ? null : (() => {
   // ---------- frame rendering ----------
   const focus = new THREE.Vector3();
   let dofRT = null;
+  // (17 nov., user) black picture on Firefox for Android (Galaxy S23) while the classic build works: if every sampled pixel
+  // of the screen stays black, step down (no MSAA, then 8-bit targets, then no post-processing), keep the level in the
+  // settings; « Qualité graphique » in the options starts again from level 0
+  const bk = { n: 0, black: 0, good: 0 };
+  function setSafe(l) {
+    safe = Math.max(0, Math.min(3, l | 0)); RT_TYPE = safe >= 2 || !floatRT ? THREE.UnsignedByteType : THREE.HalfFloatType;
+    renderer.toneMapping = safe >= 3 ? THREE.ACESFilmicToneMapping : THREE.NoToneMapping; renderer.outputEncoding = safe >= 3 ? THREE.sRGBEncoding : THREE.LinearEncoding;
+    bk.n = bk.black = bk.good = 0; setQuality(qi);
+  }
+  function watchBlack() {
+    if (safe >= 3 || bk.good >= 3 || ++bk.n % 8) return;
+    const gl = renderer.getContext(), px = new Uint8Array(4); let sum = 0;
+    for (const [fx, fy] of [[0.5, 0.5], [0.25, 0.3], [0.75, 0.3], [0.3, 0.75], [0.7, 0.75]]) { gl.readPixels(Math.floor(gl.drawingBufferWidth * fx), Math.floor(gl.drawingBufferHeight * fy), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); sum += px[0] + px[1] + px[2]; }
+    if (sum > 30) { bk.good++; bk.black = 0; return; }
+    if (++bk.black < 5) return;
+    setSafe(safe + 1); settings.hdSafe = safe; saveSettings();
+    console.warn('HD: black picture, safe level', safe); try { feed('Écran noir détecté : affichage simplifié (niveau ' + safe + ' / 3)'); } catch (e) { }
+  }
   function render(views) {
     const pr = renderer.getPixelRatio();
     skyU.time.value = time; finalMat.uniforms.time.value = time;
@@ -1235,9 +1255,15 @@ const hd = !HD ? null : (() => {
       sun.position.copy(focus).add(SUN_OFF); sun.target.position.copy(focus); sun.target.updateMatrixWorld();
       const sc = v.h * pr * 0.5 * v.cam.projectionMatrix.elements[5];
       ptsSmoke.material.uniforms.uScale.value = sc; ptsGlow.material.uniforms.uScale.value = sc;
+      if (safe >= 3) { // no post-processing: straight to the screen, tone mapping by three.js
+        renderer.setRenderTarget(null); const y = innerHeight - v.y - v.h;
+        renderer.setViewport(v.x, y, v.w, v.h); renderer.setScissor(v.x, y, v.w, v.h); renderer.setScissorTest(views.length > 1);
+        renderer.render(scene, v.cam); continue;
+      }
       renderer.setRenderTarget(sceneRT);
       renderer.render(scene, v.cam);
     }
+    if (safe >= 3) { renderer.setScissorTest(false); renderer.setViewport(0, 0, innerWidth, innerHeight); return; }
     // bloom: bright pass, then a blurred mip chain
     brightMat.uniforms.t.value = sceneRT.texture; pass(brightMat, bB[0]);
     for (let i = 0; i < bA.length; i++) {
@@ -1259,6 +1285,7 @@ const hd = !HD ? null : (() => {
     renderer.setRenderTarget(null); renderer.setScissorTest(false); renderer.setViewport(0, 0, innerWidth, innerHeight);
     pass(finalMat, null);
     u.exposure.value = ex0;
+    watchBlack();
   }
 
   // ---------- world upgrades ----------
@@ -2221,7 +2248,7 @@ const hd = !HD ? null : (() => {
     }
   }
   addEventListener('resize', resize);
-  return { QUAL, setQuality, perf, perfStats: stats, get quality() { return qi; }, render, frame, setTime, setTod, setRain, setDistance, amb, wetPatch, emit, smoke, spark, fire, flashAt, world, linearize, makeCar, fx, explode: explodeAt, muzzle, roadMat, waterMat, crownGeo, wallMat, wallSet, shopSet, townHall, groundMat, footMat, roofMat, shake, lin, linHex, get floatRT() { return floatRT; } };
+  return { QUAL, setQuality, setSafe, get safe() { return safe; }, perf, perfStats: stats, get quality() { return qi; }, render, frame, setTime, setTod, setRain, setDistance, amb, wetPatch, emit, smoke, spark, fire, flashAt, world, linearize, makeCar, fx, explode: explodeAt, muzzle, roadMat, waterMat, crownGeo, wallMat, wallSet, shopSet, townHall, groundMat, footMat, roofMat, shake, lin, linHex, get floatRT() { return floatRT; } };
 })();
 // <<< HD MODULE
 
@@ -3984,7 +4011,7 @@ const SETTINGS_KEY = 'gangstamen.settings.v1';
 const settings = Object.assign({
   ctl: ['kb1', 'kb2', 'kb3', 'kb4'], soloCtl: 'kb1+pad0', nPlayers: 2,
   music: 0.7, fx: 0.8, amb: 0.8, rumble: true, retro: true, nick: '',
-  hdq: 2, autoQ: true, physics: 'arcade', tod: 'sunset', rain: '0', traffic: 2, voices: true, shadows: 1, dist: 2, intro: true, teams: false, team: [0, 1, 0, 1], netTeams: false, netTeam: -1, goal: 20, limit: 10, campDiff: 1, goalCtf: 3, goalHill: 60, raceLaps: 1, // physics 'real' = realistic mode (cycle 4), chosen in the options
+  hdq: isTouch ? 0 : 2, hdSafe: 0, autoQ: true, physics: 'arcade', tod: 'sunset', rain: '0', traffic: 2, voices: true, shadows: 1, dist: 2, intro: true, teams: false, team: [0, 1, 0, 1], netTeams: false, netTeam: -1, goal: 20, limit: 10, campDiff: 1, goalCtf: 3, goalHill: 60, raceLaps: 1, // physics 'real' = realistic mode (cycle 4), chosen in the options
 }, (() => { try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); } catch (e) { return {}; } })());
 // (17 nov., user) end of a game in the HD modes (split screen and online): captures, hill points or laps instead of KO
 const MODE_GOALS = {
@@ -3996,7 +4023,7 @@ function modeGoalSetting(k) { const g = MODE_GOALS[k]; return g ? +settings[g.ke
 function saveSettingsRaw() { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { } }
 function saveSettings() { saveSettingsRaw(); if (typeof Profile !== 'undefined') Profile.capture(); } // the progression also goes to the save slot (cycle 10)
 sfx.setVolume('music', settings.music); sfx.setVolume('fx', settings.fx); sfx.setVolume('amb', settings.amb ?? 0.8);
-if (HD) { view.classList.remove('retro'); $('scan').classList.add('off'); hd.setQuality(settings.hdq); }
+if (HD) { view.classList.remove('retro'); $('scan').classList.add('off'); hd.setSafe(settings.hdSafe || 0); hd.setQuality(settings.hdq); }
 else if (!settings.retro) { retro = false; setRatio(); view.classList.remove('retro'); $('scan').classList.add('off'); }
 
 // ---------- save v2 (cycle 10): versioned profiles, 3 slots, export and import by code ----------
@@ -5318,7 +5345,7 @@ function initOptions() {
     $('optAutoQ').checked = settings.autoQ !== false; $('optAutoQ').addEventListener('change', e => { settings.autoQ = e.target.checked; saveSettings(); });
     $('optVoices').checked = settings.voices !== false; $('optVoices').addEventListener('change', e => { settings.voices = e.target.checked; saveSettings(); try { if (!e.target.checked) speechSynthesis.cancel(); } catch (x) { } });
     const seg = document.querySelectorAll('#hdSeg button'), show = () => seg.forEach(b => b.classList.toggle('on', +b.dataset.q === hd.quality));
-    seg.forEach(b => b.addEventListener('click', () => { hd.setQuality(+b.dataset.q); settings.hdq = hd.quality; saveSettings(); show(); }));
+    seg.forEach(b => b.addEventListener('click', () => { if (hd.safe) hd.setSafe(0); settings.hdSafe = 0; hd.setQuality(+b.dataset.q); settings.hdq = hd.quality; saveSettings(); show(); }));
     show();
     document.querySelector('#title h1').insertAdjacentHTML('beforeend', ' <span style="font-family:var(--data);font-size:.3em;vertical-align:top;color:var(--sunset);text-shadow:2px 2px 0 #000">' + (ULTRA ? 'ULTRA' : 'HD') + '</span>');
   }

@@ -6,7 +6,9 @@
 const hd = !HD ? null : (() => {
   const isGL2 = renderer.capabilities.isWebGL2;
   const floatRT = isGL2 && !!renderer.extensions.get('EXT_color_buffer_float');
-  const RT_TYPE = floatRT ? THREE.HalfFloatType : THREE.UnsignedByteType;
+  let RT_TYPE = floatRT ? THREE.HalfFloatType : THREE.UnsignedByteType;
+  // (17 nov.) safe levels when the picture stays black (frame.js, watchBlack): 1 no MSAA, 2 8-bit targets, 3 no post-processing
+  let safe = 0;
   const QUAL = [
     { name: 'Basse', scale: 0.6, dpr: 1, msaa: 0, shadow: 1024, bloom: 3, parts: 0.5 },
     { name: 'Moyenne', scale: 0.8, dpr: 1.25, msaa: 2, shadow: 2048, bloom: 4, parts: 0.75 },

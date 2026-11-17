@@ -294,6 +294,6 @@
     }
   }
   addEventListener('resize', resize);
-  return { QUAL, setQuality, perf, perfStats: stats, get quality() { return qi; }, render, frame, setTime, setTod, setRain, setDistance, amb, wetPatch, emit, smoke, spark, fire, flashAt, world, linearize, makeCar, fx, explode: explodeAt, muzzle, roadMat, waterMat, crownGeo, wallMat, wallSet, shopSet, townHall, groundMat, footMat, roofMat, shake, lin, linHex, get floatRT() { return floatRT; } };
+  return { QUAL, setQuality, setSafe, get safe() { return safe; }, perf, perfStats: stats, get quality() { return qi; }, render, frame, setTime, setTod, setRain, setDistance, amb, wetPatch, emit, smoke, spark, fire, flashAt, world, linearize, makeCar, fx, explode: explodeAt, muzzle, roadMat, waterMat, crownGeo, wallMat, wallSet, shopSet, townHall, groundMat, footMat, roofMat, shake, lin, linHex, get floatRT() { return floatRT; } };
 })();
 // <<< HD MODULE

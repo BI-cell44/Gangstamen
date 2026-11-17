@@ -59,7 +59,7 @@
   }
   function pass(mat, target) { fsQuad.material = mat; renderer.setRenderTarget(target); renderer.render(fsScene, fsCam); }
   function setQuality(i) {
-    qi = Math.max(0, Math.min(QUAL.length - 1, i | 0)); q = QUAL[qi];
+    qi = Math.max(0, Math.min(QUAL.length - 1, i | 0)); q = safe ? Object.assign({}, QUAL[qi], { msaa: 0 }) : QUAL[qi];
     sun.shadow.mapSize.set(q.shadow, q.shadow);
     if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; }
     resize();
