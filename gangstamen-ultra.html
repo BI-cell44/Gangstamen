@@ -194,12 +194,14 @@ body.touch #plate .sign { padding: 4px 10px 5px; } body.touch #plate .quarter { 
 body.touch #speed { font-size: 40px; } body.touch #speed span { font-size: 16px; } body.touch .bar-label { font-size: 12px; } body.touch .bar { width: 130px; height: 11px; }
 body.touch #stats { gap: 5px; } body.touch .chip { font-size: 15px; padding: 3px 7px; }
 body.touch #minimap { width: 112px; height: 112px; }
-@media (max-width: 560px) { body.touch #clock { left: max(10px, env(safe-area-inset-left, 0px)); transform: none; font-size: 15px; padding: 1px 8px; } }
+body.touch #clock { left: max(10px, env(safe-area-inset-left, 0px)); transform: none; font-size: 15px; padding: 1px 8px; } /* top left: the logo is hidden on touch screens */
 @media (orientation: landscape) and (max-height: 560px) {
   body.touch #dash { bottom: calc(26px + env(safe-area-inset-bottom, 0px)); right: calc(max(16px, env(safe-area-inset-right, 0px)) + 160px); }
   body.touch #plate { bottom: calc(26px + env(safe-area-inset-bottom, 0px)); left: calc(max(16px, env(safe-area-inset-left, 0px)) + 150px); max-width: 30vw; }
-  body.touch #minimap { width: 100px; height: 100px; }
+  body.touch #minimap { width: 100px; height: 100px; grid-column: 2; grid-row: 1 / span 4; }
+  body.touch #stats { display: grid; grid-template-columns: auto auto; column-gap: 8px; row-gap: 5px; align-items: start; justify-items: end; } /* the chips beside the minimap, clear of the buttons */
 }
+body.touch .chip.wanted { padding: 2px 8px; } body.touch .chip.wanted b { font-size: 21px; letter-spacing: .02em; vertical-align: -2px; } /* (17 nov., user) readable stars */
 @media (max-width: 560px) {
   #minimap { width: 112px; height: 112px; }
   #speed { font-size: 46px; }
