@@ -6,7 +6,8 @@
     // (15 nov.) longer runs now that the map reaches Sainte-Anne and the quai de la Fosse: new ids, the records of the
     // old short routes would not compare
     { id: 'r_anne2', kind: 'race', name: 'Sainte-Anne → quai de la Fosse', pts: [[711, 96], [935, 95], [1180, -90], [1300, -330], [1650, -640]] },
-    { id: 'r_butte', kind: 'race', name: 'Tour de la butte', pts: [[700, 120], [880, -60], [1060, 120], [900, 300], [700, 120]] },
+    // (17 nov., user) same loop, started on its south-east side: it started beside « Sainte-Anne → quai de la Fosse »
+    { id: 'r_butte2', kind: 'race', name: 'Tour de la butte', pts: [[900, 300], [700, 120], [880, -60], [1060, 120], [900, 300]] },
     { id: 'r_lib2', kind: 'race', name: 'Sprint Liberté – Cardiff', pts: [[160, -440], [77, 104], [56, 264], [105, 429], [450, 380], [760, 300]] },
     { id: 'd_drift', kind: 'drift', name: 'Dérapage', at: [45, 283], time: 60, text: 'Glisse le plus longtemps possible (frein à main) : 60 s' },
     { id: 'd_jump', kind: 'jump', name: 'Sauts de la carrière Misery', at: [640, 300], time: 60, text: 'Décolle et vole le plus loin possible : 60 s' },

@@ -75,6 +75,17 @@ body { background: var(--ink); color: var(--chalk); font-family: var(--body); ov
 #title h2 { margin: 0; font-family: var(--display); font-weight: normal; font-size: 30px; color: var(--sunset); text-shadow: 3px 3px 0 #000; }
 .view { display: flex; flex-direction: column; gap: 14px; }
 .menu { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.menu .pair { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.menu .pLab { width: 8.2em; font-family: var(--data); font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: var(--sunset); text-shadow: 2px 2px 0 #000; }
+.mainGrid { display: flex; flex-wrap: wrap; gap: 18px 34px; align-items: flex-start; }
+.mainGrid { position: relative; }
+@media (min-width: 1180px) { .drvBox { position: absolute; left: calc(100% + 30px); top: 0; } } /* on the right of the menu, outside the column of the title */
+.drvBox { display: flex; flex-direction: column; gap: 10px; } .drvBox .lab { font-weight: 700; }
+#physSeg { display: flex; flex-direction: column; gap: 10px; }
+.drvBtn { font-family: var(--display); font-size: 24px; text-align: left; min-width: 210px; color: var(--chalk); background: var(--panel); border: 3px solid var(--chalk); padding: 10px 20px; cursor: pointer; }
+.drvBtn small { display: block; white-space: nowrap; font-family: var(--body); font-size: 13px; opacity: .85; margin-top: 2px; }
+.drvBtn:hover, .drvBtn:focus { border-color: var(--magenta); outline: none; } .drvBtn.on { background: var(--sunset); color: var(--ink); border-color: #000; box-shadow: 5px 5px 0 var(--magenta); }
+@media (max-width: 560px) { .mainGrid > .menu, .drvBox { width: 100%; min-width: 0; } .menu .pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); width: 100%; gap: 8px; } .menu .pair .mbtn { white-space: normal; } .menu .pLab { grid-column: 1 / -1; margin-bottom: -2px; } .menu .pair .mbtn { font-size: 15px; padding: 8px 10px; } .menu .pair .mbtn:only-of-type { grid-column: 1 / -1; } .drvBox #physSeg { flex-direction: row; } .drvBtn { min-width: 0; flex: 1; font-size: 20px; } .drvBtn small { white-space: normal; } }
 .mbtn { font-family: var(--body); font-weight: 700; font-size: 17px; color: var(--chalk); background: var(--panel); border: 2px solid var(--chalk); padding: 8px 16px; cursor: pointer; text-align: left; }
 .mbtn:hover, .mbtn:focus, .mbtn.sel { background: var(--magenta); outline: none; }
 .mbtn.on { background: var(--sunset); color: var(--ink); }
@@ -153,13 +164,14 @@ body.split #stats, body.split #plate, body.split #dash, body.split #help, body.s
 body:not(.ingame) #stats, body:not(.ingame) #plate, body:not(.ingame) #dash, body:not(.ingame) #help, body:not(.ingame) #phuds { display: none; }
 /* Touch controls */
 #touch { position: fixed; inset: auto 0 0 0; z-index: 7; display: none; justify-content: space-between; padding: 0 max(16px, env(safe-area-inset-right, 0px)) calc(70px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); pointer-events: none; }
-body.touch #touch { display: flex; }
+body.touch.ingame #touch { display: flex; } /* (17 nov., user) not during the intro nor on the menus */
 body.touch #help { display: none; }
 body.touch #dash { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
 body.touch #plate { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
 #touch .grp { display: flex; gap: 10px; pointer-events: auto; }
 #touch button { width: 64px; height: 64px; border-radius: 50%; border: 3px solid var(--chalk); background: var(--panel); color: var(--chalk); font-family: var(--data); font-size: 20px; touch-action: none; }
 #touch button.on { background: var(--magenta); }
+#touch #tHb { font-size: 11px; line-height: 1.15; }
 #joy { pointer-events: auto; position: relative; width: 150px; height: 150px; border-radius: 50%; border: 3px solid rgba(243,234,216,.7); background: radial-gradient(circle, rgba(13,10,20,.35), rgba(13,10,20,.65)); touch-action: none; margin-bottom: -40px; }
 #joyKnob { position: absolute; left: 50%; top: 50%; width: 62px; height: 62px; margin: -31px 0 0 -31px; border-radius: 50%; background: var(--magenta); border: 3px solid var(--chalk); box-shadow: 0 0 12px rgba(226,51,122,.6); }
 body.touch.joy #tBrake, body.touch.joy #tGas, body.touch.joy #tPadL { display: none; }
@@ -303,7 +315,7 @@ body.cine #logo, body.cine #credit { display: none; }
 <div id="touch">
   <div class="grp" id="tPadL"><button id="tLeft" aria-label="Gauche">◀</button><button id="tRight" aria-label="Droite">▶</button></div>
   <div id="joy" hidden aria-label="Joystick : direction, gaz et frein"><div id="joyKnob"></div></div>
-  <div class="grp"><button id="tSpec" aria-label="Arme spéciale" hidden>SPÉ</button><button id="tHb" aria-label="Frein à main" hidden>F.M.</button><button id="tFire" aria-label="Tirer">FEU</button><button id="tBrake" aria-label="Frein">FREIN</button><button id="tGas" aria-label="Accélérer">GAZ</button></div>
+  <div class="grp"><button id="tSpec" aria-label="Arme spéciale" hidden>SPÉ</button><button id="tHb" aria-label="Frein à main : dérape dans les virages" hidden>FREIN<br>À MAIN</button><button id="tFire" aria-label="Tirer">FEU</button><button id="tBrake" aria-label="Frein">FREIN</button><button id="tGas" aria-label="Accélérer">GAZ</button></div>
 </div>
 
 <div id="title" hidden>
@@ -313,16 +325,16 @@ body.cine #logo, body.cine #credit { display: none; }
 
     <section id="vMain" class="view">
       <p>Les Rapaces de la Butte ont pris le quartier. Six caisses noires tournent entre la place Jean-Macé et les quais de Loire. Reprends les rues de Chantenay : rentre-leur dedans, arrose-les, et ramasse les clés à molette pour réparer ta caisse.</p>
+      <!-- (17 nov., user) a shorter menu: buttons two by two, and the driving style on the first page, on the right -->
+      <div class="mainGrid">
       <div class="menu">
         <button class="big hdOnly" id="startFree" hidden>Conduite libre · choisis où démarrer<small>Courses et défis dans le quartier</small></button>
-        <button id="start" class="big" disabled>Chargement du quartier…</button>
-        <button class="mbtn hdOnly" data-go="vCamp" hidden>Campagne · 7 missions</button>
-        <button class="mbtn" data-go="vSplit">Écran partagé · 2 à 4 joueurs</button>
-        <button class="mbtn" data-go="vOnline">En ligne · jusqu'à 12 joueurs</button>
-        <button class="mbtn hdOnly" data-go="vCar" hidden>Ta voiture</button>
-        <button class="mbtn" data-go="vSave">Sauvegardes</button>
-        <button class="mbtn" data-go="vCtrl">Commandes</button>
-        <button class="mbtn" data-go="vOpt">Son et options</button>
+        <div class="pair"><span class="pLab">Solo</span><button id="start" class="big" disabled>Chargement du quartier…</button><button class="mbtn hdOnly" data-go="vCamp" hidden>Campagne · 7 missions</button></div>
+        <div class="pair"><span class="pLab">Multijoueur</span><button class="mbtn" data-go="vSplit">Écran partagé · 2 à 4</button><button class="mbtn" data-go="vOnline">En ligne · jusqu'à 12</button></div>
+        <div class="pair"><span class="pLab">Ton profil</span><button class="mbtn hdOnly" data-go="vCar" hidden>Ta caisse</button><button class="mbtn" data-go="vSave">Sauvegardes</button></div>
+        <div class="pair"><span class="pLab">Paramètres</span><button class="mbtn" data-go="vCtrl">Commandes</button><button class="mbtn" data-go="vOpt">Son et options</button></div>
+      </div>
+      <div class="drvBox hdOnly" hidden><span class="lab">Conduite</span><div id="physSeg"><button class="drvBtn" data-v="arcade">Arcade<small>Ça glisse, ça pardonne</small></button><button class="drvBtn" data-v="real">Réaliste<small>Freinage, adhérence, poids</small></button></div></div>
       </div>
       <div class="fine">Prototype. Rues et emprises des bâtiments : <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© contributeurs OpenStreetMap</a> (ODbL). Hauteurs des bâtiments et relief : IGN, BD TOPO® et RGE ALTI® (Licence Ouverte 2.0). Façades du boulevard de la Liberté et de la rue de la Marseillaise : photos 360° <a href="https://panoramax.fr" target="_blank" rel="noopener">Panoramax</a> de Carto'Cité, Koreller, ludovelo44 (CC BY-SA 4.0) et immergis (Licence Ouverte), redressées ; ces textures sont diffusées sous CC BY-SA 4.0. Personnages, gangs et histoire sont fictifs.</div>
     </section>
@@ -397,7 +409,6 @@ body.cine #logo, body.cine #credit { display: none; }
       <div class="row hdOnly" hidden><span class="lab">Circulation</span><div class="seg" id="trafSeg"><button class="mbtn" data-v="0">Aucune</button><button class="mbtn" data-v="1">Calme</button><button class="mbtn" data-v="2">Normale</button></div></div>
       <div class="row hdOnly" hidden><label class="lab" for="optVoices">Voix (radio, dialogues)</label><input id="optVoices" type="checkbox"></div>
       <div class="row" id="hdRow" hidden><span class="lab">Qualité graphique</span><div class="seg" id="hdSeg"><button class="mbtn" data-q="0">Basse</button><button class="mbtn" data-q="1">Moyenne</button><button class="mbtn" data-q="2">Haute</button><button class="mbtn" data-q="3">Ultra</button></div></div>
-      <div class="row hdOnly" hidden><span class="lab">Conduite</span><div class="seg" id="physSeg"><button class="mbtn" data-v="arcade">Arcade</button><button class="mbtn" data-v="real">Réaliste</button></div></div>
       <div class="row hdOnly" hidden><label class="lab" for="optAutoQ">Qualité automatique (baisse sous 25 images par seconde)</label><input id="optAutoQ" type="checkbox"></div>
       <div class="row"><label class="lab" for="optIntro">Intro au lancement</label><input id="optIntro" type="checkbox"><button class="mbtn" id="introPlay">Revoir l'intro</button></div>
       <div class="menu"><button class="mbtn" data-go="vMain">Retour</button></div>

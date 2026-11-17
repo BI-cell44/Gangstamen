@@ -86,6 +86,7 @@ Ce qui a été construit, dans l'ordre. Le détail de chaque changement est dans
 | 17 nov. 2026 | Course de checkpoints (écran partagé et en ligne) : circuit en boucle depuis la grille du boulevard de la Liberté, voitures tournées vers le premier checkpoint, seul le prochain checkpoint affiché, chevron vert par joueur sur la minicarte, réapparition au dernier checkpoint, 1 à 5 tours. Fin de partie selon le mode (captures, points, tours) en écran partagé et en ligne ; objectif de l'hôte transmis aux invités | ultra |
 | 17 nov. 2026 | Capture du drapeau : chevron vert sur la minicarte de chaque joueur (base, porteur adverse, drapeau tombé ou drapeau adverse) | ultra |
 | 17 nov. 2026 | Écran partagé : chevrons de la minicarte agrandis (objectif ×1,9, adversaires ×1,4) | ultra |
+| 17 nov. 2026 | Menu principal plus court (boutons par paires avec étiquettes Solo / Multijoueur / Ton profil / Paramètres, choix Arcade / Réaliste sur la première page) ; carte « Où démarrer ? » : icônes des courses et défis, loupe et molette pour zoomer, records à hauteur des cartes postales ; Tour de la butte démarre au sud-est ; retour au menu en un clic après Échap dans Options ; commandes tactiles cachées hors jeu, « F.M. » renommé « Frein à main » | ultra |
 
 ## Annexe : feuille de route Ultra, détail des cycles et des retours (14 et 15 nov. 2026)
 

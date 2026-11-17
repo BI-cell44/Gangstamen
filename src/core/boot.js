@@ -34,7 +34,8 @@ const paintNow = () => new Promise(r => { let done = false; const go = () => { i
   requestAnimationFrame(t => { BOOT.mark('attente de la première image'); requestAnimationFrame(() => { BOOT.mark('première image'); BOOT.total = Math.round(performance.now() - BOOT.t0); }); });
   requestAnimationFrame(frame);
   held.forEach(b => { b.disabled = false; });
-  startBtn.disabled = false; startBtn.textContent = HD ? 'Chasse aux Rapaces · solo' : 'Solo · prendre le volant';
+  startBtn.disabled = false; startBtn.textContent = HD ? 'Chasse aux Rapaces' : 'Prendre le volant';
+  if (HD) startBtn.className = 'mbtn'; // (17 nov., user) beside « Campagne »: « Conduite libre » is the big button in HD
   { const f = $('startFree'); if (HD && f) { startBtn.className = 'mbtn'; f.focus(); } else startBtn.focus(); } // (16 nov., user) free driving first in the menu
   // (16 nov., user) HD: « Chasse aux Rapaces » opens its own page (how it plays, KO and time), no longer set in the options
   if (HD) { startBtn.addEventListener('click', () => showView('vHunt')); $('huntGo').addEventListener('click', () => Busy.run('Chasse aux Rapaces', () => startGame('solo'))); document.querySelectorAll('#vOpt .soloEnd').forEach(r => { r.hidden = true; }); }

@@ -32,7 +32,9 @@ addEventListener('keydown', e => {
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.code) && !(e.target && e.target.tagName === 'INPUT' && e.target.type === 'text')) e.preventDefault();
   if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'text') return;
   if (!started) return;
-  if (e.code === 'Escape') togglePause();
+  // (17 nov., user) Échap in Options or Controls opened from the pause: back to the pause (before, it unpaused under the menu
+  // and « Quitter vers le menu » then took two clicks)
+  if (e.code === 'Escape') { if (fromPause && !$('title').hidden) showView('vMain'); else togglePause(); }
   if (paused) return;
   if (e.code === 'KeyN') { if (HD) cycleTod(); else setNight(!night); }
   if (e.code === 'KeyB' && HD && !e.repeat) cycleRain();

@@ -16,16 +16,27 @@
       if (el) return;
       el = document.createElement('div'); el.id = 'spawnMap'; el.hidden = true;
       el.style.cssText = 'position:fixed;inset:0;z-index:31;display:grid;place-items:center;background:rgba(13,10,20,.82)';
-      el.innerHTML = '<div class="card" style="display:flex;gap:18px;align-items:flex-start;max-width:96vw;max-height:94vh"><div style="display:flex;flex-direction:column;gap:8px;max-width:46vw"><canvas width="640" height="560" style="max-width:46vw;max-height:60vh;border-radius:8px;cursor:pointer;background:#1c1a24;align-self:center"></canvas><div class="spCards fine" style="max-height:26vh;overflow-y:auto;font-size:13px"></div></div>'
+      // (17 nov., user) a grid of two rows: the map and the list of places, then the postcards and, level with them, the
+      // records of the races and challenges
+      el.innerHTML = '<div class="card" style="display:grid;grid-template-columns:auto minmax(250px,auto);gap:10px 18px;align-items:start;max-width:96vw;max-height:94vh"><div style="position:relative;justify-self:center;line-height:0"><canvas width="640" height="560" style="max-width:46vw;max-height:60vh;border-radius:8px;cursor:pointer;background:#1c1a24"></canvas>'
+        + '<button class="mbtn spZoom" title="Loupe : clique ensuite sur la carte pour zoomer" style="position:absolute;top:8px;right:8px;width:44px;height:44px;padding:0;font-size:22px;line-height:1;text-align:center">🔍</button></div>'
         + '<div style="display:flex;flex-direction:column;gap:6px;min-width:250px"><h2 style="margin:0 0 4px;font-family:var(--display);font-weight:normal;font-size:30px;color:var(--chalk);text-shadow:3px 3px 0 var(--magenta)">Où démarrer ?</h2>'
-        + '<p class="fine" style="margin:0 0 6px">Clique un point sur la carte ou choisis dans la liste. Touche G (ou Pause → Carte) pour revenir ici.</p><div class="spList" style="display:flex;flex-direction:column;gap:5px"></div>'
-        + '<div class="spSide fine" style="margin-top:12px;max-height:30vh;overflow-y:auto;font-size:13px"></div></div></div>'; // (16 nov., user) races and challenges under the list of places, beside the postcards // (16 nov., user) records of the races and challenges, and the postcards, beside the map
+        + '<p class="fine" style="margin:0 0 6px">Clique un point sur la carte ou choisis dans la liste. Touche G (ou Pause → Carte) pour revenir ici.</p><div class="spList" style="display:flex;flex-direction:column;gap:5px"></div></div>'
+        + '<div class="spCards fine" style="max-width:46vw;max-height:26vh;overflow-y:auto;font-size:13px"></div>'
+        + '<div class="spSide fine" style="max-height:26vh;overflow-y:auto;font-size:13px"></div></div>';
       document.body.append(el); cv = el.querySelector('canvas');
+      const zb = el.querySelector('.spZoom');
+      // (17 nov., user) zoom: the magnifier, then a click on the map, zooms ×3 there; zoomed, a click away from the points
+      // centres the map there and the magnifier (now « − ») shows the whole area again; the mouse wheel zooms too
+      const zoomUI = () => { zb.textContent = zoom.z > 1 ? '−' : '🔍'; zb.classList.toggle('on', armed); cv.style.cursor = armed ? 'zoom-in' : 'pointer'; };
+      zb.addEventListener('click', e => { e.stopPropagation(); if (zoom.z > 1) { zoom.z = 1; armed = false; } else armed = !armed; zoomUI(); draw(lastSel); });
+      cv.addEventListener('wheel', e => { e.preventDefault(); const [x, z] = fromEvent(e); zoom.z = Math.max(1, Math.min(6, zoom.z * (e.deltaY < 0 ? 1.4 : 1 / 1.4))); if (zoom.z < 1.05) zoom.z = 1; else { zoom.x = x; zoom.cz = z; } armed = false; zoomUI(); draw(lastSel); }, { passive: false });
       cv.addEventListener('click', e => {
         const r = cv.getBoundingClientRect(), mx = (e.clientX - r.left) * cv.width / r.width, my = (e.clientY - r.top) * cv.height / r.height;
+        if (armed) { [zoom.x, zoom.cz] = fromEvent(e); zoom.z = 3; armed = false; zoomUI(); draw(lastSel); return; }
         let best = null, bd = 26; for (const s of spots) { const [px, py] = toMap(s.x, s.z), d = Math.hypot(px - mx, py - my); if (d < bd) { bd = d; best = s; } }
         if (best) choose(best);
-        else { let pb = null, pd = 14; for (const p of postcardSpots()) { if (!p.found) continue; const [px, py] = toMap(p.x, p.z), d = Math.hypot(px - mx, py - my); if (d < pd) { pd = d; pb = p; } } if (pb) showPostcard(pb.s, 0); }
+        else { let pb = null, pd = 14; for (const p of postcardSpots()) { if (!p.found) continue; const [px, py] = toMap(p.x, p.z), d = Math.hypot(px - mx, py - my); if (d < pd) { pd = d; pb = p; } } if (pb) showPostcard(pb.s, 0); else if (zoom.z > 1) { [zoom.x, zoom.cz] = fromEvent(e); draw(lastSel); } }
       });
       el.addEventListener('keydown', e => { if (e.code === 'Escape' || e.code === 'KeyG') { e.stopPropagation(); close(); } });
     }
@@ -49,14 +60,22 @@
       }
       return spots;
     }
+    const zoom = { z: 1, x: 0, cz: 0 }; let armed = false, lastSel = null;
     function toMap(x, z) { return [(x - view.x0) * view.k + view.ox, (z - view.z0) * view.k + view.oy]; }
+    function fromEvent(e) { const r = cv.getBoundingClientRect(), mx = (e.clientX - r.left) * cv.width / r.width, my = (e.clientY - r.top) * cv.height / r.height; return [(mx - view.ox) / view.k + view.x0, (my - view.oy) / view.k + view.z0]; }
     function draw(sel) {
+      lastSel = sel;
       const g = cv.getContext('2d'), W_ = cv.width, H_ = cv.height;
-      const x0 = CX - HX, x1 = CX + HX, z0 = CZ - HZ, z1 = CZ + HZ, k = Math.min((W_ - 30) / (x1 - x0), (H_ - 30) / (z1 - z0));
-      view = { x0, z0, k, ox: (W_ - (x1 - x0) * k) / 2, oy: (H_ - (z1 - z0) * k) / 2 };
+      const x0 = CX - HX, x1 = CX + HX, z0 = CZ - HZ, z1 = CZ + HZ, k0 = Math.min((W_ - 30) / (x1 - x0), (H_ - 30) / (z1 - z0));
+      if (zoom.z > 1) { // keep the zoomed window inside the area
+        const k = k0 * zoom.z, hw = W_ / 2 / k, hh = H_ / 2 / k;
+        zoom.x = Math.max(x0 + hw - 15 / k, Math.min(x1 - hw + 15 / k, zoom.x)); zoom.cz = Math.max(z0 + hh - 15 / k, Math.min(z1 - hh + 15 / k, zoom.cz));
+        view = { x0, z0, k, ox: W_ / 2 - (zoom.x - x0) * k, oy: H_ / 2 - (zoom.cz - z0) * k };
+      } else view = { x0, z0, k: k0, ox: (W_ - (x1 - x0) * k0) / 2, oy: (H_ - (z1 - z0) * k0) / 2 };
+      const k = view.k;
       g.fillStyle = '#1c1a24'; g.fillRect(0, 0, W_, H_);
       g.fillStyle = '#25395a'; // the Loire: points below the water line, sampled coarsely
-      for (let x = x0; x < x1; x += 12) for (let z = z0; z < z1; z += 12) if (groundH(x, z) < WATER_Y + 0.3) { const [px, py] = toMap(x, z); g.fillRect(px, py, 12 * k + 1, 12 * k + 1); }
+      for (let x = x0; x < x1; x += 12) for (let z = z0; z < z1; z += 12) if (groundH(x, z) < WATER_Y + 0.3) { if (zoom.z > 1) { const [qx, qy] = toMap(x, z); if (qx < -40 || qy < -40 || qx > W_ || qy > H_) continue; } const [px, py] = toMap(x, z); g.fillRect(px, py, 12 * k + 1, 12 * k + 1); }
       g.lineCap = 'round'; g.lineJoin = 'round';
       for (const r of W.roads) {
         if (!r.d) continue; g.strokeStyle = r.w >= 9 ? '#d8cfbf' : '#8f8796'; g.lineWidth = Math.max(1, r.w * k * 0.9);
@@ -67,6 +86,17 @@
       for (const p of postcardSpots()) { const [px, py] = toMap(p.x, p.z);
         if (p.found) { g.save(); g.translate(px, py); g.rotate(-0.15); g.fillStyle = '#f6f0e2'; g.fillRect(-8, -6, 16, 12); g.strokeStyle = '#c41f2a'; g.lineWidth = 1.5; g.strokeRect(-8, -6, 16, 12); g.fillStyle = '#c41f2a'; g.fillRect(3, -4, 3, 3); g.restore(); }
         else { g.fillStyle = 'rgba(246,240,226,.25)'; g.beginPath(); g.arc(px, py, 7, 0, Math.PI * 2); g.fill(); g.fillStyle = '#f6f0e2'; g.font = 'bold 11px Arial, sans-serif'; g.fillText('?', px, py + 0.5); } }
+      // (17 nov., user) the races (blue, chequered flag) and the challenges (orange, star) where they start; greyed while locked
+      const placed = [];
+      for (const a of (actsBuild(), acts)) { let [px, py] = toMap(...a.start); const race = a.kind === 'race';
+        while (placed.some(([qx, qy]) => Math.hypot(qx - px, qy - py) < 20)) px += 24; // two starts at the same place: side by side
+        placed.push([px, py]);
+        g.save(); g.translate(px, py); g.globalAlpha = unlocked(a.id) ? 1 : 0.4;
+        // a rounded square, not a disc: the numbered starting points are blue discs
+        g.fillStyle = race ? '#1f8fd6' : '#f08a1c'; g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.moveTo(-8, -11); g.arcTo(11, -11, 11, 11, 4); g.arcTo(11, 11, -11, 11, 4); g.arcTo(-11, 11, -11, -11, 4); g.arcTo(-11, -11, 11, -11, 4); g.closePath(); g.fill(); g.stroke();
+        if (race) { g.fillStyle = '#fff'; g.fillRect(-6, -7, 2, 14); for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) { g.fillStyle = (i + j) % 2 ? '#111' : '#fff'; g.fillRect(-4 + i * 2.5, -7 + j * 2.5, 2.5, 2.5); } }
+        else { g.fillStyle = '#fff'; g.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 3.2 : 7.5, t = -Math.PI / 2 + i * Math.PI / 5; g.lineTo(Math.cos(t) * r, Math.sin(t) * r + 0.6); } g.closePath(); g.fill(); }
+        g.restore(); }
       const c = locals[0] && locals[0].car;
       if (c) { const [px, py] = toMap(c.x, c.z); g.fillStyle = '#f2c14e'; g.beginPath(); g.arc(px, py, 6, 0, Math.PI * 2); g.fill(); }
       g.font = 'bold 13px Arial, sans-serif'; g.textBaseline = 'middle';
@@ -86,8 +116,9 @@
         b.addEventListener('click', () => choose(s)); b.addEventListener('focus', () => draw(s)); b.addEventListener('mouseenter', () => draw(s));
         list.append(b);
       });
-      { const side = el.querySelector('.spSide'); side.innerHTML = '<b>Courses et défis</b> (balises bleues et orange) :<br>' + actRecords().map(r => (r.kind === 'race' ? '🏁 ' : '★ ') + r.name + ' : ' + (r.best || '—')).join('<br>');
-        const pc = postcards(), nf = pc.filter(p => p.text).length, h = document.createElement('div'); h.style.marginTop = '12px'; h.innerHTML = '<b>Cartes postales</b> : ' + nf + ' / ' + pc.length + ' lieux découverts. Sur la carte : une petite carte là où tu l’as trouvée (clique pour la revoir), « ? » là où il en reste une.'; const cards = el.querySelector('.spCards'); cards.innerHTML = ''; cards.append(h); h.style.marginTop = '0'; postcardGallery(h); } // (16 nov., user) the postcards under the map, races and challenges on the right
+      { const side = el.querySelector('.spSide'); side.innerHTML = '<b>Courses et défis</b> (pastilles bleues et orange sur la carte) :<br>' + actRecords().map(r => (r.kind === 'race' ? '🏁 ' : '★ ') + r.name + ' : ' + (r.best || '—')).join('<br>');
+        const pc = postcards(), nf = pc.filter(p => p.text).length, h = document.createElement('div'); h.style.marginTop = '12px'; h.innerHTML = '<b>Cartes postales</b> : ' + nf + ' / ' + pc.length + ' lieux découverts. Sur la carte : une petite carte là où tu l’as trouvée (clique pour la revoir), « ? » là où il en reste une.'; const cards = el.querySelector('.spCards'); cards.innerHTML = ''; cards.append(h); h.style.marginTop = '0'; postcardGallery(h); }
+      zoom.z = 1; armed = false; { const zb = el.querySelector('.spZoom'); zb.textContent = '🔍'; zb.classList.remove('on'); cv.style.cursor = 'pointer'; }
       open = true; blocking = true; el.hidden = false; draw(null); list.firstChild.focus();
     }
     function close() { if (!open) return; open = false; blocking = false; el.hidden = true; try { renderer.domElement.focus(); } catch (e) { } }

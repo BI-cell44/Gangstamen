@@ -179,7 +179,7 @@
   }
   function freeRoam() { cleanupMission(); scatterRivals(); soloKind = 'free'; setupMatch(0, 0); flash('Chantenay', 'Bac à sable · roule librement'); }
   function toMenu(view) { // back to the title screen without reloading (16 nov.: also « Quitter vers le menu » of the pause)
-    started = false; paused = false; document.body.classList.remove('ingame', 'split'); $('title').hidden = false; renderCampaign(); showView(view || 'vCamp');
+    started = false; paused = false; fromPause = false; document.body.classList.remove('ingame', 'split'); $('title').hidden = false; renderCampaign(); showView(view || 'vCamp');
     if (typeof showroom === 'function') showroom(true);
     for (const L of locals) scene.remove(L.car.mesh); locals = [];
     for (const c of npcs.slice()) removeNpc(c); for (const p of peds) p.on = false; crowd.begin(); crowd.end(); People.hideAll(); active = false; sfx.engine(0, false); sfx.siren(0);
