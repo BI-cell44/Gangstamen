@@ -4493,7 +4493,7 @@ function makeLocal(slot, ctl, paint, team = -1) {
   if (ch) { car.style = ch.style.k; car.baseV = 44 * ch.style.v; car.baseA = ch.style.a; car.maxV = car.baseV; car.accK = car.baseA; }
   car.local = true;
   const L = { slot, ctl, car, cam: new THREE.PerspectiveCamera(56, 1, 0.5, 2200), camMode: 0, look: null, respect: 0, kills: 0, deadT: 0, fireCd: 0,
-    hud: null, vp: { x: 0, y: 0, w: 1, h: 1 }, tickT: 0, street: '', streetAcc: 0, colour: '#' + new THREE.Color(c1).getHexString() };
+    hud: null, vp: { x: 0, y: 0, w: 1, h: 1 }, tickT: 0, street: '', streetAcc: 1, colour: '#' + new THREE.Color(c1).getHexString() };
   car.owner = L; L.team = team; car.team = team;
   const sp = mode === 'online' ? onlineSpawn(team) : spawnPoint(slot, team);
   car.place(...sp); L.spawn = sp;
