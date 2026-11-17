@@ -5517,11 +5517,25 @@ function menuPadNav(dt) {
   const up = P.press[12] || (P.ny < -0.6 && navCool <= 0), down = P.press[13] || (P.ny > 0.6 && navCool <= 0);
   const left = P.press[14] || (P.nx < -0.6 && navCool <= 0), right = P.press[15] || (P.nx > 0.6 && navCool <= 0);
   if (up || down || left || right) navCool = 0.22;
-  if (up) { i = i <= 0 ? els.length - 1 : i - 1; els[i].focus(); }
-  if (down) { i = (i + 1) % els.length; els[i].focus(); }
+  const a0 = document.activeElement, slider = a0 && a0.type === 'range', cyc = a0 && a0.closest && a0.closest('.cycle');
+  // (17 nov., user) move to the nearest button in the direction pressed (the menu has rows of two buttons now): up and
+  // down go row by row, left and right inside a row; at the top or the bottom it wraps
+  if (i < 0 && (up || down || left || right)) els[0].focus();
+  else if (up || down || ((left || right) && !slider && !cyc)) {
+    const r0 = els[i].getBoundingClientRect(), cx = r0.left + r0.width / 2, cy = r0.top + r0.height / 2;
+    let best = null, bs = 1e9;
+    for (const e of els) { if (e === els[i]) continue; const r = e.getBoundingClientRect(); if (!r.width) continue;
+      const ex = r.left + r.width / 2, ey = r.top + r.height / 2, dx = ex - cx, dy = ey - cy;
+      const ok = up ? dy < -6 : down ? dy > 6 : (Math.abs(dy) < Math.max(r0.height, r.height) * 0.6 && (left ? dx < -6 : dx > 6));
+      if (!ok) continue;
+      const sc = up || down ? Math.abs(dy) * 3 + Math.abs(dx) : Math.abs(dx);
+      if (sc < bs) { bs = sc; best = e; } }
+    if (!best && (up || down)) { let bv = -1e9; for (const e of els) { const r = e.getBoundingClientRect(); if (!r.width) continue; const v = (up ? r.top : -r.top) * 4 - Math.abs(r.left + r.width / 2 - cx); if (v > bv) { bv = v; best = e; } } } // wrap: the lowest (up) or highest (down) one, nearest in x
+    if (best) best.focus();
+  }
   const a = document.activeElement;
   if ((left || right) && a && a.type === 'range') { a.value = +a.value + (right ? 5 : -5); a.dispatchEvent(new Event('input')); }
-  else if ((left || right) && a && a.closest && a.closest('.cycle')) { const bs = a.closest('.cycle').querySelectorAll('button'); bs[right ? 1 : 0].click(); bs[right ? 1 : 0].focus(); }
+  else if ((left || right) && cyc) { const bs = cyc.querySelectorAll('button'); bs[right ? 1 : 0].click(); bs[right ? 1 : 0].focus(); }
   if (P.press[0] && a) { if (a.type === 'checkbox') { a.click(); } else a.click(); }
   if (P.press[1]) { const back = document.querySelector(visible + ' [data-go="vMain"]') || $('pResume'); if (back && !back.hidden) back.click(); }
 }

@@ -12,6 +12,7 @@ module.exports = async function open(file, opts = {}) {
   await page.route('https://cdnjs.cloudflare.com/**', r => r.fulfill({ body: three, contentType: 'application/javascript' }));
   await page.route('https://fonts.googleapis.com/**', r => r.fulfill({ body: '', contentType: 'text/css' }));
   await page.addInitScript(() => { window.__noIntro = true; });
+  if (opts.init) await page.addInitScript(opts.init);
   await page.setContent('<!doctype html><html><head><meta charset=utf-8></head><body>' + html + '</body></html>', { waitUntil: 'load', timeout: 240000 });
   await page.waitForFunction(() => !document.getElementById('start').disabled, null, { timeout: 240000 });
   if (await page.evaluate(() => !!__gm.hd)) await page.evaluate(() => __gm.hd.setQuality(0));
