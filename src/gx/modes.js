@@ -114,7 +114,20 @@
   function raceText(cp) { const n = gm.cps.length, c = Math.min(cp, Match.goal); if (gm.laps === 1) return c + '/' + n; const lap = Math.min(gm.laps, Math.floor(c / n) + 1); return 'T' + lap + '/' + gm.laps + ' ' + (c >= Match.goal ? n : c % n) + '/' + n; }
   // (17 nov.) where a player has to go next (green chevron on the rim of his minimap) and where a wrecked car comes back
   function scoreText(k) { return !gm ? k + ' KO' : gm.kind === 2 ? k + (k > 1 ? ' captures' : ' capture') : gm.kind === 3 ? k + ' points' : k >= Match.goal ? 'Arrivée' : 'Checkpoints ' + raceText(k); }
-  function modeTarget(L) { if (!gm || gm.kind !== 4 || !L || L.cp >= Match.goal) return null; const m = gm.cps[L.cp % gm.cps.length]; return { x: m.x, z: m.z }; }
+  function modeTarget(L) {
+    if (!gm || !L) return null;
+    if (gm.kind === 2) { // (17 nov., user) flag: bring it home, chase whoever has ours, pick ours up, or go for theirs
+      const c = L.car, t = c.team; if (!(t === 0 || t === 1)) return null;
+      const mine = gm.flags[t], theirs = gm.flags[1 - t];
+      if (theirs.carrier === c) return { x: mine.home[0], z: mine.home[1] };
+      if (mine.carrier) return { x: mine.carrier.x, z: mine.carrier.z };
+      if (!mine.atHome) return { x: mine.x, z: mine.z };
+      if (theirs.carrier) return { x: mine.home[0], z: mine.home[1] }; // a team-mate has it: back to base with him
+      return { x: theirs.x, z: theirs.z };
+    }
+    if (gm.kind !== 4 || L.cp >= Match.goal) return null;
+    const m = gm.cps[L.cp % gm.cps.length]; return { x: m.x, z: m.z };
+  }
   function raceRespawn(L) {
     if (!gm || gm.kind !== 4) return null;
     const n = gm.cps.length, i = L.cp % n, [x, z] = i === 0 ? gm.start : [gm.cps[i - 1].x, gm.cps[i - 1].z], t = gm.cps[i];
