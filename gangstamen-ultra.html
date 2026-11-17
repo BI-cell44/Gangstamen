@@ -89,15 +89,15 @@ body { background: var(--ink); color: var(--chalk); font-family: var(--body); ov
 @media (max-width: 560px) { .mainGrid > .menu, .drvBox { width: 100%; min-width: 0; } .menu .pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); width: 100%; gap: 8px; } .menu .pair .mbtn { white-space: normal; } .menu .pLab { grid-column: 1 / -1; margin-bottom: -2px; } .menu .pair .mbtn { font-size: 15px; padding: 8px 10px; } .menu .pair .mbtn:only-of-type { grid-column: 1 / -1; } .drvBox #physSeg { flex-direction: row; } .drvBtn { min-width: 0; flex: 1; font-size: 20px; } .drvBtn small { white-space: normal; } }
 /* (17 nov., user) below the width where it sits on the right: « Conduite » on one line, buttons like the menu ones */
 @media (max-width: 1179px) {
-  .drvBox { flex-direction: row; align-items: center; gap: 10px; }
-  .drvBox .lab { width: 8.2em; font-family: var(--data); font-size: 20px; font-weight: 700; letter-spacing: .04em; color: var(--chalk); }
+  .drvBox { flex-direction: row; align-items: center; gap: 10px; } .mainGrid { row-gap: 10px; }
+  .drvBox .lab { width: 8.2em; min-width: 0; flex: none; font-family: var(--data); font-size: 20px; font-weight: 700; letter-spacing: .04em; color: var(--chalk); }
   .drvBox #physSeg { flex-direction: row; gap: 10px; }
   .drvBtn { font-family: var(--body); font-weight: 700; font-size: 17px; padding: 8px 16px; border-width: 2px; min-width: 0; flex: none; }
   .drvBtn.on { box-shadow: 3px 3px 0 var(--magenta); } .drvBtn small { display: none; }
 }
 @media (max-width: 560px) { /* (17 nov., user) portrait: like the other rows, the title above and the two buttons below */
   .drvBox { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; width: 100%; }
-  .drvBox #physSeg { display: contents; } .drvBox .lab { grid-column: 1 / -1; width: auto; margin-bottom: -2px; }
+  .drvBox #physSeg { display: contents; } .drvBox .lab { grid-column: 1 / -1; width: auto; min-width: 0; margin-bottom: -2px; }
   .drvBtn { font-size: 15px; padding: 8px 10px; text-align: left; }
 }
 .mbtn { font-family: var(--body); font-weight: 700; font-size: 17px; color: var(--chalk); background: var(--panel); border: 2px solid var(--chalk); padding: 8px 16px; cursor: pointer; text-align: left; }
