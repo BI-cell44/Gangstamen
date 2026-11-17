@@ -87,6 +87,19 @@ body { background: var(--ink); color: var(--chalk); font-family: var(--body); ov
 .drvBtn small { display: block; white-space: nowrap; font-family: var(--body); font-size: 13px; opacity: .85; margin-top: 2px; }
 .drvBtn:hover, .drvBtn:focus { border-color: var(--magenta); outline: none; } .drvBtn.on { background: var(--sunset); color: var(--ink); border-color: #000; box-shadow: 5px 5px 0 var(--magenta); }
 @media (max-width: 560px) { .mainGrid > .menu, .drvBox { width: 100%; min-width: 0; } .menu .pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); width: 100%; gap: 8px; } .menu .pair .mbtn { white-space: normal; } .menu .pLab { grid-column: 1 / -1; margin-bottom: -2px; } .menu .pair .mbtn { font-size: 15px; padding: 8px 10px; } .menu .pair .mbtn:only-of-type { grid-column: 1 / -1; } .drvBox #physSeg { flex-direction: row; } .drvBtn { min-width: 0; flex: 1; font-size: 20px; } .drvBtn small { white-space: normal; } }
+/* (17 nov., user) below the width where it sits on the right: « Conduite » on one line, buttons like the menu ones */
+@media (max-width: 1179px) {
+  .drvBox { flex-direction: row; align-items: center; gap: 10px; }
+  .drvBox .lab { width: 8.2em; font-family: var(--data); font-size: 20px; font-weight: 700; letter-spacing: .04em; color: var(--chalk); }
+  .drvBox #physSeg { flex-direction: row; gap: 10px; }
+  .drvBtn { font-family: var(--body); font-weight: 700; font-size: 17px; padding: 8px 16px; border-width: 2px; min-width: 0; flex: none; }
+  .drvBtn.on { box-shadow: 3px 3px 0 var(--magenta); } .drvBtn small { display: none; }
+}
+@media (max-width: 560px) { /* (17 nov., user) portrait: like the other rows, the title above and the two buttons below */
+  .drvBox { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; width: 100%; }
+  .drvBox #physSeg { display: contents; } .drvBox .lab { grid-column: 1 / -1; width: auto; margin-bottom: -2px; }
+  .drvBtn { font-size: 15px; padding: 8px 10px; text-align: left; }
+}
 .mbtn { font-family: var(--body); font-weight: 700; font-size: 17px; color: var(--chalk); background: var(--panel); border: 2px solid var(--chalk); padding: 8px 16px; cursor: pointer; text-align: left; }
 .mbtn:hover, .mbtn:focus, .mbtn.sel { background: var(--magenta); outline: none; }
 .mbtn.on { background: var(--sunset); color: var(--ink); }
@@ -181,6 +194,19 @@ body.touch.joy #tBrake, body.touch.joy #tGas, body.touch.joy #tPadL { display: n
    right: radio, special, handbrake, fire), speed and body above the cluster, street sign above the joystick, no logo,
    smaller chips; in landscape the speed and the sign go beside the controls */
 body.touch #logo { display: none; }
+/* (17 nov., user) the minimap opens the big map (free driving) or the pause; on touch screens a pause button top left */
+body.ingame #minimap { pointer-events: auto; cursor: pointer; }
+#tPause { display: none; position: fixed; z-index: 7; top: calc(8px + env(safe-area-inset-top, 0px)); left: max(8px, env(safe-area-inset-left, 0px)); width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(243,234,216,.8); background: rgba(13,10,20,.6); color: var(--chalk); font-size: 18px; line-height: 1; padding: 0; }
+body.touch.ingame #tPause { display: block; }
+body.touch #clock { margin-left: 92px; }
+/* (17 nov., user) full screen: top right of the title screen, beside the pause button in game on touch screens; F key */
+#fsBtn { position: fixed; z-index: 31; top: calc(8px + env(safe-area-inset-top, 0px)); right: max(8px, env(safe-area-inset-right, 0px)); width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(243,234,216,.8); background: rgba(13,10,20,.6); color: var(--chalk); font-size: 20px; line-height: 1; padding: 0; cursor: pointer; }
+body.ingame #fsBtn { display: none; }
+body.touch.ingame #fsBtn { display: block; right: auto; left: calc(max(8px, env(safe-area-inset-left, 0px)) + 46px); z-index: 7; }
+body.fsNo #fsBtn, body.fsNo #pFull { display: none !important; }
+/* the start map on a phone: one column in portrait (map, places, postcards, records), smaller map in landscape */
+@media (max-width: 700px) { .spCard { grid-template-columns: 1fr !important; } .spCard canvas, .spCard .spCards { max-width: 90vw !important; } }
+@media (orientation: landscape) and (max-height: 560px) { .spCard canvas { max-height: 80vh !important; } .spCard h2 { font-size: 22px !important; } }
 body.touch.joy #touch { align-items: flex-end; padding-bottom: calc(26px + env(safe-area-inset-bottom, 0px)); }
 body.touch.joy #joy { width: 136px; height: 136px; flex: none; margin-bottom: 0; }
 body.touch.joy #touch .grp:last-child { display: grid; grid-template-columns: 66px 66px; grid-template-rows: 54px 72px; gap: 8px 10px; align-items: end; justify-items: center; }
@@ -205,7 +231,7 @@ body.touch #clock { white-space: normal; max-width: calc(100vw - 270px); }
 body.touch #ticker { top: 44%; font-size: 24px; } body.touch #ticker small { font-size: 15px; }
 @media (orientation: portrait) { body.touch.ingame #objective { top: calc(196px + env(safe-area-inset-top, 0px)); } }
 /* (17 nov., user) landscape: the panel at the very top, under the clock only when there is one */
-@media (orientation: landscape) { body.touch.ingame:has(#clock:not([hidden])) #objective { top: calc(40px + env(safe-area-inset-top, 0px)); } body.touch.ingame #objective { top: calc(8px + env(safe-area-inset-top, 0px)); right: auto; width: calc(100vw - 350px); max-width: 560px; } body.touch #ticker { top: 50%; } }
+@media (orientation: landscape) { body.touch.ingame:has(#clock:not([hidden])) #objective { top: calc(40px + env(safe-area-inset-top, 0px)); } body.touch.ingame #objective { top: calc(8px + env(safe-area-inset-top, 0px)); left: 100px; right: auto; width: calc(100vw - 440px); max-width: 560px; } body.touch #ticker { top: 50%; } }
 body.touch #clock { left: max(10px, env(safe-area-inset-left, 0px)); transform: none; font-size: 15px; padding: 1px 8px; } /* top left: the logo is hidden on touch screens */
 @media (orientation: landscape) and (max-height: 560px) {
   body.touch #dash { bottom: calc(26px + env(safe-area-inset-bottom, 0px)); right: calc(max(16px, env(safe-area-inset-right, 0px)) + 160px); }
@@ -334,7 +360,7 @@ body.cine #logo, body.cine #credit { display: none; }
 
 <div id="logo" class="hud">GANGSTAMEN<small>Chantenay · 1996</small></div>
 <div id="stats" class="hud">
-  <canvas id="minimap" width="336" height="336" aria-label="Plan du quartier"></canvas>
+  <canvas id="minimap" width="336" height="336" aria-label="Plan du quartier : touche ou clique pour la grande carte (conduite libre) ou la pause"></canvas>
   <div class="chip">RESPECT <b id="respect">0</b></div>
   <div class="chip"><span id="killsLab">RAPACES</span> <b id="kills">0</b></div>
   <div class="chip wanted" hidden>POLICE <b id="wanted"></b></div>
@@ -479,6 +505,8 @@ body.cine #logo, body.cine #credit { display: none; }
 </div>
 <div id="board" class="hud" hidden></div>
 <div id="teambar" class="hud" hidden></div>
+<button id="tPause" aria-label="Pause">❚❚</button>
+<button id="fsBtn" aria-label="Plein écran (touche F)" title="Plein écran (F)">⛶</button>
 <div id="clock" class="hud" hidden></div>
 <div id="results" hidden><div class="card"><h2 id="resTitle"></h2><p id="resSub"></p><div id="resTable"></div><div class="menu"><button class="big" id="resAgain">Revanche</button><span id="resWait" class="fine" hidden>En attente de l’hôte pour la revanche…</span><button class="mbtn" id="resQuit">Quitter vers le menu</button></div></div></div>
 <div id="feed" class="hud"></div>
@@ -4148,6 +4176,7 @@ addEventListener('keydown', e => {
   codes[e.code] = true;
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.code) && !(e.target && e.target.tagName === 'INPUT' && e.target.type === 'text')) e.preventDefault();
   if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'text') return;
+  if (e.code === 'KeyF' && !e.repeat) toggleFullscreen(); // F: full screen, also on the menus
   if (!started) return;
   // (17 nov., user) Échap in Options or Controls opened from the pause: back to the pause (before, it unpaused under the menu
   // and « Quitter vers le menu » then took two clicks)
@@ -4181,6 +4210,25 @@ function radioNext(key) {
   else { const on = sfx.toggle(); flashAll(on ? 'Radio ON' : 'Radio OFF', on ? 'Chantenay FM 92.4' : ''); }
 }
 // (17 nov., user) the radio on touch screens: a tap on ♪
+// (17 nov., user) full screen, PC and phone: the ⛶ button, « Plein écran » in the pause, the F key; hidden where the
+// browser has no full screen (iPhone) — inside the claude.ai page the frame may also refuse it: a message says so
+function toggleFullscreen() {
+  const d = document, el = d.documentElement;
+  if (d.fullscreenElement || d.webkitFullscreenElement) { (d.exitFullscreen || d.webkitExitFullscreen).call(d); return; }
+  const req = el.requestFullscreen || el.webkitRequestFullscreen;
+  try { const p = req.call(el, { navigationUI: 'hide' }); if (p && p.catch) p.catch(() => flash('Plein écran refusé', 'Le navigateur ou la page qui contient le jeu ne le permet pas')); }
+  catch (e) { flash('Plein écran refusé', 'Le navigateur ou la page qui contient le jeu ne le permet pas'); }
+}
+if (!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)) document.body.classList.add('fsNo');
+$('fsBtn').addEventListener('click', e => { e.preventDefault(); toggleFullscreen(); });
+document.addEventListener('click', e => { if (e.target && e.target.id === 'pFull') toggleFullscreen(); }); // the pause card is built later
+const fsLabel = () => { const on = !!(document.fullscreenElement || document.webkitFullscreenElement); $('fsBtn').setAttribute('aria-label', on ? 'Quitter le plein écran (F)' : 'Plein écran (F)'); $('fsBtn').title = on ? 'Quitter le plein écran (F)' : 'Plein écran (F)'; if ($('pFull')) $('pFull').textContent = on ? 'Quitter le plein écran (F)' : 'Plein écran (F)'; };
+document.addEventListener('fullscreenchange', fsLabel); document.addEventListener('webkitfullscreenchange', fsLabel);
+$('tPause').addEventListener('click', e => { e.preventDefault(); if (started && !paused && !(gx && gx.blocking)) togglePause(); });
+$('minimap').addEventListener('click', () => {
+  if (!started || paused || (gx && gx.blocking)) return;
+  if (gx && gx.SpawnMap && mode === 'solo' && soloKind === 'free') gx.SpawnMap.show(); else togglePause();
+});
 $('tRadio').addEventListener('pointerdown', e => { e.preventDefault(); if (started && !paused) radioNext('♪'); });
 bindTouch('tLeft', 'l'); bindTouch('tRight', 'r'); bindTouch('tGas', 'g'); bindTouch('tBrake', 'b'); bindTouch('tFire', 'f');
 if (HD) { // virtual joystick: left/right steer, up accelerates, down brakes; extra buttons for the handbrake and the special weapon
@@ -4792,7 +4840,7 @@ function toggleRetro() {
 const pauseEl = document.createElement('div');
 pauseEl.id = 'pause'; pauseEl.hidden = true;
 pauseEl.style.cssText = 'position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:rgba(13,10,20,.75)';
-pauseEl.innerHTML = '<div class="card" style="display:flex;flex-direction:column;gap:12px;align-items:flex-start"><h2 style="margin:0;font-family:var(--display);font-weight:normal;font-size:40px;color:var(--chalk);text-shadow:3px 3px 0 var(--magenta)">Pause</h2><button class="big" id="pResume">Reprendre</button><button class="mbtn" id="pMap" hidden>Carte · démarrer ailleurs (G)</button><button class="mbtn" id="pPhoto">Mode photo (F2)</button><button class="mbtn" id="pOpt">Son et options</button><button class="mbtn" id="pCtrl">Commandes</button><button class="mbtn" id="pQuit">Quitter vers le menu</button></div>';
+pauseEl.innerHTML = '<div class="card" style="display:flex;flex-direction:column;gap:12px;align-items:flex-start"><h2 style="margin:0;font-family:var(--display);font-weight:normal;font-size:40px;color:var(--chalk);text-shadow:3px 3px 0 var(--magenta)">Pause</h2><button class="big" id="pResume">Reprendre</button><button class="mbtn" id="pMap" hidden>Carte · démarrer ailleurs (G)</button><button class="mbtn" id="pFull">Plein écran (F)</button><button class="mbtn" id="pPhoto">Mode photo (F2)</button><button class="mbtn" id="pOpt">Son et options</button><button class="mbtn" id="pCtrl">Commandes</button><button class="mbtn" id="pQuit">Quitter vers le menu</button></div>';
 document.body.append(pauseEl);
 function togglePause() {
   if (!started || Match.over) return;
@@ -9366,10 +9414,12 @@ const gx = !HD ? null : (() => {
       el.style.cssText = 'position:fixed;inset:0;z-index:31;display:grid;place-items:center;background:rgba(13,10,20,.82)';
       // (17 nov., user) a grid of two rows: the map and the list of places, then the postcards and, level with them, the
       // records of the races and challenges
-      el.innerHTML = '<div class="card" style="display:grid;grid-template-columns:auto minmax(250px,auto);gap:10px 18px;align-items:start;max-width:96vw;max-height:94vh"><div style="position:relative;justify-self:center;line-height:0"><canvas width="640" height="560" style="max-width:46vw;max-height:60vh;border-radius:8px;cursor:pointer;background:#1c1a24"></canvas>'
+      el.innerHTML = '<div class="card spCard" style="display:grid;grid-template-columns:auto minmax(250px,auto);gap:10px 18px;align-items:start;max-width:96vw;max-height:94vh;overflow-y:auto"><div style="position:relative;justify-self:center;line-height:0"><canvas width="640" height="560" style="max-width:46vw;max-height:60vh;border-radius:8px;cursor:pointer;background:#1c1a24"></canvas>'
         + '<button class="mbtn spZoom" title="Loupe : clique ensuite sur la carte pour zoomer" style="position:absolute;top:8px;right:8px;width:44px;height:44px;padding:0;font-size:22px;line-height:1;text-align:center">🔍</button></div>'
         + '<div style="display:flex;flex-direction:column;gap:6px;min-width:250px"><h2 style="margin:0 0 4px;font-family:var(--display);font-weight:normal;font-size:30px;color:var(--chalk);text-shadow:3px 3px 0 var(--magenta)">Où démarrer ?</h2>'
-        + '<p class="fine" style="margin:0 0 6px">Clique un point sur la carte ou choisis dans la liste. Touche G (ou Pause → Carte) pour revenir ici.</p><div class="spList" style="display:flex;flex-direction:column;gap:5px"></div></div>'
+        + '<p class="fine" style="margin:0 0 6px">Clique un point sur la carte ou choisis dans la liste. En jeu, touche la minicarte (ou G) pour revenir ici.</p>'
+        // (17 nov., user) leave the map without choosing a place (no Échap key on a phone), or back to the title screen
+        + '<div style="display:flex;flex-wrap:wrap;gap:8px;margin:0 0 8px"><button class="mbtn spStay">Continuer ici</button><button class="mbtn spQuit">Menu principal</button></div><div class="spList" style="display:flex;flex-direction:column;gap:5px"></div></div>'
         + '<div class="spCards fine" style="max-width:46vw;max-height:26vh;overflow-y:auto;font-size:13px"></div>'
         + '<div class="spSide fine" style="max-height:26vh;overflow-y:auto;font-size:13px"></div></div>';
       document.body.append(el); cv = el.querySelector('canvas');
@@ -9387,6 +9437,8 @@ const gx = !HD ? null : (() => {
         else { let pb = null, pd = 14; for (const p of postcardSpots()) { if (!p.found) continue; const [px, py] = toMap(p.x, p.z), d = Math.hypot(px - mx, py - my); if (d < pd) { pd = d; pb = p; } } if (pb) showPostcard(pb.s, 0); else if (zoom.z > 1) { [zoom.x, zoom.cz] = fromEvent(e); draw(lastSel); } }
       });
       el.addEventListener('keydown', e => { if (e.code === 'Escape' || e.code === 'KeyG') { e.stopPropagation(); close(); } });
+      el.querySelector('.spStay').addEventListener('click', () => close());
+      el.querySelector('.spQuit').addEventListener('click', () => { close(); $('pQuit').click(); });
     }
     function resolve() { // snap every spot to a drivable street inside the play area
       if (spots) return spots;

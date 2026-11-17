@@ -87,6 +87,19 @@ body { background: var(--ink); color: var(--chalk); font-family: var(--body); ov
 .drvBtn small { display: block; white-space: nowrap; font-family: var(--body); font-size: 13px; opacity: .85; margin-top: 2px; }
 .drvBtn:hover, .drvBtn:focus { border-color: var(--magenta); outline: none; } .drvBtn.on { background: var(--sunset); color: var(--ink); border-color: #000; box-shadow: 5px 5px 0 var(--magenta); }
 @media (max-width: 560px) { .mainGrid > .menu, .drvBox { width: 100%; min-width: 0; } .menu .pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); width: 100%; gap: 8px; } .menu .pair .mbtn { white-space: normal; } .menu .pLab { grid-column: 1 / -1; margin-bottom: -2px; } .menu .pair .mbtn { font-size: 15px; padding: 8px 10px; } .menu .pair .mbtn:only-of-type { grid-column: 1 / -1; } .drvBox #physSeg { flex-direction: row; } .drvBtn { min-width: 0; flex: 1; font-size: 20px; } .drvBtn small { white-space: normal; } }
+/* (17 nov., user) below the width where it sits on the right: « Conduite » on one line, buttons like the menu ones */
+@media (max-width: 1179px) {
+  .drvBox { flex-direction: row; align-items: center; gap: 10px; }
+  .drvBox .lab { width: 8.2em; font-family: var(--data); font-size: 20px; font-weight: 700; letter-spacing: .04em; color: var(--chalk); }
+  .drvBox #physSeg { flex-direction: row; gap: 10px; }
+  .drvBtn { font-family: var(--body); font-weight: 700; font-size: 17px; padding: 8px 16px; border-width: 2px; min-width: 0; flex: none; }
+  .drvBtn.on { box-shadow: 3px 3px 0 var(--magenta); } .drvBtn small { display: none; }
+}
+@media (max-width: 560px) { /* (17 nov., user) portrait: like the other rows, the title above and the two buttons below */
+  .drvBox { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; width: 100%; }
+  .drvBox #physSeg { display: contents; } .drvBox .lab { grid-column: 1 / -1; width: auto; margin-bottom: -2px; }
+  .drvBtn { font-size: 15px; padding: 8px 10px; text-align: left; }
+}
 .mbtn { font-family: var(--body); font-weight: 700; font-size: 17px; color: var(--chalk); background: var(--panel); border: 2px solid var(--chalk); padding: 8px 16px; cursor: pointer; text-align: left; }
 .mbtn:hover, .mbtn:focus, .mbtn.sel { background: var(--magenta); outline: none; }
 .mbtn.on { background: var(--sunset); color: var(--ink); }
@@ -181,6 +194,19 @@ body.touch.joy #tBrake, body.touch.joy #tGas, body.touch.joy #tPadL { display: n
    right: radio, special, handbrake, fire), speed and body above the cluster, street sign above the joystick, no logo,
    smaller chips; in landscape the speed and the sign go beside the controls */
 body.touch #logo { display: none; }
+/* (17 nov., user) the minimap opens the big map (free driving) or the pause; on touch screens a pause button top left */
+body.ingame #minimap { pointer-events: auto; cursor: pointer; }
+#tPause { display: none; position: fixed; z-index: 7; top: calc(8px + env(safe-area-inset-top, 0px)); left: max(8px, env(safe-area-inset-left, 0px)); width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(243,234,216,.8); background: rgba(13,10,20,.6); color: var(--chalk); font-size: 18px; line-height: 1; padding: 0; }
+body.touch.ingame #tPause { display: block; }
+body.touch #clock { margin-left: 92px; }
+/* (17 nov., user) full screen: top right of the title screen, beside the pause button in game on touch screens; F key */
+#fsBtn { position: fixed; z-index: 31; top: calc(8px + env(safe-area-inset-top, 0px)); right: max(8px, env(safe-area-inset-right, 0px)); width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(243,234,216,.8); background: rgba(13,10,20,.6); color: var(--chalk); font-size: 20px; line-height: 1; padding: 0; cursor: pointer; }
+body.ingame #fsBtn { display: none; }
+body.touch.ingame #fsBtn { display: block; right: auto; left: calc(max(8px, env(safe-area-inset-left, 0px)) + 46px); z-index: 7; }
+body.fsNo #fsBtn, body.fsNo #pFull { display: none !important; }
+/* the start map on a phone: one column in portrait (map, places, postcards, records), smaller map in landscape */
+@media (max-width: 700px) { .spCard { grid-template-columns: 1fr !important; } .spCard canvas, .spCard .spCards { max-width: 90vw !important; } }
+@media (orientation: landscape) and (max-height: 560px) { .spCard canvas { max-height: 80vh !important; } .spCard h2 { font-size: 22px !important; } }
 body.touch.joy #touch { align-items: flex-end; padding-bottom: calc(26px + env(safe-area-inset-bottom, 0px)); }
 body.touch.joy #joy { width: 136px; height: 136px; flex: none; margin-bottom: 0; }
 body.touch.joy #touch .grp:last-child { display: grid; grid-template-columns: 66px 66px; grid-template-rows: 54px 72px; gap: 8px 10px; align-items: end; justify-items: center; }
@@ -205,7 +231,7 @@ body.touch #clock { white-space: normal; max-width: calc(100vw - 270px); }
 body.touch #ticker { top: 44%; font-size: 24px; } body.touch #ticker small { font-size: 15px; }
 @media (orientation: portrait) { body.touch.ingame #objective { top: calc(196px + env(safe-area-inset-top, 0px)); } }
 /* (17 nov., user) landscape: the panel at the very top, under the clock only when there is one */
-@media (orientation: landscape) { body.touch.ingame:has(#clock:not([hidden])) #objective { top: calc(40px + env(safe-area-inset-top, 0px)); } body.touch.ingame #objective { top: calc(8px + env(safe-area-inset-top, 0px)); right: auto; width: calc(100vw - 350px); max-width: 560px; } body.touch #ticker { top: 50%; } }
+@media (orientation: landscape) { body.touch.ingame:has(#clock:not([hidden])) #objective { top: calc(40px + env(safe-area-inset-top, 0px)); } body.touch.ingame #objective { top: calc(8px + env(safe-area-inset-top, 0px)); left: 100px; right: auto; width: calc(100vw - 440px); max-width: 560px; } body.touch #ticker { top: 50%; } }
 body.touch #clock { left: max(10px, env(safe-area-inset-left, 0px)); transform: none; font-size: 15px; padding: 1px 8px; } /* top left: the logo is hidden on touch screens */
 @media (orientation: landscape) and (max-height: 560px) {
   body.touch #dash { bottom: calc(26px + env(safe-area-inset-bottom, 0px)); right: calc(max(16px, env(safe-area-inset-right, 0px)) + 160px); }
@@ -334,7 +360,7 @@ body.cine #logo, body.cine #credit { display: none; }
 
 <div id="logo" class="hud">GANGSTAMEN<small>Chantenay · 1996</small></div>
 <div id="stats" class="hud">
-  <canvas id="minimap" width="336" height="336" aria-label="Plan du quartier"></canvas>
+  <canvas id="minimap" width="336" height="336" aria-label="Plan du quartier : touche ou clique pour la grande carte (conduite libre) ou la pause"></canvas>
   <div class="chip">RESPECT <b id="respect">0</b></div>
   <div class="chip"><span id="killsLab">RAPACES</span> <b id="kills">0</b></div>
   <div class="chip wanted" hidden>POLICE <b id="wanted"></b></div>
@@ -479,6 +505,8 @@ body.cine #logo, body.cine #credit { display: none; }
 </div>
 <div id="board" class="hud" hidden></div>
 <div id="teambar" class="hud" hidden></div>
+<button id="tPause" aria-label="Pause">❚❚</button>
+<button id="fsBtn" aria-label="Plein écran (touche F)" title="Plein écran (F)">⛶</button>
 <div id="clock" class="hud" hidden></div>
 <div id="results" hidden><div class="card"><h2 id="resTitle"></h2><p id="resSub"></p><div id="resTable"></div><div class="menu"><button class="big" id="resAgain">Revanche</button><span id="resWait" class="fine" hidden>En attente de l’hôte pour la revanche…</span><button class="mbtn" id="resQuit">Quitter vers le menu</button></div></div></div>
 <div id="feed" class="hud"></div>

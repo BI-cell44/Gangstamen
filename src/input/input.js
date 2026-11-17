@@ -31,6 +31,7 @@ addEventListener('keydown', e => {
   codes[e.code] = true;
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.code) && !(e.target && e.target.tagName === 'INPUT' && e.target.type === 'text')) e.preventDefault();
   if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'text') return;
+  if (e.code === 'KeyF' && !e.repeat) toggleFullscreen(); // F: full screen, also on the menus
   if (!started) return;
   // (17 nov., user) Échap in Options or Controls opened from the pause: back to the pause (before, it unpaused under the menu
   // and « Quitter vers le menu » then took two clicks)
@@ -64,6 +65,25 @@ function radioNext(key) {
   else { const on = sfx.toggle(); flashAll(on ? 'Radio ON' : 'Radio OFF', on ? 'Chantenay FM 92.4' : ''); }
 }
 // (17 nov., user) the radio on touch screens: a tap on ♪
+// (17 nov., user) full screen, PC and phone: the ⛶ button, « Plein écran » in the pause, the F key; hidden where the
+// browser has no full screen (iPhone) — inside the claude.ai page the frame may also refuse it: a message says so
+function toggleFullscreen() {
+  const d = document, el = d.documentElement;
+  if (d.fullscreenElement || d.webkitFullscreenElement) { (d.exitFullscreen || d.webkitExitFullscreen).call(d); return; }
+  const req = el.requestFullscreen || el.webkitRequestFullscreen;
+  try { const p = req.call(el, { navigationUI: 'hide' }); if (p && p.catch) p.catch(() => flash('Plein écran refusé', 'Le navigateur ou la page qui contient le jeu ne le permet pas')); }
+  catch (e) { flash('Plein écran refusé', 'Le navigateur ou la page qui contient le jeu ne le permet pas'); }
+}
+if (!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)) document.body.classList.add('fsNo');
+$('fsBtn').addEventListener('click', e => { e.preventDefault(); toggleFullscreen(); });
+document.addEventListener('click', e => { if (e.target && e.target.id === 'pFull') toggleFullscreen(); }); // the pause card is built later
+const fsLabel = () => { const on = !!(document.fullscreenElement || document.webkitFullscreenElement); $('fsBtn').setAttribute('aria-label', on ? 'Quitter le plein écran (F)' : 'Plein écran (F)'); $('fsBtn').title = on ? 'Quitter le plein écran (F)' : 'Plein écran (F)'; if ($('pFull')) $('pFull').textContent = on ? 'Quitter le plein écran (F)' : 'Plein écran (F)'; };
+document.addEventListener('fullscreenchange', fsLabel); document.addEventListener('webkitfullscreenchange', fsLabel);
+$('tPause').addEventListener('click', e => { e.preventDefault(); if (started && !paused && !(gx && gx.blocking)) togglePause(); });
+$('minimap').addEventListener('click', () => {
+  if (!started || paused || (gx && gx.blocking)) return;
+  if (gx && gx.SpawnMap && mode === 'solo' && soloKind === 'free') gx.SpawnMap.show(); else togglePause();
+});
 $('tRadio').addEventListener('pointerdown', e => { e.preventDefault(); if (started && !paused) radioNext('♪'); });
 bindTouch('tLeft', 'l'); bindTouch('tRight', 'r'); bindTouch('tGas', 'g'); bindTouch('tBrake', 'b'); bindTouch('tFire', 'f');
 if (HD) { // virtual joystick: left/right steer, up accelerates, down brakes; extra buttons for the handbrake and the special weapon

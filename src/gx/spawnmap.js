@@ -18,10 +18,12 @@
       el.style.cssText = 'position:fixed;inset:0;z-index:31;display:grid;place-items:center;background:rgba(13,10,20,.82)';
       // (17 nov., user) a grid of two rows: the map and the list of places, then the postcards and, level with them, the
       // records of the races and challenges
-      el.innerHTML = '<div class="card" style="display:grid;grid-template-columns:auto minmax(250px,auto);gap:10px 18px;align-items:start;max-width:96vw;max-height:94vh"><div style="position:relative;justify-self:center;line-height:0"><canvas width="640" height="560" style="max-width:46vw;max-height:60vh;border-radius:8px;cursor:pointer;background:#1c1a24"></canvas>'
+      el.innerHTML = '<div class="card spCard" style="display:grid;grid-template-columns:auto minmax(250px,auto);gap:10px 18px;align-items:start;max-width:96vw;max-height:94vh;overflow-y:auto"><div style="position:relative;justify-self:center;line-height:0"><canvas width="640" height="560" style="max-width:46vw;max-height:60vh;border-radius:8px;cursor:pointer;background:#1c1a24"></canvas>'
         + '<button class="mbtn spZoom" title="Loupe : clique ensuite sur la carte pour zoomer" style="position:absolute;top:8px;right:8px;width:44px;height:44px;padding:0;font-size:22px;line-height:1;text-align:center">🔍</button></div>'
         + '<div style="display:flex;flex-direction:column;gap:6px;min-width:250px"><h2 style="margin:0 0 4px;font-family:var(--display);font-weight:normal;font-size:30px;color:var(--chalk);text-shadow:3px 3px 0 var(--magenta)">Où démarrer ?</h2>'
-        + '<p class="fine" style="margin:0 0 6px">Clique un point sur la carte ou choisis dans la liste. Touche G (ou Pause → Carte) pour revenir ici.</p><div class="spList" style="display:flex;flex-direction:column;gap:5px"></div></div>'
+        + '<p class="fine" style="margin:0 0 6px">Clique un point sur la carte ou choisis dans la liste. En jeu, touche la minicarte (ou G) pour revenir ici.</p>'
+        // (17 nov., user) leave the map without choosing a place (no Échap key on a phone), or back to the title screen
+        + '<div style="display:flex;flex-wrap:wrap;gap:8px;margin:0 0 8px"><button class="mbtn spStay">Continuer ici</button><button class="mbtn spQuit">Menu principal</button></div><div class="spList" style="display:flex;flex-direction:column;gap:5px"></div></div>'
         + '<div class="spCards fine" style="max-width:46vw;max-height:26vh;overflow-y:auto;font-size:13px"></div>'
         + '<div class="spSide fine" style="max-height:26vh;overflow-y:auto;font-size:13px"></div></div>';
       document.body.append(el); cv = el.querySelector('canvas');
@@ -39,6 +41,8 @@
         else { let pb = null, pd = 14; for (const p of postcardSpots()) { if (!p.found) continue; const [px, py] = toMap(p.x, p.z), d = Math.hypot(px - mx, py - my); if (d < pd) { pd = d; pb = p; } } if (pb) showPostcard(pb.s, 0); else if (zoom.z > 1) { [zoom.x, zoom.cz] = fromEvent(e); draw(lastSel); } }
       });
       el.addEventListener('keydown', e => { if (e.code === 'Escape' || e.code === 'KeyG') { e.stopPropagation(); close(); } });
+      el.querySelector('.spStay').addEventListener('click', () => close());
+      el.querySelector('.spQuit').addEventListener('click', () => { close(); $('pQuit').click(); });
     }
     function resolve() { // snap every spot to a drivable street inside the play area
       if (spots) return spots;
