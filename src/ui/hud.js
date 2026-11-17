@@ -133,11 +133,13 @@ function buildPlayerHuds() {
 }
 function layoutViews() {
   const Wd = innerWidth, Ht = innerHeight, n = Math.max(1, locals.length);
-  const rects = n === 1 ? [[0, 0, Wd, Ht]] : n === 2 ? [[0, 0, Wd, Ht / 2], [0, Ht / 2, Wd, Ht / 2]]
+  const tSplit = n === 2 && mode === 'split' && touchDev; // touch player 1: bottom view in portrait, left one in landscape
+  const rects = n === 1 ? [[0, 0, Wd, Ht]] : tSplit ? (Wd > Ht ? [[0, 0, Wd / 2, Ht], [Wd / 2, 0, Wd / 2, Ht]] : [[0, Ht / 2, Wd, Ht / 2], [0, 0, Wd, Ht / 2]]) : n === 2 ? [[0, 0, Wd, Ht / 2], [0, Ht / 2, Wd, Ht / 2]]
     : n === 3 ? [[0, 0, Wd, Ht / 2], [0, Ht / 2, Wd / 2, Ht / 2], [Wd / 2, Ht / 2, Wd / 2, Ht / 2]]
       : [[0, 0, Wd / 2, Ht / 2], [Wd / 2, 0, Wd / 2, Ht / 2], [0, Ht / 2, Wd / 2, Ht / 2], [Wd / 2, Ht / 2, Wd / 2, Ht / 2]];
   locals.forEach((L, i) => {
     const [x, y, w, h] = rects[i]; L.vp = { x, y, w, h };
+    if (L.hud) L.hud.root.classList.toggle('tctl', tSplit && i === 0); // its speed and street sign clear of the touch controls
     L.cam.aspect = w / h; L.cam.updateProjectionMatrix();
     if (L.hud) Object.assign(L.hud.root.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px', borderRight: (x + w < Wd - 1 ? '2px solid #000' : 'none'), borderBottom: (y + h < Ht - 1 ? '2px solid #000' : 'none'), boxSizing: 'border-box' });
   });

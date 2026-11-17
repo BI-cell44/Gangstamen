@@ -20,8 +20,13 @@ function cycleControl(container, get, set) {
   prev.addEventListener('click', () => step(-1)); next.addEventListener('click', () => step(1));
   container.append(prev, out, next); show();
 }
+// (17 nov., user) split screen on a phone or tablet: player 1 drives with the touch controls, on the bottom view
+// (portrait) or the left one (landscape), and one other player with a gamepad or a keyboard
+const touchDev = matchMedia('(pointer: coarse)').matches;
 function renderSlots() {
   const box = $('slots'); if (!box) return;
+  if (touchDev && settings.nPlayers > 2) settings.nPlayers = 2;
+  document.querySelectorAll('#nSeg button').forEach(b => { b.hidden = touchDev && +b.dataset.n > 2; });
   document.querySelectorAll('#nSeg button').forEach(b => b.classList.toggle('on', +b.dataset.n === settings.nPlayers));
   box.replaceChildren();
   for (let i = 0; i < settings.nPlayers; i++) {
@@ -39,6 +44,7 @@ function renderSlots() {
       row.append(tb);
     }
     row.append(cyc); box.append(row);
+    if (touchDev && i === 0) { const o = document.createElement('output'); o.textContent = 'Écran tactile'; cyc.append(o); continue; }
     cycleControl(cyc, () => settings.ctl[i], v => { settings.ctl[i] = v; });
   }
   const gmode = HD ? (settings.gmode ?? (settings.teams ? 1 : 0)) : (settings.teams ? 1 : 0);
@@ -163,3 +169,19 @@ function menuPadNav(dt) {
   if (P.press[1]) { const back = document.querySelector(visible + ' [data-go="vMain"]') || $('pResume'); if (back && !back.hidden) back.click(); }
 }
 
+// (17 nov., user) split screen needs a keyboard or gamepads: greyed out on a touch-only device until a gamepad is
+// connected or a physical key is pressed (a mouse or touchpad counts as a computer)
+let kbSeen = matchMedia('(any-pointer: fine)').matches;
+function splitAvail() {
+  if (!isTouch || kbSeen) return true;
+  try { return [...(navigator.getGamepads ? navigator.getGamepads() : [])].some(Boolean); } catch (e) { return false; }
+}
+function renderSplitBtn() {
+  const b = document.querySelector('#vMain [data-go="vSplit"]'); if (!b) return;
+  const ok = splitAvail(), lab = ok ? 'Écran partagé · 2 à 4' : 'Écran partagé · manette ou clavier';
+  b.disabled = !ok; if (b.textContent !== lab) b.textContent = lab;
+  b.title = ok ? '' : 'Branche une manette ou un clavier pour jouer à plusieurs sur le même écran';
+}
+addEventListener('gamepadconnected', renderSplitBtn); addEventListener('gamepaddisconnected', renderSplitBtn);
+addEventListener('keydown', e => { if (kbSeen || !e.isTrusted || e.key === 'Unidentified' || (e.target && /INPUT|TEXTAREA/.test(e.target.tagName))) return; kbSeen = true; renderSplitBtn(); });
+renderSplitBtn();

@@ -128,7 +128,8 @@ addEventListener('gamepadconnected', e => { renderSlots(); renderCtlTable(); if 
 addEventListener('gamepaddisconnected', e => { renderSlots(); if (started) flashAll('Manette ' + (e.gamepad.index + 1) + ' déconnectée', ''); });
 
 function readInput(L) {
-  const ctl = L.ctl, s = schemeOf(ctl), idx = padIndexOf(ctl);
+  const tOnly = L.slot === 0 && mode === 'split' && touchDev; // touch split screen: player 1 has only the touch controls
+  const ctl = L.ctl, s = tOnly ? null : schemeOf(ctl), idx = tOnly ? -1 : padIndexOf(ctl);
   let t = 0, st = 0, hb = false, fire = false, special = false, swap = false, back = false;
   if (s) {
     special = (s.sp || []).some(c => codes[c]); swap = (s.sw || []).some(c => codes[c]);

@@ -10,7 +10,8 @@ function setupMatch(goal, limit) {
 function updateClock() {
   const el = $('clock'), parts = [];
   if (Match.limit) parts.push('⏱ ' + fmtClock(Match.left));
-  if (Match.goal) parts.push(gx && gx.gmode ? gx.goalText() : Match.goal + ' KO pour gagner');
+  // (17 nov.) on a phone held upright the clock alone: the goal stays in the pause and on the results
+  if (Match.goal && !(isTouch && (innerWidth < 560 || mode === 'split') && Match.limit)) parts.push(gx && gx.gmode ? gx.goalText() : Match.goal + ' KO pour gagner');
   el.hidden = !parts.length || Match.over;
   const txt = parts.join(' · ');
   if (el.textContent !== txt) el.textContent = txt;

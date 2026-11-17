@@ -1,4 +1,5 @@
 <title>Gangstamen Ultra</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=VT323&family=Chakra+Petch:wght@400;600;700&display=swap">
@@ -106,6 +107,7 @@ body { background: var(--ink); color: var(--chalk); font-family: var(--body); ov
 .big { align-self: flex-start; font-family: var(--display); font-size: 26px; color: var(--ink); background: var(--sunset); border: 3px solid #000; padding: 10px 26px; box-shadow: 6px 6px 0 var(--magenta); cursor: pointer; transform: rotate(-1.5deg); }
 .big:hover, .big:focus-visible { background: var(--chalk); outline: 3px dashed var(--chalk); outline-offset: 4px; }
 .big[disabled] { opacity: .6; cursor: wait; }
+.mbtn[disabled] { opacity: .45; cursor: not-allowed; background: var(--panel); }
 .row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
 .lab { min-width: 9em; font-family: var(--data); font-size: 21px; letter-spacing: .04em; }
 .seg { display: flex; gap: 6px; }
@@ -199,6 +201,13 @@ body.ingame #minimap { pointer-events: auto; cursor: pointer; }
 #tPause { display: none; position: fixed; z-index: 7; top: calc(8px + env(safe-area-inset-top, 0px)); left: max(8px, env(safe-area-inset-left, 0px)); width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(243,234,216,.8); background: rgba(13,10,20,.6); color: var(--chalk); font-size: 18px; line-height: 1; padding: 0; }
 body.touch.ingame #tPause { display: block; }
 body.touch #clock { margin-left: 92px; }
+@media (orientation: landscape) { body.touch.split #touch { right: 50%; } } /* touch split screen: the controls on player 1's (left) view */
+body.touch.split .phud .pn, body.touch.split .phud .pr { left: 100px; } /* clear of the pause and full screen buttons */
+body.touch .phud.tctl .ps { bottom: auto; top: 112px; font-size: 30px; } body.touch .phud.tctl .pb { bottom: auto; top: 146px; }
+body.touch .phud.tctl .pst { bottom: auto; top: 66px; left: 100px; }
+@media (orientation: landscape) { body.touch.split #clock { top: 8px; left: 25%; margin-left: 0; transform: translateX(-50%); } }
+body.touch.split #stats { display: none; } /* the one-player chips stay hidden in split screen */
+@media (orientation: portrait) { body.touch.split #clock { top: calc(50% - 14px); left: 50%; margin-left: 0; transform: translateX(-50%); } }
 /* (17 nov., user) full screen: top right of the title screen, beside the pause button in game on touch screens; F key */
 #fsBtn { position: fixed; z-index: 31; top: calc(8px + env(safe-area-inset-top, 0px)); right: max(8px, env(safe-area-inset-right, 0px)); width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(243,234,216,.8); background: rgba(13,10,20,.6); color: var(--chalk); font-size: 20px; line-height: 1; padding: 0; cursor: pointer; }
 body.ingame #fsBtn { display: none; }
@@ -4273,7 +4282,8 @@ addEventListener('gamepadconnected', e => { renderSlots(); renderCtlTable(); if 
 addEventListener('gamepaddisconnected', e => { renderSlots(); if (started) flashAll('Manette ' + (e.gamepad.index + 1) + ' déconnectée', ''); });
 
 function readInput(L) {
-  const ctl = L.ctl, s = schemeOf(ctl), idx = padIndexOf(ctl);
+  const tOnly = L.slot === 0 && mode === 'split' && touchDev; // touch split screen: player 1 has only the touch controls
+  const ctl = L.ctl, s = tOnly ? null : schemeOf(ctl), idx = tOnly ? -1 : padIndexOf(ctl);
   let t = 0, st = 0, hb = false, fire = false, special = false, swap = false, back = false;
   if (s) {
     special = (s.sp || []).some(c => codes[c]); swap = (s.sw || []).some(c => codes[c]);
@@ -4645,11 +4655,13 @@ function buildPlayerHuds() {
 }
 function layoutViews() {
   const Wd = innerWidth, Ht = innerHeight, n = Math.max(1, locals.length);
-  const rects = n === 1 ? [[0, 0, Wd, Ht]] : n === 2 ? [[0, 0, Wd, Ht / 2], [0, Ht / 2, Wd, Ht / 2]]
+  const tSplit = n === 2 && mode === 'split' && touchDev; // touch player 1: bottom view in portrait, left one in landscape
+  const rects = n === 1 ? [[0, 0, Wd, Ht]] : tSplit ? (Wd > Ht ? [[0, 0, Wd / 2, Ht], [Wd / 2, 0, Wd / 2, Ht]] : [[0, Ht / 2, Wd, Ht / 2], [0, 0, Wd, Ht / 2]]) : n === 2 ? [[0, 0, Wd, Ht / 2], [0, Ht / 2, Wd, Ht / 2]]
     : n === 3 ? [[0, 0, Wd, Ht / 2], [0, Ht / 2, Wd / 2, Ht / 2], [Wd / 2, Ht / 2, Wd / 2, Ht / 2]]
       : [[0, 0, Wd / 2, Ht / 2], [Wd / 2, 0, Wd / 2, Ht / 2], [0, Ht / 2, Wd / 2, Ht / 2], [Wd / 2, Ht / 2, Wd / 2, Ht / 2]];
   locals.forEach((L, i) => {
     const [x, y, w, h] = rects[i]; L.vp = { x, y, w, h };
+    if (L.hud) L.hud.root.classList.toggle('tctl', tSplit && i === 0); // its speed and street sign clear of the touch controls
     L.cam.aspect = w / h; L.cam.updateProjectionMatrix();
     if (L.hud) Object.assign(L.hud.root.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px', borderRight: (x + w < Wd - 1 ? '2px solid #000' : 'none'), borderBottom: (y + h < Ht - 1 ? '2px solid #000' : 'none'), boxSizing: 'border-box' });
   });
@@ -4734,7 +4746,8 @@ function setupMatch(goal, limit) {
 function updateClock() {
   const el = $('clock'), parts = [];
   if (Match.limit) parts.push('⏱ ' + fmtClock(Match.left));
-  if (Match.goal) parts.push(gx && gx.gmode ? gx.goalText() : Match.goal + ' KO pour gagner');
+  // (17 nov.) on a phone held upright the clock alone: the goal stays in the pause and on the results
+  if (Match.goal && !(isTouch && (innerWidth < 560 || mode === 'split') && Match.limit)) parts.push(gx && gx.gmode ? gx.goalText() : Match.goal + ' KO pour gagner');
   el.hidden = !parts.length || Match.over;
   const txt = parts.join(' · ');
   if (el.textContent !== txt) el.textContent = txt;
@@ -5314,8 +5327,13 @@ function cycleControl(container, get, set) {
   prev.addEventListener('click', () => step(-1)); next.addEventListener('click', () => step(1));
   container.append(prev, out, next); show();
 }
+// (17 nov., user) split screen on a phone or tablet: player 1 drives with the touch controls, on the bottom view
+// (portrait) or the left one (landscape), and one other player with a gamepad or a keyboard
+const touchDev = matchMedia('(pointer: coarse)').matches;
 function renderSlots() {
   const box = $('slots'); if (!box) return;
+  if (touchDev && settings.nPlayers > 2) settings.nPlayers = 2;
+  document.querySelectorAll('#nSeg button').forEach(b => { b.hidden = touchDev && +b.dataset.n > 2; });
   document.querySelectorAll('#nSeg button').forEach(b => b.classList.toggle('on', +b.dataset.n === settings.nPlayers));
   box.replaceChildren();
   for (let i = 0; i < settings.nPlayers; i++) {
@@ -5333,6 +5351,7 @@ function renderSlots() {
       row.append(tb);
     }
     row.append(cyc); box.append(row);
+    if (touchDev && i === 0) { const o = document.createElement('output'); o.textContent = 'Écran tactile'; cyc.append(o); continue; }
     cycleControl(cyc, () => settings.ctl[i], v => { settings.ctl[i] = v; });
   }
   const gmode = HD ? (settings.gmode ?? (settings.teams ? 1 : 0)) : (settings.teams ? 1 : 0);
@@ -5457,6 +5476,22 @@ function menuPadNav(dt) {
   if (P.press[1]) { const back = document.querySelector(visible + ' [data-go="vMain"]') || $('pResume'); if (back && !back.hidden) back.click(); }
 }
 
+// (17 nov., user) split screen needs a keyboard or gamepads: greyed out on a touch-only device until a gamepad is
+// connected or a physical key is pressed (a mouse or touchpad counts as a computer)
+let kbSeen = matchMedia('(any-pointer: fine)').matches;
+function splitAvail() {
+  if (!isTouch || kbSeen) return true;
+  try { return [...(navigator.getGamepads ? navigator.getGamepads() : [])].some(Boolean); } catch (e) { return false; }
+}
+function renderSplitBtn() {
+  const b = document.querySelector('#vMain [data-go="vSplit"]'); if (!b) return;
+  const ok = splitAvail(), lab = ok ? 'Écran partagé · 2 à 4' : 'Écran partagé · manette ou clavier';
+  b.disabled = !ok; if (b.textContent !== lab) b.textContent = lab;
+  b.title = ok ? '' : 'Branche une manette ou un clavier pour jouer à plusieurs sur le même écran';
+}
+addEventListener('gamepadconnected', renderSplitBtn); addEventListener('gamepaddisconnected', renderSplitBtn);
+addEventListener('keydown', e => { if (kbSeen || !e.isTrusted || e.key === 'Unidentified' || (e.target && /INPUT|TEXTAREA/.test(e.target.tagName))) return; kbSeen = true; renderSplitBtn(); });
+renderSplitBtn();
 // ---------- the save slots screen (cycle 10) ----------
 function renderSaves() {
   const box = $('saveList'); if (!box || !Profile.data) return;
