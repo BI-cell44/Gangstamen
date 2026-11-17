@@ -19,6 +19,7 @@ function keyName(code) {
   return code;
 }
 function ctlName(o) {
+  if (o === 'touch') return 'Écran tactile';
   if (o === 'kb1+pad0') return 'Clavier 1 + manette 1';
   if (o.startsWith('pad')) { const i = +o[3]; return 'Manette ' + (i + 1) + (pads[i].gp ? ' ✓' : ''); }
   const s = SCHEMES[o];
@@ -32,6 +33,8 @@ addEventListener('keydown', e => {
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.code) && !(e.target && e.target.tagName === 'INPUT' && e.target.type === 'text')) e.preventDefault();
   if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'text') return;
   if (e.code === 'KeyF' && !e.repeat) toggleFullscreen(); // F: full screen, also on the menus
+  if (e.code === 'Escape' && gx && gx.SpawnMap && gx.SpawnMap.open) { gx.SpawnMap.escape(); return; } // the start map first (postcard, full screen, map)
+  if (e.code === 'Escape' && $('postcard') && !$('postcard').hidden && $('postcard').className === 'big') { $('postcard').hidden = true; return; }
   if (!started) return;
   // (17 nov., user) Échap in Options or Controls opened from the pause: back to the pause (before, it unpaused under the menu
   // and « Quitter vers le menu » then took two clicks)
@@ -77,7 +80,7 @@ function toggleFullscreen() {
 if (!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)) document.body.classList.add('fsNo');
 $('fsBtn').addEventListener('click', e => { e.preventDefault(); toggleFullscreen(); });
 document.addEventListener('click', e => { if (e.target && e.target.id === 'pFull') toggleFullscreen(); }); // the pause card is built later
-const fsLabel = () => { const on = !!(document.fullscreenElement || document.webkitFullscreenElement); $('fsBtn').setAttribute('aria-label', on ? 'Quitter le plein écran (F)' : 'Plein écran (F)'); $('fsBtn').title = on ? 'Quitter le plein écran (F)' : 'Plein écran (F)'; if ($('pFull')) $('pFull').textContent = on ? 'Quitter le plein écran (F)' : 'Plein écran (F)'; };
+const fsLabel = () => { const on = !!(document.fullscreenElement || document.webkitFullscreenElement); $('fsBtn').setAttribute('aria-label', on ? 'Quitter le plein écran (F)' : 'Plein écran (F)'); $('fsBtn').title = on ? 'Quitter le plein écran (F)' : 'Plein écran (F)'; if ($('pFull')) $('pFull').textContent = (on ? 'Quitter le plein écran' : 'Plein écran') + (isTouch ? '' : ' (F)'); };
 document.addEventListener('fullscreenchange', fsLabel); document.addEventListener('webkitfullscreenchange', fsLabel);
 $('tPause').addEventListener('click', e => { e.preventDefault(); if (started && !paused && !(gx && gx.blocking)) togglePause(); });
 $('minimap').addEventListener('click', () => {
@@ -128,8 +131,8 @@ addEventListener('gamepadconnected', e => { renderSlots(); renderCtlTable(); if 
 addEventListener('gamepaddisconnected', e => { renderSlots(); if (started) flashAll('Manette ' + (e.gamepad.index + 1) + ' déconnectée', ''); });
 
 function readInput(L) {
-  const tOnly = L.slot === 0 && mode === 'split' && touchDev; // touch split screen: player 1 has only the touch controls
-  const ctl = L.ctl, s = tOnly ? null : schemeOf(ctl), idx = tOnly ? -1 : padIndexOf(ctl);
+  // split screen on a touch device: player 1 has what was chosen for him (the screen by default) instead of his usual one
+  const ctl = L.slot === 0 && mode === 'split' && touchDev ? (settings.tctl0 || 'touch') : L.ctl, s = ctl === 'touch' ? null : schemeOf(ctl), idx = padIndexOf(ctl);
   let t = 0, st = 0, hb = false, fire = false, special = false, swap = false, back = false;
   if (s) {
     special = (s.sp || []).some(c => codes[c]); swap = (s.sw || []).some(c => codes[c]);

@@ -33,7 +33,7 @@ function startGame(kind, sub) {
   for (const L of locals) { const [fx, fz] = L.car.fwd; L.cam.position.set(L.car.x - fx * 9, surfaceH(L.car.x, L.car.z) + 70, L.car.z - fz * 9); } // (16 nov., user) down from the sky straight over the car: before, it came in from 30 m away through the buildings
   if (teamMode) for (const L of locals) { if (locals.length > 1) flashFor(L, TEAMS[L.team].short, baseName(L.team)); else flash(TEAMS[L.team].name, 'Base : ' + baseName(L.team) + ' · pas de tir ami'); }
   else if (kind === 'online') flash('Partie ' + Net.code.toUpperCase(), Net.isHost ? 'Code à donner aux amis · vous êtes l’hôte' : 'Bienvenue à Chantenay');
-  else if (soloKind === 'free') flashAll('Conduite libre', 'Pas de chrono · courses, défis et missions sur la carte · G : carte');
+  else if (soloKind === 'free') flashAll('Conduite libre', 'Pas de chrono · courses, défis et missions sur la carte · ' + (isTouch ? 'touche la minicarte : carte' : 'G : carte'));
   else flashAll('Chasse aux Rapaces', locals.length > 1 ? 'Chacun pour soi · les Rapaces rôdent' : 'Boulevard de la Liberté · les Rapaces rôdent');
   if (gx) gx.start(kind);
   if (gx && gx.SpawnMap && soloKind === 'free') gx.SpawnMap.show();

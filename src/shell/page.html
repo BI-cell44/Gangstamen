@@ -181,6 +181,7 @@ body:not(.ingame) #stats, body:not(.ingame) #plate, body:not(.ingame) #dash, bod
 /* Touch controls */
 #touch { position: fixed; inset: auto 0 0 0; z-index: 7; display: none; justify-content: space-between; padding: 0 max(16px, env(safe-area-inset-right, 0px)) calc(70px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); pointer-events: none; }
 body.touch.ingame #touch { display: flex; } /* (17 nov., user) not during the intro nor on the menus */
+body.touch.ingame.noTouchP #touch { display: none; }
 body.touch #help { display: none; }
 body.touch #dash { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
 body.touch #plate { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
@@ -201,6 +202,11 @@ body.ingame #minimap { pointer-events: auto; cursor: pointer; }
 #tPause { display: none; position: fixed; z-index: 7; top: calc(8px + env(safe-area-inset-top, 0px)); left: max(8px, env(safe-area-inset-left, 0px)); width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(243,234,216,.8); background: rgba(13,10,20,.6); color: var(--chalk); font-size: 18px; line-height: 1; padding: 0; }
 body.touch.ingame #tPause { display: block; }
 body.touch #clock { margin-left: 92px; }
+/* (17 nov., user) the start map full screen after a click; the name of the icon under the pointer */
+.spWrap.spFull { position: fixed !important; inset: 0; z-index: 40; background: #1c1a24; }
+.spWrap.spFull canvas { width: 100vw !important; height: 100vh !important; max-width: none !important; max-height: none !important; border-radius: 0 !important; }
+.spWrap .spShrink { position: absolute; top: calc(10px + env(safe-area-inset-top, 0px)); right: calc(10px + env(safe-area-inset-right, 0px)); line-height: 1.2; z-index: 2; }
+.spWrap .spTip { position: absolute; z-index: 3; pointer-events: none; line-height: 1.25; white-space: nowrap; font: 700 14px var(--body); color: #fff; background: rgba(13,10,20,.92); border: 2px solid var(--chalk); padding: 4px 8px; }
 @media (orientation: landscape) { body.touch.split #touch { right: 50%; } } /* touch split screen: the controls on player 1's (left) view */
 body.touch.split .phud .pn, body.touch.split .phud .pr { left: 100px; } /* clear of the pause and full screen buttons */
 body.touch .phud.tctl .ps { bottom: auto; top: 112px; font-size: 30px; } body.touch .phud.tctl .pb { bottom: auto; top: 146px; }
@@ -327,7 +333,7 @@ body:not(.ingame) #objective { display: none; }
 #intro.loading { cursor: progress; }
 /* (16 nov.) postcards: a tilted card with a white border, as a toast when found, large from the menu */
 #postcard { position: fixed; z-index: 35; display: flex; flex-direction: column; background: #f6f0e2; color: #2a2420; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,.55); padding: 10px 10px 8px; cursor: pointer; }
-#postcard[hidden] { display: none; }
+#postcard[hidden] { display: none; } #postcard.big { z-index: 45; } /* above the full screen start map */
 #postcard.toast { right: max(16px, env(safe-area-inset-right, 0px)); top: 34vh; width: min(320px, 70vw); transform: rotate(2.5deg); animation: pcIn .5s cubic-bezier(.2,.9,.3,1.2) both; }
 #postcard.big { left: 50%; top: 50%; width: min(620px, 92vw); transform: translate(-50%, -50%) rotate(-1.5deg); z-index: 40; }
 @keyframes pcIn { from { opacity: 0; transform: translateX(80px) rotate(8deg); } to { opacity: 1; transform: rotate(2.5deg); } }

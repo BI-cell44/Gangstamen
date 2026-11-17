@@ -163,5 +163,5 @@
       return; }
     if (!acts || mode !== 'solo' || mission) return; for (const a of acts) if (unlocked(a.id)) add({ x: a.start[0], z: a.start[1] }, a.kind === 'race' ? '#3ac8ff' : '#ff9a2a'); }
   function actRecords() { // for the campaign screen
-    return ACT_DEF.map(d => { const p = Profile.cur, r = p && (d.kind === 'race' ? p.records['race_' + d.id] : p.records['defi_' + d.id]); return { name: d.name, kind: d.kind, best: r === undefined ? null : d.kind === 'race' ? fmtT(r) : r + (d.kind === 'jump' ? ' m' : d.kind === 'smash' ? ' casses' : d.kind === 'deliv' ? ' pts' : d.kind === 'cops' ? ' s d’avance' : ' pts') }; });
+    return ACT_DEF.map(d => { const p = Profile.cur, r = p && (d.kind === 'race' ? p.records['race_' + d.id] : p.records['defi_' + d.id]); return { id: d.id, name: d.name, kind: d.kind, best: r === undefined ? null : d.kind === 'race' ? fmtT(r) : r + (d.kind === 'jump' ? ' m' : d.kind === 'smash' ? ' casses' : d.kind === 'deliv' ? ' pts' : d.kind === 'cops' ? ' s d’avance' : ' pts') }; });
   }

@@ -133,7 +133,8 @@ function buildPlayerHuds() {
 }
 function layoutViews() {
   const Wd = innerWidth, Ht = innerHeight, n = Math.max(1, locals.length);
-  const tSplit = n === 2 && mode === 'split' && touchDev; // touch player 1: bottom view in portrait, left one in landscape
+  const tSplit = n === 2 && mode === 'split' && touchP1();
+  document.body.classList.toggle('noTouchP', mode === 'split' && touchDev && !touchP1()); // player 1 on a keyboard or a gamepad: no touch controls // touch player 1: bottom view in portrait, left one in landscape
   const rects = n === 1 ? [[0, 0, Wd, Ht]] : tSplit ? (Wd > Ht ? [[0, 0, Wd / 2, Ht], [Wd / 2, 0, Wd / 2, Ht]] : [[0, Ht / 2, Wd, Ht / 2], [0, 0, Wd, Ht / 2]]) : n === 2 ? [[0, 0, Wd, Ht / 2], [0, Ht / 2, Wd, Ht / 2]]
     : n === 3 ? [[0, 0, Wd, Ht / 2], [0, Ht / 2, Wd / 2, Ht / 2], [Wd / 2, Ht / 2, Wd / 2, Ht / 2]]
       : [[0, 0, Wd / 2, Ht / 2], [Wd / 2, 0, Wd / 2, Ht / 2], [0, Ht / 2, Wd / 2, Ht / 2], [Wd / 2, Ht / 2, Wd / 2, Ht / 2]];

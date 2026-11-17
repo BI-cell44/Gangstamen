@@ -18,29 +18,32 @@
       el.style.cssText = 'position:fixed;inset:0;z-index:31;display:grid;place-items:center;background:rgba(13,10,20,.82)';
       // (17 nov., user) a grid of two rows: the map and the list of places, then the postcards and, level with them, the
       // records of the races and challenges
-      el.innerHTML = '<div class="card spCard" style="display:grid;grid-template-columns:auto minmax(250px,auto);gap:10px 18px;align-items:start;max-width:96vw;max-height:94vh;overflow-y:auto"><div style="position:relative;justify-self:center;line-height:0"><canvas width="640" height="560" style="max-width:46vw;max-height:60vh;border-radius:8px;cursor:pointer;background:#1c1a24"></canvas>'
-        + '<button class="mbtn spZoom" title="Loupe : clique ensuite sur la carte pour zoomer" style="position:absolute;top:8px;right:8px;width:44px;height:44px;padding:0;font-size:22px;line-height:1;text-align:center">🔍</button></div>'
+      el.innerHTML = '<div class="card spCard" style="display:grid;grid-template-columns:auto minmax(250px,auto);gap:10px 18px;align-items:start;max-width:96vw;max-height:94vh;overflow-y:auto"><div class="spWrap" style="position:relative;justify-self:center;line-height:0"><canvas width="640" height="560" style="max-width:46vw;max-height:60vh;border-radius:8px;cursor:zoom-in;background:#1c1a24"></canvas>'
+        + '<button class="mbtn spShrink" hidden>✕ Réduire</button><div class="spTip" hidden></div></div>'
         + '<div style="display:flex;flex-direction:column;gap:6px;min-width:250px"><h2 style="margin:0 0 4px;font-family:var(--display);font-weight:normal;font-size:30px;color:var(--chalk);text-shadow:3px 3px 0 var(--magenta)">Où démarrer ?</h2>'
-        + '<p class="fine" style="margin:0 0 6px">Clique un point sur la carte ou choisis dans la liste. En jeu, touche la minicarte (ou G) pour revenir ici.</p>'
+        + '<p class="fine" style="margin:0 0 6px">Clique un point sur la carte ou choisis dans la liste. ' + (isTouch ? 'Clique sur la carte pour l’agrandir. En jeu, touche la minicarte pour revenir ici.' : 'Clique sur la carte pour l’agrandir. En jeu, G ou un clic sur la minicarte pour revenir ici.') + '</p>'
         // (17 nov., user) leave the map without choosing a place (no Échap key on a phone), or back to the title screen
         + '<div style="display:flex;flex-wrap:wrap;gap:8px;margin:0 0 8px"><button class="mbtn spStay">Continuer ici</button><button class="mbtn spQuit">Menu principal</button></div><div class="spList" style="display:flex;flex-direction:column;gap:5px"></div></div>'
         + '<div class="spCards fine" style="max-width:46vw;max-height:26vh;overflow-y:auto;font-size:13px"></div>'
         + '<div class="spSide fine" style="max-height:26vh;overflow-y:auto;font-size:13px"></div></div>';
       document.body.append(el); cv = el.querySelector('canvas');
-      const zb = el.querySelector('.spZoom');
-      // (17 nov., user) zoom: the magnifier, then a click on the map, zooms ×3 there; zoomed, a click away from the points
-      // centres the map there and the magnifier (now « − ») shows the whole area again; the mouse wheel zooms too
-      const zoomUI = () => { zb.textContent = zoom.z > 1 ? '−' : '🔍'; zb.classList.toggle('on', armed); cv.style.cursor = armed ? 'zoom-in' : 'pointer'; };
-      zb.addEventListener('click', e => { e.stopPropagation(); if (zoom.z > 1) { zoom.z = 1; armed = false; } else armed = !armed; zoomUI(); draw(lastSel); });
-      cv.addEventListener('wheel', e => { e.preventDefault(); const [x, z] = fromEvent(e); zoom.z = Math.max(1, Math.min(6, zoom.z * (e.deltaY < 0 ? 1.4 : 1 / 1.4))); if (zoom.z < 1.05) zoom.z = 1; else { zoom.x = x; zoom.cz = z; } armed = false; zoomUI(); draw(lastSel); }, { passive: false });
+      // (17 nov., user) a click on the map shows it full screen (no more magnifier); there a click on a point starts there,
+      // on a found postcard shows it, on a race or a challenge names it; the wheel zooms; « Réduire » or Échap goes back.
+      // Hovering any icon names it (a tap does the same on a phone)
+      const wrap = el.querySelector('.spWrap'), tip = el.querySelector('.spTip'), shrink = el.querySelector('.spShrink');
+      shrink.addEventListener('click', e => { e.stopPropagation(); setBig(false); });
+      cv.addEventListener('wheel', e => { if (!big) return; e.preventDefault(); const [x, z] = fromEvent(e); zoom.z = Math.max(1, Math.min(6, zoom.z * (e.deltaY < 0 ? 1.4 : 1 / 1.4))); if (zoom.z < 1.05) zoom.z = 1; else { zoom.x = x; zoom.cz = z; } draw(lastSel); }, { passive: false });
+      const hitAt = e => { const r = cv.getBoundingClientRect(), mx = (e.clientX - r.left) * cv.width / r.width, my = (e.clientY - r.top) * cv.height / r.height; let best = null, bd = 1e9; for (const h of hits) { const d = Math.hypot(h.x - mx, h.y - my); if (d < h.r && d < bd) { bd = d; best = h; } } return best; };
+      const showTip = (h, e) => { if (!h) { tip.hidden = true; return; } const r = wrap.getBoundingClientRect(); tip.textContent = h.label; tip.hidden = false; tip.style.left = Math.min(e.clientX - r.left + 14, r.width - tip.offsetWidth - 6) + 'px'; tip.style.top = Math.max(4, e.clientY - r.top - 34) + 'px'; };
+      cv.addEventListener('mousemove', e => { const h = hitAt(e); showTip(h, e); cv.style.cursor = !big ? 'zoom-in' : h && h.act ? 'pointer' : h ? 'pointer' : 'default'; });
+      cv.addEventListener('mouseleave', () => { tip.hidden = true; });
       cv.addEventListener('click', e => {
-        const r = cv.getBoundingClientRect(), mx = (e.clientX - r.left) * cv.width / r.width, my = (e.clientY - r.top) * cv.height / r.height;
-        if (armed) { [zoom.x, zoom.cz] = fromEvent(e); zoom.z = 3; armed = false; zoomUI(); draw(lastSel); return; }
-        let best = null, bd = 26; for (const s of spots) { const [px, py] = toMap(s.x, s.z), d = Math.hypot(px - mx, py - my); if (d < bd) { bd = d; best = s; } }
-        if (best) choose(best);
-        else { let pb = null, pd = 14; for (const p of postcardSpots()) { if (!p.found) continue; const [px, py] = toMap(p.x, p.z), d = Math.hypot(px - mx, py - my); if (d < pd) { pd = d; pb = p; } } if (pb) showPostcard(pb.s, 0); else if (zoom.z > 1) { [zoom.x, zoom.cz] = fromEvent(e); draw(lastSel); } }
+        if (!big) { setBig(true); return; }
+        const h = hitAt(e);
+        if (h && h.spot) choose(h.spot); else if (h && h.card) showPostcard(h.card.s, 0); else if (h) showTip(h, e);
+        else if (zoom.z > 1) { [zoom.x, zoom.cz] = fromEvent(e); draw(lastSel); }
       });
-      el.addEventListener('keydown', e => { if (e.code === 'Escape' || e.code === 'KeyG') { e.stopPropagation(); close(); } });
+      el.addEventListener('keydown', e => { if (e.code === 'Escape' || e.code === 'KeyG') { e.stopPropagation(); if (e.code === 'KeyG' && !big) close(); else escape(); } });
       el.querySelector('.spStay').addEventListener('click', () => close());
       el.querySelector('.spQuit').addEventListener('click', () => { close(); $('pQuit').click(); });
     }
@@ -64,12 +67,20 @@
       }
       return spots;
     }
-    const zoom = { z: 1, x: 0, cz: 0 }; let armed = false, lastSel = null;
+    const zoom = { z: 1, x: 0, cz: 0 }; let big = false, lastSel = null, hits = [], holder = null;
+    function setBig(on) {
+      big = on; zoom.z = 1; const wrap = cv.parentNode; wrap.classList.toggle('spFull', on);
+      // out of the menu card while full screen (the card is tilted: a fixed child would stay inside it)
+      if (on) { holder = holder || document.createComment('map'); wrap.replaceWith(holder); document.body.append(wrap); } else if (holder && holder.parentNode) holder.replaceWith(wrap); wrap.querySelector('.spShrink').hidden = !on; wrap.querySelector('.spTip').hidden = true;
+      const dpr = Math.min(2, devicePixelRatio || 1);
+      if (on) { cv.width = Math.round(innerWidth * dpr); cv.height = Math.round(innerHeight * dpr); } else { cv.width = 640; cv.height = 560; }
+      draw(lastSel);
+    }
     function toMap(x, z) { return [(x - view.x0) * view.k + view.ox, (z - view.z0) * view.k + view.oy]; }
     function fromEvent(e) { const r = cv.getBoundingClientRect(), mx = (e.clientX - r.left) * cv.width / r.width, my = (e.clientY - r.top) * cv.height / r.height; return [(mx - view.ox) / view.k + view.x0, (my - view.oy) / view.k + view.z0]; }
     function draw(sel) {
-      lastSel = sel;
-      const g = cv.getContext('2d'), W_ = cv.width, H_ = cv.height;
+      lastSel = sel; hits = [];
+      const g = cv.getContext('2d'), W_ = cv.width, H_ = cv.height, u = big ? Math.min(2, devicePixelRatio || 1) : 1; // icon scale
       const x0 = CX - HX, x1 = CX + HX, z0 = CZ - HZ, z1 = CZ + HZ, k0 = Math.min((W_ - 30) / (x1 - x0), (H_ - 30) / (z1 - z0));
       if (zoom.z > 1) { // keep the zoomed window inside the area
         const k = k0 * zoom.z, hw = W_ / 2 / k, hh = H_ / 2 / k;
@@ -88,28 +99,43 @@
       // (16 nov., user) the postcards on the map: a little card where one was found (click it to see it), « ? » where not yet
       g.textAlign = 'center'; g.textBaseline = 'middle';
       for (const p of postcardSpots()) { const [px, py] = toMap(p.x, p.z);
-        if (p.found) { g.save(); g.translate(px, py); g.rotate(-0.15); g.fillStyle = '#f6f0e2'; g.fillRect(-8, -6, 16, 12); g.strokeStyle = '#c41f2a'; g.lineWidth = 1.5; g.strokeRect(-8, -6, 16, 12); g.fillStyle = '#c41f2a'; g.fillRect(3, -4, 3, 3); g.restore(); }
-        else { g.fillStyle = 'rgba(246,240,226,.25)'; g.beginPath(); g.arc(px, py, 7, 0, Math.PI * 2); g.fill(); g.fillStyle = '#f6f0e2'; g.font = 'bold 11px Arial, sans-serif'; g.fillText('?', px, py + 0.5); } }
+        hits.push({ x: px, y: py, r: 12 * u, label: p.found ? 'Carte postale : ' + p.s.name : 'Carte postale à trouver', card: p.found ? p : null });
+        if (p.found) { g.save(); g.translate(px, py); g.scale(u, u); g.rotate(-0.15); g.fillStyle = '#f6f0e2'; g.fillRect(-8, -6, 16, 12); g.strokeStyle = '#c41f2a'; g.lineWidth = 1.5; g.strokeRect(-8, -6, 16, 12); g.fillStyle = '#c41f2a'; g.fillRect(3, -4, 3, 3); g.restore(); }
+        else { g.fillStyle = 'rgba(246,240,226,.25)'; g.beginPath(); g.arc(px, py, 7 * u, 0, Math.PI * 2); g.fill(); g.fillStyle = '#f6f0e2'; g.font = 'bold ' + 11 * u + 'px Arial, sans-serif'; g.fillText('?', px, py + 0.5); } }
       // (17 nov., user) the races (blue, chequered flag) and the challenges (orange, star) where they start; greyed while locked
       const placed = [];
       for (const a of (actsBuild(), acts)) { let [px, py] = toMap(...a.start); const race = a.kind === 'race';
-        while (placed.some(([qx, qy]) => Math.hypot(qx - px, qy - py) < 20)) px += 24; // two starts at the same place: side by side
+        while (placed.some(([qx, qy]) => Math.hypot(qx - px, qy - py) < 20 * u)) px += 24 * u; // two starts at the same place: side by side
         placed.push([px, py]);
-        g.save(); g.translate(px, py); g.globalAlpha = unlocked(a.id) ? 1 : 0.4;
-        // a rounded square, not a disc: the numbered starting points are blue discs
-        g.fillStyle = race ? '#1f8fd6' : '#f08a1c'; g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.moveTo(-8, -11); g.arcTo(11, -11, 11, 11, 4); g.arcTo(11, 11, -11, 11, 4); g.arcTo(-11, 11, -11, -11, 4); g.arcTo(-11, -11, 11, -11, 4); g.closePath(); g.fill(); g.stroke();
-        if (race) { g.fillStyle = '#fff'; g.fillRect(-6, -7, 2, 14); for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) { g.fillStyle = (i + j) % 2 ? '#111' : '#fff'; g.fillRect(-4 + i * 2.5, -7 + j * 2.5, 2.5, 2.5); } }
-        else { g.fillStyle = '#fff'; g.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 3.2 : 7.5, t = -Math.PI / 2 + i * Math.PI / 5; g.lineTo(Math.cos(t) * r, Math.sin(t) * r + 0.6); } g.closePath(); g.fill(); }
-        g.restore(); }
+        const rec = actRecords().find(r => r.id === a.id), lock = !unlocked(a.id);
+        hits.push({ x: px, y: py, r: 14 * u, act: a, label: (race ? 'Course : ' : 'Défi : ') + a.name + (lock ? ' (pas encore débloqué)' : rec && rec.best ? ' · record ' + rec.best : '') });
+        g.save(); g.translate(px, py); g.scale(u, u); actIcon(g, race, lock); g.restore(); }
       const c = locals[0] && locals[0].car;
       if (c) { const [px, py] = toMap(c.x, c.z); g.fillStyle = '#f2c14e'; g.beginPath(); g.arc(px, py, 6, 0, Math.PI * 2); g.fill(); }
       g.font = 'bold 13px Arial, sans-serif'; g.textBaseline = 'middle';
       spots.forEach((s, i) => {
         const [px, py] = toMap(s.x, s.z), on = s === sel;
+        hits.push({ x: px, y: py, r: 14 * u, spot: s, label: 'Départ ' + (i + 1) + ' : ' + s.name });
+        g.save(); g.translate(px, py); g.scale(u, u); g.translate(-px, -py);
         g.fillStyle = on ? '#ff4fa3' : '#3a8aff'; g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.arc(px, py, on ? 11 : 9, 0, Math.PI * 2); g.fill(); g.stroke();
         g.fillStyle = '#fff'; g.textAlign = 'center'; g.fillText(String(i + 1), px, py + 0.5);
         if (on) { g.textAlign = px > W_ - 160 ? 'right' : 'left'; g.fillStyle = '#fff'; g.strokeStyle = '#000'; g.lineWidth = 3; const tx = px + (g.textAlign === 'left' ? 15 : -15); g.strokeText(s.name, tx, py); g.fillText(s.name, tx, py); }
+        g.restore();
       });
+    }
+    // the icon of a race (blue, chequered flag) or a challenge (orange, star), greyed while locked: on the map and in the list
+    function actIcon(g, race, lock) {
+      g.globalAlpha = lock ? 0.4 : 1;
+      g.fillStyle = race ? '#1f8fd6' : '#f08a1c'; g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.moveTo(-8, -11); g.arcTo(11, -11, 11, 11, 4); g.arcTo(11, 11, -11, 11, 4); g.arcTo(-11, 11, -11, -11, 4); g.arcTo(-11, -11, 11, -11, 4); g.closePath(); g.fill(); g.stroke();
+      if (race) { g.fillStyle = '#fff'; g.fillRect(-6, -7, 2, 14); for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) { g.fillStyle = (i + j) % 2 ? '#111' : '#fff'; g.fillRect(-4 + i * 2.5, -7 + j * 2.5, 2.5, 2.5); } }
+      else { g.fillStyle = '#fff'; g.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 3.2 : 7.5, t = -Math.PI / 2 + i * Math.PI / 5; g.lineTo(Math.cos(t) * r, Math.sin(t) * r + 0.6); } g.closePath(); g.fill(); }
+      g.globalAlpha = 1;
+    }
+    const iconCache = {};
+    function actIconURL(race, lock) {
+      const key = race + '/' + lock; if (iconCache[key]) return iconCache[key];
+      const c = document.createElement('canvas'); c.width = c.height = 48; const g = c.getContext('2d'); g.scale(2, 2); g.translate(12, 12); actIcon(g, race, lock);
+      return (iconCache[key] = c.toDataURL());
     }
     function show() {
       if (!locals[0] || mission) return;
@@ -120,19 +146,21 @@
         b.addEventListener('click', () => choose(s)); b.addEventListener('focus', () => draw(s)); b.addEventListener('mouseenter', () => draw(s));
         list.append(b);
       });
-      { const side = el.querySelector('.spSide'); side.innerHTML = '<b>Courses et défis</b> (pastilles bleues et orange sur la carte) :<br>' + actRecords().map(r => (r.kind === 'race' ? '🏁 ' : '★ ') + r.name + ' : ' + (r.best || '—')).join('<br>');
+      { const side = el.querySelector('.spSide'); side.innerHTML = '<b>Courses et défis</b> (mêmes icônes sur la carte) :<br>' + actRecords().map(r => '<img src="' + actIconURL(r.kind === 'race', !unlocked(r.id)) + '" alt="" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px">' + r.name + ' : ' + (r.best || '—')).join('<br>');
         const pc = postcards(), nf = pc.filter(p => p.text).length, h = document.createElement('div'); h.style.marginTop = '12px'; h.innerHTML = '<b>Cartes postales</b> : ' + nf + ' / ' + pc.length + ' lieux découverts. Sur la carte : une petite carte là où tu l’as trouvée (clique pour la revoir), « ? » là où il en reste une.'; const cards = el.querySelector('.spCards'); cards.innerHTML = ''; cards.append(h); h.style.marginTop = '0'; postcardGallery(h); }
-      zoom.z = 1; armed = false; { const zb = el.querySelector('.spZoom'); zb.textContent = '🔍'; zb.classList.remove('on'); cv.style.cursor = 'pointer'; }
+      if (big) setBig(false);
       open = true; blocking = true; el.hidden = false; draw(null); list.firstChild.focus();
     }
-    function close() { if (!open) return; open = false; blocking = false; el.hidden = true; try { renderer.domElement.focus(); } catch (e) { } }
+    // (17 nov., user) Échap steps back one level: the postcard shown, then the full screen map, then the map itself
+    function escape() { const pc = $('postcard'); if (pc && !pc.hidden && pc.className === 'big') pc.hidden = true; else if (big) setBig(false); else close(); }
+    function close() { if (!open) return; if (big) setBig(false); open = false; blocking = false; el.hidden = true; try { renderer.domElement.focus(); } catch (e) { } }
     function choose(s) {
       const L = locals[0]; if (!L) return close();
       const n = nearestNodeTo(s.x, s.z), A = (G.adj[n] || []).filter(m => nodeOk(m)), dir = m => s.fx == null ? 0 : ((G.x[m] - G.x[n]) * (s.fx - G.x[n]) + (G.z[m] - G.z[n]) * (s.fz - G.z[n])) / (Math.hypot(G.x[m] - G.x[n], G.z[m] - G.z[n]) || 1);
       const nb = A.length ? A.reduce((b, m) => dir(m) > dir(b) ? m : b, A[0]) : G.adj[n] && G.adj[n][0];
       close();
       Busy.run(s.name, () => { placePlayer([s.x, s.z], s.fx != null ? [s.fx, s.fz] : nb != null ? [G.x[nb], G.z[nb]] : null); L.heat = 0; });
-      flash(s.name, 'Conduite libre · G : changer de point de départ');
+      flash(s.name, isTouch ? 'Conduite libre · touche la minicarte pour changer de point de départ' : 'Conduite libre · G ou clic sur la minicarte : changer de point de départ');
     }
-    return { show, close, choose, get open() { return open; }, get spots() { return resolve(); }, rejects };
+    return { show, close, escape, choose, get open() { return open; }, get spots() { return resolve(); }, rejects };
   })();

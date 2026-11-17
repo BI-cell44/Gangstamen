@@ -181,6 +181,7 @@ body:not(.ingame) #stats, body:not(.ingame) #plate, body:not(.ingame) #dash, bod
 /* Touch controls */
 #touch { position: fixed; inset: auto 0 0 0; z-index: 7; display: none; justify-content: space-between; padding: 0 max(16px, env(safe-area-inset-right, 0px)) calc(70px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); pointer-events: none; }
 body.touch.ingame #touch { display: flex; } /* (17 nov., user) not during the intro nor on the menus */
+body.touch.ingame.noTouchP #touch { display: none; }
 body.touch #help { display: none; }
 body.touch #dash { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
 body.touch #plate { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
@@ -201,6 +202,11 @@ body.ingame #minimap { pointer-events: auto; cursor: pointer; }
 #tPause { display: none; position: fixed; z-index: 7; top: calc(8px + env(safe-area-inset-top, 0px)); left: max(8px, env(safe-area-inset-left, 0px)); width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(243,234,216,.8); background: rgba(13,10,20,.6); color: var(--chalk); font-size: 18px; line-height: 1; padding: 0; }
 body.touch.ingame #tPause { display: block; }
 body.touch #clock { margin-left: 92px; }
+/* (17 nov., user) the start map full screen after a click; the name of the icon under the pointer */
+.spWrap.spFull { position: fixed !important; inset: 0; z-index: 40; background: #1c1a24; }
+.spWrap.spFull canvas { width: 100vw !important; height: 100vh !important; max-width: none !important; max-height: none !important; border-radius: 0 !important; }
+.spWrap .spShrink { position: absolute; top: calc(10px + env(safe-area-inset-top, 0px)); right: calc(10px + env(safe-area-inset-right, 0px)); line-height: 1.2; z-index: 2; }
+.spWrap .spTip { position: absolute; z-index: 3; pointer-events: none; line-height: 1.25; white-space: nowrap; font: 700 14px var(--body); color: #fff; background: rgba(13,10,20,.92); border: 2px solid var(--chalk); padding: 4px 8px; }
 @media (orientation: landscape) { body.touch.split #touch { right: 50%; } } /* touch split screen: the controls on player 1's (left) view */
 body.touch.split .phud .pn, body.touch.split .phud .pr { left: 100px; } /* clear of the pause and full screen buttons */
 body.touch .phud.tctl .ps { bottom: auto; top: 112px; font-size: 30px; } body.touch .phud.tctl .pb { bottom: auto; top: 146px; }
@@ -327,7 +333,7 @@ body:not(.ingame) #objective { display: none; }
 #intro.loading { cursor: progress; }
 /* (16 nov.) postcards: a tilted card with a white border, as a toast when found, large from the menu */
 #postcard { position: fixed; z-index: 35; display: flex; flex-direction: column; background: #f6f0e2; color: #2a2420; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,.55); padding: 10px 10px 8px; cursor: pointer; }
-#postcard[hidden] { display: none; }
+#postcard[hidden] { display: none; } #postcard.big { z-index: 45; } /* above the full screen start map */
 #postcard.toast { right: max(16px, env(safe-area-inset-right, 0px)); top: 34vh; width: min(320px, 70vw); transform: rotate(2.5deg); animation: pcIn .5s cubic-bezier(.2,.9,.3,1.2) both; }
 #postcard.big { left: 50%; top: 50%; width: min(620px, 92vw); transform: translate(-50%, -50%) rotate(-1.5deg); z-index: 40; }
 @keyframes pcIn { from { opacity: 0; transform: translateX(80px) rotate(8deg); } to { opacity: 1; transform: rotate(2.5deg); } }
@@ -4061,7 +4067,7 @@ const SETTINGS_KEY = 'gangstamen.settings.v1';
 const settings = Object.assign({
   ctl: ['kb1', 'kb2', 'kb3', 'kb4'], soloCtl: 'kb1+pad0', nPlayers: 2,
   music: 0.7, fx: 0.8, amb: 0.8, rumble: true, retro: true, nick: '',
-  hdq: isTouch ? 0 : 2, hdSafe: 0, autoQ: true, physics: 'arcade', tod: 'sunset', rain: '0', traffic: 2, voices: true, shadows: 1, dist: 2, intro: true, teams: false, team: [0, 1, 0, 1], netTeams: false, netTeam: -1, goal: 20, limit: 10, campDiff: 1, goalCtf: 3, goalHill: 60, raceLaps: 1, // physics 'real' = realistic mode (cycle 4), chosen in the options
+  hdq: isTouch ? 0 : 2, hdSafe: 0, tctl0: 'touch', autoQ: true, physics: 'arcade', tod: 'sunset', rain: '0', traffic: 2, voices: true, shadows: 1, dist: 2, intro: true, teams: false, team: [0, 1, 0, 1], netTeams: false, netTeam: -1, goal: 20, limit: 10, campDiff: 1, goalCtf: 3, goalHill: 60, raceLaps: 1, // physics 'real' = realistic mode (cycle 4), chosen in the options
 }, (() => { try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); } catch (e) { return {}; } })());
 // (17 nov., user) end of a game in the HD modes (split screen and online): captures, hill points or laps instead of KO
 const MODE_GOALS = {
@@ -4173,6 +4179,7 @@ function keyName(code) {
   return code;
 }
 function ctlName(o) {
+  if (o === 'touch') return 'Écran tactile';
   if (o === 'kb1+pad0') return 'Clavier 1 + manette 1';
   if (o.startsWith('pad')) { const i = +o[3]; return 'Manette ' + (i + 1) + (pads[i].gp ? ' ✓' : ''); }
   const s = SCHEMES[o];
@@ -4186,6 +4193,8 @@ addEventListener('keydown', e => {
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.code) && !(e.target && e.target.tagName === 'INPUT' && e.target.type === 'text')) e.preventDefault();
   if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'text') return;
   if (e.code === 'KeyF' && !e.repeat) toggleFullscreen(); // F: full screen, also on the menus
+  if (e.code === 'Escape' && gx && gx.SpawnMap && gx.SpawnMap.open) { gx.SpawnMap.escape(); return; } // the start map first (postcard, full screen, map)
+  if (e.code === 'Escape' && $('postcard') && !$('postcard').hidden && $('postcard').className === 'big') { $('postcard').hidden = true; return; }
   if (!started) return;
   // (17 nov., user) Échap in Options or Controls opened from the pause: back to the pause (before, it unpaused under the menu
   // and « Quitter vers le menu » then took two clicks)
@@ -4231,7 +4240,7 @@ function toggleFullscreen() {
 if (!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)) document.body.classList.add('fsNo');
 $('fsBtn').addEventListener('click', e => { e.preventDefault(); toggleFullscreen(); });
 document.addEventListener('click', e => { if (e.target && e.target.id === 'pFull') toggleFullscreen(); }); // the pause card is built later
-const fsLabel = () => { const on = !!(document.fullscreenElement || document.webkitFullscreenElement); $('fsBtn').setAttribute('aria-label', on ? 'Quitter le plein écran (F)' : 'Plein écran (F)'); $('fsBtn').title = on ? 'Quitter le plein écran (F)' : 'Plein écran (F)'; if ($('pFull')) $('pFull').textContent = on ? 'Quitter le plein écran (F)' : 'Plein écran (F)'; };
+const fsLabel = () => { const on = !!(document.fullscreenElement || document.webkitFullscreenElement); $('fsBtn').setAttribute('aria-label', on ? 'Quitter le plein écran (F)' : 'Plein écran (F)'); $('fsBtn').title = on ? 'Quitter le plein écran (F)' : 'Plein écran (F)'; if ($('pFull')) $('pFull').textContent = (on ? 'Quitter le plein écran' : 'Plein écran') + (isTouch ? '' : ' (F)'); };
 document.addEventListener('fullscreenchange', fsLabel); document.addEventListener('webkitfullscreenchange', fsLabel);
 $('tPause').addEventListener('click', e => { e.preventDefault(); if (started && !paused && !(gx && gx.blocking)) togglePause(); });
 $('minimap').addEventListener('click', () => {
@@ -4282,8 +4291,8 @@ addEventListener('gamepadconnected', e => { renderSlots(); renderCtlTable(); if 
 addEventListener('gamepaddisconnected', e => { renderSlots(); if (started) flashAll('Manette ' + (e.gamepad.index + 1) + ' déconnectée', ''); });
 
 function readInput(L) {
-  const tOnly = L.slot === 0 && mode === 'split' && touchDev; // touch split screen: player 1 has only the touch controls
-  const ctl = L.ctl, s = tOnly ? null : schemeOf(ctl), idx = tOnly ? -1 : padIndexOf(ctl);
+  // split screen on a touch device: player 1 has what was chosen for him (the screen by default) instead of his usual one
+  const ctl = L.slot === 0 && mode === 'split' && touchDev ? (settings.tctl0 || 'touch') : L.ctl, s = ctl === 'touch' ? null : schemeOf(ctl), idx = padIndexOf(ctl);
   let t = 0, st = 0, hb = false, fire = false, special = false, swap = false, back = false;
   if (s) {
     special = (s.sp || []).some(c => codes[c]); swap = (s.sw || []).some(c => codes[c]);
@@ -4655,7 +4664,8 @@ function buildPlayerHuds() {
 }
 function layoutViews() {
   const Wd = innerWidth, Ht = innerHeight, n = Math.max(1, locals.length);
-  const tSplit = n === 2 && mode === 'split' && touchDev; // touch player 1: bottom view in portrait, left one in landscape
+  const tSplit = n === 2 && mode === 'split' && touchP1();
+  document.body.classList.toggle('noTouchP', mode === 'split' && touchDev && !touchP1()); // player 1 on a keyboard or a gamepad: no touch controls // touch player 1: bottom view in portrait, left one in landscape
   const rects = n === 1 ? [[0, 0, Wd, Ht]] : tSplit ? (Wd > Ht ? [[0, 0, Wd / 2, Ht], [Wd / 2, 0, Wd / 2, Ht]] : [[0, Ht / 2, Wd, Ht / 2], [0, 0, Wd, Ht / 2]]) : n === 2 ? [[0, 0, Wd, Ht / 2], [0, Ht / 2, Wd, Ht / 2]]
     : n === 3 ? [[0, 0, Wd, Ht / 2], [0, Ht / 2, Wd / 2, Ht / 2], [Wd / 2, Ht / 2, Wd / 2, Ht / 2]]
       : [[0, 0, Wd / 2, Ht / 2], [Wd / 2, 0, Wd / 2, Ht / 2], [0, Ht / 2, Wd / 2, Ht / 2], [Wd / 2, Ht / 2, Wd / 2, Ht / 2]];
@@ -4853,7 +4863,7 @@ function toggleRetro() {
 const pauseEl = document.createElement('div');
 pauseEl.id = 'pause'; pauseEl.hidden = true;
 pauseEl.style.cssText = 'position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:rgba(13,10,20,.75)';
-pauseEl.innerHTML = '<div class="card" style="display:flex;flex-direction:column;gap:12px;align-items:flex-start"><h2 style="margin:0;font-family:var(--display);font-weight:normal;font-size:40px;color:var(--chalk);text-shadow:3px 3px 0 var(--magenta)">Pause</h2><button class="big" id="pResume">Reprendre</button><button class="mbtn" id="pMap" hidden>Carte · démarrer ailleurs (G)</button><button class="mbtn" id="pFull">Plein écran (F)</button><button class="mbtn" id="pPhoto">Mode photo (F2)</button><button class="mbtn" id="pOpt">Son et options</button><button class="mbtn" id="pCtrl">Commandes</button><button class="mbtn" id="pQuit">Quitter vers le menu</button></div>';
+pauseEl.innerHTML = '<div class="card" style="display:flex;flex-direction:column;gap:12px;align-items:flex-start"><h2 style="margin:0;font-family:var(--display);font-weight:normal;font-size:40px;color:var(--chalk);text-shadow:3px 3px 0 var(--magenta)">Pause</h2><button class="big" id="pResume">Reprendre</button><button class="mbtn" id="pMap" hidden>' + (isTouch ? 'Carte · démarrer ailleurs' : 'Carte · démarrer ailleurs (G)') + '</button><button class="mbtn" id="pFull">' + (isTouch ? 'Plein écran' : 'Plein écran (F)') + '</button><button class="mbtn" id="pPhoto">Mode photo (F2)</button><button class="mbtn" id="pOpt">Son et options</button><button class="mbtn" id="pCtrl">Commandes</button><button class="mbtn" id="pQuit">Quitter vers le menu</button></div>';
 document.body.append(pauseEl);
 function togglePause() {
   if (!started || Match.over) return;
@@ -5317,23 +5327,27 @@ function showView(id) {
   if (HD) showroom(id === 'vCar');
 }
 document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => showView(b.dataset.go)));
-function cycleControl(container, get, set) {
+function cycleControl(container, get, set, opts = CTL_OPTIONS) {
   container.replaceChildren();
   const prev = document.createElement('button'); prev.className = 'mbtn'; prev.textContent = '◀'; prev.setAttribute('aria-label', 'Commande précédente');
   const out = document.createElement('output');
   const next = document.createElement('button'); next.className = 'mbtn'; next.textContent = '▶'; next.setAttribute('aria-label', 'Commande suivante');
   const show = () => { const v = get(); out.textContent = ctlName(v); out.classList.toggle('ok', padIndexOf(v) >= 0 && !!pads[padIndexOf(v)].gp); };
-  const step = d => { const i = CTL_OPTIONS.indexOf(get()); set(CTL_OPTIONS[(i + d + CTL_OPTIONS.length) % CTL_OPTIONS.length]); saveSettings(); show(); };
+  const step = d => { const i = opts.indexOf(get()); set(opts[(i + d + opts.length) % opts.length]); saveSettings(); show(); };
   prev.addEventListener('click', () => step(-1)); next.addEventListener('click', () => step(1));
   container.append(prev, out, next); show();
 }
 // (17 nov., user) split screen on a phone or tablet: player 1 drives with the touch controls, on the bottom view
 // (portrait) or the left one (landscape), and one other player with a gamepad or a keyboard
 const touchDev = matchMedia('(pointer: coarse)').matches;
+let kbSeen = matchMedia('(any-pointer: fine)').matches; // a physical keyboard (a key pressed) or a mouse
+// what can drive a player on a touch device: the screen, the keyboards once one is seen, the gamepads plugged in
+function touchOpts() { return ['touch', ...(kbSeen ? ['kb1', 'kb2', 'kb3', 'kb4'] : []), ...pads.map((p, i) => p.gp ? 'pad' + i : null).filter(Boolean)]; }
+function touchP1() { return touchDev && (settings.tctl0 || 'touch') === 'touch'; } // player 1 of a split screen on the touch screen
 function renderSlots() {
   const box = $('slots'); if (!box) return;
-  if (touchDev && settings.nPlayers > 2) settings.nPlayers = 2;
-  document.querySelectorAll('#nSeg button').forEach(b => { b.hidden = touchDev && +b.dataset.n > 2; });
+  if (touchP1() && settings.nPlayers > 2) settings.nPlayers = 2;
+  document.querySelectorAll('#nSeg button').forEach(b => { b.hidden = touchP1() && +b.dataset.n > 2; });
   document.querySelectorAll('#nSeg button').forEach(b => b.classList.toggle('on', +b.dataset.n === settings.nPlayers));
   box.replaceChildren();
   for (let i = 0; i < settings.nPlayers; i++) {
@@ -5351,7 +5365,11 @@ function renderSlots() {
       row.append(tb);
     }
     row.append(cyc); box.append(row);
-    if (touchDev && i === 0) { const o = document.createElement('output'); o.textContent = 'Écran tactile'; cyc.append(o); continue; }
+    // (17 nov., user) touch device: player 1 on the screen, or on a keyboard or a gamepad when there are enough of them
+    if (touchDev && i === 0) { const op = touchOpts(); if (!op.includes(settings.tctl0)) settings.tctl0 = 'touch';
+      if (op.length < 3) { const o = document.createElement('output'); o.textContent = 'Écran tactile'; cyc.append(o); }
+      else cycleControl(cyc, () => settings.tctl0, v => { settings.tctl0 = v; renderSlots(); }, op);
+      continue; }
     cycleControl(cyc, () => settings.ctl[i], v => { settings.ctl[i] = v; });
   }
   const gmode = HD ? (settings.gmode ?? (settings.teams ? 1 : 0)) : (settings.teams ? 1 : 0);
@@ -5363,7 +5381,7 @@ function renderSlots() {
     : !settings.teams ? 'Chaque joueur tire sur les Rapaces… et sur les autres joueurs.'
     : used.size === 1 ? 'Tous dans la même bande : vous faites équipe avec trois voitures alliées contre les trois de l’autre bande.'
       : 'Rapaces de la Butte contre Chantenaysiens : pas de tir ami. Chaque bande a aussi trois voitures du quartier avec elle.';
-  const sc = $('soloCtl'); if (sc) cycleControl(sc, () => settings.soloCtl, v => { settings.soloCtl = v; });
+  renderSoloCtl();
 }
 document.querySelectorAll('#nSeg button').forEach(b => b.addEventListener('click', () => { settings.nPlayers = +b.dataset.n; saveSettings(); renderSlots(); }));
 document.querySelectorAll('#mSeg button').forEach(b => b.addEventListener('click', () => { settings.gmode = +b.dataset.m; settings.teams = b.dataset.m === '1' || b.dataset.m === '2'; saveSettings(); renderSlots(); renderEndSegs(); b.focus(); }));
@@ -5389,7 +5407,9 @@ document.querySelectorAll('.limitSeg button').forEach(b => b.addEventListener('c
 renderEndSegs();
 function renderCtlTable() {
   const t = $('ctable'); if (!t) return;
-  const cells = Object.entries(SCHEMES).map(([k, s]) => {
+  // (17 nov., user) on a touch device: the touch controls first, the keyboards only once one is seen, the gamepad once plugged
+  const hasPad = pads.some(p => p.gp);
+  const cells = Object.entries(SCHEMES).filter(() => !touchDev || kbSeen).map(([k, s]) => {
     const d = document.createElement('div');
     const b = document.createElement('b'); b.textContent = s.name;
     const txt = document.createElement('span');
@@ -5398,7 +5418,11 @@ function renderCtlTable() {
   });
   const p = document.createElement('div'); const pb = document.createElement('b'); pb.textContent = 'Manette';
   const pt = document.createElement('span'); pt.textContent = 'RT gaz · LT frein · stick gauche ou croix : tourner · A (et RB en classique) : tir · B : arme spéciale · RB : changer d’arme (HD) · X : frein à main · Y : caméra · LB : remise en route · Back : nuit · Start : pause. Les manettes vibrent aux chocs, tirs et explosions.';
-  p.append(pb, pt); cells.push(p);
+  p.append(pb, pt); if (!touchDev || hasPad) cells.push(p);
+  if (touchDev) { const d = document.createElement('div'), b = document.createElement('b'), x = document.createElement('span'); b.textContent = 'Écran tactile';
+    x.textContent = 'Joystick à gauche : tourner, accélérer, freiner · FEU : tir · SPÉ : arme spéciale (touche la ligne des armes pour en changer) · FREIN À MAIN : déraper · ♪ : radio · ❚❚ : pause · touche la minicarte : grande carte en conduite libre';
+    d.append(b, x); cells.unshift(d);
+    if (!kbSeen && !hasPad) { const n = document.createElement('div'); n.textContent = 'Branche une manette ou un clavier pour d’autres commandes (et pour l’écran partagé).'; cells.push(n); } }
   t.replaceChildren(...cells);
 }
 function initOptions() {
@@ -5478,20 +5502,28 @@ function menuPadNav(dt) {
 
 // (17 nov., user) split screen needs a keyboard or gamepads: greyed out on a touch-only device until a gamepad is
 // connected or a physical key is pressed (a mouse or touchpad counts as a computer)
-let kbSeen = matchMedia('(any-pointer: fine)').matches;
 function splitAvail() {
   if (!isTouch || kbSeen) return true;
   try { return [...(navigator.getGamepads ? navigator.getGamepads() : [])].some(Boolean); } catch (e) { return false; }
 }
 function renderSplitBtn() {
   const b = document.querySelector('#vMain [data-go="vSplit"]'); if (!b) return;
-  const ok = splitAvail(), lab = ok ? 'Écran partagé · 2 à 4' : 'Écran partagé · manette ou clavier';
+  const ok = splitAvail(), lab = ok ? 'Écran partagé · 2 à 4' : 'Écran partagé · manette';
   b.disabled = !ok; if (b.textContent !== lab) b.textContent = lab;
   b.title = ok ? '' : 'Branche une manette ou un clavier pour jouer à plusieurs sur le même écran';
 }
-addEventListener('gamepadconnected', renderSplitBtn); addEventListener('gamepaddisconnected', renderSplitBtn);
-addEventListener('keydown', e => { if (kbSeen || !e.isTrusted || e.key === 'Unidentified' || (e.target && /INPUT|TEXTAREA/.test(e.target.tagName))) return; kbSeen = true; renderSplitBtn(); });
+const inputsChanged = () => { renderSplitBtn(); renderSlots(); renderCtlTable(); renderSoloCtl(); };
+addEventListener('gamepadconnected', inputsChanged); addEventListener('gamepaddisconnected', inputsChanged);
+addEventListener('keydown', e => { if (kbSeen || !e.isTrusted || e.key === 'Unidentified' || (e.target && /INPUT|TEXTAREA/.test(e.target.tagName))) return; kbSeen = true; inputsChanged(); });
 renderSplitBtn();
+// the player 1 control of solo and online games; on a touch device the screen always drives too, so the row only lists
+// what is plugged in, and is hidden when nothing is
+function renderSoloCtl() {
+  const sc = $('soloCtl'); if (!sc) return;
+  if (!touchDev) { cycleControl(sc, () => settings.soloCtl, v => { settings.soloCtl = v; }); return; }
+  const op = touchOpts().filter(o => o !== 'touch'); sc.closest('.row').hidden = !op.length;
+  if (op.length) { if (!op.includes(settings.soloCtl)) settings.soloCtl = op[0]; cycleControl(sc, () => settings.soloCtl, v => { settings.soloCtl = v; }, op); }
+}
 // ---------- the save slots screen (cycle 10) ----------
 function renderSaves() {
   const box = $('saveList'); if (!box || !Profile.data) return;
@@ -8579,7 +8611,7 @@ const gx = !HD ? null : (() => {
       return; }
     if (!acts || mode !== 'solo' || mission) return; for (const a of acts) if (unlocked(a.id)) add({ x: a.start[0], z: a.start[1] }, a.kind === 'race' ? '#3ac8ff' : '#ff9a2a'); }
   function actRecords() { // for the campaign screen
-    return ACT_DEF.map(d => { const p = Profile.cur, r = p && (d.kind === 'race' ? p.records['race_' + d.id] : p.records['defi_' + d.id]); return { name: d.name, kind: d.kind, best: r === undefined ? null : d.kind === 'race' ? fmtT(r) : r + (d.kind === 'jump' ? ' m' : d.kind === 'smash' ? ' casses' : d.kind === 'deliv' ? ' pts' : d.kind === 'cops' ? ' s d’avance' : ' pts') }; });
+    return ACT_DEF.map(d => { const p = Profile.cur, r = p && (d.kind === 'race' ? p.records['race_' + d.id] : p.records['defi_' + d.id]); return { id: d.id, name: d.name, kind: d.kind, best: r === undefined ? null : d.kind === 'race' ? fmtT(r) : r + (d.kind === 'jump' ? ' m' : d.kind === 'smash' ? ' casses' : d.kind === 'deliv' ? ' pts' : d.kind === 'cops' ? ' s d’avance' : ' pts') }; });
   }
   // ---------- open world: places to discover ("cartes postales") and what the progression unlocks (cycle 14) ----------
   // (16 nov., user) reviewed for the enlarged map: places of the île de Nantes and of the quays added, positions checked
@@ -9449,29 +9481,32 @@ const gx = !HD ? null : (() => {
       el.style.cssText = 'position:fixed;inset:0;z-index:31;display:grid;place-items:center;background:rgba(13,10,20,.82)';
       // (17 nov., user) a grid of two rows: the map and the list of places, then the postcards and, level with them, the
       // records of the races and challenges
-      el.innerHTML = '<div class="card spCard" style="display:grid;grid-template-columns:auto minmax(250px,auto);gap:10px 18px;align-items:start;max-width:96vw;max-height:94vh;overflow-y:auto"><div style="position:relative;justify-self:center;line-height:0"><canvas width="640" height="560" style="max-width:46vw;max-height:60vh;border-radius:8px;cursor:pointer;background:#1c1a24"></canvas>'
-        + '<button class="mbtn spZoom" title="Loupe : clique ensuite sur la carte pour zoomer" style="position:absolute;top:8px;right:8px;width:44px;height:44px;padding:0;font-size:22px;line-height:1;text-align:center">🔍</button></div>'
+      el.innerHTML = '<div class="card spCard" style="display:grid;grid-template-columns:auto minmax(250px,auto);gap:10px 18px;align-items:start;max-width:96vw;max-height:94vh;overflow-y:auto"><div class="spWrap" style="position:relative;justify-self:center;line-height:0"><canvas width="640" height="560" style="max-width:46vw;max-height:60vh;border-radius:8px;cursor:zoom-in;background:#1c1a24"></canvas>'
+        + '<button class="mbtn spShrink" hidden>✕ Réduire</button><div class="spTip" hidden></div></div>'
         + '<div style="display:flex;flex-direction:column;gap:6px;min-width:250px"><h2 style="margin:0 0 4px;font-family:var(--display);font-weight:normal;font-size:30px;color:var(--chalk);text-shadow:3px 3px 0 var(--magenta)">Où démarrer ?</h2>'
-        + '<p class="fine" style="margin:0 0 6px">Clique un point sur la carte ou choisis dans la liste. En jeu, touche la minicarte (ou G) pour revenir ici.</p>'
+        + '<p class="fine" style="margin:0 0 6px">Clique un point sur la carte ou choisis dans la liste. ' + (isTouch ? 'Clique sur la carte pour l’agrandir. En jeu, touche la minicarte pour revenir ici.' : 'Clique sur la carte pour l’agrandir. En jeu, G ou un clic sur la minicarte pour revenir ici.') + '</p>'
         // (17 nov., user) leave the map without choosing a place (no Échap key on a phone), or back to the title screen
         + '<div style="display:flex;flex-wrap:wrap;gap:8px;margin:0 0 8px"><button class="mbtn spStay">Continuer ici</button><button class="mbtn spQuit">Menu principal</button></div><div class="spList" style="display:flex;flex-direction:column;gap:5px"></div></div>'
         + '<div class="spCards fine" style="max-width:46vw;max-height:26vh;overflow-y:auto;font-size:13px"></div>'
         + '<div class="spSide fine" style="max-height:26vh;overflow-y:auto;font-size:13px"></div></div>';
       document.body.append(el); cv = el.querySelector('canvas');
-      const zb = el.querySelector('.spZoom');
-      // (17 nov., user) zoom: the magnifier, then a click on the map, zooms ×3 there; zoomed, a click away from the points
-      // centres the map there and the magnifier (now « − ») shows the whole area again; the mouse wheel zooms too
-      const zoomUI = () => { zb.textContent = zoom.z > 1 ? '−' : '🔍'; zb.classList.toggle('on', armed); cv.style.cursor = armed ? 'zoom-in' : 'pointer'; };
-      zb.addEventListener('click', e => { e.stopPropagation(); if (zoom.z > 1) { zoom.z = 1; armed = false; } else armed = !armed; zoomUI(); draw(lastSel); });
-      cv.addEventListener('wheel', e => { e.preventDefault(); const [x, z] = fromEvent(e); zoom.z = Math.max(1, Math.min(6, zoom.z * (e.deltaY < 0 ? 1.4 : 1 / 1.4))); if (zoom.z < 1.05) zoom.z = 1; else { zoom.x = x; zoom.cz = z; } armed = false; zoomUI(); draw(lastSel); }, { passive: false });
+      // (17 nov., user) a click on the map shows it full screen (no more magnifier); there a click on a point starts there,
+      // on a found postcard shows it, on a race or a challenge names it; the wheel zooms; « Réduire » or Échap goes back.
+      // Hovering any icon names it (a tap does the same on a phone)
+      const wrap = el.querySelector('.spWrap'), tip = el.querySelector('.spTip'), shrink = el.querySelector('.spShrink');
+      shrink.addEventListener('click', e => { e.stopPropagation(); setBig(false); });
+      cv.addEventListener('wheel', e => { if (!big) return; e.preventDefault(); const [x, z] = fromEvent(e); zoom.z = Math.max(1, Math.min(6, zoom.z * (e.deltaY < 0 ? 1.4 : 1 / 1.4))); if (zoom.z < 1.05) zoom.z = 1; else { zoom.x = x; zoom.cz = z; } draw(lastSel); }, { passive: false });
+      const hitAt = e => { const r = cv.getBoundingClientRect(), mx = (e.clientX - r.left) * cv.width / r.width, my = (e.clientY - r.top) * cv.height / r.height; let best = null, bd = 1e9; for (const h of hits) { const d = Math.hypot(h.x - mx, h.y - my); if (d < h.r && d < bd) { bd = d; best = h; } } return best; };
+      const showTip = (h, e) => { if (!h) { tip.hidden = true; return; } const r = wrap.getBoundingClientRect(); tip.textContent = h.label; tip.hidden = false; tip.style.left = Math.min(e.clientX - r.left + 14, r.width - tip.offsetWidth - 6) + 'px'; tip.style.top = Math.max(4, e.clientY - r.top - 34) + 'px'; };
+      cv.addEventListener('mousemove', e => { const h = hitAt(e); showTip(h, e); cv.style.cursor = !big ? 'zoom-in' : h && h.act ? 'pointer' : h ? 'pointer' : 'default'; });
+      cv.addEventListener('mouseleave', () => { tip.hidden = true; });
       cv.addEventListener('click', e => {
-        const r = cv.getBoundingClientRect(), mx = (e.clientX - r.left) * cv.width / r.width, my = (e.clientY - r.top) * cv.height / r.height;
-        if (armed) { [zoom.x, zoom.cz] = fromEvent(e); zoom.z = 3; armed = false; zoomUI(); draw(lastSel); return; }
-        let best = null, bd = 26; for (const s of spots) { const [px, py] = toMap(s.x, s.z), d = Math.hypot(px - mx, py - my); if (d < bd) { bd = d; best = s; } }
-        if (best) choose(best);
-        else { let pb = null, pd = 14; for (const p of postcardSpots()) { if (!p.found) continue; const [px, py] = toMap(p.x, p.z), d = Math.hypot(px - mx, py - my); if (d < pd) { pd = d; pb = p; } } if (pb) showPostcard(pb.s, 0); else if (zoom.z > 1) { [zoom.x, zoom.cz] = fromEvent(e); draw(lastSel); } }
+        if (!big) { setBig(true); return; }
+        const h = hitAt(e);
+        if (h && h.spot) choose(h.spot); else if (h && h.card) showPostcard(h.card.s, 0); else if (h) showTip(h, e);
+        else if (zoom.z > 1) { [zoom.x, zoom.cz] = fromEvent(e); draw(lastSel); }
       });
-      el.addEventListener('keydown', e => { if (e.code === 'Escape' || e.code === 'KeyG') { e.stopPropagation(); close(); } });
+      el.addEventListener('keydown', e => { if (e.code === 'Escape' || e.code === 'KeyG') { e.stopPropagation(); if (e.code === 'KeyG' && !big) close(); else escape(); } });
       el.querySelector('.spStay').addEventListener('click', () => close());
       el.querySelector('.spQuit').addEventListener('click', () => { close(); $('pQuit').click(); });
     }
@@ -9495,12 +9530,20 @@ const gx = !HD ? null : (() => {
       }
       return spots;
     }
-    const zoom = { z: 1, x: 0, cz: 0 }; let armed = false, lastSel = null;
+    const zoom = { z: 1, x: 0, cz: 0 }; let big = false, lastSel = null, hits = [], holder = null;
+    function setBig(on) {
+      big = on; zoom.z = 1; const wrap = cv.parentNode; wrap.classList.toggle('spFull', on);
+      // out of the menu card while full screen (the card is tilted: a fixed child would stay inside it)
+      if (on) { holder = holder || document.createComment('map'); wrap.replaceWith(holder); document.body.append(wrap); } else if (holder && holder.parentNode) holder.replaceWith(wrap); wrap.querySelector('.spShrink').hidden = !on; wrap.querySelector('.spTip').hidden = true;
+      const dpr = Math.min(2, devicePixelRatio || 1);
+      if (on) { cv.width = Math.round(innerWidth * dpr); cv.height = Math.round(innerHeight * dpr); } else { cv.width = 640; cv.height = 560; }
+      draw(lastSel);
+    }
     function toMap(x, z) { return [(x - view.x0) * view.k + view.ox, (z - view.z0) * view.k + view.oy]; }
     function fromEvent(e) { const r = cv.getBoundingClientRect(), mx = (e.clientX - r.left) * cv.width / r.width, my = (e.clientY - r.top) * cv.height / r.height; return [(mx - view.ox) / view.k + view.x0, (my - view.oy) / view.k + view.z0]; }
     function draw(sel) {
-      lastSel = sel;
-      const g = cv.getContext('2d'), W_ = cv.width, H_ = cv.height;
+      lastSel = sel; hits = [];
+      const g = cv.getContext('2d'), W_ = cv.width, H_ = cv.height, u = big ? Math.min(2, devicePixelRatio || 1) : 1; // icon scale
       const x0 = CX - HX, x1 = CX + HX, z0 = CZ - HZ, z1 = CZ + HZ, k0 = Math.min((W_ - 30) / (x1 - x0), (H_ - 30) / (z1 - z0));
       if (zoom.z > 1) { // keep the zoomed window inside the area
         const k = k0 * zoom.z, hw = W_ / 2 / k, hh = H_ / 2 / k;
@@ -9519,28 +9562,43 @@ const gx = !HD ? null : (() => {
       // (16 nov., user) the postcards on the map: a little card where one was found (click it to see it), « ? » where not yet
       g.textAlign = 'center'; g.textBaseline = 'middle';
       for (const p of postcardSpots()) { const [px, py] = toMap(p.x, p.z);
-        if (p.found) { g.save(); g.translate(px, py); g.rotate(-0.15); g.fillStyle = '#f6f0e2'; g.fillRect(-8, -6, 16, 12); g.strokeStyle = '#c41f2a'; g.lineWidth = 1.5; g.strokeRect(-8, -6, 16, 12); g.fillStyle = '#c41f2a'; g.fillRect(3, -4, 3, 3); g.restore(); }
-        else { g.fillStyle = 'rgba(246,240,226,.25)'; g.beginPath(); g.arc(px, py, 7, 0, Math.PI * 2); g.fill(); g.fillStyle = '#f6f0e2'; g.font = 'bold 11px Arial, sans-serif'; g.fillText('?', px, py + 0.5); } }
+        hits.push({ x: px, y: py, r: 12 * u, label: p.found ? 'Carte postale : ' + p.s.name : 'Carte postale à trouver', card: p.found ? p : null });
+        if (p.found) { g.save(); g.translate(px, py); g.scale(u, u); g.rotate(-0.15); g.fillStyle = '#f6f0e2'; g.fillRect(-8, -6, 16, 12); g.strokeStyle = '#c41f2a'; g.lineWidth = 1.5; g.strokeRect(-8, -6, 16, 12); g.fillStyle = '#c41f2a'; g.fillRect(3, -4, 3, 3); g.restore(); }
+        else { g.fillStyle = 'rgba(246,240,226,.25)'; g.beginPath(); g.arc(px, py, 7 * u, 0, Math.PI * 2); g.fill(); g.fillStyle = '#f6f0e2'; g.font = 'bold ' + 11 * u + 'px Arial, sans-serif'; g.fillText('?', px, py + 0.5); } }
       // (17 nov., user) the races (blue, chequered flag) and the challenges (orange, star) where they start; greyed while locked
       const placed = [];
       for (const a of (actsBuild(), acts)) { let [px, py] = toMap(...a.start); const race = a.kind === 'race';
-        while (placed.some(([qx, qy]) => Math.hypot(qx - px, qy - py) < 20)) px += 24; // two starts at the same place: side by side
+        while (placed.some(([qx, qy]) => Math.hypot(qx - px, qy - py) < 20 * u)) px += 24 * u; // two starts at the same place: side by side
         placed.push([px, py]);
-        g.save(); g.translate(px, py); g.globalAlpha = unlocked(a.id) ? 1 : 0.4;
-        // a rounded square, not a disc: the numbered starting points are blue discs
-        g.fillStyle = race ? '#1f8fd6' : '#f08a1c'; g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.moveTo(-8, -11); g.arcTo(11, -11, 11, 11, 4); g.arcTo(11, 11, -11, 11, 4); g.arcTo(-11, 11, -11, -11, 4); g.arcTo(-11, -11, 11, -11, 4); g.closePath(); g.fill(); g.stroke();
-        if (race) { g.fillStyle = '#fff'; g.fillRect(-6, -7, 2, 14); for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) { g.fillStyle = (i + j) % 2 ? '#111' : '#fff'; g.fillRect(-4 + i * 2.5, -7 + j * 2.5, 2.5, 2.5); } }
-        else { g.fillStyle = '#fff'; g.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 3.2 : 7.5, t = -Math.PI / 2 + i * Math.PI / 5; g.lineTo(Math.cos(t) * r, Math.sin(t) * r + 0.6); } g.closePath(); g.fill(); }
-        g.restore(); }
+        const rec = actRecords().find(r => r.id === a.id), lock = !unlocked(a.id);
+        hits.push({ x: px, y: py, r: 14 * u, act: a, label: (race ? 'Course : ' : 'Défi : ') + a.name + (lock ? ' (pas encore débloqué)' : rec && rec.best ? ' · record ' + rec.best : '') });
+        g.save(); g.translate(px, py); g.scale(u, u); actIcon(g, race, lock); g.restore(); }
       const c = locals[0] && locals[0].car;
       if (c) { const [px, py] = toMap(c.x, c.z); g.fillStyle = '#f2c14e'; g.beginPath(); g.arc(px, py, 6, 0, Math.PI * 2); g.fill(); }
       g.font = 'bold 13px Arial, sans-serif'; g.textBaseline = 'middle';
       spots.forEach((s, i) => {
         const [px, py] = toMap(s.x, s.z), on = s === sel;
+        hits.push({ x: px, y: py, r: 14 * u, spot: s, label: 'Départ ' + (i + 1) + ' : ' + s.name });
+        g.save(); g.translate(px, py); g.scale(u, u); g.translate(-px, -py);
         g.fillStyle = on ? '#ff4fa3' : '#3a8aff'; g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.arc(px, py, on ? 11 : 9, 0, Math.PI * 2); g.fill(); g.stroke();
         g.fillStyle = '#fff'; g.textAlign = 'center'; g.fillText(String(i + 1), px, py + 0.5);
         if (on) { g.textAlign = px > W_ - 160 ? 'right' : 'left'; g.fillStyle = '#fff'; g.strokeStyle = '#000'; g.lineWidth = 3; const tx = px + (g.textAlign === 'left' ? 15 : -15); g.strokeText(s.name, tx, py); g.fillText(s.name, tx, py); }
+        g.restore();
       });
+    }
+    // the icon of a race (blue, chequered flag) or a challenge (orange, star), greyed while locked: on the map and in the list
+    function actIcon(g, race, lock) {
+      g.globalAlpha = lock ? 0.4 : 1;
+      g.fillStyle = race ? '#1f8fd6' : '#f08a1c'; g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.moveTo(-8, -11); g.arcTo(11, -11, 11, 11, 4); g.arcTo(11, 11, -11, 11, 4); g.arcTo(-11, 11, -11, -11, 4); g.arcTo(-11, -11, 11, -11, 4); g.closePath(); g.fill(); g.stroke();
+      if (race) { g.fillStyle = '#fff'; g.fillRect(-6, -7, 2, 14); for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) { g.fillStyle = (i + j) % 2 ? '#111' : '#fff'; g.fillRect(-4 + i * 2.5, -7 + j * 2.5, 2.5, 2.5); } }
+      else { g.fillStyle = '#fff'; g.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 3.2 : 7.5, t = -Math.PI / 2 + i * Math.PI / 5; g.lineTo(Math.cos(t) * r, Math.sin(t) * r + 0.6); } g.closePath(); g.fill(); }
+      g.globalAlpha = 1;
+    }
+    const iconCache = {};
+    function actIconURL(race, lock) {
+      const key = race + '/' + lock; if (iconCache[key]) return iconCache[key];
+      const c = document.createElement('canvas'); c.width = c.height = 48; const g = c.getContext('2d'); g.scale(2, 2); g.translate(12, 12); actIcon(g, race, lock);
+      return (iconCache[key] = c.toDataURL());
     }
     function show() {
       if (!locals[0] || mission) return;
@@ -9551,21 +9609,23 @@ const gx = !HD ? null : (() => {
         b.addEventListener('click', () => choose(s)); b.addEventListener('focus', () => draw(s)); b.addEventListener('mouseenter', () => draw(s));
         list.append(b);
       });
-      { const side = el.querySelector('.spSide'); side.innerHTML = '<b>Courses et défis</b> (pastilles bleues et orange sur la carte) :<br>' + actRecords().map(r => (r.kind === 'race' ? '🏁 ' : '★ ') + r.name + ' : ' + (r.best || '—')).join('<br>');
+      { const side = el.querySelector('.spSide'); side.innerHTML = '<b>Courses et défis</b> (mêmes icônes sur la carte) :<br>' + actRecords().map(r => '<img src="' + actIconURL(r.kind === 'race', !unlocked(r.id)) + '" alt="" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px">' + r.name + ' : ' + (r.best || '—')).join('<br>');
         const pc = postcards(), nf = pc.filter(p => p.text).length, h = document.createElement('div'); h.style.marginTop = '12px'; h.innerHTML = '<b>Cartes postales</b> : ' + nf + ' / ' + pc.length + ' lieux découverts. Sur la carte : une petite carte là où tu l’as trouvée (clique pour la revoir), « ? » là où il en reste une.'; const cards = el.querySelector('.spCards'); cards.innerHTML = ''; cards.append(h); h.style.marginTop = '0'; postcardGallery(h); }
-      zoom.z = 1; armed = false; { const zb = el.querySelector('.spZoom'); zb.textContent = '🔍'; zb.classList.remove('on'); cv.style.cursor = 'pointer'; }
+      if (big) setBig(false);
       open = true; blocking = true; el.hidden = false; draw(null); list.firstChild.focus();
     }
-    function close() { if (!open) return; open = false; blocking = false; el.hidden = true; try { renderer.domElement.focus(); } catch (e) { } }
+    // (17 nov., user) Échap steps back one level: the postcard shown, then the full screen map, then the map itself
+    function escape() { const pc = $('postcard'); if (pc && !pc.hidden && pc.className === 'big') pc.hidden = true; else if (big) setBig(false); else close(); }
+    function close() { if (!open) return; if (big) setBig(false); open = false; blocking = false; el.hidden = true; try { renderer.domElement.focus(); } catch (e) { } }
     function choose(s) {
       const L = locals[0]; if (!L) return close();
       const n = nearestNodeTo(s.x, s.z), A = (G.adj[n] || []).filter(m => nodeOk(m)), dir = m => s.fx == null ? 0 : ((G.x[m] - G.x[n]) * (s.fx - G.x[n]) + (G.z[m] - G.z[n]) * (s.fz - G.z[n])) / (Math.hypot(G.x[m] - G.x[n], G.z[m] - G.z[n]) || 1);
       const nb = A.length ? A.reduce((b, m) => dir(m) > dir(b) ? m : b, A[0]) : G.adj[n] && G.adj[n][0];
       close();
       Busy.run(s.name, () => { placePlayer([s.x, s.z], s.fx != null ? [s.fx, s.fz] : nb != null ? [G.x[nb], G.z[nb]] : null); L.heat = 0; });
-      flash(s.name, 'Conduite libre · G : changer de point de départ');
+      flash(s.name, isTouch ? 'Conduite libre · touche la minicarte pour changer de point de départ' : 'Conduite libre · G ou clic sur la minicarte : changer de point de départ');
     }
-    return { show, close, choose, get open() { return open; }, get spots() { return resolve(); }, rejects };
+    return { show, close, escape, choose, get open() { return open; }, get spots() { return resolve(); }, rejects };
   })();
   // =====================================================================================
   // (16 nov., backlog « Loire, suite ») navigation lights on the boats at night (red to port, green to starboard, white
@@ -9662,7 +9722,7 @@ function startGame(kind, sub) {
   for (const L of locals) { const [fx, fz] = L.car.fwd; L.cam.position.set(L.car.x - fx * 9, surfaceH(L.car.x, L.car.z) + 70, L.car.z - fz * 9); } // (16 nov., user) down from the sky straight over the car: before, it came in from 30 m away through the buildings
   if (teamMode) for (const L of locals) { if (locals.length > 1) flashFor(L, TEAMS[L.team].short, baseName(L.team)); else flash(TEAMS[L.team].name, 'Base : ' + baseName(L.team) + ' · pas de tir ami'); }
   else if (kind === 'online') flash('Partie ' + Net.code.toUpperCase(), Net.isHost ? 'Code à donner aux amis · vous êtes l’hôte' : 'Bienvenue à Chantenay');
-  else if (soloKind === 'free') flashAll('Conduite libre', 'Pas de chrono · courses, défis et missions sur la carte · G : carte');
+  else if (soloKind === 'free') flashAll('Conduite libre', 'Pas de chrono · courses, défis et missions sur la carte · ' + (isTouch ? 'touche la minicarte : carte' : 'G : carte'));
   else flashAll('Chasse aux Rapaces', locals.length > 1 ? 'Chacun pour soi · les Rapaces rôdent' : 'Boulevard de la Liberté · les Rapaces rôdent');
   if (gx) gx.start(kind);
   if (gx && gx.SpawnMap && soloKind === 'free') gx.SpawnMap.show();

@@ -10,23 +10,27 @@ function showView(id) {
   if (HD) showroom(id === 'vCar');
 }
 document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => showView(b.dataset.go)));
-function cycleControl(container, get, set) {
+function cycleControl(container, get, set, opts = CTL_OPTIONS) {
   container.replaceChildren();
   const prev = document.createElement('button'); prev.className = 'mbtn'; prev.textContent = '◀'; prev.setAttribute('aria-label', 'Commande précédente');
   const out = document.createElement('output');
   const next = document.createElement('button'); next.className = 'mbtn'; next.textContent = '▶'; next.setAttribute('aria-label', 'Commande suivante');
   const show = () => { const v = get(); out.textContent = ctlName(v); out.classList.toggle('ok', padIndexOf(v) >= 0 && !!pads[padIndexOf(v)].gp); };
-  const step = d => { const i = CTL_OPTIONS.indexOf(get()); set(CTL_OPTIONS[(i + d + CTL_OPTIONS.length) % CTL_OPTIONS.length]); saveSettings(); show(); };
+  const step = d => { const i = opts.indexOf(get()); set(opts[(i + d + opts.length) % opts.length]); saveSettings(); show(); };
   prev.addEventListener('click', () => step(-1)); next.addEventListener('click', () => step(1));
   container.append(prev, out, next); show();
 }
 // (17 nov., user) split screen on a phone or tablet: player 1 drives with the touch controls, on the bottom view
 // (portrait) or the left one (landscape), and one other player with a gamepad or a keyboard
 const touchDev = matchMedia('(pointer: coarse)').matches;
+let kbSeen = matchMedia('(any-pointer: fine)').matches; // a physical keyboard (a key pressed) or a mouse
+// what can drive a player on a touch device: the screen, the keyboards once one is seen, the gamepads plugged in
+function touchOpts() { return ['touch', ...(kbSeen ? ['kb1', 'kb2', 'kb3', 'kb4'] : []), ...pads.map((p, i) => p.gp ? 'pad' + i : null).filter(Boolean)]; }
+function touchP1() { return touchDev && (settings.tctl0 || 'touch') === 'touch'; } // player 1 of a split screen on the touch screen
 function renderSlots() {
   const box = $('slots'); if (!box) return;
-  if (touchDev && settings.nPlayers > 2) settings.nPlayers = 2;
-  document.querySelectorAll('#nSeg button').forEach(b => { b.hidden = touchDev && +b.dataset.n > 2; });
+  if (touchP1() && settings.nPlayers > 2) settings.nPlayers = 2;
+  document.querySelectorAll('#nSeg button').forEach(b => { b.hidden = touchP1() && +b.dataset.n > 2; });
   document.querySelectorAll('#nSeg button').forEach(b => b.classList.toggle('on', +b.dataset.n === settings.nPlayers));
   box.replaceChildren();
   for (let i = 0; i < settings.nPlayers; i++) {
@@ -44,7 +48,11 @@ function renderSlots() {
       row.append(tb);
     }
     row.append(cyc); box.append(row);
-    if (touchDev && i === 0) { const o = document.createElement('output'); o.textContent = 'Écran tactile'; cyc.append(o); continue; }
+    // (17 nov., user) touch device: player 1 on the screen, or on a keyboard or a gamepad when there are enough of them
+    if (touchDev && i === 0) { const op = touchOpts(); if (!op.includes(settings.tctl0)) settings.tctl0 = 'touch';
+      if (op.length < 3) { const o = document.createElement('output'); o.textContent = 'Écran tactile'; cyc.append(o); }
+      else cycleControl(cyc, () => settings.tctl0, v => { settings.tctl0 = v; renderSlots(); }, op);
+      continue; }
     cycleControl(cyc, () => settings.ctl[i], v => { settings.ctl[i] = v; });
   }
   const gmode = HD ? (settings.gmode ?? (settings.teams ? 1 : 0)) : (settings.teams ? 1 : 0);
@@ -56,7 +64,7 @@ function renderSlots() {
     : !settings.teams ? 'Chaque joueur tire sur les Rapaces… et sur les autres joueurs.'
     : used.size === 1 ? 'Tous dans la même bande : vous faites équipe avec trois voitures alliées contre les trois de l’autre bande.'
       : 'Rapaces de la Butte contre Chantenaysiens : pas de tir ami. Chaque bande a aussi trois voitures du quartier avec elle.';
-  const sc = $('soloCtl'); if (sc) cycleControl(sc, () => settings.soloCtl, v => { settings.soloCtl = v; });
+  renderSoloCtl();
 }
 document.querySelectorAll('#nSeg button').forEach(b => b.addEventListener('click', () => { settings.nPlayers = +b.dataset.n; saveSettings(); renderSlots(); }));
 document.querySelectorAll('#mSeg button').forEach(b => b.addEventListener('click', () => { settings.gmode = +b.dataset.m; settings.teams = b.dataset.m === '1' || b.dataset.m === '2'; saveSettings(); renderSlots(); renderEndSegs(); b.focus(); }));
@@ -82,7 +90,9 @@ document.querySelectorAll('.limitSeg button').forEach(b => b.addEventListener('c
 renderEndSegs();
 function renderCtlTable() {
   const t = $('ctable'); if (!t) return;
-  const cells = Object.entries(SCHEMES).map(([k, s]) => {
+  // (17 nov., user) on a touch device: the touch controls first, the keyboards only once one is seen, the gamepad once plugged
+  const hasPad = pads.some(p => p.gp);
+  const cells = Object.entries(SCHEMES).filter(() => !touchDev || kbSeen).map(([k, s]) => {
     const d = document.createElement('div');
     const b = document.createElement('b'); b.textContent = s.name;
     const txt = document.createElement('span');
@@ -91,7 +101,11 @@ function renderCtlTable() {
   });
   const p = document.createElement('div'); const pb = document.createElement('b'); pb.textContent = 'Manette';
   const pt = document.createElement('span'); pt.textContent = 'RT gaz · LT frein · stick gauche ou croix : tourner · A (et RB en classique) : tir · B : arme spéciale · RB : changer d’arme (HD) · X : frein à main · Y : caméra · LB : remise en route · Back : nuit · Start : pause. Les manettes vibrent aux chocs, tirs et explosions.';
-  p.append(pb, pt); cells.push(p);
+  p.append(pb, pt); if (!touchDev || hasPad) cells.push(p);
+  if (touchDev) { const d = document.createElement('div'), b = document.createElement('b'), x = document.createElement('span'); b.textContent = 'Écran tactile';
+    x.textContent = 'Joystick à gauche : tourner, accélérer, freiner · FEU : tir · SPÉ : arme spéciale (touche la ligne des armes pour en changer) · FREIN À MAIN : déraper · ♪ : radio · ❚❚ : pause · touche la minicarte : grande carte en conduite libre';
+    d.append(b, x); cells.unshift(d);
+    if (!kbSeen && !hasPad) { const n = document.createElement('div'); n.textContent = 'Branche une manette ou un clavier pour d’autres commandes (et pour l’écran partagé).'; cells.push(n); } }
   t.replaceChildren(...cells);
 }
 function initOptions() {
@@ -171,17 +185,25 @@ function menuPadNav(dt) {
 
 // (17 nov., user) split screen needs a keyboard or gamepads: greyed out on a touch-only device until a gamepad is
 // connected or a physical key is pressed (a mouse or touchpad counts as a computer)
-let kbSeen = matchMedia('(any-pointer: fine)').matches;
 function splitAvail() {
   if (!isTouch || kbSeen) return true;
   try { return [...(navigator.getGamepads ? navigator.getGamepads() : [])].some(Boolean); } catch (e) { return false; }
 }
 function renderSplitBtn() {
   const b = document.querySelector('#vMain [data-go="vSplit"]'); if (!b) return;
-  const ok = splitAvail(), lab = ok ? 'Écran partagé · 2 à 4' : 'Écran partagé · manette ou clavier';
+  const ok = splitAvail(), lab = ok ? 'Écran partagé · 2 à 4' : 'Écran partagé · manette';
   b.disabled = !ok; if (b.textContent !== lab) b.textContent = lab;
   b.title = ok ? '' : 'Branche une manette ou un clavier pour jouer à plusieurs sur le même écran';
 }
-addEventListener('gamepadconnected', renderSplitBtn); addEventListener('gamepaddisconnected', renderSplitBtn);
-addEventListener('keydown', e => { if (kbSeen || !e.isTrusted || e.key === 'Unidentified' || (e.target && /INPUT|TEXTAREA/.test(e.target.tagName))) return; kbSeen = true; renderSplitBtn(); });
+const inputsChanged = () => { renderSplitBtn(); renderSlots(); renderCtlTable(); renderSoloCtl(); };
+addEventListener('gamepadconnected', inputsChanged); addEventListener('gamepaddisconnected', inputsChanged);
+addEventListener('keydown', e => { if (kbSeen || !e.isTrusted || e.key === 'Unidentified' || (e.target && /INPUT|TEXTAREA/.test(e.target.tagName))) return; kbSeen = true; inputsChanged(); });
 renderSplitBtn();
+// the player 1 control of solo and online games; on a touch device the screen always drives too, so the row only lists
+// what is plugged in, and is hidden when nothing is
+function renderSoloCtl() {
+  const sc = $('soloCtl'); if (!sc) return;
+  if (!touchDev) { cycleControl(sc, () => settings.soloCtl, v => { settings.soloCtl = v; }); return; }
+  const op = touchOpts().filter(o => o !== 'touch'); sc.closest('.row').hidden = !op.length;
+  if (op.length) { if (!op.includes(settings.soloCtl)) settings.soloCtl = op[0]; cycleControl(sc, () => settings.soloCtl, v => { settings.soloCtl = v; }, op); }
+}
