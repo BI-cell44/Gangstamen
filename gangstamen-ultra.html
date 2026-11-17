@@ -204,7 +204,8 @@ body.touch #objective .oTitle { font-size: 15px; } body.touch #objective .oText 
 body.touch #clock { white-space: normal; max-width: calc(100vw - 270px); }
 body.touch #ticker { top: 44%; font-size: 24px; } body.touch #ticker small { font-size: 15px; }
 @media (orientation: portrait) { body.touch.ingame #objective { top: calc(196px + env(safe-area-inset-top, 0px)); } }
-@media (orientation: landscape) { body.touch.ingame #objective { top: calc(46px + env(safe-area-inset-top, 0px)); right: auto; width: calc(100vw - 350px); max-width: 560px; } body.touch #ticker { top: 50%; } }
+/* (17 nov., user) landscape: the panel at the very top, under the clock only when there is one */
+@media (orientation: landscape) { body.touch.ingame:has(#clock:not([hidden])) #objective { top: calc(40px + env(safe-area-inset-top, 0px)); } body.touch.ingame #objective { top: calc(8px + env(safe-area-inset-top, 0px)); right: auto; width: calc(100vw - 350px); max-width: 560px; } body.touch #ticker { top: 50%; } }
 body.touch #clock { left: max(10px, env(safe-area-inset-left, 0px)); transform: none; font-size: 15px; padding: 1px 8px; } /* top left: the logo is hidden on touch screens */
 @media (orientation: landscape) and (max-height: 560px) {
   body.touch #dash { bottom: calc(26px + env(safe-area-inset-bottom, 0px)); right: calc(max(16px, env(safe-area-inset-right, 0px)) + 160px); }
