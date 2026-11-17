@@ -37,14 +37,24 @@ function toggleRetro() {
 const pauseEl = document.createElement('div');
 pauseEl.id = 'pause'; pauseEl.hidden = true;
 pauseEl.style.cssText = 'position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:rgba(13,10,20,.75)';
-pauseEl.innerHTML = '<div class="card" style="display:flex;flex-direction:column;gap:12px;align-items:flex-start"><h2 style="margin:0;font-family:var(--display);font-weight:normal;font-size:40px;color:var(--chalk);text-shadow:3px 3px 0 var(--magenta)">Pause</h2><button class="big" id="pResume">Reprendre</button><button class="mbtn" id="pMap" hidden>' + (isTouch ? 'Carte · démarrer ailleurs' : 'Carte · démarrer ailleurs (G)') + '</button><button class="mbtn" id="pFull">' + (isTouch ? 'Plein écran' : 'Plein écran (F)') + '</button><button class="mbtn" id="pPhoto">Mode photo (F2)</button><button class="mbtn" id="pOpt">Son et options</button><button class="mbtn" id="pCtrl">Commandes</button><button class="mbtn" id="pQuit">Quitter vers le menu</button></div>';
+pauseEl.innerHTML = '<div class="card" style="display:flex;flex-direction:column;gap:12px;align-items:flex-start"><h2 style="margin:0;font-family:var(--display);font-weight:normal;font-size:40px;color:var(--chalk);text-shadow:3px 3px 0 var(--magenta)">Pause</h2><button class="big" id="pResume">Reprendre</button><button class="mbtn" id="pMap" hidden>' + (isTouch ? 'Carte · démarrer ailleurs' : 'Carte · démarrer ailleurs (G)') + '</button><button class="mbtn" id="pFull">' + (isTouch ? 'Plein écran' : 'Plein écran (F)') + '</button><button class="mbtn" id="pPhoto">' + (isTouch ? 'Mode photo' : 'Mode photo (F2)') + '</button>'
+  // (17 nov., user) the moment of the day and the weather straight from the pause (HD), as in the options
+  + (HD ? '<div class="pAmb"><span class="lab">Moment</span><div class="seg pTod"><button class="mbtn" data-v="day">Jour</button><button class="mbtn" data-v="sunset">Coucher</button><button class="mbtn" data-v="night">Nuit</button><button class="mbtn" data-v="cycle">Cycle</button></div></div>'
+  + '<div class="pAmb"><span class="lab">Météo</span><div class="seg pRain"><button class="mbtn" data-v="0">Sec</button><button class="mbtn" data-v="0.6">Pluie</button><button class="mbtn" data-v="1">Orage</button><button class="mbtn" data-v="auto">Variable</button></div></div>' : '') + '<button class="mbtn" id="pOpt">Son et options</button><button class="mbtn" id="pCtrl">Commandes</button><button class="mbtn" id="pQuit">Quitter vers le menu</button></div>';
 document.body.append(pauseEl);
+function renderPauseAmb() {
+  pauseEl.querySelectorAll('.pTod button').forEach(b => b.classList.toggle('on', b.dataset.v === settings.tod));
+  pauseEl.querySelectorAll('.pRain button').forEach(b => b.classList.toggle('on', b.dataset.v === String(settings.rain)));
+}
+pauseEl.querySelectorAll('.pTod button').forEach(b => b.addEventListener('click', () => { settings.tod = b.dataset.v; saveSettings(); applyAmbience(); renderPauseAmb(); }));
+pauseEl.querySelectorAll('.pRain button').forEach(b => b.addEventListener('click', () => { settings.rain = b.dataset.v; saveSettings(); applyAmbience(); renderPauseAmb(); }));
 function togglePause() {
   if (!started || Match.over) return;
   if (mode === 'online') { // the world keeps running online: the menu only overlays
-    paused = !paused; pauseEl.hidden = !paused; if (paused) $('pResume').focus(); return;
+    paused = !paused; pauseEl.hidden = !paused; if (paused) $('pResume').focus(); renderPauseAmb(); return;
   }
   paused = !paused; pauseEl.hidden = !paused; if (paused) $('pResume').focus();
+  renderPauseAmb();
   $('pMap').hidden = !(gx && gx.SpawnMap && mode === 'solo' && soloKind === 'free');
 }
 $('pMap').addEventListener('click', () => { paused = false; pauseEl.hidden = true; if (gx && gx.SpawnMap) gx.SpawnMap.show(); });
