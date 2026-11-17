@@ -22,7 +22,7 @@
     get gmode() { return gm ? gm.kind : 0; }, get gmState() { return gm; }, raceRespawn, modeTarget, scoreText, mines: () => mines, customers: () => customers, teamScores: modeTeamScores, goalText, rematch: rematchMode,
     get blocking() { return blocking; }, get mission() { return mission; }, foes: () => extras.filter(c => c.alive && c.team === 1), saveBank, pus: () => pus, furniture: () => furniture, garage: GARAGE, garages: GARAGES, campDiff, SpawnMap, copBump: c => oneStar(c, 0.1, 'Tu as percuté la police'),
     get onGarage() { return gx_onGarage; }, get objTarget() { return objEl.hidden ? null : objTgt; },
-    minimap(me, add) { minimap(me, add); actMinimap(add); discMinimap(add); for (const pu of pus) if (pu.on) add(pu, '#' + new THREE.Color(PU_COL[pu.kind]).getHexString()); for (const c of extras) if (c.alive) add(c, c.friendly ? '#f2c81e' : '#ff3b3b'); for (const m of markers) { if (gm && gm.cps && gm.cps.includes(m) && gm.cps[(me.owner && me.owner.cp || 0) % gm.cps.length] !== m) continue; add(m, '#ffffff'); } if (GARAGE.pad && mode === 'solo') for (const G of GARAGES) add(G, '#3a8aff'); } };
+    minimap(me, add) { minimap(me, add); actMinimap(add); discMinimap(add); for (const pu of pus) if (pu.on) add(pu, '#' + new THREE.Color(PU_COL[pu.kind]).getHexString()); for (const c of extras) if (c.alive) add(c, c.friendly ? '#f2c81e' : '#ff3b3b'); for (const m of markers) { if (gm && gm.cps && gm.cps.includes(m) && gm.cps[(me.owner && me.owner.cp || 0) % gm.cps.length] !== m) continue; add(m, gm && gm.cps && gm.cps.includes(m) ? OBJ_CSS : '#ffffff'); } if (GARAGE.pad && mode === 'solo') for (const G of GARAGES) add(G, '#3a8aff'); } };
   return api;
 })();
 // <<< GAMEPLAY MODULE

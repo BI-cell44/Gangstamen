@@ -174,6 +174,7 @@ body:not(.ingame) #clock { display: none; }
 .phud .pb i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, var(--magenta), var(--sunset)); }
 .phud .pt { position: absolute; left: 50%; top: 30%; transform: translateX(-50%); font-family: var(--display); font-size: 26px; white-space: nowrap; text-shadow: 3px 3px 0 var(--magenta), 4px 4px 0 #000; }
 .phud canvas { position: absolute; right: 10px; top: 8px; width: 96px; height: 96px; border-radius: 50%; border: 2px solid var(--chalk); background: #151020; }
+.phud .pw { position: absolute; left: 10px; top: 66px; font-size: 17px; white-space: nowrap; } /* bonus weapons */
 .phud .pst { position: absolute; left: 10px; bottom: 10px; font-family: var(--body); font-weight: 700; font-size: 13px; background: var(--enamel); color: #fff; border: 2px solid #fff; padding: 2px 8px; text-transform: uppercase; text-shadow: none; max-width: 55%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .vline { position: absolute; background: #000; }
 body.split #stats, body.split #plate, body.split #dash, body.split #help, body.split #ticker, body.split #logo { display: none; }
@@ -211,6 +212,13 @@ body.touch #clock { margin-left: 92px; }
 body.touch.split .phud .pn, body.touch.split .phud .pr { left: 100px; } /* clear of the pause and full screen buttons */
 body.touch .phud.tctl .ps { bottom: auto; top: 112px; font-size: 30px; } body.touch .phud.tctl .pb { bottom: auto; top: 146px; }
 body.touch .phud.tctl .pst { bottom: auto; top: 66px; left: 100px; }
+body.touch.split .phud .pw { left: 100px; } body.touch .phud.tctl .pw { top: 96px; }
+/* (17 nov., user) the panel of the mode (race, hill, flag) between the two views, readable, clear of both HUDs */
+body.touch.split #objective { left: 50% !important; right: auto !important; width: auto !important; max-width: min(56vw, 440px) !important; top: 50% !important; transform: translate(-50%, -50%) !important; text-align: center; }
+body.touch.split #objective .oTitle { font-size: 14px; } body.touch.split #objective .oText { font-size: 13px; }
+@media (orientation: landscape) { body.touch.split #objective { top: 47% !important; } }
+@media (orientation: portrait) { body.touch.split #objective { display: none !important; } } /* each view already shows its player's score */
+@media (orientation: portrait) { body.touch.split #clock { top: 50% !important; left: 8px !important; transform: translateY(-50%) !important; } }
 @media (orientation: landscape) { body.touch.split #clock { top: 8px; left: 25%; margin-left: 0; transform: translateX(-50%); } }
 body.touch.split #stats { display: none; } /* the one-player chips stay hidden in split screen */
 @media (orientation: portrait) { body.touch.split #clock { top: calc(50% - 14px); left: 50%; margin-left: 0; transform: translateX(-50%); } }
@@ -274,7 +282,7 @@ body.touch .chip.wanted { padding: 2px 8px; } body.touch .chip.wanted b { font-s
 #objective .oTitle { font-family: var(--display); font-size: 20px; color: var(--sunset); }
 #objective .oText { font-family: var(--data); font-size: 21px; line-height: 1.15; white-space: pre-line; max-width: 640px; margin: 0 auto; }
 #objective .oBar { margin: 6px auto 0; height: 8px; border: 2px solid var(--chalk); position: relative; } #objective .oBar i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, var(--magenta), var(--sunset)); }
-#objective .oDir { font-family: var(--data); font-size: 20px; color: var(--ok); } #objective .oArrow { display: inline-block; transition: transform .1s linear; }
+#objective .oDir { font-family: var(--data); font-size: 22px; color: #ff4fe0; } #objective .oDir .oArrow { vertical-align: -9px !important; } body.touch #objective .oDir svg { width: 28px; height: 28px; } #objective .oArrow { display: inline-block; transition: transform .1s linear; }
 body.ingame #objective:not([hidden]) ~ #clock { display: none; }
 body:has(#objective:not([hidden])) #clock { display: none; } /* whatever their order in the page */
 body:has(#objective:not([hidden])) #ticker { top: 44%; } /* the flash lines go under the panel, not across it */

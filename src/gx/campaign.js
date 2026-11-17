@@ -18,13 +18,13 @@
       intro: [['radio', 'Chantenay FM, 92.4, il est dix-huit heures. Un an que les Rapaces de la Butte font la loi dans le quartier…'], ['toi', 'Un an que je suis parti. Rien n’a changé. Ou alors en pire.'],
         ['dede', 'Petit ! C’est toi ? Ta caisse fait un bruit de casserole. Passe au garage, je vais te la remettre d’aplomb.'], ['dede', 'C’est sur le boulevard, tu verras le panneau bleu. Et méfie-toi : les Rapaces surveillent la rue.']],
       outro: [['dede', 'Voilà. Ici tu peux réparer, recharger les armes, gonfler le moteur… et repeindre la caisse quand les flics te cherchent.'], ['dede', 'Ça se paie en respect. Et du respect, tu vas en gagner. Nadia t’attend place Jean-Macé.']],
-      setup(m) { placePlayer([118, -139], P.jeanMace); m.dest = addMarker(GARAGE.x, GARAGE.z, 5, 0x3a8aff); m.rap = [missionRapace(...roadPoint(70, 260), 0, { hp: 50 })]; },
+      setup(m) { placePlayer([118, -139], P.jeanMace); m.dest = addMarker(GARAGE.x, GARAGE.z, 5, OBJ_COL); m.rap = [missionRapace(...roadPoint(70, 260), 0, { hp: 50 })]; },
       update(m) { objective('Retour au quartier', 'Rejoins le Garage de Chantenay'); objDir(GARAGE.x, GARAGE.z); return m.garageVisited ? 'win' : null; },
       garage: true },
     { id: 'jeanmace', title: 'La place Jean-Macé', where: 'Place Jean-Macé',
       intro: [['nadia', 'Te voilà enfin. La place Jean-Macé, c’était chez nous. Maintenant les Rapaces y garent leurs caisses noires.'], ['nadia', 'Tiens la place quarante-cinq secondes. Tant qu’un Rapace roule dans le cercle, le compteur s’arrête.'], ['toi', 'Quarante-cinq secondes. Facile.'], ['nadia', 'Ils vont arriver de partout. Bonne chance.']],
       outro: [['nadia', 'La place est à nous ! Les gens ressortent sur les terrasses.'], ['radio', 'Flash spécial : les Rapaces viennent de perdre la place Jean-Macé. On n’avait pas vu ça depuis longtemps.'], ['nadia', 'Prochaine étape : j’ai un colis à mettre dans le train de dix-huit heures douze. Il me faut une escorte.']],
-      setup(m) { placePlayer([73, 132], P.jeanMace); m.zone = addMarker(...roadPoint(...P.jeanMace), 34, 0xf2c81e); m.hold = 0; m.need = 45;
+      setup(m) { placePlayer([73, 132], P.jeanMace); m.zone = addMarker(...roadPoint(...P.jeanMace), 34, OBJ_COL); m.hold = 0; m.need = 45;
         for (let i = 0; i < 4; i++) { const [x, z] = roadPoint(P.jeanMace[0] + (i % 2 ? 140 : -140), P.jeanMace[1] + (i < 2 ? 90 : -90)); missionRapace(x, z, 0, { respawn: true, goal: { x: m.zone.x, z: m.zone.z } }); } },
       update(m, dt) {
         const c = locals[0].car, inZ = Math.hypot(c.x - m.zone.x, c.z - m.zone.z) < m.zone.r;
@@ -41,7 +41,7 @@
         placePlayer([60, 250], P.gare);
         const [x, z] = roadPoint(52, 230); m.esc = extraCar(0xf2c81e, 0x1e7a3a, 'p205', { team: 1, hp: 120, friendly: true, guns: false });
         m.rt = route(x, z, ...P.gare); m.esc.place(x, z, headTo([x, z], m.rt[Math.min(2, m.rt.length - 1)])); m.esc.ri = 0;
-        m.dest = addMarker(...m.rt[m.rt.length - 1], 9, 0x3ac87a); m.wave = 0; m.t = 0;
+        m.dest = addMarker(...m.rt[m.rt.length - 1], 9, OBJ_COL); m.wave = 0; m.t = 0;
       },
       update(m, dt) {
         const c = locals[0].car, e = m.esc; m.t += dt;
@@ -65,7 +65,7 @@
         const [x, z] = roadPoint(...P.eglise); m.f = extraCar(0x2a2d33, 0xc8202f, 'saloon', { team: 0, hp: 150, bot: true });
         // (16 nov.) the quai de la Fosse is in the map now: he no longer vanishes at Cardiff, he runs on to the ferry at the Gare Maritime
         m.rt = route(x, z, ...roadPoint(1345, -420)); m.f.place(x, z, headTo([x, z], m.rt[Math.min(2, m.rt.length - 1)])); m.f.maxV = 31; m.f.ri = 0;
-        m.dest = addMarker(...m.rt[m.rt.length - 1], 10, 0xff3b3b); m.t = 0;
+        m.dest = addMarker(...m.rt[m.rt.length - 1], 10, OBJ_COL); m.t = 0;
       },
       update(m, dt) {
         const f = m.f; m.t += dt;
@@ -79,7 +79,7 @@
     { id: 'police', title: 'Pin-pon', where: 'Boulevard de la Liberté', police: true,
       intro: () => [['radio', 'Avis à la population : la police nationale ratisse Chantenay à la recherche d’' + carWanted() + '.'], ['dede', 'C’est toi qu’ils cherchent. Sème-les, puis viens au garage : une peinture neuve et ils ne te reconnaîtront plus.']],
       outro: [['dede', 'Et voilà une caisse toute neuve. Les flics peuvent toujours courir.'], ['nadia', 'Bien joué. Maintenant, les Rapaces se cachent sur les quais, du côté de la Loire. Il va pleuvoir cette nuit…']],
-      setup(m) { placePlayer([140, -264], P.mairie); m.paintAt = upg().paint; locals[0].heat = 3.5; locals[0].calm = 0; for (let i = 0; i < 3; i++) spawnCop(locals[0]); m.dest = addMarker(GARAGE.x, GARAGE.z, 5, 0x3a8aff); m.phase = 0; },
+      setup(m) { placePlayer([140, -264], P.mairie); m.paintAt = upg().paint; locals[0].heat = 3.5; locals[0].calm = 0; for (let i = 0; i < 3; i++) spawnCop(locals[0]); m.dest = addMarker(GARAGE.x, GARAGE.z, 5, OBJ_COL); m.phase = 0; },
       update(m) {
         const L = locals[0], st = stars(L);
         if (st > 0) { objective('Pin-pon', 'Sème la police (' + '★'.repeat(st) + ') ou va directement repeindre la caisse au garage'); }
@@ -247,9 +247,24 @@
     }
   }
   let furnitureBuilt = false;
+  // the weapons line of a player: what he carries, the one fired (▶), the keys on a keyboard (not on a touch screen)
+  function ammoText(L, keys) {
+    const a = L.ammo || {}, items = [['rockets', '🚀', a.rockets], ['mines', '💣', a.mines], ['nitro', 'N₂O', a.nitro]].filter(x => x[2] > 0);
+    const sc = schemeOf(L.ctl), key = sc && sc.sp ? keyName(sc.sp[0]) : 'B', swk = sc && sc.sw ? keyName(sc.sw[0]) : 'RB';
+    const txt = items.map(([k, ic, n]) => (L.weapon === k ? '▶' : '') + ic + ' ' + n).join('   ') + (L.car.shield > 0 ? '   🛡 ' + Math.ceil(L.car.shield) : '') + (keys && items.length ? '   [' + key + ']' : '') + (keys && items.length > 1 ? ' [' + swk + ' ⇄]' : '');
+    const cur = items.find(x => x[0] === L.weapon) || items[0];
+    return { txt, items, lab: cur ? cur[1] + ' ' + cur[2] : 'SPÉ' };
+  }
   function hud() {
     const el = $('ammo'); if (!el) return;
-    const L = locals[0]; if (!L || locals.length > 1) { el.hidden = true; return; }
+    if (locals.length > 1) { // (17 nov., user) split screen: each player's weapons under his score (before: not shown at all)
+      el.hidden = true;
+      for (const L of locals) { const h = L.hud; if (!h || !h.pw) continue; const touchP = L.slot === 0 && touchDev && (settings.tctl0 || 'touch') === 'touch', r = ammoText(L, !touchP);
+        h.pw.hidden = !r.txt; if (h.pw.textContent !== r.txt) h.pw.textContent = r.txt;
+        if (touchP) { const tb = $('tSpec'); if (tb && tb.textContent !== r.lab) tb.textContent = r.lab; } }
+      return;
+    }
+    const L = locals[0]; if (!L) { el.hidden = true; return; }
     const a = L.ammo || {}, items = [['rockets', '🚀', a.rockets], ['mines', '💣', a.mines], ['nitro', 'N₂O', a.nitro]].filter(x => x[2] > 0);
     el.hidden = !items.length && !(L.car.shield > 0);
     const sc = schemeOf(L.ctl), key = sc && sc.sp ? keyName(sc.sp[0]) : 'B', swk = sc && sc.sw ? keyName(sc.sw[0]) : 'RB';

@@ -32,8 +32,8 @@
       benchRivals();
       const g = raceGrid();
       gm.start = [g.x, g.z];
-      gm.cps = CP_ROUTE.map(([x, z]) => { const [a, b] = roadPoint(x, z); return addMarker(a, b, 9, 0x3ac8ff); });
-      gm.cps.push(addMarker(g.x, g.z, 9, 0xffffff));
+      gm.cps = CP_ROUTE.map(([x, z]) => { const [a, b] = roadPoint(x, z); return addMarker(a, b, 9, OBJ_COL); });
+      gm.cps.push(addMarker(g.x, g.z, 9, OBJ_COL));
       gm.cps.forEach((m, i) => { m.beam.visible = m.ring.visible = i === 0; });
       const n = gm.cps.length;
       gm.laps = Math.max(1, goal ? Math.round(goal / n) : modeGoalSetting(4) || 1);
@@ -103,7 +103,9 @@
       }
       // only the checkpoints a player has to reach next are shown (before, all of them were, and the players started
       // beside the last one)
-      gm.cps.forEach((m, i) => { const next = locals.some(L => L.cp < Match.goal && L.cp % n === i); m.beam.visible = m.ring.visible = next; m.beam.material.opacity = 0.3 + Math.sin(now / 150) * 0.1; });
+      // (17 nov., user) each player's next checkpoint bright and pulsing, the one after it faint
+      gm.cps.forEach((m, i) => { const next = locals.some(L => L.cp < Match.goal && L.cp % n === i), after = !next && locals.some(L => L.cp + 1 < Match.goal && (L.cp + 1) % n === i);
+        m.beam.visible = m.ring.visible = next || after; m.beam.material.opacity = next ? 0.3 + Math.sin(now / 150) * 0.1 : 0.06; m.ring.material.opacity = next ? 0.8 : 0.3; });
     }
     if (locals.length === 1 || true) {
       const txt = gm.kind === 2 ? 'Rapaces ' + gm.score[0] + ' – ' + gm.score[1] + ' Chantenaysiens' : gm.kind === 3 ? (gm.owner ? (gm.owner === 'bots' ? 'Les Rapaces tiennent la place' : gm.owner[0] === 'r' ? ((Net.remotes.get(gm.owner.slice(1)) || {}).nick || 'Un joueur') + ' tient la place' : gm.owner[0] === 't' ? TEAMS[+gm.owner[1]].short + ' tiennent la place' : 'J' + (+gm.owner.slice(1) + 1) + ' tient la place') : 'Place libre ou disputée')
@@ -119,14 +121,14 @@
     if (gm.kind === 2) { // (17 nov., user) flag: bring it home, chase whoever has ours, pick ours up, or go for theirs
       const c = L.car, t = c.team; if (!(t === 0 || t === 1)) return null;
       const mine = gm.flags[t], theirs = gm.flags[1 - t];
-      if (theirs.carrier === c) return { x: mine.home[0], z: mine.home[1] };
-      if (mine.carrier) return { x: mine.carrier.x, z: mine.carrier.z };
-      if (!mine.atHome) return { x: mine.x, z: mine.z };
-      if (theirs.carrier) return { x: mine.home[0], z: mine.home[1] }; // a team-mate has it: back to base with him
-      return { x: theirs.x, z: theirs.z };
+      if (theirs.carrier === c) return { x: mine.home[0], z: mine.home[1], col: TEAMS[t].css };
+      if (mine.carrier) return { x: mine.carrier.x, z: mine.carrier.z, col: TEAMS[t].css }; // chevron in the colour of the flag it points at
+      if (!mine.atHome) return { x: mine.x, z: mine.z, col: TEAMS[t].css };
+      if (theirs.carrier) return { x: mine.home[0], z: mine.home[1], col: TEAMS[t].css }; // a team-mate has it: back to base with him
+      return { x: theirs.x, z: theirs.z, col: TEAMS[1 - t].css };
     }
     if (gm.kind !== 4 || L.cp >= Match.goal) return null;
-    const m = gm.cps[L.cp % gm.cps.length]; return { x: m.x, z: m.z };
+    const m = gm.cps[L.cp % gm.cps.length]; return { x: m.x, z: m.z, col: OBJ_CSS };
   }
   function raceRespawn(L) {
     if (!gm || gm.kind !== 4) return null;

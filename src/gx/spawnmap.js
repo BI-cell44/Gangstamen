@@ -126,7 +126,7 @@
     // the icon of a race (blue, chequered flag) or a challenge (orange, star), greyed while locked: on the map and in the list
     function actIcon(g, race, lock) {
       g.globalAlpha = lock ? 0.4 : 1;
-      g.fillStyle = race ? '#1f8fd6' : '#f08a1c'; g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.moveTo(-8, -11); g.arcTo(11, -11, 11, 11, 4); g.arcTo(11, 11, -11, 11, 4); g.arcTo(-11, 11, -11, -11, 4); g.arcTo(-11, -11, 11, -11, 4); g.closePath(); g.fill(); g.stroke();
+      g.fillStyle = race ? RACE_CSS : CHAL_CSS; g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.moveTo(-8, -11); g.arcTo(11, -11, 11, 11, 4); g.arcTo(11, 11, -11, 11, 4); g.arcTo(-11, 11, -11, -11, 4); g.arcTo(-11, -11, 11, -11, 4); g.closePath(); g.fill(); g.stroke();
       if (race) { g.fillStyle = '#fff'; g.fillRect(-6, -7, 2, 14); for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) { g.fillStyle = (i + j) % 2 ? '#111' : '#fff'; g.fillRect(-4 + i * 2.5, -7 + j * 2.5, 2.5, 2.5); } }
       else { g.fillStyle = '#fff'; g.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 3.2 : 7.5, t = -Math.PI / 2 + i * Math.PI / 5; g.lineTo(Math.cos(t) * r, Math.sin(t) * r + 0.6); } g.closePath(); g.fill(); }
       g.globalAlpha = 1;

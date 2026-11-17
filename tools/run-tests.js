@@ -418,7 +418,7 @@ async function skipDialogue() { for (let i = 0; i < 20 && await ev(() => !!(__gm
         const txt = () => document.querySelector('#objective .oText').textContent, ttl = () => document.querySelector('#objective .oTitle').textContent;
         c.place(race.start[0] + 20, race.start[1], 0); c.hp = 100; __gm.step(1 / 30); out.indice = /Arrête-toi dans la balise/.test(txt()) && /Course/.test(ttl());
         c.place(race.start[0], race.start[1], 0); __gm.step(1 / 30); __gm.step(1 / 30); out.depart = !!X.actRun();
-        for (let i = 0; i < 90; i++) __gm.step(1 / 30); out.consigne = /Suis les balises bleues/.test(txt()) && /Départ dans/.test(txt()) && X.actRun().count > 0; // still readable after 3 s
+        for (let i = 0; i < 90; i++) __gm.step(1 / 30); out.consigne = /Suis les balises roses/.test(txt()) && /Départ dans/.test(txt()) && X.actRun().count > 0; // still readable after 3 s
         for (let i = 0; i < 130; i++) __gm.step(1 / 30); out.enCourse = /flèche/.test(txt()); // briefing over
         for (let k = 1; k < race.cps.length; k++) { const [x, z] = race.cps[k]; for (let i = 0; i < 12; i++) { c.place(x, z, c.h); c.hp = 100; __gm.step(1 / 30); } }
         out.fini = !X.actRun(); out.record = __gm.Profile.cur.records.race_r_lib2; out.fantome = (__gm.Profile.cur.records.ghost_r_lib2 || []).length;

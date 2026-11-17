@@ -174,6 +174,7 @@ body:not(.ingame) #clock { display: none; }
 .phud .pb i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, var(--magenta), var(--sunset)); }
 .phud .pt { position: absolute; left: 50%; top: 30%; transform: translateX(-50%); font-family: var(--display); font-size: 26px; white-space: nowrap; text-shadow: 3px 3px 0 var(--magenta), 4px 4px 0 #000; }
 .phud canvas { position: absolute; right: 10px; top: 8px; width: 96px; height: 96px; border-radius: 50%; border: 2px solid var(--chalk); background: #151020; }
+.phud .pw { position: absolute; left: 10px; top: 66px; font-size: 17px; white-space: nowrap; } /* bonus weapons */
 .phud .pst { position: absolute; left: 10px; bottom: 10px; font-family: var(--body); font-weight: 700; font-size: 13px; background: var(--enamel); color: #fff; border: 2px solid #fff; padding: 2px 8px; text-transform: uppercase; text-shadow: none; max-width: 55%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .vline { position: absolute; background: #000; }
 body.split #stats, body.split #plate, body.split #dash, body.split #help, body.split #ticker, body.split #logo { display: none; }
@@ -211,6 +212,13 @@ body.touch #clock { margin-left: 92px; }
 body.touch.split .phud .pn, body.touch.split .phud .pr { left: 100px; } /* clear of the pause and full screen buttons */
 body.touch .phud.tctl .ps { bottom: auto; top: 112px; font-size: 30px; } body.touch .phud.tctl .pb { bottom: auto; top: 146px; }
 body.touch .phud.tctl .pst { bottom: auto; top: 66px; left: 100px; }
+body.touch.split .phud .pw { left: 100px; } body.touch .phud.tctl .pw { top: 96px; }
+/* (17 nov., user) the panel of the mode (race, hill, flag) between the two views, readable, clear of both HUDs */
+body.touch.split #objective { left: 50% !important; right: auto !important; width: auto !important; max-width: min(56vw, 440px) !important; top: 50% !important; transform: translate(-50%, -50%) !important; text-align: center; }
+body.touch.split #objective .oTitle { font-size: 14px; } body.touch.split #objective .oText { font-size: 13px; }
+@media (orientation: landscape) { body.touch.split #objective { top: 47% !important; } }
+@media (orientation: portrait) { body.touch.split #objective { display: none !important; } } /* each view already shows its player's score */
+@media (orientation: portrait) { body.touch.split #clock { top: 50% !important; left: 8px !important; transform: translateY(-50%) !important; } }
 @media (orientation: landscape) { body.touch.split #clock { top: 8px; left: 25%; margin-left: 0; transform: translateX(-50%); } }
 body.touch.split #stats { display: none; } /* the one-player chips stay hidden in split screen */
 @media (orientation: portrait) { body.touch.split #clock { top: calc(50% - 14px); left: 50%; margin-left: 0; transform: translateX(-50%); } }
@@ -274,7 +282,7 @@ body.touch .chip.wanted { padding: 2px 8px; } body.touch .chip.wanted b { font-s
 #objective .oTitle { font-family: var(--display); font-size: 20px; color: var(--sunset); }
 #objective .oText { font-family: var(--data); font-size: 21px; line-height: 1.15; white-space: pre-line; max-width: 640px; margin: 0 auto; }
 #objective .oBar { margin: 6px auto 0; height: 8px; border: 2px solid var(--chalk); position: relative; } #objective .oBar i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, var(--magenta), var(--sunset)); }
-#objective .oDir { font-family: var(--data); font-size: 20px; color: var(--ok); } #objective .oArrow { display: inline-block; transition: transform .1s linear; }
+#objective .oDir { font-family: var(--data); font-size: 22px; color: #ff4fe0; } #objective .oDir .oArrow { vertical-align: -9px !important; } body.touch #objective .oDir svg { width: 28px; height: 28px; } #objective .oArrow { display: inline-block; transition: transform .1s linear; }
 body.ingame #objective:not([hidden]) ~ #clock { display: none; }
 body:has(#objective:not([hidden])) #clock { display: none; } /* whatever their order in the page */
 body:has(#objective:not([hidden])) #ticker { top: 44%; } /* the flash lines go under the panel, not across it */
@@ -4326,6 +4334,9 @@ function readInput(L) {
 }
 
 // ---------- game state ----------
+// (17 nov., user) one colour for « where to go »: checkpoints, mission and delivery targets, the chevrons pointing at them
+// (fuchsia: no bonus, police light, team or hill uses it); race starts blue and challenge starts orange, map and street alike
+const OBJ_CSS = '#ff4fe0', OBJ_COL = 0xff4fe0, RACE_CSS = '#1f8fd6', RACE_COL = 0x1f8fd6, CHAL_CSS = '#ff9a2a', CHAL_COL = 0xff9a2a;
 const SLOT_PAINT = [[0x5b2ba6, 0xf2c14e], [0x1f8a8a, 0xf3ead8], [0xd9622b, 0x161616], [0x3f8f3a, 0xf2e14e]];
 const NET_PAINT = [0x5b2ba6, 0x1f8a8a, 0xd9622b, 0x3f8f3a, 0xc23b6e, 0x2f62c8, 0xd8b23a, 0x8a3a2a, 0x6f6f78, 0xe8e2d0, 0x2aa86a, 0x9a4fd0];
 let locals = [], player = null, rivals = [], pickups = [];
@@ -4614,15 +4625,18 @@ function drawMinimapOn(cv, me) {
     mg.globalAlpha = 1 - e * 0.3; mg.fillStyle = `rgb(${rr},${gg},${b2})`; mg.strokeStyle = 'rgba(0,0,0,.8)'; mg.lineWidth = Math.max(1, k * 0.9);
     mg.fill(); mg.stroke(); mg.restore();
   }
-  // the mission target (the green arrow of the mission panel): a green chevron on the rim when it is off the minimap
+  // the target (the arrow of the mission panel): a chevron of its colour on the rim when it is off the minimap
   const tg = gx && ((gx.modeTarget && gx.modeTarget(me.owner)) || (me.owner === locals[0] && gx.objTarget));
   if (tg) {
     const dx = tg.x - me.x, dz = tg.z - me.z, c = Math.cos(me.h), s = Math.sin(me.h);
     const sx = (dx * c - dz * s) * Z, sy = (dx * s + dz * c) * Z;
-    if (Math.hypot(sx, sy) > R - 8) {
-      const a = Math.atan2(sy, sx), k = S / 336 * 2, size = 15 * k * (split ? 1.9 : 1), rim = R - 4 - size * 0.3;
+    const k = S / 336 * 2, size = 15 * k * (split ? 1.9 : 1);
+    // (17 nov., user) inside the minimap: a disc as big as the chevron and of its colour on the target itself
+    if (Math.hypot(sx, sy) <= R - 8) { mg.beginPath(); mg.arc(sx, sy, size * 0.5, 0, Math.PI * 2); mg.fillStyle = tg.col || OBJ_CSS; mg.strokeStyle = '#000'; mg.lineWidth = Math.max(1.5, k * 1.2); mg.fill(); mg.stroke(); }
+    else {
+      const a = Math.atan2(sy, sx), rim = R - 4 - size * 0.3;
       mg.save(); mg.translate(Math.cos(a) * rim, Math.sin(a) * rim); mg.rotate(a); chevronPath(mg, size); mg.lineJoin = 'round';
-      mg.fillStyle = '#7be07b'; mg.strokeStyle = '#000'; mg.lineWidth = Math.max(1.5, k * 1.2); mg.fill(); mg.stroke(); mg.restore();
+      mg.fillStyle = tg.col || OBJ_CSS; mg.strokeStyle = '#000'; mg.lineWidth = Math.max(1.5, k * 1.2); mg.fill(); mg.stroke(); mg.restore();
     }
   }
   const k = S / 336 * 2;
@@ -4657,8 +4671,9 @@ function buildPlayerHuds() {
     const pt = document.createElement('div'); pt.className = 'pt'; pt.hidden = true;
     const cv = document.createElement('canvas'); cv.width = 192; cv.height = 192;
     const pst = document.createElement('div'); pst.className = 'pst';
-    d.append(pn, pr, ps, pb, pt, cv, pst); root.append(d);
-    L.hud = { root: d, pr, ps, pb: pbi, pt, cv, pst };
+    const pw = document.createElement('div'); pw.className = 'pw'; pw.hidden = true; // (17 nov., user) the bonus weapons of each player (gx hud)
+    d.append(pn, pr, ps, pb, pt, cv, pst, pw); root.append(d);
+    L.hud = { root: d, pr, ps, pb: pbi, pt, cv, pst, pw };
   }
   layoutViews();
 }
@@ -4693,7 +4708,7 @@ function updateHud(dt) {
       h.ps.firstChild.nodeValue = Math.round(c.speed * 3.6);
       if (c.phys && useRealPhysics(c)) { const gt = c.phys.gear + (c.phys.gear === 1 ? 're' : 'e'), sp = h.ps.lastChild; if (sp.textContent !== 'KM/H · ' + gt) sp.textContent = 'KM/H · ' + gt; } else if (h.ps.lastChild.textContent !== 'KM/H') h.ps.lastChild.textContent = 'KM/H';
       h.pb.style.width = c.hp + '%';
-      h.pr.textContent = 'RESPECT ' + L.respect + (gx && gx.gmode ? ' · POINTS ' : ' · KO ') + L.kills;
+      { const t = gx && gx.gmode ? gx.scoreText(L.kills).replace(/^Checkpoints /, 'COURSE ').toUpperCase() : 'RESPECT ' + L.respect + ' · KO ' + L.kills; if (h.pr.textContent !== t) h.pr.textContent = t; } // captures, points or laps and checkpoints of the modes
       L.streetAcc += dt; if (L.streetAcc > 0.3) { L.streetAcc = 0; const s = streetAt(c.x, c.z); if (s !== L.street) { L.street = s; h.pst.textContent = s; } drawMinimapOn(h.cv, c); }
       if (L.tickT > 0) { L.tickT -= dt; if (L.tickT <= 0) h.pt.hidden = true; }
     }
@@ -7152,14 +7167,14 @@ const gx = !HD ? null : (() => {
 
   // ---------- mission HUD ----------
   const objEl = document.createElement('div'); objEl.id = 'objective'; objEl.className = 'hud'; objEl.hidden = true;
-  objEl.innerHTML = '<div class="oTitle"></div><div class="oText"></div><div class="oBar" hidden><i></i></div><div class="oDir"><span class="oArrow" style="vertical-align:-3px;line-height:0"><svg viewBox="-12 -12 24 24" width="22" height="22"><path d="M0 -10 L8 9 L0 4 L-8 9 Z" fill="currentColor" stroke="#000" stroke-width="1.6" stroke-linejoin="round"/></svg></span> <span class="oDist"></span></div>';
+  objEl.innerHTML = '<div class="oTitle"></div><div class="oText"></div><div class="oBar" hidden><i></i></div><div class="oDir"><span class="oArrow" style="vertical-align:-3px;line-height:0"><svg viewBox="-12 -12 24 24" width="34" height="34"><path d="M0 -10 L8 9 L0 4 L-8 9 Z" fill="currentColor" stroke="#000" stroke-width="1.6" stroke-linejoin="round"/></svg></span> <span class="oDist"></span></div>';
   document.body.append(objEl);
   function objective(title, text) { objEl.hidden = false; objEl.querySelector('.oTitle').textContent = title; objEl.querySelector('.oText').textContent = text; }
   function objBar(k) { const b = objEl.querySelector('.oBar'); if (k === null) { b.hidden = true; return; } b.hidden = false; b.firstChild.style.width = Math.round(Math.max(0, Math.min(1, k)) * 100) + '%'; }
   let objTgt = null; // (15 nov.) the point the arrow shows, also drawn on the rim of the minimap (gx.objTarget)
-  function objDir(x, z) { // arrow towards a point, relative to the car's heading
+  function objDir(x, z, col) { // arrow towards a point, relative to the car's heading, in the colour of what it points at
     const d = objEl.querySelector('.oDir'); if (x === null || !locals[0]) { d.hidden = true; objTgt = null; return; }
-    objTgt = { x, z };
+    objTgt = { x, z, col: col || OBJ_CSS }; if (d.style.color !== objTgt.col) d.style.color = objTgt.col;
     const c = locals[0].car, dx = x - c.x, dz = z - c.z, dist = Math.hypot(dx, dz);
     const a = Math.atan2(dx, -dz) + c.h; d.hidden = false;
     d.querySelector('.oArrow').style.transform = 'rotate(' + (a * 180 / Math.PI).toFixed(0) + 'deg)';
@@ -8016,13 +8031,13 @@ const gx = !HD ? null : (() => {
       intro: [['radio', 'Chantenay FM, 92.4, il est dix-huit heures. Un an que les Rapaces de la Butte font la loi dans le quartier…'], ['toi', 'Un an que je suis parti. Rien n’a changé. Ou alors en pire.'],
         ['dede', 'Petit ! C’est toi ? Ta caisse fait un bruit de casserole. Passe au garage, je vais te la remettre d’aplomb.'], ['dede', 'C’est sur le boulevard, tu verras le panneau bleu. Et méfie-toi : les Rapaces surveillent la rue.']],
       outro: [['dede', 'Voilà. Ici tu peux réparer, recharger les armes, gonfler le moteur… et repeindre la caisse quand les flics te cherchent.'], ['dede', 'Ça se paie en respect. Et du respect, tu vas en gagner. Nadia t’attend place Jean-Macé.']],
-      setup(m) { placePlayer([118, -139], P.jeanMace); m.dest = addMarker(GARAGE.x, GARAGE.z, 5, 0x3a8aff); m.rap = [missionRapace(...roadPoint(70, 260), 0, { hp: 50 })]; },
+      setup(m) { placePlayer([118, -139], P.jeanMace); m.dest = addMarker(GARAGE.x, GARAGE.z, 5, OBJ_COL); m.rap = [missionRapace(...roadPoint(70, 260), 0, { hp: 50 })]; },
       update(m) { objective('Retour au quartier', 'Rejoins le Garage de Chantenay'); objDir(GARAGE.x, GARAGE.z); return m.garageVisited ? 'win' : null; },
       garage: true },
     { id: 'jeanmace', title: 'La place Jean-Macé', where: 'Place Jean-Macé',
       intro: [['nadia', 'Te voilà enfin. La place Jean-Macé, c’était chez nous. Maintenant les Rapaces y garent leurs caisses noires.'], ['nadia', 'Tiens la place quarante-cinq secondes. Tant qu’un Rapace roule dans le cercle, le compteur s’arrête.'], ['toi', 'Quarante-cinq secondes. Facile.'], ['nadia', 'Ils vont arriver de partout. Bonne chance.']],
       outro: [['nadia', 'La place est à nous ! Les gens ressortent sur les terrasses.'], ['radio', 'Flash spécial : les Rapaces viennent de perdre la place Jean-Macé. On n’avait pas vu ça depuis longtemps.'], ['nadia', 'Prochaine étape : j’ai un colis à mettre dans le train de dix-huit heures douze. Il me faut une escorte.']],
-      setup(m) { placePlayer([73, 132], P.jeanMace); m.zone = addMarker(...roadPoint(...P.jeanMace), 34, 0xf2c81e); m.hold = 0; m.need = 45;
+      setup(m) { placePlayer([73, 132], P.jeanMace); m.zone = addMarker(...roadPoint(...P.jeanMace), 34, OBJ_COL); m.hold = 0; m.need = 45;
         for (let i = 0; i < 4; i++) { const [x, z] = roadPoint(P.jeanMace[0] + (i % 2 ? 140 : -140), P.jeanMace[1] + (i < 2 ? 90 : -90)); missionRapace(x, z, 0, { respawn: true, goal: { x: m.zone.x, z: m.zone.z } }); } },
       update(m, dt) {
         const c = locals[0].car, inZ = Math.hypot(c.x - m.zone.x, c.z - m.zone.z) < m.zone.r;
@@ -8039,7 +8054,7 @@ const gx = !HD ? null : (() => {
         placePlayer([60, 250], P.gare);
         const [x, z] = roadPoint(52, 230); m.esc = extraCar(0xf2c81e, 0x1e7a3a, 'p205', { team: 1, hp: 120, friendly: true, guns: false });
         m.rt = route(x, z, ...P.gare); m.esc.place(x, z, headTo([x, z], m.rt[Math.min(2, m.rt.length - 1)])); m.esc.ri = 0;
-        m.dest = addMarker(...m.rt[m.rt.length - 1], 9, 0x3ac87a); m.wave = 0; m.t = 0;
+        m.dest = addMarker(...m.rt[m.rt.length - 1], 9, OBJ_COL); m.wave = 0; m.t = 0;
       },
       update(m, dt) {
         const c = locals[0].car, e = m.esc; m.t += dt;
@@ -8063,7 +8078,7 @@ const gx = !HD ? null : (() => {
         const [x, z] = roadPoint(...P.eglise); m.f = extraCar(0x2a2d33, 0xc8202f, 'saloon', { team: 0, hp: 150, bot: true });
         // (16 nov.) the quai de la Fosse is in the map now: he no longer vanishes at Cardiff, he runs on to the ferry at the Gare Maritime
         m.rt = route(x, z, ...roadPoint(1345, -420)); m.f.place(x, z, headTo([x, z], m.rt[Math.min(2, m.rt.length - 1)])); m.f.maxV = 31; m.f.ri = 0;
-        m.dest = addMarker(...m.rt[m.rt.length - 1], 10, 0xff3b3b); m.t = 0;
+        m.dest = addMarker(...m.rt[m.rt.length - 1], 10, OBJ_COL); m.t = 0;
       },
       update(m, dt) {
         const f = m.f; m.t += dt;
@@ -8077,7 +8092,7 @@ const gx = !HD ? null : (() => {
     { id: 'police', title: 'Pin-pon', where: 'Boulevard de la Liberté', police: true,
       intro: () => [['radio', 'Avis à la population : la police nationale ratisse Chantenay à la recherche d’' + carWanted() + '.'], ['dede', 'C’est toi qu’ils cherchent. Sème-les, puis viens au garage : une peinture neuve et ils ne te reconnaîtront plus.']],
       outro: [['dede', 'Et voilà une caisse toute neuve. Les flics peuvent toujours courir.'], ['nadia', 'Bien joué. Maintenant, les Rapaces se cachent sur les quais, du côté de la Loire. Il va pleuvoir cette nuit…']],
-      setup(m) { placePlayer([140, -264], P.mairie); m.paintAt = upg().paint; locals[0].heat = 3.5; locals[0].calm = 0; for (let i = 0; i < 3; i++) spawnCop(locals[0]); m.dest = addMarker(GARAGE.x, GARAGE.z, 5, 0x3a8aff); m.phase = 0; },
+      setup(m) { placePlayer([140, -264], P.mairie); m.paintAt = upg().paint; locals[0].heat = 3.5; locals[0].calm = 0; for (let i = 0; i < 3; i++) spawnCop(locals[0]); m.dest = addMarker(GARAGE.x, GARAGE.z, 5, OBJ_COL); m.phase = 0; },
       update(m) {
         const L = locals[0], st = stars(L);
         if (st > 0) { objective('Pin-pon', 'Sème la police (' + '★'.repeat(st) + ') ou va directement repeindre la caisse au garage'); }
@@ -8245,9 +8260,24 @@ const gx = !HD ? null : (() => {
     }
   }
   let furnitureBuilt = false;
+  // the weapons line of a player: what he carries, the one fired (▶), the keys on a keyboard (not on a touch screen)
+  function ammoText(L, keys) {
+    const a = L.ammo || {}, items = [['rockets', '🚀', a.rockets], ['mines', '💣', a.mines], ['nitro', 'N₂O', a.nitro]].filter(x => x[2] > 0);
+    const sc = schemeOf(L.ctl), key = sc && sc.sp ? keyName(sc.sp[0]) : 'B', swk = sc && sc.sw ? keyName(sc.sw[0]) : 'RB';
+    const txt = items.map(([k, ic, n]) => (L.weapon === k ? '▶' : '') + ic + ' ' + n).join('   ') + (L.car.shield > 0 ? '   🛡 ' + Math.ceil(L.car.shield) : '') + (keys && items.length ? '   [' + key + ']' : '') + (keys && items.length > 1 ? ' [' + swk + ' ⇄]' : '');
+    const cur = items.find(x => x[0] === L.weapon) || items[0];
+    return { txt, items, lab: cur ? cur[1] + ' ' + cur[2] : 'SPÉ' };
+  }
   function hud() {
     const el = $('ammo'); if (!el) return;
-    const L = locals[0]; if (!L || locals.length > 1) { el.hidden = true; return; }
+    if (locals.length > 1) { // (17 nov., user) split screen: each player's weapons under his score (before: not shown at all)
+      el.hidden = true;
+      for (const L of locals) { const h = L.hud; if (!h || !h.pw) continue; const touchP = L.slot === 0 && touchDev && (settings.tctl0 || 'touch') === 'touch', r = ammoText(L, !touchP);
+        h.pw.hidden = !r.txt; if (h.pw.textContent !== r.txt) h.pw.textContent = r.txt;
+        if (touchP) { const tb = $('tSpec'); if (tb && tb.textContent !== r.lab) tb.textContent = r.lab; } }
+      return;
+    }
+    const L = locals[0]; if (!L) { el.hidden = true; return; }
     const a = L.ammo || {}, items = [['rockets', '🚀', a.rockets], ['mines', '💣', a.mines], ['nitro', 'N₂O', a.nitro]].filter(x => x[2] > 0);
     el.hidden = !items.length && !(L.car.shield > 0);
     const sc = schemeOf(L.ctl), key = sc && sc.sp ? keyName(sc.sp[0]) : 'B', swk = sc && sc.sw ? keyName(sc.sw[0]) : 'RB';
@@ -8342,8 +8372,8 @@ const gx = !HD ? null : (() => {
       benchRivals();
       const g = raceGrid();
       gm.start = [g.x, g.z];
-      gm.cps = CP_ROUTE.map(([x, z]) => { const [a, b] = roadPoint(x, z); return addMarker(a, b, 9, 0x3ac8ff); });
-      gm.cps.push(addMarker(g.x, g.z, 9, 0xffffff));
+      gm.cps = CP_ROUTE.map(([x, z]) => { const [a, b] = roadPoint(x, z); return addMarker(a, b, 9, OBJ_COL); });
+      gm.cps.push(addMarker(g.x, g.z, 9, OBJ_COL));
       gm.cps.forEach((m, i) => { m.beam.visible = m.ring.visible = i === 0; });
       const n = gm.cps.length;
       gm.laps = Math.max(1, goal ? Math.round(goal / n) : modeGoalSetting(4) || 1);
@@ -8413,7 +8443,9 @@ const gx = !HD ? null : (() => {
       }
       // only the checkpoints a player has to reach next are shown (before, all of them were, and the players started
       // beside the last one)
-      gm.cps.forEach((m, i) => { const next = locals.some(L => L.cp < Match.goal && L.cp % n === i); m.beam.visible = m.ring.visible = next; m.beam.material.opacity = 0.3 + Math.sin(now / 150) * 0.1; });
+      // (17 nov., user) each player's next checkpoint bright and pulsing, the one after it faint
+      gm.cps.forEach((m, i) => { const next = locals.some(L => L.cp < Match.goal && L.cp % n === i), after = !next && locals.some(L => L.cp + 1 < Match.goal && (L.cp + 1) % n === i);
+        m.beam.visible = m.ring.visible = next || after; m.beam.material.opacity = next ? 0.3 + Math.sin(now / 150) * 0.1 : 0.06; m.ring.material.opacity = next ? 0.8 : 0.3; });
     }
     if (locals.length === 1 || true) {
       const txt = gm.kind === 2 ? 'Rapaces ' + gm.score[0] + ' – ' + gm.score[1] + ' Chantenaysiens' : gm.kind === 3 ? (gm.owner ? (gm.owner === 'bots' ? 'Les Rapaces tiennent la place' : gm.owner[0] === 'r' ? ((Net.remotes.get(gm.owner.slice(1)) || {}).nick || 'Un joueur') + ' tient la place' : gm.owner[0] === 't' ? TEAMS[+gm.owner[1]].short + ' tiennent la place' : 'J' + (+gm.owner.slice(1) + 1) + ' tient la place') : 'Place libre ou disputée')
@@ -8429,14 +8461,14 @@ const gx = !HD ? null : (() => {
     if (gm.kind === 2) { // (17 nov., user) flag: bring it home, chase whoever has ours, pick ours up, or go for theirs
       const c = L.car, t = c.team; if (!(t === 0 || t === 1)) return null;
       const mine = gm.flags[t], theirs = gm.flags[1 - t];
-      if (theirs.carrier === c) return { x: mine.home[0], z: mine.home[1] };
-      if (mine.carrier) return { x: mine.carrier.x, z: mine.carrier.z };
-      if (!mine.atHome) return { x: mine.x, z: mine.z };
-      if (theirs.carrier) return { x: mine.home[0], z: mine.home[1] }; // a team-mate has it: back to base with him
-      return { x: theirs.x, z: theirs.z };
+      if (theirs.carrier === c) return { x: mine.home[0], z: mine.home[1], col: TEAMS[t].css };
+      if (mine.carrier) return { x: mine.carrier.x, z: mine.carrier.z, col: TEAMS[t].css }; // chevron in the colour of the flag it points at
+      if (!mine.atHome) return { x: mine.x, z: mine.z, col: TEAMS[t].css };
+      if (theirs.carrier) return { x: mine.home[0], z: mine.home[1], col: TEAMS[t].css }; // a team-mate has it: back to base with him
+      return { x: theirs.x, z: theirs.z, col: TEAMS[1 - t].css };
     }
     if (gm.kind !== 4 || L.cp >= Match.goal) return null;
-    const m = gm.cps[L.cp % gm.cps.length]; return { x: m.x, z: m.z };
+    const m = gm.cps[L.cp % gm.cps.length]; return { x: m.x, z: m.z, col: OBJ_CSS };
   }
   function raceRespawn(L) {
     if (!gm || gm.kind !== 4) return null;
@@ -8466,10 +8498,10 @@ const gx = !HD ? null : (() => {
   // what to do and where to go, shown before the start (briefing) and kept on screen during the run (user feedback:
   // the first texts flashed by too fast and did not say where to go)
   const HOW = {
-    race: ['Suis les balises bleues dans l’ordre jusqu’à l’arrivée (balise blanche). La flèche verte et la minicarte montrent la prochaine.', 'Suis la flèche jusqu’à la prochaine balise'],
+    race: ['Suis les balises roses dans l’ordre jusqu’à l’arrivée. La plus vive est la prochaine, la pâle celle d’après ; la flèche et la minicarte montrent la prochaine.', 'Suis la flèche jusqu’à la prochaine balise'],
     drift: ['Fais glisser la voiture avec le frein à main, où tu veux dans le quartier. Plus la glisse dure, plus elle rapporte.', 'Dérape au frein à main, où tu veux'],
     jump: ['Prends de l’élan et décolle sur les buttes de la carrière. Seul ton plus long saut compte. Reste dans la carrière.', 'Décolle sur les buttes de la carrière'],
-    deliv: ['Roule jusqu’à la balise blanche avant la fin du chrono. La flèche verte et le point blanc de la minicarte montrent l’adresse.', 'Suis la flèche jusqu’à la balise blanche'],
+    deliv: ['Roule jusqu’à la balise rose avant la fin du chrono. La flèche et le point rose de la minicarte montrent l’adresse.', 'Suis la flèche jusqu’à la balise rose'],
     cops: ['La police te recherche. Éloigne-toi et reste hors de leur vue jusqu’à ce que les étoiles disparaissent.', 'Fuis hors de leur vue jusqu’à perdre les étoiles'],
     smash: ['Renverse bancs, poubelles, abribus, clôtures et haies, où tu veux dans le quartier.', 'Casse mobilier et clôtures, où tu veux'],
   };
@@ -8493,7 +8525,7 @@ const gx = !HD ? null : (() => {
     }
   }
   function actMarkers() { // start markers (re-added when a mission cleared them)
-    for (const a of acts) if (unlocked(a.id) && (!a.mk || !markers.includes(a.mk))) a.mk = addMarker(a.start[0], a.start[1], 6, a.kind === 'race' ? 0x3ac8ff : 0xff9a2a);
+    for (const a of acts) if (unlocked(a.id) && (!a.mk || !markers.includes(a.mk))) a.mk = addMarker(a.start[0], a.start[1], 6, a.kind === 'race' ? RACE_COL : CHAL_COL);
   }
   function actReset() { if (acts) actHide(); if (run) { dropGhost(); run = null; } actPanel(null); after = null; hintOn = false; } // (16 nov.) back to the menu: nothing left running
   function actHide() { for (const a of acts || []) if (a.mk) { scene.remove(a.mk.beam, a.mk.ring); const i = markers.indexOf(a.mk); if (i >= 0) markers.splice(i, 1); a.mk = null; } }
@@ -8507,15 +8539,16 @@ const gx = !HD ? null : (() => {
     actHide();
     if (a.kind === 'race') {
       const [x, z] = a.path[0], [x2, z2] = a.path[Math.min(3, a.path.length - 1)]; c.place(x, z, heading(x, z, x2, z2)); c.vx = c.vz = 0;
-      run.cpMk = addMarker(...a.cps[1], 9, a.cps.length === 2 ? 0xffffff : 0x3ac8ff);
-      if (a.cps.length > 2) { run.cpNext = addMarker(...a.cps[2], 5, a.cps.length === 3 ? 0xffffff : 0x3ac8ff); run.cpNext.beam.material.opacity = 0.1; } // the one after, fainter: shows which way the route turns
+      // (17 nov., user) the next checkpoint bright and pulsing, the one after small and faint (it shows where the route turns)
+      run.cpMk = addMarker(...a.cps[1], 9, OBJ_COL);
+      if (a.cps.length > 2) { run.cpNext = addMarker(...a.cps[2], 4.5, OBJ_COL); run.cpNext.beam.material.opacity = 0.06; run.cpNext.ring.material.opacity = 0.3; }
       const g = Profile.cur && Profile.cur.records['ghost_' + a.id]; if (g) { run.ghost = g; ghostMesh = makeGhost(c.style); }
     } else if (a.kind === 'deliv') {
       const far = (lo, hi) => (W.shops || []).filter(s => { const d = Math.hypot(s.x - c.x, s.z - c.z); return d > lo && d < hi && nodeOk(nearestNode(s.x, s.z)); });
       let shops = far(900, 1700); if (shops.length < 5) shops = far(500, 1700); // (15 nov.) farther across the town than before (350 to 800 m)
       const s = shops[(R() * shops.length) | 0] || { x: 600, z: 200, n: 'Le quai' }, [tx, tz] = roadPoint(s.x, s.z);
       const len = route(c.x, c.z, tx, tz).reduce((acc, p, i, A) => acc + (i ? Math.hypot(p[0] - A[i - 1][0], p[1] - A[i - 1][1]) : 0), 0);
-      run.dest = [tx, tz]; run.destName = s.n || 'le client'; run.limit = Math.round(len / 13 + 12); run.mk = addMarker(tx, tz, 7, 0xffffff);
+      run.dest = [tx, tz]; run.destName = s.n || 'le client'; run.limit = Math.round(len / 13 + 12); run.mk = addMarker(tx, tz, 7, OBJ_COL);
     } else if (a.kind === 'cops') { L.heat = 2.5; L.calm = 0; L.unseen = 0; }
     else if (a.kind === 'smash') run.last = brokenCount();
   }
@@ -8555,7 +8588,7 @@ const gx = !HD ? null : (() => {
       if (after) { after.t -= dt; objective(after.title, after.text); objDir(null); if (after.t <= 0) { after = null; actPanel(null); } return; }
       // near a start marker: say what it is and how to start it
       let nearA = null, nd = 45; for (const a of acts) { const d = Math.hypot(a.start[0] - c.x, a.start[1] - c.z); if (unlocked(a.id) && d < nd) { nd = d; nearA = a; } }
-      if (nearA) { hintOn = true; objective(KIND_NAME[nearA.kind] + ' : ' + nearA.name, 'Arrête-toi dans la balise ' + (nearA.kind === 'race' ? 'bleue' : 'orange') + ' pour commencer'); objDir(nearA.start[0], nearA.start[1]); }
+      if (nearA) { hintOn = true; objective(KIND_NAME[nearA.kind] + ' : ' + nearA.name, 'Arrête-toi dans la balise ' + (nearA.kind === 'race' ? 'bleue' : 'orange') + ' pour commencer'); objDir(nearA.start[0], nearA.start[1], nearA.kind === 'race' ? RACE_CSS : CHAL_CSS); }
       else if (hintOn) { hintOn = false; actPanel(null); }
       if (nearA && c.alive && nd < 6 && c.speed < 8) startAct(nearA);
       return;
@@ -8578,12 +8611,12 @@ const gx = !HD ? null : (() => {
       if (Math.hypot(x - c.x, z - c.z) < 11) {
         run.cp++; sfx.pick();
         if (run.cp >= a.cps.length) return endAct(true, fmtT(run.t) + ' · ' + Math.round(a.len) + ' m');
-        run.cpMk.set(...a.cps[run.cp]); if (run.cp === a.cps.length - 1) { run.cpMk.ring.material.color.setRGB(3, 3, 3); }
-        if (run.cpNext) { if (run.cp + 1 < a.cps.length) { run.cpNext.set(...a.cps[run.cp + 1]); if (run.cp + 1 === a.cps.length - 1) run.cpNext.ring.material.color.setRGB(3, 3, 3); } else { run.cpNext.beam.visible = run.cpNext.ring.visible = false; } }
+        run.cpMk.set(...a.cps[run.cp]);
+        if (run.cpNext) { if (run.cp + 1 < a.cps.length) run.cpNext.set(...a.cps[run.cp + 1]); else { run.cpNext.beam.visible = run.cpNext.ring.visible = false; } }
       }
       if (Math.hypot(x - c.x, z - c.z) > 320) return endAct(false, 'Trop loin du parcours');
       const best = Profile.cur && Profile.cur.records['race_' + a.id];
-      actPanel(a.name, (run.cp === a.cps.length - 1 ? 'Dernière ligne droite : fonce vers la balise blanche' : HOW.race[1]) + '\n' + fmtT(run.t) + ' · balise ' + run.cp + ' / ' + (a.cps.length - 1) + (best ? ' · record ' + fmtT(best) : ''));
+      actPanel(a.name, (run.cp === a.cps.length - 1 ? 'Dernière ligne droite : fonce vers la dernière balise, l’arrivée' : HOW.race[1]) + '\n' + fmtT(run.t) + ' · balise ' + run.cp + ' / ' + (a.cps.length - 1) + (best ? ' · record ' + fmtT(best) : ''));
       objDir(x, z);
       return;
     }
@@ -8599,17 +8632,17 @@ const gx = !HD ? null : (() => {
     }
     const left = a.time - run.t, unit = a.kind === 'jump' ? ' m' : a.kind === 'smash' ? ' casses' : a.kind === 'cops' ? ' s' : ' pts';
     let line = HOW[a.kind][1]; objDir(null);
-    if (a.kind === 'jump') { const d = Math.hypot(a.start[0] - c.x, a.start[1] - c.z); if (d > 110) { line = 'Reviens dans la carrière (suis la flèche)'; objDir(a.start[0], a.start[1]); } }
+    if (a.kind === 'jump') { const d = Math.hypot(a.start[0] - c.x, a.start[1] - c.z); if (d > 110) { line = 'Reviens dans la carrière (suis la flèche)'; objDir(a.start[0], a.start[1], CHAL_CSS); } }
     actPanel(a.name, line + '\nReste ' + fmtT(Math.max(0, left)) + ' · ' + Math.round(run.score) + unit);
     if (left <= 0) { if (a.kind === 'cops') return endAct(false, 'La police t’a gardé en vue'); endAct(run.score > 0, Math.round(run.score) + unit); }
   }
   function actMinimap(add) {
     if (run) { const a = run.a;
-      if (a.kind === 'race') for (let k = a.cps.length - 1; k >= run.cp; k--) add({ x: a.cps[k][0], z: a.cps[k][1] }, k === run.cp ? '#ffffff' : k === a.cps.length - 1 ? '#ffe14a' : '#3ac8ff');
-      if (run.dest) add({ x: run.dest[0], z: run.dest[1] }, '#ffffff');
-      if (a.kind === 'jump') add({ x: a.start[0], z: a.start[1] }, '#ff9a2a');
+      if (a.kind === 'race') for (let k = a.cps.length - 1; k >= run.cp; k--) add({ x: a.cps[k][0], z: a.cps[k][1] }, k === run.cp ? OBJ_CSS : 'rgba(255,79,224,.4)'); // the next one bright, the others faint
+      if (run.dest) add({ x: run.dest[0], z: run.dest[1] }, OBJ_CSS);
+      if (a.kind === 'jump') add({ x: a.start[0], z: a.start[1] }, CHAL_CSS);
       return; }
-    if (!acts || mode !== 'solo' || mission) return; for (const a of acts) if (unlocked(a.id)) add({ x: a.start[0], z: a.start[1] }, a.kind === 'race' ? '#3ac8ff' : '#ff9a2a'); }
+    if (!acts || mode !== 'solo' || mission) return; for (const a of acts) if (unlocked(a.id)) add({ x: a.start[0], z: a.start[1] }, a.kind === 'race' ? RACE_CSS : CHAL_CSS); }
   function actRecords() { // for the campaign screen
     return ACT_DEF.map(d => { const p = Profile.cur, r = p && (d.kind === 'race' ? p.records['race_' + d.id] : p.records['defi_' + d.id]); return { id: d.id, name: d.name, kind: d.kind, best: r === undefined ? null : d.kind === 'race' ? fmtT(r) : r + (d.kind === 'jump' ? ' m' : d.kind === 'smash' ? ' casses' : d.kind === 'deliv' ? ' pts' : d.kind === 'cops' ? ' s d’avance' : ' pts') }; });
   }
@@ -9589,7 +9622,7 @@ const gx = !HD ? null : (() => {
     // the icon of a race (blue, chequered flag) or a challenge (orange, star), greyed while locked: on the map and in the list
     function actIcon(g, race, lock) {
       g.globalAlpha = lock ? 0.4 : 1;
-      g.fillStyle = race ? '#1f8fd6' : '#f08a1c'; g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.moveTo(-8, -11); g.arcTo(11, -11, 11, 11, 4); g.arcTo(11, 11, -11, 11, 4); g.arcTo(-11, 11, -11, -11, 4); g.arcTo(-11, -11, 11, -11, 4); g.closePath(); g.fill(); g.stroke();
+      g.fillStyle = race ? RACE_CSS : CHAL_CSS; g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.moveTo(-8, -11); g.arcTo(11, -11, 11, 11, 4); g.arcTo(11, 11, -11, 11, 4); g.arcTo(-11, 11, -11, -11, 4); g.arcTo(-11, -11, 11, -11, 4); g.closePath(); g.fill(); g.stroke();
       if (race) { g.fillStyle = '#fff'; g.fillRect(-6, -7, 2, 14); for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) { g.fillStyle = (i + j) % 2 ? '#111' : '#fff'; g.fillRect(-4 + i * 2.5, -7 + j * 2.5, 2.5, 2.5); } }
       else { g.fillStyle = '#fff'; g.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 3.2 : 7.5, t = -Math.PI / 2 + i * Math.PI / 5; g.lineTo(Math.cos(t) * r, Math.sin(t) * r + 0.6); } g.closePath(); g.fill(); }
       g.globalAlpha = 1;
@@ -9681,7 +9714,7 @@ const gx = !HD ? null : (() => {
     get gmode() { return gm ? gm.kind : 0; }, get gmState() { return gm; }, raceRespawn, modeTarget, scoreText, mines: () => mines, customers: () => customers, teamScores: modeTeamScores, goalText, rematch: rematchMode,
     get blocking() { return blocking; }, get mission() { return mission; }, foes: () => extras.filter(c => c.alive && c.team === 1), saveBank, pus: () => pus, furniture: () => furniture, garage: GARAGE, garages: GARAGES, campDiff, SpawnMap, copBump: c => oneStar(c, 0.1, 'Tu as percuté la police'),
     get onGarage() { return gx_onGarage; }, get objTarget() { return objEl.hidden ? null : objTgt; },
-    minimap(me, add) { minimap(me, add); actMinimap(add); discMinimap(add); for (const pu of pus) if (pu.on) add(pu, '#' + new THREE.Color(PU_COL[pu.kind]).getHexString()); for (const c of extras) if (c.alive) add(c, c.friendly ? '#f2c81e' : '#ff3b3b'); for (const m of markers) { if (gm && gm.cps && gm.cps.includes(m) && gm.cps[(me.owner && me.owner.cp || 0) % gm.cps.length] !== m) continue; add(m, '#ffffff'); } if (GARAGE.pad && mode === 'solo') for (const G of GARAGES) add(G, '#3a8aff'); } };
+    minimap(me, add) { minimap(me, add); actMinimap(add); discMinimap(add); for (const pu of pus) if (pu.on) add(pu, '#' + new THREE.Color(PU_COL[pu.kind]).getHexString()); for (const c of extras) if (c.alive) add(c, c.friendly ? '#f2c81e' : '#ff3b3b'); for (const m of markers) { if (gm && gm.cps && gm.cps.includes(m) && gm.cps[(me.owner && me.owner.cp || 0) % gm.cps.length] !== m) continue; add(m, gm && gm.cps && gm.cps.includes(m) ? OBJ_CSS : '#ffffff'); } if (GARAGE.pad && mode === 'solo') for (const G of GARAGES) add(G, '#3a8aff'); } };
   return api;
 })();
 // <<< GAMEPLAY MODULE

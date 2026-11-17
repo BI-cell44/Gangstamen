@@ -18,10 +18,10 @@
   // what to do and where to go, shown before the start (briefing) and kept on screen during the run (user feedback:
   // the first texts flashed by too fast and did not say where to go)
   const HOW = {
-    race: ['Suis les balises bleues dans l’ordre jusqu’à l’arrivée (balise blanche). La flèche verte et la minicarte montrent la prochaine.', 'Suis la flèche jusqu’à la prochaine balise'],
+    race: ['Suis les balises roses dans l’ordre jusqu’à l’arrivée. La plus vive est la prochaine, la pâle celle d’après ; la flèche et la minicarte montrent la prochaine.', 'Suis la flèche jusqu’à la prochaine balise'],
     drift: ['Fais glisser la voiture avec le frein à main, où tu veux dans le quartier. Plus la glisse dure, plus elle rapporte.', 'Dérape au frein à main, où tu veux'],
     jump: ['Prends de l’élan et décolle sur les buttes de la carrière. Seul ton plus long saut compte. Reste dans la carrière.', 'Décolle sur les buttes de la carrière'],
-    deliv: ['Roule jusqu’à la balise blanche avant la fin du chrono. La flèche verte et le point blanc de la minicarte montrent l’adresse.', 'Suis la flèche jusqu’à la balise blanche'],
+    deliv: ['Roule jusqu’à la balise rose avant la fin du chrono. La flèche et le point rose de la minicarte montrent l’adresse.', 'Suis la flèche jusqu’à la balise rose'],
     cops: ['La police te recherche. Éloigne-toi et reste hors de leur vue jusqu’à ce que les étoiles disparaissent.', 'Fuis hors de leur vue jusqu’à perdre les étoiles'],
     smash: ['Renverse bancs, poubelles, abribus, clôtures et haies, où tu veux dans le quartier.', 'Casse mobilier et clôtures, où tu veux'],
   };
@@ -45,7 +45,7 @@
     }
   }
   function actMarkers() { // start markers (re-added when a mission cleared them)
-    for (const a of acts) if (unlocked(a.id) && (!a.mk || !markers.includes(a.mk))) a.mk = addMarker(a.start[0], a.start[1], 6, a.kind === 'race' ? 0x3ac8ff : 0xff9a2a);
+    for (const a of acts) if (unlocked(a.id) && (!a.mk || !markers.includes(a.mk))) a.mk = addMarker(a.start[0], a.start[1], 6, a.kind === 'race' ? RACE_COL : CHAL_COL);
   }
   function actReset() { if (acts) actHide(); if (run) { dropGhost(); run = null; } actPanel(null); after = null; hintOn = false; } // (16 nov.) back to the menu: nothing left running
   function actHide() { for (const a of acts || []) if (a.mk) { scene.remove(a.mk.beam, a.mk.ring); const i = markers.indexOf(a.mk); if (i >= 0) markers.splice(i, 1); a.mk = null; } }
@@ -59,15 +59,16 @@
     actHide();
     if (a.kind === 'race') {
       const [x, z] = a.path[0], [x2, z2] = a.path[Math.min(3, a.path.length - 1)]; c.place(x, z, heading(x, z, x2, z2)); c.vx = c.vz = 0;
-      run.cpMk = addMarker(...a.cps[1], 9, a.cps.length === 2 ? 0xffffff : 0x3ac8ff);
-      if (a.cps.length > 2) { run.cpNext = addMarker(...a.cps[2], 5, a.cps.length === 3 ? 0xffffff : 0x3ac8ff); run.cpNext.beam.material.opacity = 0.1; } // the one after, fainter: shows which way the route turns
+      // (17 nov., user) the next checkpoint bright and pulsing, the one after small and faint (it shows where the route turns)
+      run.cpMk = addMarker(...a.cps[1], 9, OBJ_COL);
+      if (a.cps.length > 2) { run.cpNext = addMarker(...a.cps[2], 4.5, OBJ_COL); run.cpNext.beam.material.opacity = 0.06; run.cpNext.ring.material.opacity = 0.3; }
       const g = Profile.cur && Profile.cur.records['ghost_' + a.id]; if (g) { run.ghost = g; ghostMesh = makeGhost(c.style); }
     } else if (a.kind === 'deliv') {
       const far = (lo, hi) => (W.shops || []).filter(s => { const d = Math.hypot(s.x - c.x, s.z - c.z); return d > lo && d < hi && nodeOk(nearestNode(s.x, s.z)); });
       let shops = far(900, 1700); if (shops.length < 5) shops = far(500, 1700); // (15 nov.) farther across the town than before (350 to 800 m)
       const s = shops[(R() * shops.length) | 0] || { x: 600, z: 200, n: 'Le quai' }, [tx, tz] = roadPoint(s.x, s.z);
       const len = route(c.x, c.z, tx, tz).reduce((acc, p, i, A) => acc + (i ? Math.hypot(p[0] - A[i - 1][0], p[1] - A[i - 1][1]) : 0), 0);
-      run.dest = [tx, tz]; run.destName = s.n || 'le client'; run.limit = Math.round(len / 13 + 12); run.mk = addMarker(tx, tz, 7, 0xffffff);
+      run.dest = [tx, tz]; run.destName = s.n || 'le client'; run.limit = Math.round(len / 13 + 12); run.mk = addMarker(tx, tz, 7, OBJ_COL);
     } else if (a.kind === 'cops') { L.heat = 2.5; L.calm = 0; L.unseen = 0; }
     else if (a.kind === 'smash') run.last = brokenCount();
   }
@@ -107,7 +108,7 @@
       if (after) { after.t -= dt; objective(after.title, after.text); objDir(null); if (after.t <= 0) { after = null; actPanel(null); } return; }
       // near a start marker: say what it is and how to start it
       let nearA = null, nd = 45; for (const a of acts) { const d = Math.hypot(a.start[0] - c.x, a.start[1] - c.z); if (unlocked(a.id) && d < nd) { nd = d; nearA = a; } }
-      if (nearA) { hintOn = true; objective(KIND_NAME[nearA.kind] + ' : ' + nearA.name, 'Arrête-toi dans la balise ' + (nearA.kind === 'race' ? 'bleue' : 'orange') + ' pour commencer'); objDir(nearA.start[0], nearA.start[1]); }
+      if (nearA) { hintOn = true; objective(KIND_NAME[nearA.kind] + ' : ' + nearA.name, 'Arrête-toi dans la balise ' + (nearA.kind === 'race' ? 'bleue' : 'orange') + ' pour commencer'); objDir(nearA.start[0], nearA.start[1], nearA.kind === 'race' ? RACE_CSS : CHAL_CSS); }
       else if (hintOn) { hintOn = false; actPanel(null); }
       if (nearA && c.alive && nd < 6 && c.speed < 8) startAct(nearA);
       return;
@@ -130,12 +131,12 @@
       if (Math.hypot(x - c.x, z - c.z) < 11) {
         run.cp++; sfx.pick();
         if (run.cp >= a.cps.length) return endAct(true, fmtT(run.t) + ' · ' + Math.round(a.len) + ' m');
-        run.cpMk.set(...a.cps[run.cp]); if (run.cp === a.cps.length - 1) { run.cpMk.ring.material.color.setRGB(3, 3, 3); }
-        if (run.cpNext) { if (run.cp + 1 < a.cps.length) { run.cpNext.set(...a.cps[run.cp + 1]); if (run.cp + 1 === a.cps.length - 1) run.cpNext.ring.material.color.setRGB(3, 3, 3); } else { run.cpNext.beam.visible = run.cpNext.ring.visible = false; } }
+        run.cpMk.set(...a.cps[run.cp]);
+        if (run.cpNext) { if (run.cp + 1 < a.cps.length) run.cpNext.set(...a.cps[run.cp + 1]); else { run.cpNext.beam.visible = run.cpNext.ring.visible = false; } }
       }
       if (Math.hypot(x - c.x, z - c.z) > 320) return endAct(false, 'Trop loin du parcours');
       const best = Profile.cur && Profile.cur.records['race_' + a.id];
-      actPanel(a.name, (run.cp === a.cps.length - 1 ? 'Dernière ligne droite : fonce vers la balise blanche' : HOW.race[1]) + '\n' + fmtT(run.t) + ' · balise ' + run.cp + ' / ' + (a.cps.length - 1) + (best ? ' · record ' + fmtT(best) : ''));
+      actPanel(a.name, (run.cp === a.cps.length - 1 ? 'Dernière ligne droite : fonce vers la dernière balise, l’arrivée' : HOW.race[1]) + '\n' + fmtT(run.t) + ' · balise ' + run.cp + ' / ' + (a.cps.length - 1) + (best ? ' · record ' + fmtT(best) : ''));
       objDir(x, z);
       return;
     }
@@ -151,17 +152,17 @@
     }
     const left = a.time - run.t, unit = a.kind === 'jump' ? ' m' : a.kind === 'smash' ? ' casses' : a.kind === 'cops' ? ' s' : ' pts';
     let line = HOW[a.kind][1]; objDir(null);
-    if (a.kind === 'jump') { const d = Math.hypot(a.start[0] - c.x, a.start[1] - c.z); if (d > 110) { line = 'Reviens dans la carrière (suis la flèche)'; objDir(a.start[0], a.start[1]); } }
+    if (a.kind === 'jump') { const d = Math.hypot(a.start[0] - c.x, a.start[1] - c.z); if (d > 110) { line = 'Reviens dans la carrière (suis la flèche)'; objDir(a.start[0], a.start[1], CHAL_CSS); } }
     actPanel(a.name, line + '\nReste ' + fmtT(Math.max(0, left)) + ' · ' + Math.round(run.score) + unit);
     if (left <= 0) { if (a.kind === 'cops') return endAct(false, 'La police t’a gardé en vue'); endAct(run.score > 0, Math.round(run.score) + unit); }
   }
   function actMinimap(add) {
     if (run) { const a = run.a;
-      if (a.kind === 'race') for (let k = a.cps.length - 1; k >= run.cp; k--) add({ x: a.cps[k][0], z: a.cps[k][1] }, k === run.cp ? '#ffffff' : k === a.cps.length - 1 ? '#ffe14a' : '#3ac8ff');
-      if (run.dest) add({ x: run.dest[0], z: run.dest[1] }, '#ffffff');
-      if (a.kind === 'jump') add({ x: a.start[0], z: a.start[1] }, '#ff9a2a');
+      if (a.kind === 'race') for (let k = a.cps.length - 1; k >= run.cp; k--) add({ x: a.cps[k][0], z: a.cps[k][1] }, k === run.cp ? OBJ_CSS : 'rgba(255,79,224,.4)'); // the next one bright, the others faint
+      if (run.dest) add({ x: run.dest[0], z: run.dest[1] }, OBJ_CSS);
+      if (a.kind === 'jump') add({ x: a.start[0], z: a.start[1] }, CHAL_CSS);
       return; }
-    if (!acts || mode !== 'solo' || mission) return; for (const a of acts) if (unlocked(a.id)) add({ x: a.start[0], z: a.start[1] }, a.kind === 'race' ? '#3ac8ff' : '#ff9a2a'); }
+    if (!acts || mode !== 'solo' || mission) return; for (const a of acts) if (unlocked(a.id)) add({ x: a.start[0], z: a.start[1] }, a.kind === 'race' ? RACE_CSS : CHAL_CSS); }
   function actRecords() { // for the campaign screen
     return ACT_DEF.map(d => { const p = Profile.cur, r = p && (d.kind === 'race' ? p.records['race_' + d.id] : p.records['defi_' + d.id]); return { id: d.id, name: d.name, kind: d.kind, best: r === undefined ? null : d.kind === 'race' ? fmtT(r) : r + (d.kind === 'jump' ? ' m' : d.kind === 'smash' ? ' casses' : d.kind === 'deliv' ? ' pts' : d.kind === 'cops' ? ' s d’avance' : ' pts') }; });
   }

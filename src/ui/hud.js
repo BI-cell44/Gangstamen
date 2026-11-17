@@ -83,15 +83,18 @@ function drawMinimapOn(cv, me) {
     mg.globalAlpha = 1 - e * 0.3; mg.fillStyle = `rgb(${rr},${gg},${b2})`; mg.strokeStyle = 'rgba(0,0,0,.8)'; mg.lineWidth = Math.max(1, k * 0.9);
     mg.fill(); mg.stroke(); mg.restore();
   }
-  // the mission target (the green arrow of the mission panel): a green chevron on the rim when it is off the minimap
+  // the target (the arrow of the mission panel): a chevron of its colour on the rim when it is off the minimap
   const tg = gx && ((gx.modeTarget && gx.modeTarget(me.owner)) || (me.owner === locals[0] && gx.objTarget));
   if (tg) {
     const dx = tg.x - me.x, dz = tg.z - me.z, c = Math.cos(me.h), s = Math.sin(me.h);
     const sx = (dx * c - dz * s) * Z, sy = (dx * s + dz * c) * Z;
-    if (Math.hypot(sx, sy) > R - 8) {
-      const a = Math.atan2(sy, sx), k = S / 336 * 2, size = 15 * k * (split ? 1.9 : 1), rim = R - 4 - size * 0.3;
+    const k = S / 336 * 2, size = 15 * k * (split ? 1.9 : 1);
+    // (17 nov., user) inside the minimap: a disc as big as the chevron and of its colour on the target itself
+    if (Math.hypot(sx, sy) <= R - 8) { mg.beginPath(); mg.arc(sx, sy, size * 0.5, 0, Math.PI * 2); mg.fillStyle = tg.col || OBJ_CSS; mg.strokeStyle = '#000'; mg.lineWidth = Math.max(1.5, k * 1.2); mg.fill(); mg.stroke(); }
+    else {
+      const a = Math.atan2(sy, sx), rim = R - 4 - size * 0.3;
       mg.save(); mg.translate(Math.cos(a) * rim, Math.sin(a) * rim); mg.rotate(a); chevronPath(mg, size); mg.lineJoin = 'round';
-      mg.fillStyle = '#7be07b'; mg.strokeStyle = '#000'; mg.lineWidth = Math.max(1.5, k * 1.2); mg.fill(); mg.stroke(); mg.restore();
+      mg.fillStyle = tg.col || OBJ_CSS; mg.strokeStyle = '#000'; mg.lineWidth = Math.max(1.5, k * 1.2); mg.fill(); mg.stroke(); mg.restore();
     }
   }
   const k = S / 336 * 2;
@@ -126,8 +129,9 @@ function buildPlayerHuds() {
     const pt = document.createElement('div'); pt.className = 'pt'; pt.hidden = true;
     const cv = document.createElement('canvas'); cv.width = 192; cv.height = 192;
     const pst = document.createElement('div'); pst.className = 'pst';
-    d.append(pn, pr, ps, pb, pt, cv, pst); root.append(d);
-    L.hud = { root: d, pr, ps, pb: pbi, pt, cv, pst };
+    const pw = document.createElement('div'); pw.className = 'pw'; pw.hidden = true; // (17 nov., user) the bonus weapons of each player (gx hud)
+    d.append(pn, pr, ps, pb, pt, cv, pst, pw); root.append(d);
+    L.hud = { root: d, pr, ps, pb: pbi, pt, cv, pst, pw };
   }
   layoutViews();
 }
@@ -162,7 +166,7 @@ function updateHud(dt) {
       h.ps.firstChild.nodeValue = Math.round(c.speed * 3.6);
       if (c.phys && useRealPhysics(c)) { const gt = c.phys.gear + (c.phys.gear === 1 ? 're' : 'e'), sp = h.ps.lastChild; if (sp.textContent !== 'KM/H · ' + gt) sp.textContent = 'KM/H · ' + gt; } else if (h.ps.lastChild.textContent !== 'KM/H') h.ps.lastChild.textContent = 'KM/H';
       h.pb.style.width = c.hp + '%';
-      h.pr.textContent = 'RESPECT ' + L.respect + (gx && gx.gmode ? ' · POINTS ' : ' · KO ') + L.kills;
+      { const t = gx && gx.gmode ? gx.scoreText(L.kills).replace(/^Checkpoints /, 'COURSE ').toUpperCase() : 'RESPECT ' + L.respect + ' · KO ' + L.kills; if (h.pr.textContent !== t) h.pr.textContent = t; } // captures, points or laps and checkpoints of the modes
       L.streetAcc += dt; if (L.streetAcc > 0.3) { L.streetAcc = 0; const s = streetAt(c.x, c.z); if (s !== L.street) { L.street = s; h.pst.textContent = s; } drawMinimapOn(h.cv, c); }
       if (L.tickT > 0) { L.tickT -= dt; if (L.tickT <= 0) h.pt.hidden = true; }
     }
