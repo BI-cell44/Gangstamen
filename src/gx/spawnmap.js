@@ -108,7 +108,7 @@
         while (placed.some(([qx, qy]) => Math.hypot(qx - px, qy - py) < 20 * u)) px += 24 * u; // two starts at the same place: side by side
         placed.push([px, py]);
         const rec = actRecords().find(r => r.id === a.id), lock = !unlocked(a.id);
-        hits.push({ x: px, y: py, r: 14 * u, act: a, label: (race ? 'Course : ' : 'Défi : ') + a.name + (lock ? ' (pas encore débloqué)' : rec && rec.best ? ' · record ' + rec.best : '') });
+        hits.push({ x: px, y: py, r: 14 * u, act: a, label: (race ? 'Course : ' : 'Défi : ') + a.name + (lock ? ' · à débloquer : ' + (LOCK_TXT[a.id] || 'plus tard') : rec && rec.best ? ' · record ' + rec.best : '') });
         g.save(); g.translate(px, py); g.scale(u, u); actIcon(g, race, lock); g.restore(); }
       const c = locals[0] && locals[0].car;
       if (c) { const [px, py] = toMap(c.x, c.z); g.fillStyle = '#f2c14e'; g.beginPath(); g.arc(px, py, 6, 0, Math.PI * 2); g.fill(); }
@@ -146,7 +146,7 @@
         b.addEventListener('click', () => choose(s)); b.addEventListener('focus', () => draw(s)); b.addEventListener('mouseenter', () => draw(s));
         list.append(b);
       });
-      { const side = el.querySelector('.spSide'); side.innerHTML = '<b>Courses et défis</b> (mêmes icônes sur la carte) :<br>' + actRecords().map(r => '<img src="' + actIconURL(r.kind === 'race', !unlocked(r.id)) + '" alt="" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px">' + r.name + ' : ' + (r.best || '—')).join('<br>');
+      { const side = el.querySelector('.spSide'); side.innerHTML = '<b>Courses et défis</b> (mêmes icônes sur la carte) :<br>' + actRecords().map(r => '<img src="' + actIconURL(r.kind === 'race', !unlocked(r.id)) + '" alt="" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px">' + r.name + ' : ' + (unlocked(r.id) ? r.best || '—' : 'à débloquer (' + (LOCK_TXT[r.id] || 'plus tard') + ')')).join('<br>');
         const pc = postcards(), nf = pc.filter(p => p.text).length, h = document.createElement('div'); h.style.marginTop = '12px'; h.innerHTML = '<b>Cartes postales</b> : ' + nf + ' / ' + pc.length + ' lieux découverts. Sur la carte : une petite carte là où tu l’as trouvée (clique pour la revoir), « ? » là où il en reste une.'; const cards = el.querySelector('.spCards'); cards.innerHTML = ''; cards.append(h); h.style.marginTop = '0'; postcardGallery(h); }
       if (big) setBig(false);
       open = true; blocking = true; el.hidden = false; draw(null); list.firstChild.focus();

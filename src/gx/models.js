@@ -72,7 +72,7 @@
       const S = 2.3, sz3 = o.geometry.userData.size, gy = Math.max(...ring(x, z));
       // the model: boom along -x, pedestal near +x; turn it so that the boom points to the water
       const g = new THREE.Group(); o.scale.setScalar(S); o.position.set(-(sz3[0] / 2 - 0.82) * S, sz3[1] / 2 * S, 0); g.add(o);
-      const plinth = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.8, 2.4, 12), new THREE.MeshLambertMaterial({ color: hd.lin(0x8a8880) })); plinth.position.y = -0.1; // goes 1.3 m into the ground plinth.userData.hdLinear = true; g.add(plinth);
+      const plinth = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.8, 2.4, 12), new THREE.MeshLambertMaterial({ color: hd.lin(0x8a8880) })); plinth.position.y = -0.1; plinth.userData.hdLinear = true; g.add(plinth); // goes 1.3 m into the ground (18 nov.: this comment used to swallow g.add, the cranes had no plinth)
       g.position.set(x, gy + 0.9, z); g.rotation.y = Math.atan2(dz, -dx) + turn; g.userData.hdLinear = true; scene.add(g); portCranes.push(g);
       gridAdd([x - 2.2, z, x + 2.2, z], 3.5); gridAdd([x, z - 2.2, x, z + 2.2], 3.5);
     }

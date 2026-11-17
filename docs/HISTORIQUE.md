@@ -99,6 +99,7 @@ Ce qui a été construit, dans l'ordre. Le détail de chaque changement est dans
 | 17 nov. 2026 | Pause : moment de la journée et météo (HD), pas de noms de touches sur tactile. Manette dans les menus : déplacement selon la position des boutons (haut/bas par ligne, gauche/droite dans la ligne). Test : `tools/tests/test_pad_menu.js` | ultra |
 | 17 nov. 2026 | Carte postale « Chapidock » : vue aérienne IGN du chapiteau (extrait de `data/ortho/`, Licence Ouverte), crédit sans « Wikimedia Commons » pour ce qui ne vient pas de Commons | ultra |
 | 18 nov. 2026 | Carte postale « Place Jean-Macé » : la plaque (Kalepom, CC BY-SA 4.0). Tactile : une pastille par arme, touchée pour la choisir (le toucher ne changeait rien avant : il faisait défiler sans qu'on le voie), horloge sous les boutons en portrait. Radio « Rap Nantes 44 » (Ultra) : vraie boucle boom-bap de 8 mesures (Pixabay, Petrushkasound), au niveau des autres stations ; voix « yo » prévue (`data/music/yo.mp3`, jouée toutes les 4 mesures) mais pas encore fournie | ultra |
+| 18 nov. 2026 | Grues de quai (île de Nantes, carrière) : leur socle n'avait jamais été ajouté à la scène (un commentaire `//` avalait `g.add(plinth)` dans `src/gx/models.js`) ; elles reposent maintenant sur le quai. Carte et records : un défi verrouillé dit comment le débloquer (« Semer la police » : mission 5 « Pin-pon » de la campagne) | ultra |
 
 ## Annexe : feuille de route Ultra, détail des cycles et des retours (14 et 15 nov. 2026)
 

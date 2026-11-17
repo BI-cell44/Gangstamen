@@ -44,7 +44,7 @@
     if (what === 'police' || what === 'd_cops') return missionDone('police');
     return true;
   }
-  const LOCK_TXT = { sport: '5 cartes postales', police: 'mission Pin-pon', d_cops: 'mission Pin-pon' };
+  const LOCK_TXT = { sport: '5 cartes postales', police: 'mission 5 « Pin-pon » de la campagne', d_cops: 'mission 5 « Pin-pon » de la campagne' };
   let lastUnl = null;
   function unlockNews() {
     const now = ['sport', 'police'].filter(unlocked).join(); if (lastUnl === null) { lastUnl = now; return null; }

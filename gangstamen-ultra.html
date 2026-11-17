@@ -8755,7 +8755,7 @@ const gx = !HD ? null : (() => {
     if (what === 'police' || what === 'd_cops') return missionDone('police');
     return true;
   }
-  const LOCK_TXT = { sport: '5 cartes postales', police: 'mission Pin-pon', d_cops: 'mission Pin-pon' };
+  const LOCK_TXT = { sport: '5 cartes postales', police: 'mission 5 « Pin-pon » de la campagne', d_cops: 'mission 5 « Pin-pon » de la campagne' };
   let lastUnl = null;
   function unlockNews() {
     const now = ['sport', 'police'].filter(unlocked).join(); if (lastUnl === null) { lastUnl = now; return null; }
@@ -8864,7 +8864,7 @@ const gx = !HD ? null : (() => {
       const S = 2.3, sz3 = o.geometry.userData.size, gy = Math.max(...ring(x, z));
       // the model: boom along -x, pedestal near +x; turn it so that the boom points to the water
       const g = new THREE.Group(); o.scale.setScalar(S); o.position.set(-(sz3[0] / 2 - 0.82) * S, sz3[1] / 2 * S, 0); g.add(o);
-      const plinth = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.8, 2.4, 12), new THREE.MeshLambertMaterial({ color: hd.lin(0x8a8880) })); plinth.position.y = -0.1; // goes 1.3 m into the ground plinth.userData.hdLinear = true; g.add(plinth);
+      const plinth = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.8, 2.4, 12), new THREE.MeshLambertMaterial({ color: hd.lin(0x8a8880) })); plinth.position.y = -0.1; plinth.userData.hdLinear = true; g.add(plinth); // goes 1.3 m into the ground (18 nov.: this comment used to swallow g.add, the cranes had no plinth)
       g.position.set(x, gy + 0.9, z); g.rotation.y = Math.atan2(dz, -dx) + turn; g.userData.hdLinear = true; scene.add(g); portCranes.push(g);
       gridAdd([x - 2.2, z, x + 2.2, z], 3.5); gridAdd([x, z - 2.2, x, z + 2.2], 3.5);
     }
@@ -9667,7 +9667,7 @@ const gx = !HD ? null : (() => {
         while (placed.some(([qx, qy]) => Math.hypot(qx - px, qy - py) < 20 * u)) px += 24 * u; // two starts at the same place: side by side
         placed.push([px, py]);
         const rec = actRecords().find(r => r.id === a.id), lock = !unlocked(a.id);
-        hits.push({ x: px, y: py, r: 14 * u, act: a, label: (race ? 'Course : ' : 'Défi : ') + a.name + (lock ? ' (pas encore débloqué)' : rec && rec.best ? ' · record ' + rec.best : '') });
+        hits.push({ x: px, y: py, r: 14 * u, act: a, label: (race ? 'Course : ' : 'Défi : ') + a.name + (lock ? ' · à débloquer : ' + (LOCK_TXT[a.id] || 'plus tard') : rec && rec.best ? ' · record ' + rec.best : '') });
         g.save(); g.translate(px, py); g.scale(u, u); actIcon(g, race, lock); g.restore(); }
       const c = locals[0] && locals[0].car;
       if (c) { const [px, py] = toMap(c.x, c.z); g.fillStyle = '#f2c14e'; g.beginPath(); g.arc(px, py, 6, 0, Math.PI * 2); g.fill(); }
@@ -9705,7 +9705,7 @@ const gx = !HD ? null : (() => {
         b.addEventListener('click', () => choose(s)); b.addEventListener('focus', () => draw(s)); b.addEventListener('mouseenter', () => draw(s));
         list.append(b);
       });
-      { const side = el.querySelector('.spSide'); side.innerHTML = '<b>Courses et défis</b> (mêmes icônes sur la carte) :<br>' + actRecords().map(r => '<img src="' + actIconURL(r.kind === 'race', !unlocked(r.id)) + '" alt="" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px">' + r.name + ' : ' + (r.best || '—')).join('<br>');
+      { const side = el.querySelector('.spSide'); side.innerHTML = '<b>Courses et défis</b> (mêmes icônes sur la carte) :<br>' + actRecords().map(r => '<img src="' + actIconURL(r.kind === 'race', !unlocked(r.id)) + '" alt="" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px">' + r.name + ' : ' + (unlocked(r.id) ? r.best || '—' : 'à débloquer (' + (LOCK_TXT[r.id] || 'plus tard') + ')')).join('<br>');
         const pc = postcards(), nf = pc.filter(p => p.text).length, h = document.createElement('div'); h.style.marginTop = '12px'; h.innerHTML = '<b>Cartes postales</b> : ' + nf + ' / ' + pc.length + ' lieux découverts. Sur la carte : une petite carte là où tu l’as trouvée (clique pour la revoir), « ? » là où il en reste une.'; const cards = el.querySelector('.spCards'); cards.innerHTML = ''; cards.append(h); h.style.marginTop = '0'; postcardGallery(h); }
       if (big) setBig(false);
       open = true; blocking = true; el.hidden = false; draw(null); list.firstChild.focus();
