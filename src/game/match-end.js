@@ -24,10 +24,11 @@ function matchResult(timeUp) {
     return ['Victoire des ' + TEAMS[sc[0] > sc[1] ? 0 : 1].name, line];
   }
   rows.sort((a, b) => b.k - a.k || b.r - a.r);
-  if (rows.length === 1) return [timeUp ? 'Temps écoulé' : 'Le quartier est à vous', rows[0].k + ' KO · ' + rows[0].r + ' respect'];
+  const sc = k => gx && gx.gmode ? gx.scoreText(k) : k + ' KO'; // (17 nov.) points of the hill, progress of the race
+  if (rows.length === 1) return [timeUp ? 'Temps écoulé' : 'Le quartier est à vous', sc(rows[0].k) + ' · ' + rows[0].r + ' respect'];
   const top = rows[0], second = rows[1];
-  if (top.k === second.k && top.r === second.r) return ['Égalité', top.k + ' KO chacun'];
-  return [top.name.replace(' (vous)', '') + ' gagne', top.k + ' KO · ' + top.r + ' respect'];
+  if (top.k === second.k && top.r === second.r) return ['Égalité', sc(top.k) + ' chacun'];
+  return [top.name.replace(' (vous)', '') + ' gagne', sc(top.k) + ' · ' + top.r + ' respect'];
 }
 function checkMatch(dt) {
   if (Match.over || !started) return;
@@ -58,12 +59,12 @@ function rematch() { // everyone back to the start, scores to zero
     const c = L.car; L.respect = 0; L.kills = 0; L.deadT = 0;
     c.alive = true; c.hp = 100; c.vx = c.vz = 0;
     c.mesh.userData.mBody.color.setHex(c.mesh.userData.base); c.mesh.userData.mPaint.color.setHex(c.mesh.userData.paint);
-    c.place(...(mode === 'online' ? (L.team >= 0 ? teamSpawn(L.team) : randomSpawn()) : L.spawn));
+    c.place(...(mode === 'online' ? onlineSpawn(L.team) : L.spawn));
   }
   for (const r of rivals) if (!r.proxy) spawnRival(r);
   if (gx) gx.rematch();
   updateClock(); updateTeamBar();
-  flashAll('Revanche !', Match.goal ? Match.goal + ' KO pour gagner' : 'C’est reparti');
+  flashAll('Revanche !', Match.goal ? (gx && gx.gmode ? gx.goalText() : Match.goal + ' KO pour gagner') : 'C’est reparti');
   try { renderer.domElement.focus(); } catch (e) { }
 }
 function applyMatch(m) { // non-host: follow the host's match state [n, seconds left, over, title, sub]

@@ -98,7 +98,7 @@ function step(dt, now) {
       if (L.deadT <= 0) {
         c.alive = true; c.hp = 100;
         c.mesh.userData.mBody.color.setHex(c.mesh.userData.base); c.mesh.userData.mPaint.color.setHex(c.mesh.userData.paint);
-        c.place(...(L.team >= 0 ? teamSpawn(L.team) : mode === 'online' ? randomSpawn() : L.spawn));
+        c.place(...((gx && gx.raceRespawn && gx.raceRespawn(L)) || (L.team >= 0 ? teamSpawn(L.team) : mode === 'online' ? randomSpawn() : L.spawn)));
       }
     }
   }

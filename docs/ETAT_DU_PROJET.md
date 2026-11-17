@@ -110,7 +110,7 @@ Performances réelles, son (intro, radio, voix, cloche du tram), vibrations, res
 - Escalier Sainte-Anne : les volées du bas dépassent un peu du terrain.
 - Le Vautour fuit « vers le quai de la Fosse » alors que le quai est dans la carte.
 - La nouvelle zone n'a que des façades dessinées (pas de photos Panoramax).
-- En ligne : capture du drapeau absente ; circulation, piétons, bonus et tram non synchronisés.
+- En ligne : capture du drapeau absente ; circulation, piétons, bonus et tram non synchronisés. Course et colline en ligne testées le 17 nov. à deux pages sur le serveur Node local (départ, objectif transmis, fin de partie), pas encore sur claude.ai à plusieurs.
 - Mairie : fronton supposé, dos et côtés copiés de la face ; quelques toits ou rez-de-chaussée étranges ; enseignes nationales génériques.
 
 ## 5. Artifacts claude.ai

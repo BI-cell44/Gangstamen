@@ -53,19 +53,25 @@ function renderSlots() {
   const sc = $('soloCtl'); if (sc) cycleControl(sc, () => settings.soloCtl, v => { settings.soloCtl = v; });
 }
 document.querySelectorAll('#nSeg button').forEach(b => b.addEventListener('click', () => { settings.nPlayers = +b.dataset.n; saveSettings(); renderSlots(); }));
-document.querySelectorAll('#mSeg button').forEach(b => b.addEventListener('click', () => { settings.gmode = +b.dataset.m; settings.teams = b.dataset.m === '1' || b.dataset.m === '2'; saveSettings(); renderSlots(); b.focus(); }));
+document.querySelectorAll('#mSeg button').forEach(b => b.addEventListener('click', () => { settings.gmode = +b.dataset.m; settings.teams = b.dataset.m === '1' || b.dataset.m === '2'; saveSettings(); renderSlots(); renderEndSegs(); b.focus(); }));
 function renderOnlineSegs() {
   document.querySelectorAll('#oSeg button').forEach(b => b.classList.toggle('on', +b.dataset.m === (HD && settings.netGmode ? settings.netGmode : settings.netTeams ? 1 : 0)));
   document.querySelectorAll('#tSeg button').forEach(b => b.classList.toggle('on', +b.dataset.t === settings.netTeam));
 }
-document.querySelectorAll('#oSeg button').forEach(b => b.addEventListener('click', () => { settings.netTeams = b.dataset.m === '1'; settings.netGmode = +b.dataset.m >= 3 ? +b.dataset.m : 0; saveSettings(); renderOnlineSegs(); }));
+document.querySelectorAll('#oSeg button').forEach(b => b.addEventListener('click', () => { settings.netTeams = b.dataset.m === '1'; settings.netGmode = +b.dataset.m >= 3 ? +b.dataset.m : 0; saveSettings(); renderOnlineSegs(); renderEndSegs(); }));
 document.querySelectorAll('#tSeg button').forEach(b => b.addEventListener('click', () => { settings.netTeam = +b.dataset.t; saveSettings(); renderOnlineSegs(); }));
 renderOnlineSegs();
+// (17 nov., user) the « Fin de partie » choices follow the mode picked in the same menu: KO, captures, points or laps
+function segMode(b) { const v = b.closest('section'); if (!HD || !v) return 0; const k = v.id === 'vSplit' ? settings.gmode : v.id === 'vOnline' ? settings.netGmode : 0; return MODE_GOALS[k] ? k : 0; }
+const KO_GOALS = [[10, '10 KO'], [20, '20 KO'], [30, '30 KO'], [0, 'Sans']];
 function renderEndSegs() {
-  document.querySelectorAll('.goalSeg button').forEach(b => b.classList.toggle('on', +b.dataset.g === settings.goal));
+  document.querySelectorAll('.goalSeg').forEach(seg => {
+    const k = segMode(seg), opts = k ? MODE_GOALS[k].opts : KO_GOALS, cur = k ? modeGoalSetting(k) : settings.goal;
+    seg.querySelectorAll('button').forEach((b, i) => { const o = opts[i]; b.hidden = !o; if (!o) return; b.dataset.g = o[0]; if (b.textContent !== o[1]) b.textContent = o[1]; b.classList.toggle('on', o[0] === cur); });
+  });
   document.querySelectorAll('.limitSeg button').forEach(b => b.classList.toggle('on', +b.dataset.l === settings.limit));
 }
-document.querySelectorAll('.goalSeg button').forEach(b => b.addEventListener('click', () => { settings.goal = +b.dataset.g; saveSettings(); renderEndSegs(); }));
+document.querySelectorAll('.goalSeg button').forEach(b => b.addEventListener('click', () => { const k = segMode(b); if (k) settings[MODE_GOALS[k].key] = +b.dataset.g; else settings.goal = +b.dataset.g; saveSettings(); renderEndSegs(); }));
 document.querySelectorAll('.limitSeg button').forEach(b => b.addEventListener('click', () => { settings.limit = +b.dataset.l; saveSettings(); renderEndSegs(); }));
 renderEndSegs();
 function renderCtlTable() {

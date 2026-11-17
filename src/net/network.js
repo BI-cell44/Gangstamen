@@ -69,7 +69,7 @@ async function netInit() {
 function lobbyGames() {
   if (!Net.api) return [];
   const out = [];
-  for (const p of Net.api.peers()) { const g = p.presence && p.presence.gm; if (g && typeof g.code === 'string' && /^[a-z0-9]{4}$/.test(g.code) && !p.sameTab) out.push({ code: g.code, n: Math.max(1, Math.min(12, +g.n || 1)), host: String(g.host || '?').slice(0, 14), md: g.md === 1 ? 1 : 0, gx: [3, 4].includes(g.gx) ? g.gx : 0, gl: [10, 20, 30].includes(g.gl) ? g.gl : 0, tl: [5, 10, 15].includes(g.tl) ? g.tl : 0 }); }
+  for (const p of Net.api.peers()) { const g = p.presence && p.presence.gm; if (g && typeof g.code === 'string' && /^[a-z0-9]{4}$/.test(g.code) && !p.sameTab) out.push({ code: g.code, n: Math.max(1, Math.min(12, +g.n || 1)), host: String(g.host || '?').slice(0, 14), md: g.md === 1 ? 1 : 0, gx: [3, 4].includes(g.gx) ? g.gx : 0, gl: Number.isInteger(g.gl) && g.gl >= 0 && g.gl <= 600 ? g.gl : 0, tl: [5, 10, 15].includes(g.tl) ? g.tl : 0 }); }
   return out;
 }
 function renderGames() {
@@ -85,7 +85,7 @@ function renderGames() {
   if (!games.length) { const e = document.createElement('div'); e.className = 'empty'; e.textContent = 'Aucune partie pour l’instant : créez-en une.'; box.replaceChildren(e); return; }
   box.replaceChildren(...games.map(g => {
     const b = document.createElement('button'); b.className = 'mbtn';
-    b.textContent = 'Partie ' + g.code.toUpperCase() + ' · ' + g.host + ' · ' + (g.gx === 3 ? 'Roi de la colline' : g.gx === 4 ? 'Course' : g.md ? 'Par équipes' : 'Chacun pour soi') + (g.gl ? ' · ' + g.gl + ' KO' : '') + (g.tl ? ' · ' + g.tl + ' min' : '') + ' · ' + g.n + '/12';
+    b.textContent = 'Partie ' + g.code.toUpperCase() + ' · ' + g.host + ' · ' + (g.gx === 3 ? 'Roi de la colline' : g.gx === 4 ? 'Course' : g.md ? 'Par équipes' : 'Chacun pour soi') + (g.gl ? ' · ' + (g.gx === 3 ? g.gl + ' points' : g.gx === 4 ? (g.gl > 8 ? Math.round(g.gl / 8) + ' tours' : '1 tour') : g.gl + ' KO') : '') + (g.tl ? ' · ' + g.tl + ' min' : '') + ' · ' + g.n + '/12';
     b.disabled = g.n >= 12;
     b.addEventListener('click', () => startOnline(g.code, false, g.md, g.gl, g.tl, g.gx));
     return b;
@@ -145,7 +145,7 @@ async function startOnline(code, create, md, gl, tl, gxm) {
   Net.room = room; Net.code = code; mode = 'online';
   Net.gxm = HD ? (create ? (settings.netGmode || 0) : (gxm || 0)) : 0;
   teamMode = Net.gxm ? false : create ? !!settings.netTeams : !!md;
-  setupMatch(create ? settings.goal : gl || 0, create ? settings.limit : tl || 0);
+  setupMatch(create ? (Net.gxm ? modeGoalSetting(Net.gxm) : settings.goal) : gl || 0, create ? settings.limit : tl || 0);
   Net.team = -1;
   if (teamMode) { // chosen team, or the smaller one
     if (settings.netTeam === 0 || settings.netTeam === 1) Net.team = settings.netTeam;
@@ -156,6 +156,7 @@ async function startOnline(code, create, md, gl, tl, gxm) {
     }
   }
   Net.isHost = !!create; Net.colIdx = create ? 0 : ((others + (Math.random() * 3 | 0)) % NET_PAINT.length);
+  Net.gridSlot = create ? 0 : Math.min(11, others || 1 + (Math.random() * 11 | 0)); // place on the starting grid of a race (the peer list can still be empty here)
   for (const r of rivals) r.proxy = !create;
   room.onPeers(ch => {
     for (const p of ch.left) { const R = Net.remotes.get(p.peer); if (R) { scene.remove(R.car.mesh); Net.remotes.delete(p.peer); feed(R.nick + ' est parti'); } }

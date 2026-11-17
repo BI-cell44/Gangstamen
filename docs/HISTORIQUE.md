@@ -83,6 +83,7 @@ Ce qui a été construit, dans l'ordre. Le détail de chaque changement est dans
 | 16 nov. 2026 | Fable 5.2 : Nefs de l'île de Nantes en halle ouverte (toit sur colonnes, on roule dessous) | ultra |
 | 16 nov. 2026 | Fable 5.2 : passagers à pied sur le bac (embarquent, traversent, débarquent) | ultra |
 | 16 nov. 2026 | Fable 5.2 : route de quai jusqu'au pont Anne-de-Bretagne (l'île est reliée par la route), ponts sur l'eau ouverts à la circulation, à la police et aux Rapaces | ultra |
+| 17 nov. 2026 | Course de checkpoints (écran partagé et en ligne) : circuit en boucle depuis la grille du boulevard de la Liberté, voitures tournées vers le premier checkpoint, seul le prochain checkpoint affiché, chevron vert par joueur sur la minicarte, réapparition au dernier checkpoint, 1 à 5 tours. Fin de partie selon le mode (captures, points, tours) en écran partagé et en ligne ; objectif de l'hôte transmis aux invités | ultra |
 
 ## Annexe : feuille de route Ultra, détail des cycles et des retours (14 et 15 nov. 2026)
 

@@ -122,12 +122,24 @@ function spawnPickup(pk) {
 }
 // start line on the boulevard de la Liberté; players line up along it
 function spawnPoint(slot, team) {
+  if (isRace()) return raceSpawn(slot);
   if (team >= 0) { // each gang has its own starting grid, numbered within the gang
     const rank = locals.filter(L => L.team === team).length;
     return gridSpawn(bases()[team], rank);
   }
   return gridSpawn(bases()[1], slot);
 }
+// (17 nov., user) checkpoint race: one starting grid on the boulevard de la Liberté, split screen and online alike,
+// cars turned towards the first checkpoint; the finish line is on the grid (the race is a loop)
+const RACE_CP1 = [56, 50]; // a node of the street graph: the marker is not moved, the cars point right at it
+function isRace() { return HD && ((mode === 'split' && settings.gmode === 4) || (mode === 'online' && typeof Net !== 'undefined' && Net.gxm === 4)); }
+function raceGrid() {
+  const b = bases()[1], tx = RACE_CP1[0] - b.x, tz = RACE_CP1[1] - b.z, s = tx * b.ux + tz * b.uz < 0 ? -1 : 1;
+  const g = { x: b.x, z: b.z, ux: b.ux * s, uz: b.uz * s, road: b.road };
+  return g;
+}
+function raceSpawn(slot) { const p = gridSpawn(raceGrid(), slot); p[2] = Math.atan2(-(RACE_CP1[0] - p[0]), -(RACE_CP1[1] - p[1])); return p; }
+function onlineSpawn(team) { return isRace() ? raceSpawn(Net.gridSlot || 0) : team >= 0 ? teamSpawn(team) : randomSpawn(); }
 function randomSpawn() { // Math.random, not the seeded generator: every client must land somewhere different
   let n = 0; for (let k = 0; k < 50; k++) { n = (Math.random() * G.x.length) | 0; if (G.adj[n].length && Math.abs(G.x[n] - CX) < HX - 20 && Math.abs(G.z[n] - CZ) < HZ - 20) break; }
   const nb = G.adj[n][0] ?? n;
@@ -161,7 +173,7 @@ function makeLocal(slot, ctl, paint, team = -1) {
   const L = { slot, ctl, car, cam: new THREE.PerspectiveCamera(56, 1, 0.5, 2200), camMode: 0, look: null, respect: 0, kills: 0, deadT: 0, fireCd: 0,
     hud: null, vp: { x: 0, y: 0, w: 1, h: 1 }, tickT: 0, street: '', streetAcc: 0, colour: '#' + new THREE.Color(c1).getHexString() };
   car.owner = L; L.team = team; car.team = team;
-  const sp = mode === 'online' ? (team >= 0 ? teamSpawn(team) : randomSpawn()) : spawnPoint(slot, team);
+  const sp = mode === 'online' ? onlineSpawn(team) : spawnPoint(slot, team);
   car.place(...sp); L.spawn = sp;
   return L;
 }

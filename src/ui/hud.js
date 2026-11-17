@@ -83,7 +83,7 @@ function drawMinimapOn(cv, me) {
     mg.fill(); mg.stroke(); mg.restore();
   }
   // the mission target (the green arrow of the mission panel): a green chevron on the rim when it is off the minimap
-  const tg = gx && me.owner === locals[0] && gx.objTarget;
+  const tg = gx && ((gx.modeTarget && gx.modeTarget(me.owner)) || (me.owner === locals[0] && gx.objTarget));
   if (tg) {
     const dx = tg.x - me.x, dz = tg.z - me.z, c = Math.cos(me.h), s = Math.sin(me.h);
     const sx = (dx * c - dz * s) * Z, sy = (dx * s + dz * c) * Z;

@@ -13,23 +13,32 @@
   }
   // (17 nov., user) the Rapaces' flag on the place des Garennes, up the butte; the Chantenaysiens' in front of the town hall
   const FLAG_AT = [[864, 30], [160, -440]];
-  const CP_ROUTE = [[160, -440], [-150, -537], [-86, -374], [-200, -150], [-232, 352], [-300, 540], [45, 283], [100, 20]];
-  function setupMode(k) {
+  // (17 nov., user) the race is a loop: start on the grid of the boulevard de la Liberté (raceGrid, game/teams.js), first
+  // checkpoint at RACE_CP1, then the town hall… the station, and the finish line back on the grid; one or more laps
+  const CP_ROUTE = [RACE_CP1, [160, -440], [-150, -537], [-86, -374], [-200, -150], [-232, 352], [-300, 540]];
+  // goal: the host's Match.goal for an online guest (already in the host's units), else the menu's choice
+  function setupMode(k, goal) {
     gm = { kind: k, t: 0, objs: [] };
     if (k === 2) { // flags at the two bases
       gm.score = [0, 0];
       gm.flags = [0, 1].map(t => { const [x, z] = roadPoint(...FLAG_AT[t]); const m = addMarker(x, z, 4, TEAMS[t].body); return { team: t, home: [x, z], x, z, carrier: null, atHome: true, mesh: flagMesh(t), marker: m, idle: 0 }; });
-      Match.goal = 3;
+      Match.goal = goal ?? modeGoalSetting(2);
     } else if (k === 3) {
       const [x, z] = roadPoint(...P.jeanMace); gm.hill = addMarker(x, z, 26, 0xf2c81e); gm.owner = null;
       for (const r of rivals) r.ai.goal = { x, z };
       for (const L of locals) L.hillT = 0;
-      Match.goal = 60;
+      Match.goal = goal ?? modeGoalSetting(3);
     } else if (k === 4) {
       benchRivals();
-      gm.cps = CP_ROUTE.map(([x, z], i) => { const [a, b] = roadPoint(x, z); return addMarker(a, b, 9, i === CP_ROUTE.length - 1 ? 0xffffff : 0x3ac8ff); });
+      const g = raceGrid();
+      gm.start = [g.x, g.z];
+      gm.cps = CP_ROUTE.map(([x, z]) => { const [a, b] = roadPoint(x, z); return addMarker(a, b, 9, 0x3ac8ff); });
+      gm.cps.push(addMarker(g.x, g.z, 9, 0xffffff));
+      gm.cps.forEach((m, i) => { m.beam.visible = m.ring.visible = i === 0; });
+      const n = gm.cps.length;
+      gm.laps = Math.max(1, goal ? Math.round(goal / n) : modeGoalSetting(4) || 1);
       for (const L of locals) { L.cp = 0; L.kills = 0; }
-      gm.count = 3.5; Match.goal = gm.cps.length;
+      gm.count = 3.5; Match.goal = gm.laps * n;
     }
     updateClock();
   }
@@ -82,18 +91,35 @@
         for (const L of locals) { L.car.vx = L.car.vz = 0; }
         if (after !== before) { flashAll(after > 0 ? String(after) : 'Partez !', after > 0 ? 'Course de checkpoints' : ''); sfx.gun(after > 0); }
       }
+      const n = gm.cps.length;
       for (const L of locals) {
-        const cp = gm.cps[L.cp]; if (!cp) continue;
-        if (Math.hypot(L.car.x - cp.x, L.car.z - cp.z) < cp.r + 2) { L.cp++; L.kills = L.cp; L.respect += 50; sfx.pick(); flashFor(L, L.cp >= gm.cps.length ? 'Arrivée !' : 'Checkpoint ' + L.cp + ' / ' + gm.cps.length, ''); }
+        if (gm.count > 0 || L.cp >= Match.goal || !L.car.alive) continue;
+        const cp = gm.cps[L.cp % n];
+        if (Math.hypot(L.car.x - cp.x, L.car.z - cp.z) < cp.r + 2) {
+          L.cp++; L.kills = L.cp; L.respect += 50; sfx.pick();
+          const i = L.cp % n, lap = Math.floor(L.cp / n);
+          flashFor(L, L.cp >= Match.goal ? 'Arrivée !' : i === 0 ? 'Tour ' + (lap + 1) + ' / ' + gm.laps : 'Checkpoint ' + i + ' / ' + n, L.cp >= Match.goal ? '' : i === n - 1 ? 'Prochain : la ligne d’arrivée' : '');
+        }
       }
-      gm.cps.forEach((m, i) => { const next = locals.some(L => L.cp === i); m.beam.material.opacity = next ? 0.3 + Math.sin(now / 150) * 0.1 : 0.05; m.ring.visible = next || locals.some(L => L.cp < i); });
+      // only the checkpoints a player has to reach next are shown (before, all of them were, and the players started
+      // beside the last one)
+      gm.cps.forEach((m, i) => { const next = locals.some(L => L.cp < Match.goal && L.cp % n === i); m.beam.visible = m.ring.visible = next; m.beam.material.opacity = 0.3 + Math.sin(now / 150) * 0.1; });
     }
     if (locals.length === 1 || true) {
       const txt = gm.kind === 2 ? 'Rapaces ' + gm.score[0] + ' – ' + gm.score[1] + ' Chantenaysiens' : gm.kind === 3 ? (gm.owner ? (gm.owner === 'bots' ? 'Les Rapaces tiennent la place' : gm.owner[0] === 'r' ? ((Net.remotes.get(gm.owner.slice(1)) || {}).nick || 'Un joueur') + ' tient la place' : gm.owner[0] === 't' ? TEAMS[+gm.owner[1]].short + ' tiennent la place' : 'J' + (+gm.owner.slice(1) + 1) + ' tient la place') : 'Place libre ou disputée')
-        : locals.map(L => (mode === 'online' ? 'Toi' : 'J' + (L.slot + 1)) + ' ' + Math.min(L.cp, gm.cps.length) + '/' + gm.cps.length).join(' · ') + (mode === 'online' && Net.remotes.size ? ' · en tête : ' + Math.max(0, ...[...Net.remotes.values()].map(R => R.kills)) : '');
+        : locals.map(L => (mode === 'online' ? 'Toi' : 'J' + (L.slot + 1)) + ' ' + raceText(L.cp)).join(' · ') + (mode === 'online' && Net.remotes.size ? ' · en tête : ' + raceText(Math.max(0, ...[...Net.remotes.values()].map(R => R.kills))) : '');
       objective(MODE_NAMES[gm.kind], txt); objDir(null);
     }
   }
+  function raceText(cp) { const n = gm.cps.length, c = Math.min(cp, Match.goal); if (gm.laps === 1) return c + '/' + n; const lap = Math.min(gm.laps, Math.floor(c / n) + 1); return 'T' + lap + '/' + gm.laps + ' ' + (c >= Match.goal ? n : c % n) + '/' + n; }
+  // (17 nov.) where a player has to go next (green chevron on the rim of his minimap) and where a wrecked car comes back
+  function scoreText(k) { return !gm ? k + ' KO' : gm.kind === 2 ? k + (k > 1 ? ' captures' : ' capture') : gm.kind === 3 ? k + ' points' : k >= Match.goal ? 'Arrivée' : 'Checkpoints ' + raceText(k); }
+  function modeTarget(L) { if (!gm || gm.kind !== 4 || !L || L.cp >= Match.goal) return null; const m = gm.cps[L.cp % gm.cps.length]; return { x: m.x, z: m.z }; }
+  function raceRespawn(L) {
+    if (!gm || gm.kind !== 4) return null;
+    const n = gm.cps.length, i = L.cp % n, [x, z] = i === 0 ? gm.start : [gm.cps[i - 1].x, gm.cps[i - 1].z], t = gm.cps[i];
+    return [x, z, Math.atan2(-(t.x - x), -(t.z - z))];
+  }
   function modeTeamScores() { return gm && gm.kind === 2 ? gm.score.slice() : null; }
-  function goalText() { return gm ? (gm.kind === 2 ? '3 captures pour gagner' : gm.kind === 3 ? '60 points pour gagner' : gm.cps.length + ' checkpoints') : ''; }
-  function rematchMode() { if (!gm) return; const k = gm.kind; stopMode(); setupMode(k); }
+  function goalText() { return gm ? (gm.kind === 2 ? Match.goal + (Match.goal > 1 ? ' captures' : ' capture') + ' pour gagner' : gm.kind === 3 ? Match.goal + ' points pour gagner' : (gm.laps > 1 ? gm.laps + ' tours de ' : '') + gm.cps.length + ' checkpoints') : ''; }
+  function rematchMode() { if (!gm) return; const k = gm.kind, g = Match.goal; stopMode(); setupMode(k, g); }

@@ -266,6 +266,6 @@
     for (const L of locals) { L.ammo = { rockets: 0, mines: 0, nitro: 1 }; L.weapon = null; }
     if (kind === 'solo') { const L = locals[0]; L.respect = settings.bank || 0; applyUpgrades(L); }
     if (mission && kind !== 'solo') cleanupMission();
-    stopMode(); if (kind === 'split' && settings.gmode >= 2) setupMode(settings.gmode); else if (kind === 'online' && Net.gxm) setupMode(Net.gxm);
+    stopMode(); if (kind === 'split' && settings.gmode >= 2) setupMode(settings.gmode); else if (kind === 'online' && Net.gxm) setupMode(Net.gxm, Net.isHost ? undefined : Match.goal);
   }
 
