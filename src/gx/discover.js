@@ -63,7 +63,7 @@
     const ph = PC[s.id];
     const pic = ph ? '<img src="' + ph.src + '" alt="">' : '<div class="pcDraw"><span>' + s.name + '</span><small>Nantes · Chantenay</small></div>';
     return '<div class="pcPhoto">' + pic + '<b class="pcStamp">Nantes</b></div><div class="pcBody"><h3>' + s.name + '</h3><p>' + s.text + '</p>'
-      + (ph ? '<p class="pcCred">Photo : ' + ph.author + ' · ' + ph.license + (big ? ' · Wikimedia Commons' : '') + '</p>' : '') + '</div>';
+      + (ph ? '<p class="pcCred">Photo : ' + ph.author + ' · ' + ph.license + (big && /wikimedia/.test(ph.url || '') ? ' · Wikimedia Commons' : '') + '</p>' : '') + '</div>';
   }
   function showPostcard(s, secs) {
     if (!pcEl) { pcEl = document.createElement('div'); pcEl.id = 'postcard'; document.body.append(pcEl); pcEl.addEventListener('click', () => { pcEl.hidden = true; }); }

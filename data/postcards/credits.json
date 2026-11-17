@@ -78,5 +78,10 @@
   "author": "franek2",
   "license": "CC BY-SA 3.0",
   "url": "https://commons.wikimedia.org/wiki/File:Grue_Titan_grise_-_panoramio.jpg"
+ },
+ "chapidock": {
+  "author": "IGN, BD ORTHO® (vue aérienne)",
+  "license": "Licence Ouverte 2.0",
+  "url": "https://geoservices.ign.fr/bdortho"
  }
 }
