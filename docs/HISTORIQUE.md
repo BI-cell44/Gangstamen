@@ -91,6 +91,7 @@ Ce qui a été construit, dans l'ordre. Le détail de chaque changement est dans
 | 17 nov. 2026 | Interface tactile revue : joystick et grappe de 4 boutons (♪, arme spéciale avec son icône et ses munitions, frein à main, FEU) en bas, compteur et carrosserie au-dessus des boutons, panneau de rue au-dessus du joystick, sans logo ni noms de touches ; en paysage, compteur et panneau à côté des commandes. Menu : « Conduite libre » centré au-dessus des boutons | ultra |
 | 17 nov. 2026 | Écran noir HD sur Firefox Android (Galaxy S23, menu visible, classique OK) : surveillance de l'image (`watchBlack` dans `src/hd/frame.js`) qui, si elle reste noire, passe sans MSAA, puis en cibles 8 bits, puis sans post-traitement (niveau gardé dans `settings.hdSafe`, remis à 0 par « Qualité graphique ») ; qualité Basse par défaut sur écran tactile. Testé en simulant l'écran noir, pas sur le téléphone | ultra |
 | 17 nov. 2026 | Tactile : étoiles de police agrandies ; en paysage, pastilles (respect, Rapaces, police, armes) à gauche de la minicarte, hors des boutons ; horloge en haut à gauche | ultra |
+| 17 nov. 2026 | Tactile, portrait comme paysage : pastilles à gauche de la minicarte, armes spéciales dessous ; panneau des missions et défis sous les pastilles (portrait) ou entre l'horloge et les pastilles (paysage), texte plus petit ; messages flash plus bas. Vérifié avec les consignes longues (course Sainte-Anne, Dérapage, Livraison express) | ultra |
 
 ## Annexe : feuille de route Ultra, détail des cycles et des retours (14 et 15 nov. 2026)
 
