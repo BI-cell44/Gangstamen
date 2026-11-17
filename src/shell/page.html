@@ -79,6 +79,7 @@ body { background: var(--ink); color: var(--chalk); font-family: var(--body); ov
 .menu .pLab { width: 8.2em; font-family: var(--data); font-size: 20px; font-weight: 700; letter-spacing: .04em; color: var(--chalk); } /* (17 nov., user) like « Conduite » */
 .mainGrid { display: flex; flex-wrap: wrap; gap: 18px 34px; align-items: flex-start; }
 .mainGrid { position: relative; }
+@media (min-width: 561px) { #startFree { align-self: center; } } /* (17 nov., user) centred above the pairs of buttons */
 @media (min-width: 1180px) { .drvBox { position: absolute; left: calc(100% + 30px); top: 0; } } /* on the right of the menu, outside the column of the title */
 .drvBox { display: flex; flex-direction: column; gap: 10px; } .drvBox .lab { font-weight: 700; }
 #physSeg { display: flex; flex-direction: column; gap: 10px; }
@@ -176,6 +177,29 @@ body.touch #plate { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
 #joy { pointer-events: auto; position: relative; width: 150px; height: 150px; border-radius: 50%; border: 3px solid rgba(243,234,216,.7); background: radial-gradient(circle, rgba(13,10,20,.35), rgba(13,10,20,.65)); touch-action: none; margin-bottom: -40px; }
 #joyKnob { position: absolute; left: 50%; top: 50%; width: 62px; height: 62px; margin: -31px 0 0 -31px; border-radius: 50%; background: var(--magenta); border: 3px solid var(--chalk); box-shadow: 0 0 12px rgba(226,51,122,.6); }
 body.touch.joy #tBrake, body.touch.joy #tGas, body.touch.joy #tPadL { display: none; }
+/* (17 nov., user) touch HUD laid out again: the controls low in the corners (joystick on the left, a 2 × 2 cluster on the
+   right: radio, special, handbrake, fire), speed and body above the cluster, street sign above the joystick, no logo,
+   smaller chips; in landscape the speed and the sign go beside the controls */
+body.touch #logo { display: none; }
+body.touch.joy #touch { align-items: flex-end; padding-bottom: calc(26px + env(safe-area-inset-bottom, 0px)); }
+body.touch.joy #joy { width: 136px; height: 136px; flex: none; margin-bottom: 0; }
+body.touch.joy #touch .grp:last-child { display: grid; grid-template-columns: 66px 66px; grid-template-rows: 54px 72px; gap: 8px 10px; align-items: end; justify-items: center; }
+body.touch.joy #tRadio { grid-area: 1 / 1; align-self: end; }
+body.touch.joy #tSpec { grid-area: 1 / 2; width: 60px; height: 60px; font-size: 15px; padding: 0; }
+body.touch.joy #tHb { grid-area: 2 / 1; width: 66px; height: 66px; }
+body.touch.joy #tFire { grid-area: 2 / 2; width: 72px; height: 72px; font-size: 22px; border-color: var(--sunset); }
+body.touch #dash { bottom: calc(176px + env(safe-area-inset-bottom, 0px)); gap: 4px; }
+body.touch #plate { bottom: calc(176px + env(safe-area-inset-bottom, 0px)); max-width: 50vw; }
+body.touch #plate .sign { padding: 4px 10px 5px; } body.touch #plate .quarter { font-size: 9px; } body.touch #plate .street { font-size: 13px; }
+body.touch #speed { font-size: 40px; } body.touch #speed span { font-size: 16px; } body.touch .bar-label { font-size: 12px; } body.touch .bar { width: 130px; height: 11px; }
+body.touch #stats { gap: 5px; } body.touch .chip { font-size: 15px; padding: 3px 7px; }
+body.touch #minimap { width: 112px; height: 112px; }
+@media (max-width: 560px) { body.touch #clock { left: max(10px, env(safe-area-inset-left, 0px)); transform: none; font-size: 15px; padding: 1px 8px; } }
+@media (orientation: landscape) and (max-height: 560px) {
+  body.touch #dash { bottom: calc(26px + env(safe-area-inset-bottom, 0px)); right: calc(max(16px, env(safe-area-inset-right, 0px)) + 160px); }
+  body.touch #plate { bottom: calc(26px + env(safe-area-inset-bottom, 0px)); left: calc(max(16px, env(safe-area-inset-left, 0px)) + 150px); max-width: 30vw; }
+  body.touch #minimap { width: 100px; height: 100px; }
+}
 @media (max-width: 560px) {
   #minimap { width: 112px; height: 112px; }
   #speed { font-size: 46px; }

@@ -254,7 +254,11 @@
     el.hidden = !items.length && !(L.car.shield > 0);
     const sc = schemeOf(L.ctl), key = sc && sc.sp ? keyName(sc.sp[0]) : 'B', swk = sc && sc.sw ? keyName(sc.sw[0]) : 'RB';
     const txt = items.map(([k, ic, n]) => (L.weapon === k ? '▶' : '') + ic + ' ' + n).join('   ') + (L.car.shield > 0 ? '   🛡 ' + Math.ceil(L.car.shield) : '') + (items.length ? '   [' + key + ']' : '') + (items.length > 1 ? ' [' + swk + ' ⇄]' : '');
-    if (el.textContent !== txt) el.textContent = txt;
+    const shown = isTouch ? txt.replace(/\s*\[[^\]]*\]/g, '') : txt; // no key names on a touch screen
+    if (el.textContent !== shown) el.textContent = shown;
+    // (17 nov., user) on touch screens the special button shows the weapon it fires and what is left
+    const tb = $('tSpec'), cur = items.find(x => x[0] === L.weapon) || items[0], lab = cur ? cur[1] + ' ' + cur[2] : 'SPÉ';
+    if (isTouch && tb && tb.textContent !== lab) tb.textContent = lab;
   }
   gx_onGarage = () => { if (mission && mission.garage && (curGarage === GARAGE || mission.id === 'police')) { mission.garageVisited = true; mission.painted = mission.paintAt !== undefined && mission.paintAt !== upg().paint; } };
   function startHook(kind) {
