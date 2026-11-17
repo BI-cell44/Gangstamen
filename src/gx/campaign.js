@@ -269,12 +269,18 @@
     el.hidden = !items.length && !(L.car.shield > 0);
     const sc = schemeOf(L.ctl), key = sc && sc.sp ? keyName(sc.sp[0]) : 'B', swk = sc && sc.sw ? keyName(sc.sw[0]) : 'RB';
     const txt = items.map(([k, ic, n]) => (L.weapon === k ? '▶' : '') + ic + ' ' + n).join('   ') + (L.car.shield > 0 ? '   🛡 ' + Math.ceil(L.car.shield) : '') + (items.length ? '   [' + key + ']' : '') + (items.length > 1 ? ' [' + swk + ' ⇄]' : '');
-    const shown = isTouch ? txt.replace(/\s*\[[^\]]*\]/g, '') : txt; // no key names on a touch screen
-    if (el.textContent !== shown) el.textContent = shown;
+    if (isTouch) { // (17 nov., user) one pastille per weapon, touched to choose it; the chosen one lit
+      const sig = items.map(([k, , n]) => k + n + (L.weapon === k ? '*' : '')).join() + '|' + (L.car.shield > 0 ? Math.ceil(L.car.shield) : '');
+      if (el.dataset.sig !== sig) { el.dataset.sig = sig; el.classList.add('pills');
+        el.innerHTML = items.map(([k, ic, n]) => '<button class="pill' + (L.weapon === k ? ' on' : '') + '" data-w="' + k + '" aria-label="Choisir ' + ({ rockets: 'les roquettes', mines: 'les mines', nitro: 'la nitro' })[k] + '">' + ic + ' ' + n + '</button>').join('')
+          + (L.car.shield > 0 ? '<span class="pill shield">🛡 ' + Math.ceil(L.car.shield) + '</span>' : ''); }
+    } else { el.classList.remove('pills'); delete el.dataset.sig; if (el.textContent !== txt) el.textContent = txt; }
     // (17 nov., user) on touch screens the special button shows the weapon it fires and what is left
     const tb = $('tSpec'), cur = items.find(x => x[0] === L.weapon) || items[0], lab = cur ? cur[1] + ' ' + cur[2] : 'SPÉ';
     if (isTouch && tb && tb.textContent !== lab) tb.textContent = lab;
   }
+  // a touch on a weapon pastille selects it (pointerdown: the HUD must not wait for a click)
+  $('ammo').addEventListener('pointerdown', e => { const b = e.target.closest && e.target.closest('.pill[data-w]'), L = locals[0]; if (!b || !L || !L.ammo || !(L.ammo[b.dataset.w] > 0)) return; e.preventDefault(); L.weapon = b.dataset.w; });
   gx_onGarage = () => { if (mission && mission.garage && (curGarage === GARAGE || mission.id === 'police')) { mission.garageVisited = true; mission.painted = mission.paintAt !== undefined && mission.paintAt !== upg().paint; } };
   function startHook(kind) {
     if (!furnitureBuilt) { buildFurniture(); buildGarage(); finishFurniture(); }

@@ -204,6 +204,7 @@ body.ingame #minimap { pointer-events: auto; cursor: pointer; }
 #tPause { display: none; position: fixed; z-index: 7; top: calc(8px + env(safe-area-inset-top, 0px)); left: max(8px, env(safe-area-inset-left, 0px)); width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(243,234,216,.8); background: rgba(13,10,20,.6); color: var(--chalk); font-size: 18px; line-height: 1; padding: 0; }
 body.touch.ingame #tPause { display: block; }
 body.touch #clock { margin-left: 92px; }
+@media (orientation: portrait) { body.touch:not(.split) #clock { margin-left: 0; top: calc(56px + env(safe-area-inset-top, 0px)); max-width: 40vw; } } /* under the pause buttons, clear of the chips */
 /* (17 nov., user) the start map full screen after a click; the name of the icon under the pointer */
 .spWrap.spFull { position: fixed !important; inset: 0; z-index: 40; background: #1c1a24; }
 .spWrap.spFull canvas { width: 100vw !important; height: 100vh !important; max-width: none !important; max-height: none !important; border-radius: 0 !important; }
@@ -247,6 +248,10 @@ body.touch #minimap { width: 112px; height: 112px; grid-column: 2; grid-row: 1 /
 /* (17 nov., user) portrait and landscape: the chips on the left of the minimap, the special weapons under it */
 body.touch.ingame:not(.split) #stats { display: grid; grid-template-columns: auto auto; column-gap: 8px; row-gap: 5px; align-items: start; justify-items: end; }
 body.touch #ammo { grid-column: 1 / -1; }
+#ammo.pills { background: none; border: none; padding: 0; display: flex; gap: 6px; justify-content: flex-end; pointer-events: auto; box-shadow: none; }
+#ammo .pill { font: 700 16px var(--data); color: var(--chalk); background: rgba(13,10,20,.75); border: 2px solid var(--chalk); border-radius: 18px; padding: 6px 12px; min-height: 36px; cursor: pointer; }
+#ammo .pill.on { background: var(--sunset); color: #111; border-color: #000; box-shadow: 0 0 0 3px rgba(255,138,61,.4); }
+#ammo .pill.shield { cursor: default; border-style: dashed; }
 /* (17 nov., user) long mission texts on touch screens: the panel under the chips (portrait) or between the clock and the
    chips (landscape), smaller text; the flash messages lower, clear of the panel */
 body.touch #objective { left: 10px; right: 10px; transform: none; min-width: 0; max-width: none; padding: 4px 10px; }

@@ -44,6 +44,7 @@ Photos libres de Wikimedia Commons, réduites et recadrées pour le jeu (œuvres
 | `data/postcards/stMartin.jpg` (carte postale « Église Saint-Martin », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Église_Saint-Martin_-_02_-_Chantenay,_Nantes.jpg ; auteur : Koreller | CC BY-SA 4.0 |
 | `data/postcards/misery.jpg` (carte postale « Carrière Misery », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Carrière_de_Miséry_-_Nantes_-_03.jpg ; auteur : François de Dijon | CC BY-SA 4.0 |
 | `data/postcards/gare.jpg` (carte postale « Gare de Chantenay », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Gare-chantenay.JPG ; auteur : Patricia Ripnel | CC BY-SA 3.0 |
+| `data/postcards/jeanMace.jpg` (carte postale « Place Jean-Macé » : la plaque « Chantenay-sur-Loire, place Jean-Macé », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Plaque_Place_Jean_Macé.jpg ; auteur : Kalepom | CC BY-SA 4.0 |
 | `data/postcards/chapidock.jpg` (carte postale « Chapidock », vue aérienne recadrée 600 × 400, environ 108 × 72 m) | IGN, BD ORTHO® (extrait de `data/ortho/ortho_raw.jpg`, couche `ORTHOIMAGERY.ORTHOPHOTOS` de la Géoplateforme) | Licence Ouverte Etalab 2.0. Mention : © IGN. |
 | `data/postcards/temple.jpg` (carte postale « Temple antoiniste », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Temple_antoiniste_Nantes.jpg ; auteur : Europe22 | CC BY-SA 4.0 |
 | `data/postcards/maritime.jpg` (carte postale « Gare maritime », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Gare_Maritime,_Nantes_(7935918926).jpg ; auteur : Guilhem Vellut | CC BY 2.0 |
@@ -53,3 +54,9 @@ Photos libres de Wikimedia Commons, réduites et recadrées pour le jeu (œuvres
 | `data/postcards/nefs.jpg` (carte postale « Chantiers Dubigeon », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Anciens_chantiers_navals_Nantes.jpg ; auteur : Duch | CC BY-SA 4.0 |
 | `data/postcards/hangarBananes.jpg` (carte postale « Hangar à bananes », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Hangar_bananes_1.JPG ; auteur : Jibi44 | CC BY-SA 3.0 |
 | `data/postcards/grueGrise.jpg` (carte postale « Grue Titan grise », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Grue_Titan_grise_-_panoramio.jpg ; auteur : franek2 | CC BY-SA 3.0 |
+
+## Musique
+
+| Fichier | Source | Licence |
+|---|---|---|
+| `data/music/rap_loop.mp3` (radio « Rap Nantes 44 » de l'Ultra : boucle de 8 mesures à 93 BPM, de 12,9 s à 33,5 s du morceau, mono 80 kbit/s, avec 0,25 s de marge avant et après pour boucler sans blanc) | « Vintage Boom bap Hip-Hop Music », Petrushkasound, Pixabay, https://pixabay.com/music/beats-vintage-boom-bap-hip-hop-music-424107/ | Pixabay Content License : usage gratuit, modification permise, attribution non obligatoire (crédit donné ici), pas de diffusion du morceau seul. |

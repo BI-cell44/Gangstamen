@@ -112,8 +112,9 @@ Demandes du 16 nov. en fin d'après-midi, par priorité (d'abord ce que j'ai cas
 64. [x] (fait le 17 nov., demande de l'utilisateur) **Chevron du mode Drapeau** sur la minicarte de chaque joueur (`modeTarget` dans `src/gx/modes.js`) : vers sa base s'il porte le drapeau adverse ou si un coéquipier le porte, vers celui qui porte son drapeau, vers son drapeau tombé, sinon vers le drapeau adverse. Test : `tools/tests/test_ctf_target.js`.
 65. [~] (17 nov.) Écran noir sur Firefox mobile (Galaxy S23, menu visible, version classique OK) : repli automatique ajouté (voir l'historique) ; à confirmer par l'utilisateur sur son téléphone. Si le repli ne suffit pas : piste `logarithmicDepthBuffer` ou shaders HD.
 66. [x] (fait le 17 nov.) Interface tactile revue en portrait et en paysage (voir l'historique).
-67. [ ] Carte postale « Place Jean-Macé » : photo de la plaque, Wikimedia Commons `File:Plaque_Place_Jean_Macé.jpg`, auteur Kalepom, CC BY-SA 4.0 (licence vérifiée le 17 nov.) ; le bac à sable ne peut pas la télécharger : attendre que l'utilisateur l'envoie, puis `data/postcards/jeanMace.jpg` (600 × 400), `credits.json`, `DATA-LICENSES.md`.
-68. [ ] Ligne des armes sur mobile : rendre évident qu'on la touche pour changer d'arme (proposition faite à l'utilisateur le 17 nov., en attente de son choix).
+67. [x] (fait le 18 nov.) Carte postale « Place Jean-Macé » : photo de la plaque (Kalepom, CC BY-SA 4.0).
+68. [x] (fait le 18 nov.) Ligne des armes sur mobile : une pastille par arme, touchée pour la choisir.
+69. [ ] Voix « yo man » sur la boucle de « Rap Nantes 44 » : déposer un court enregistrement propre (sans musique) dans `data/music/yo.mp3` ; le build l'embarque et il est joué toutes les 4 mesures. L'exemple de GPT ne se sépare pas proprement de la musique (essai du 18 nov.).
 28. [x] (fait : toit en chapiteau rayé rouge et crème, mâts, fanions et guirlande, posé sur le bâtiment rond du quai Wilson) **Chapiteau du Chapidock** : l'école de cirque au bout de l'île de Nantes, modélisée en cylindre à toit plat.
 29. [x] (fait, sauf en ligne qui recharge encore) **« Quitter vers le menu »** : revient au menu sans tout recharger (la page se rechargeait et repassait par l'écran de chargement).
 30. [x] (fait) **Pause sur le bac** : la pause doit arrêter le bac (la voiture restait au-dessus de l'eau pendant que le bac continuait).

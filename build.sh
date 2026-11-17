@@ -59,6 +59,15 @@ if os.path.exists(small):
 tag = '<script>window.PHOTO_ATLAS='
 assert t.count(tag) == 1, t.count(tag)
 t = t.replace(tag, '<script>window.POSTCARDS=' + json.dumps(pc, ensure_ascii=False) + ';</script>' + tag)
+# (17 nov., user) radio « Rap Nantes 44 »: a boom-bap loop (data/music/rap_loop.mp3: 0.25 s before and after the 8 bars,
+# for a gapless loop), and an optional short voice data/music/yo.mp3 played every 4 bars (src/audio/sound.js)
+mu = {}
+if os.path.exists('../data/music/rap_loop.mp3'):
+    mu['rap'] = {'src': 'data:audio/mpeg;base64,' + base64.b64encode(open('../data/music/rap_loop.mp3', 'rb').read()).decode(), 'loopStart': 0.25, 'loopEnd': round(0.25 + 8 * 4 * 60 / 93.0, 6)}
+if os.path.exists('../data/music/yo.mp3'):
+    mu['yo'] = {'src': 'data:audio/mpeg;base64,' + base64.b64encode(open('../data/music/yo.mp3', 'rb').read()).decode(), 'gain': 0.9}
+if mu:
+    t = t.replace(tag, '<script>window.MUSIC=' + json.dumps(mu) + ';</script>' + tag)
 open('gangstamen-ultra.html', 'w', encoding='utf-8').write(t)
 PY
 cp gangstamen.html gangstamen-hd.html gangstamen-ultra.html ..

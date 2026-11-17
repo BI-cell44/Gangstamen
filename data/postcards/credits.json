@@ -83,5 +83,10 @@
   "author": "IGN, BD ORTHO® (vue aérienne)",
   "license": "Licence Ouverte 2.0",
   "url": "https://geoservices.ign.fr/bdortho"
+ },
+ "jeanMace": {
+  "author": "Kalepom",
+  "license": "CC BY-SA 4.0",
+  "url": "https://commons.wikimedia.org/wiki/File:Plaque_Place_Jean_Macé.jpg"
  }
 }

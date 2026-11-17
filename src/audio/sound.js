@@ -79,8 +79,35 @@ const sfx = (() => {
     if (s % 2 === 1) noise(t, 0.03, 2600, 3, 0.12, musicG); // muted guitar scratch
     if ((s === 14 || s === 15) || (bar % 2 === 0 && s === 6)) for (const n of [74, 79]) tone(t, mtof(n), 0.18, 'sawtooth', 0.08, null, { lp: 2400, att: 0.02 });
   }
+  // (17 nov., user) « Rap Nantes 44 » in Ultra: a real boom-bap loop (8 bars, window.MUSIC.rap, see build.sh) instead of
+  // the synthesised one, and a short voice (window.MUSIC.yo) every 4 bars when the build has one; the classic and HD
+  // builds, and Ultra while the loop decodes, keep the synthesised station
+  let rapBuf = null, rapSrc = null, rapLoading = false, yoBuf = null, nextYo = 0;
+  const RAP_GAIN = 0.28; // level with the other stations (tools/run-tests.js, radio levels)
+  function rapLoad() {
+    const M = window.MUSIC; if (!M || !M.rap || rapBuf || rapLoading || !ac || !ac.decodeAudioData || typeof OfflineAudioContext !== 'undefined' && ac instanceof OfflineAudioContext) return;
+    rapLoading = true;
+    const dec = src => fetch(src).then(r => r.arrayBuffer()).then(a => new Promise((ok, ko) => ac.decodeAudioData(a, ok, ko)));
+    dec(M.rap.src).then(b => { rapBuf = b; }).catch(e => console.warn('rap loop', e));
+    if (M.yo) dec(M.yo.src).then(b => { yoBuf = b; }).catch(e => console.warn('yo', e));
+  }
+  function rapPlay(t) {
+    if (rapSrc && rapSrc.context === ac) return;
+    const M = window.MUSIC.rap, s = ac.createBufferSource(), g = ac.createGain(); g.gain.value = RAP_GAIN;
+    s.buffer = rapBuf; s.loop = true; s.loopStart = M.loopStart; s.loopEnd = M.loopEnd; s.connect(g).connect(musicG); s.start(t, M.loopStart);
+    rapSrc = s; s._t0 = t; nextYo = t + (M.loopEnd - M.loopStart) / 8 * 3.75; // the voice on the last beat of bar 4, then every 4 bars
+  }
+  function rapStop() { if (!rapSrc) return; try { rapSrc.stop(); } catch (e) { } rapSrc = null; }
   function schedule(until) {
     if (!ac) return;
+    rapLoad();
+    if (musicOn && station === 1 && rapBuf) { // the loop plays by itself: only the voice to place
+      rapPlay(Math.max(nextT, ac.currentTime + 0.03));
+      const bar = (window.MUSIC.rap.loopEnd - window.MUSIC.rap.loopStart) / 8, end = until ?? ac.currentTime + 0.15;
+      while (yoBuf && nextYo < end) { if (nextYo > ac.currentTime) { const v = ac.createBufferSource(), g = ac.createGain(); g.gain.value = window.MUSIC.yo.gain || 0.9; v.buffer = yoBuf; v.connect(g).connect(musicG); v.start(nextYo); } nextYo += bar * 4; }
+      nextT = end; return;
+    }
+    if (rapSrc && rapSrc.context === ac) rapStop();
     while (nextT < (until ?? ac.currentTime + 0.15)) {
       if (musicOn && station > 0) {
         const s = step % 16, bar = (step / 16) | 0;
@@ -233,17 +260,17 @@ const sfx = (() => {
     // hp: high-pass in Hz, to hear it as small speakers do (laptop, phone: almost nothing under 200 Hz)
     async stationLevels(sec = 6, hp = 0) {
       if (!ac) init(); if (!ac) return null;
-      const keep = { ac, musicG, station, step, nextT, musicOn, arr }, out = [];
+      const keep = { ac, musicG, station, step, nextT, musicOn, arr, rapSrc }, out = [];
       for (let i = 0; i < STATIONS.length; i++) {
         const off = new OfflineAudioContext(1, 44100 * sec, 44100);
         ac = off; musicG = off.createGain(); musicG.gain.value = 0.46 * 0.7;
         if (hp) { const h1 = off.createBiquadFilter(), h2 = off.createBiquadFilter(); h1.type = h2.type = 'highpass'; h1.frequency.value = h2.frequency.value = hp; musicG.connect(h1).connect(h2).connect(off.destination); } else musicG.connect(off.destination);
-        station = i; step = 0; nextT = 0.05; musicOn = true; arr = 4; schedule(sec - 0.6);
+        station = i; step = 0; nextT = 0.05; musicOn = true; arr = 4; rapSrc = null; schedule(sec - 0.6);
         ac = keep.ac; musicG = keep.musicG;
         const buf = await off.startRendering(), d = buf.getChannelData(0); let s = 0, pk = 0; for (const x of d) { s += x * x; pk = Math.max(pk, Math.abs(x)); }
         out.push({ name: STATIONS[i].name, rms: +Math.sqrt(s / d.length).toFixed(4), peak: +pk.toFixed(3) });
       }
-      station = keep.station; step = keep.step; nextT = keep.nextT; musicOn = keep.musicOn; arr = keep.arr;
+      station = keep.station; step = keep.step; nextT = keep.nextT; musicOn = keep.musicOn; arr = keep.arr; rapSrc = keep.rapSrc;
       return out;
     },
     get _lv() { return { tyre: tyre ? tyre[0]._l || 0 : 0, roll: roll ? roll._l || 0 : 0, eng: me ? me._g : 0, others: others.filter(e => e.on).length, impacts: nImp, bells: nBell }; },

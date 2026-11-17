@@ -204,6 +204,7 @@ body.ingame #minimap { pointer-events: auto; cursor: pointer; }
 #tPause { display: none; position: fixed; z-index: 7; top: calc(8px + env(safe-area-inset-top, 0px)); left: max(8px, env(safe-area-inset-left, 0px)); width: 40px; height: 40px; border-radius: 50%; border: 2px solid rgba(243,234,216,.8); background: rgba(13,10,20,.6); color: var(--chalk); font-size: 18px; line-height: 1; padding: 0; }
 body.touch.ingame #tPause { display: block; }
 body.touch #clock { margin-left: 92px; }
+@media (orientation: portrait) { body.touch:not(.split) #clock { margin-left: 0; top: calc(56px + env(safe-area-inset-top, 0px)); max-width: 40vw; } } /* under the pause buttons, clear of the chips */
 /* (17 nov., user) the start map full screen after a click; the name of the icon under the pointer */
 .spWrap.spFull { position: fixed !important; inset: 0; z-index: 40; background: #1c1a24; }
 .spWrap.spFull canvas { width: 100vw !important; height: 100vh !important; max-width: none !important; max-height: none !important; border-radius: 0 !important; }
@@ -247,6 +248,10 @@ body.touch #minimap { width: 112px; height: 112px; grid-column: 2; grid-row: 1 /
 /* (17 nov., user) portrait and landscape: the chips on the left of the minimap, the special weapons under it */
 body.touch.ingame:not(.split) #stats { display: grid; grid-template-columns: auto auto; column-gap: 8px; row-gap: 5px; align-items: start; justify-items: end; }
 body.touch #ammo { grid-column: 1 / -1; }
+#ammo.pills { background: none; border: none; padding: 0; display: flex; gap: 6px; justify-content: flex-end; pointer-events: auto; box-shadow: none; }
+#ammo .pill { font: 700 16px var(--data); color: var(--chalk); background: rgba(13,10,20,.75); border: 2px solid var(--chalk); border-radius: 18px; padding: 6px 12px; min-height: 36px; cursor: pointer; }
+#ammo .pill.on { background: var(--sunset); color: #111; border-color: #000; box-shadow: 0 0 0 3px rgba(255,138,61,.4); }
+#ammo .pill.shield { cursor: default; border-style: dashed; }
 /* (17 nov., user) long mission texts on touch screens: the panel under the chips (portrait) or between the clock and the
    chips (landscape), smaller text; the flash messages lower, clear of the panel */
 body.touch #objective { left: 10px; right: 10px; transform: none; min-width: 0; max-width: none; padding: 4px 10px; }
@@ -3729,8 +3734,35 @@ const sfx = (() => {
     if (s % 2 === 1) noise(t, 0.03, 2600, 3, 0.12, musicG); // muted guitar scratch
     if ((s === 14 || s === 15) || (bar % 2 === 0 && s === 6)) for (const n of [74, 79]) tone(t, mtof(n), 0.18, 'sawtooth', 0.08, null, { lp: 2400, att: 0.02 });
   }
+  // (17 nov., user) « Rap Nantes 44 » in Ultra: a real boom-bap loop (8 bars, window.MUSIC.rap, see build.sh) instead of
+  // the synthesised one, and a short voice (window.MUSIC.yo) every 4 bars when the build has one; the classic and HD
+  // builds, and Ultra while the loop decodes, keep the synthesised station
+  let rapBuf = null, rapSrc = null, rapLoading = false, yoBuf = null, nextYo = 0;
+  const RAP_GAIN = 0.28; // level with the other stations (tools/run-tests.js, radio levels)
+  function rapLoad() {
+    const M = window.MUSIC; if (!M || !M.rap || rapBuf || rapLoading || !ac || !ac.decodeAudioData || typeof OfflineAudioContext !== 'undefined' && ac instanceof OfflineAudioContext) return;
+    rapLoading = true;
+    const dec = src => fetch(src).then(r => r.arrayBuffer()).then(a => new Promise((ok, ko) => ac.decodeAudioData(a, ok, ko)));
+    dec(M.rap.src).then(b => { rapBuf = b; }).catch(e => console.warn('rap loop', e));
+    if (M.yo) dec(M.yo.src).then(b => { yoBuf = b; }).catch(e => console.warn('yo', e));
+  }
+  function rapPlay(t) {
+    if (rapSrc && rapSrc.context === ac) return;
+    const M = window.MUSIC.rap, s = ac.createBufferSource(), g = ac.createGain(); g.gain.value = RAP_GAIN;
+    s.buffer = rapBuf; s.loop = true; s.loopStart = M.loopStart; s.loopEnd = M.loopEnd; s.connect(g).connect(musicG); s.start(t, M.loopStart);
+    rapSrc = s; s._t0 = t; nextYo = t + (M.loopEnd - M.loopStart) / 8 * 3.75; // the voice on the last beat of bar 4, then every 4 bars
+  }
+  function rapStop() { if (!rapSrc) return; try { rapSrc.stop(); } catch (e) { } rapSrc = null; }
   function schedule(until) {
     if (!ac) return;
+    rapLoad();
+    if (musicOn && station === 1 && rapBuf) { // the loop plays by itself: only the voice to place
+      rapPlay(Math.max(nextT, ac.currentTime + 0.03));
+      const bar = (window.MUSIC.rap.loopEnd - window.MUSIC.rap.loopStart) / 8, end = until ?? ac.currentTime + 0.15;
+      while (yoBuf && nextYo < end) { if (nextYo > ac.currentTime) { const v = ac.createBufferSource(), g = ac.createGain(); g.gain.value = window.MUSIC.yo.gain || 0.9; v.buffer = yoBuf; v.connect(g).connect(musicG); v.start(nextYo); } nextYo += bar * 4; }
+      nextT = end; return;
+    }
+    if (rapSrc && rapSrc.context === ac) rapStop();
     while (nextT < (until ?? ac.currentTime + 0.15)) {
       if (musicOn && station > 0) {
         const s = step % 16, bar = (step / 16) | 0;
@@ -3883,17 +3915,17 @@ const sfx = (() => {
     // hp: high-pass in Hz, to hear it as small speakers do (laptop, phone: almost nothing under 200 Hz)
     async stationLevels(sec = 6, hp = 0) {
       if (!ac) init(); if (!ac) return null;
-      const keep = { ac, musicG, station, step, nextT, musicOn, arr }, out = [];
+      const keep = { ac, musicG, station, step, nextT, musicOn, arr, rapSrc }, out = [];
       for (let i = 0; i < STATIONS.length; i++) {
         const off = new OfflineAudioContext(1, 44100 * sec, 44100);
         ac = off; musicG = off.createGain(); musicG.gain.value = 0.46 * 0.7;
         if (hp) { const h1 = off.createBiquadFilter(), h2 = off.createBiquadFilter(); h1.type = h2.type = 'highpass'; h1.frequency.value = h2.frequency.value = hp; musicG.connect(h1).connect(h2).connect(off.destination); } else musicG.connect(off.destination);
-        station = i; step = 0; nextT = 0.05; musicOn = true; arr = 4; schedule(sec - 0.6);
+        station = i; step = 0; nextT = 0.05; musicOn = true; arr = 4; rapSrc = null; schedule(sec - 0.6);
         ac = keep.ac; musicG = keep.musicG;
         const buf = await off.startRendering(), d = buf.getChannelData(0); let s = 0, pk = 0; for (const x of d) { s += x * x; pk = Math.max(pk, Math.abs(x)); }
         out.push({ name: STATIONS[i].name, rms: +Math.sqrt(s / d.length).toFixed(4), peak: +pk.toFixed(3) });
       }
-      station = keep.station; step = keep.step; nextT = keep.nextT; musicOn = keep.musicOn; arr = keep.arr;
+      station = keep.station; step = keep.step; nextT = keep.nextT; musicOn = keep.musicOn; arr = keep.arr; rapSrc = keep.rapSrc;
       return out;
     },
     get _lv() { return { tyre: tyre ? tyre[0]._l || 0 : 0, roll: roll ? roll._l || 0 : 0, eng: me ? me._g : 0, others: others.filter(e => e.on).length, impacts: nImp, bells: nBell }; },
@@ -8307,12 +8339,18 @@ const gx = !HD ? null : (() => {
     el.hidden = !items.length && !(L.car.shield > 0);
     const sc = schemeOf(L.ctl), key = sc && sc.sp ? keyName(sc.sp[0]) : 'B', swk = sc && sc.sw ? keyName(sc.sw[0]) : 'RB';
     const txt = items.map(([k, ic, n]) => (L.weapon === k ? '▶' : '') + ic + ' ' + n).join('   ') + (L.car.shield > 0 ? '   🛡 ' + Math.ceil(L.car.shield) : '') + (items.length ? '   [' + key + ']' : '') + (items.length > 1 ? ' [' + swk + ' ⇄]' : '');
-    const shown = isTouch ? txt.replace(/\s*\[[^\]]*\]/g, '') : txt; // no key names on a touch screen
-    if (el.textContent !== shown) el.textContent = shown;
+    if (isTouch) { // (17 nov., user) one pastille per weapon, touched to choose it; the chosen one lit
+      const sig = items.map(([k, , n]) => k + n + (L.weapon === k ? '*' : '')).join() + '|' + (L.car.shield > 0 ? Math.ceil(L.car.shield) : '');
+      if (el.dataset.sig !== sig) { el.dataset.sig = sig; el.classList.add('pills');
+        el.innerHTML = items.map(([k, ic, n]) => '<button class="pill' + (L.weapon === k ? ' on' : '') + '" data-w="' + k + '" aria-label="Choisir ' + ({ rockets: 'les roquettes', mines: 'les mines', nitro: 'la nitro' })[k] + '">' + ic + ' ' + n + '</button>').join('')
+          + (L.car.shield > 0 ? '<span class="pill shield">🛡 ' + Math.ceil(L.car.shield) + '</span>' : ''); }
+    } else { el.classList.remove('pills'); delete el.dataset.sig; if (el.textContent !== txt) el.textContent = txt; }
     // (17 nov., user) on touch screens the special button shows the weapon it fires and what is left
     const tb = $('tSpec'), cur = items.find(x => x[0] === L.weapon) || items[0], lab = cur ? cur[1] + ' ' + cur[2] : 'SPÉ';
     if (isTouch && tb && tb.textContent !== lab) tb.textContent = lab;
   }
+  // a touch on a weapon pastille selects it (pointerdown: the HUD must not wait for a click)
+  $('ammo').addEventListener('pointerdown', e => { const b = e.target.closest && e.target.closest('.pill[data-w]'), L = locals[0]; if (!b || !L || !L.ammo || !(L.ammo[b.dataset.w] > 0)) return; e.preventDefault(); L.weapon = b.dataset.w; });
   gx_onGarage = () => { if (mission && mission.garage && (curGarage === GARAGE || mission.id === 'police')) { mission.garageVisited = true; mission.painted = mission.paintAt !== undefined && mission.paintAt !== upg().paint; } };
   function startHook(kind) {
     if (!furnitureBuilt) { buildFurniture(); buildGarage(); finishFurniture(); }
@@ -9734,7 +9772,8 @@ const gx = !HD ? null : (() => {
     if (LM.stAnneGlass) LM.stAnneGlass.emissiveIntensity = n * 1.6; if (LM.stLamps) for (const m of LM.stLamps) m.emissiveIntensity = n * 6;
     if (LM.titanLights) LM.titanLights.color.setRGB((performance.now() / 700 | 0) % 2 ? 8 * n + 0.6 : 0.4, 0.3, 0.2);
   }
-  { const el = $('ammo'); if (el) { el.style.pointerEvents = 'auto'; el.style.cursor = 'pointer'; el.addEventListener('pointerdown', e => { e.preventDefault(); if (locals[0]) cycleWeapon(locals[0]); }); } }
+  // (17 nov.) a touch on a weapon pastille chooses that weapon (campaign.js); elsewhere on the line, the next weapon
+  { const el = $('ammo'); if (el) { el.style.pointerEvents = 'auto'; el.style.cursor = 'pointer'; el.addEventListener('pointerdown', e => { if (e.target.closest && e.target.closest('.pill')) return; e.preventDefault(); if (locals[0]) cycleWeapon(locals[0]); }); } }
   const api = { netIn, dj, cycleWeapon, hearShot, quickChat, chatIn, step: gameStep, world, landmarkTick, tick: dt => { tick(dt); Boats.step((paused && mode !== 'online') || Busy.on ? 0 : dt); NavLights.step(dt); }, Boats, People, portCranes, hallColumns, LM, walks: () => { if (!walks) buildWalks(); return walks; }, start: startHook, cars: () => npcs.concat(extras), copsOn, shieldHit, makeBus, policeHQ: HQ, hqNode, spots: SPOTS, unlocked, postcards, acts: () => (actsBuild(), acts), actRun: () => run, startAct, hearCars: carsHearShot, traffic: TF, Fences, LightPoles, lightState, roadRules, makeNpc, placeOnGraph, nextNode, spawnPatrol, npcs: () => npcs, damage: damageNpc, addHeat, say, peds: () => peds, stars, special, startMission, renderCampaign, cleanupMission, toMenu, roadblock, MISSIONS,
     get gmode() { return gm ? gm.kind : 0; }, get gmState() { return gm; }, raceRespawn, modeTarget, scoreText, mines: () => mines, customers: () => customers, teamScores: modeTeamScores, goalText, rematch: rematchMode,
     get blocking() { return blocking; }, get mission() { return mission; }, foes: () => extras.filter(c => c.alive && c.team === 1), saveBank, pus: () => pus, furniture: () => furniture, garage: GARAGE, garages: GARAGES, campDiff, SpawnMap, copBump: c => oneStar(c, 0.1, 'Tu as percuté la police'),
