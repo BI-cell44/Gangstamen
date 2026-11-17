@@ -230,7 +230,7 @@ body.touch #speed { font-size: 40px; } body.touch #speed span { font-size: 16px;
 body.touch #stats { gap: 5px; } body.touch .chip { font-size: 15px; padding: 3px 7px; }
 body.touch #minimap { width: 112px; height: 112px; grid-column: 2; grid-row: 1 / span 4; }
 /* (17 nov., user) portrait and landscape: the chips on the left of the minimap, the special weapons under it */
-body.touch #stats { display: grid; grid-template-columns: auto auto; column-gap: 8px; row-gap: 5px; align-items: start; justify-items: end; }
+body.touch.ingame:not(.split) #stats { display: grid; grid-template-columns: auto auto; column-gap: 8px; row-gap: 5px; align-items: start; justify-items: end; }
 body.touch #ammo { grid-column: 1 / -1; }
 /* (17 nov., user) long mission texts on touch screens: the panel under the chips (portrait) or between the clock and the
    chips (landscape), smaller text; the flash messages lower, clear of the panel */
