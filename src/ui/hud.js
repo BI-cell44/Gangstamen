@@ -68,6 +68,7 @@ function drawMinimapOn(cv, me) {
   // bright and large when close, dimmer, greyer and smaller the further away they are
   const edge = (R - 9) / Z, hx = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
   const off = [...rivals, ...allPlayerCars()].filter(r => r !== me && r.alive && enemies(me, r));
+  const split = locals.length > 1; // (17 nov., user) the minimaps of a split screen are small: bigger chevrons
   for (const r of off) {
     const dx = r.x - me.x, dz = r.z - me.z, c = Math.cos(me.h), s = Math.sin(me.h);
     const sx = (dx * c - dz * s) * Z, sy = (dx * s + dz * c) * Z, d = Math.hypot(sx, sy), dist = Math.hypot(dx, dz);
@@ -76,7 +77,7 @@ function drawMinimapOn(cv, me) {
     const base = r.botIndex !== undefined ? (teamMode ? TEAMS[r.team].css : '#ff2a2a') : (r.owner && r.owner.colour) || '#ff2a2a';
     const [br, bg, bb] = hx(base), e = t * t * (3 - 2 * t);
     const rr = Math.round(br + (150 - br) * e * 0.8), gg = Math.round(bg + (138 - bg) * e * 0.8), b2 = Math.round(bb + (160 - bb) * e * 0.8);
-    const a = Math.atan2(sy, sx), k = S / 336 * 2, size = (11 - 6 * e) * k, rim = R - 4 - size * 0.2;
+    const a = Math.atan2(sy, sx), k = S / 336 * 2, size = (11 - 6 * e) * k * (split ? 1.4 : 1), rim = R - 4 - size * 0.2;
     mg.save(); mg.translate(Math.cos(a) * rim, Math.sin(a) * rim); mg.rotate(a);
     chevronPath(mg, size * 1.25); mg.lineJoin = 'round';
     mg.globalAlpha = 1 - e * 0.3; mg.fillStyle = `rgb(${rr},${gg},${b2})`; mg.strokeStyle = 'rgba(0,0,0,.8)'; mg.lineWidth = Math.max(1, k * 0.9);
@@ -88,7 +89,7 @@ function drawMinimapOn(cv, me) {
     const dx = tg.x - me.x, dz = tg.z - me.z, c = Math.cos(me.h), s = Math.sin(me.h);
     const sx = (dx * c - dz * s) * Z, sy = (dx * s + dz * c) * Z;
     if (Math.hypot(sx, sy) > R - 8) {
-      const a = Math.atan2(sy, sx), k = S / 336 * 2, size = 15 * k, rim = R - 4 - size * 0.25;
+      const a = Math.atan2(sy, sx), k = S / 336 * 2, size = 15 * k * (split ? 1.9 : 1), rim = R - 4 - size * 0.3;
       mg.save(); mg.translate(Math.cos(a) * rim, Math.sin(a) * rim); mg.rotate(a); chevronPath(mg, size); mg.lineJoin = 'round';
       mg.fillStyle = '#7be07b'; mg.strokeStyle = '#000'; mg.lineWidth = Math.max(1.5, k * 1.2); mg.fill(); mg.stroke(); mg.restore();
     }
