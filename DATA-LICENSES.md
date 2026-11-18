@@ -60,3 +60,4 @@ Photos libres de Wikimedia Commons, réduites et recadrées pour le jeu (œuvres
 | Fichier | Source | Licence |
 |---|---|---|
 | `data/music/rap_loop.mp3` (radio « Rap Nantes 44 » de l'Ultra : boucle de 8 mesures à 93 BPM, de 12,9 s à 33,5 s du morceau, mono 80 kbit/s, avec 0,25 s de marge avant et après pour boucler sans blanc) | « Vintage Boom bap Hip-Hop Music », Petrushkasound, Pixabay, https://pixabay.com/music/beats-vintage-boom-bap-hip-hop-music-424107/ | Pixabay Content License : usage gratuit, modification permise, attribution non obligatoire (crédit donné ici), pas de diffusion du morceau seul. |
+| `data/music/yo.mp3` (voix « Yo man » jouée toutes les 4 mesures sur « Rap Nantes 44 » : coupée à 0,86 s, fondu de sortie, mono 96 kbit/s) | Enregistrement fourni par l'utilisateur (propriétaire du projet), 18 nov. 2026 | Usage dans le jeu accordé par son auteur. |

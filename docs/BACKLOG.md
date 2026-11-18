@@ -114,7 +114,7 @@ Demandes du 16 nov. en fin d'après-midi, par priorité (d'abord ce que j'ai cas
 66. [x] (fait le 17 nov.) Interface tactile revue en portrait et en paysage (voir l'historique).
 67. [x] (fait le 18 nov.) Carte postale « Place Jean-Macé » : photo de la plaque (Kalepom, CC BY-SA 4.0).
 68. [x] (fait le 18 nov.) Ligne des armes sur mobile : une pastille par arme, touchée pour la choisir.
-69. [ ] Voix « yo man » sur la boucle de « Rap Nantes 44 » : déposer un court enregistrement propre (sans musique) dans `data/music/yo.mp3` ; le build l'embarque et il est joué toutes les 4 mesures. L'exemple de GPT ne se sépare pas proprement de la musique (essai du 18 nov.).
+69. [x] Voix « yo man » sur la boucle de « Rap Nantes 44 » (fait le 18 nov. avec l'enregistrement de l'utilisateur, `data/music/yo.mp3`, toutes les 4 mesures, « man » sur le premier temps). À réécouter dans le jeu.
 28. [x] (fait : toit en chapiteau rayé rouge et crème, mâts, fanions et guirlande, posé sur le bâtiment rond du quai Wilson) **Chapiteau du Chapidock** : l'école de cirque au bout de l'île de Nantes, modélisée en cylindre à toit plat.
 29. [x] (fait, sauf en ligne qui recharge encore) **« Quitter vers le menu »** : revient au menu sans tout recharger (la page se rechargeait et repassait par l'écran de chargement).
 30. [x] (fait) **Pause sur le bac** : la pause doit arrêter le bac (la voiture restait au-dessus de l'eau pendant que le bac continuait).

@@ -3750,7 +3750,8 @@ const sfx = (() => {
     if (rapSrc && rapSrc.context === ac) return;
     const M = window.MUSIC.rap, s = ac.createBufferSource(), g = ac.createGain(); g.gain.value = RAP_GAIN;
     s.buffer = rapBuf; s.loop = true; s.loopStart = M.loopStart; s.loopEnd = M.loopEnd; s.connect(g).connect(musicG); s.start(t, M.loopStart);
-    rapSrc = s; s._t0 = t; nextYo = t + (M.loopEnd - M.loopStart) / 8 * 3.75; // the voice on the last beat of bar 4, then every 4 bars
+    // the voice before bar 5 so that its « man » (MUSIC.yo.lead s in) falls on the first beat, then every 4 bars
+    rapSrc = s; s._t0 = t; nextYo = t + (M.loopEnd - M.loopStart) / 8 * 4 - ((window.MUSIC.yo && window.MUSIC.yo.lead) || 0);
   }
   function rapStop() { if (!rapSrc) return; try { rapSrc.stop(); } catch (e) { } rapSrc = null; }
   function schedule(until) {
