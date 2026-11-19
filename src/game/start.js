@@ -14,6 +14,8 @@ function startGame(kind, sub) {
   else if (kind === 'solo') teamMode = false;
   if (kind !== 'online') { if (soloKind === 'free') setupMatch(0, 0); else setupMatch(settings.goal, settings.limit); }
   document.body.classList.toggle('teams', teamMode);
+  // (19 nov., user) where the game is played: the menu's places (split screen, online host), the host's for a guest
+  if (kind === 'split' || (kind === 'online' && Net.isHost)) choosePlaces(); else if (kind === 'online') choosePlaces(Net.places || [-1, 0, 3, 1]); else gamePlaces = null;
   setBotTeams();
   if (kind === 'split') {
     for (let i = 0; i < settings.nPlayers; i++) { const t = teamMode ? settings.team[i] : -1; locals.push(makeLocal(i, settings.ctl[i], playerPaint(i, t, false), t)); }

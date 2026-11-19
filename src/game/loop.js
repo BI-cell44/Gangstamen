@@ -100,7 +100,7 @@ function step(dt, now) {
         // (19 nov., user) free driving: the police forget a player who died
         if (mode === 'solo' && soloKind === 'free' && !(gx && gx.mission)) { L.heat = 0; L.calm = 0; L.wasWanted = false; }
         c.mesh.userData.mBody.color.setHex(c.mesh.userData.base); c.mesh.userData.mPaint.color.setHex(c.mesh.userData.paint);
-        c.place(...((gx && gx.raceRespawn && gx.raceRespawn(L)) || (L.team >= 0 ? teamSpawn(L.team) : mode === 'online' ? randomSpawn() : L.spawn)));
+        c.place(...respawnPoint(L));
       }
     }
   }

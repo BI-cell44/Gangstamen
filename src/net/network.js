@@ -69,7 +69,7 @@ async function netInit() {
 function lobbyGames() {
   if (!Net.api) return [];
   const out = [];
-  for (const p of Net.api.peers()) { const g = p.presence && p.presence.gm; if (g && typeof g.code === 'string' && /^[a-z0-9]{4}$/.test(g.code) && !p.sameTab) out.push({ code: g.code, n: Math.max(1, Math.min(12, +g.n || 1)), host: String(g.host || '?').slice(0, 14), md: g.md === 1 ? 1 : 0, gx: [3, 4].includes(g.gx) ? g.gx : 0, gl: Number.isInteger(g.gl) && g.gl >= 0 && g.gl <= 600 ? g.gl : 0, tl: [5, 10, 15].includes(g.tl) ? g.tl : 0 }); }
+  for (const p of Net.api.peers()) { const g = p.presence && p.presence.gm; if (g && typeof g.code === 'string' && /^[a-z0-9]{4}$/.test(g.code) && !p.sameTab) out.push({ code: g.code, n: Math.max(1, Math.min(12, +g.n || 1)), host: String(g.host || '?').slice(0, 14), md: g.md === 1 ? 1 : 0, gx: [3, 4].includes(g.gx) ? g.gx : 0, gl: Number.isInteger(g.gl) && g.gl >= 0 && g.gl <= 600 ? g.gl : 0, tl: [5, 10, 15].includes(g.tl) ? g.tl : 0, pl: Array.isArray(g.pl) && g.pl.length === 4 ? g.pl.map(v => Number.isInteger(v) && v >= -1 && v < 16 ? v : -1) : null }); }
   return out;
 }
 function renderGames() {
@@ -85,9 +85,9 @@ function renderGames() {
   if (!games.length) { const e = document.createElement('div'); e.className = 'empty'; e.textContent = 'Aucune partie pour l’instant : créez-en une.'; box.replaceChildren(e); return; }
   box.replaceChildren(...games.map(g => {
     const b = document.createElement('button'); b.className = 'mbtn';
-    b.textContent = 'Partie ' + g.code.toUpperCase() + ' · ' + g.host + ' · ' + (g.gx === 3 ? 'Roi de la colline' : g.gx === 4 ? 'Course' : g.md ? 'Par équipes' : 'Chacun pour soi') + (g.gl ? ' · ' + (g.gx === 3 ? g.gl + ' points' : g.gx === 4 ? (g.gl > 8 ? Math.round(g.gl / 8) + ' tours' : '1 tour') : g.gl + ' KO') : '') + (g.tl ? ' · ' + g.tl + ' min' : '') + ' · ' + g.n + '/12';
+    b.textContent = 'Partie ' + g.code.toUpperCase() + ' · ' + g.host + ' · ' + (g.gx === 3 ? 'Roi de la colline' : g.gx === 4 ? 'Course' : g.md ? 'Par équipes' : 'Chacun pour soi') + (g.gl ? ' · ' + (g.gx === 3 ? g.gl + ' points' : g.gx === 4 ? (g.gl > 8 ? Math.round(g.gl / 8) + ' tours' : '1 tour') : g.gl + ' KO') : '') + (g.tl ? ' · ' + g.tl + ' min' : '') + (HD && g.pl ? ' · ' + (g.gx === 3 ? placeName(g.pl[1]) : g.gx === 4 ? 'boulevard de la Liberté' : g.md ? placeName(g.pl[2]) + ' contre ' + placeName(g.pl[3]) : g.pl[0] >= 0 ? placeName(g.pl[0]) : 'dispersés') : '') + ' · ' + g.n + '/12';
     b.disabled = g.n >= 12;
-    b.addEventListener('click', () => startOnline(g.code, false, g.md, g.gl, g.tl, g.gx));
+    b.addEventListener('click', () => { Net.places = g.pl; startOnline(g.code, false, g.md, g.gl, g.tl, g.gx); });
     return b;
   }));
 }
@@ -203,7 +203,7 @@ function netTick(dt, now) {
   if (!Net.room) return;
   const L = locals[0]; if (!L) return;
   // lobby advert (host only), every 2 s
-  if (Net.isHost && (!Net.lastAdvert || now - Net.lastAdvert > 2000)) { Net.lastAdvert = now; Net.api.presence({ gm: { code: Net.code, n: Net.remotes.size + 1, host: settings.nick, md: teamMode ? 1 : 0, gx: Net.gxm || 0, gl: Match.goal, tl: Match.limit } }).catch(() => { }); }
+  if (Net.isHost && (!Net.lastAdvert || now - Net.lastAdvert > 2000)) { Net.lastAdvert = now; Net.api.presence({ gm: { code: Net.code, n: Net.remotes.size + 1, host: settings.nick, md: teamMode ? 1 : 0, gx: Net.gxm || 0, gl: Match.goal, tl: Match.limit, pl: gamePlaces || undefined } }).catch(() => { }); }
   if (!Net.isHost && Net.lastAdvert) { Net.lastAdvert = 0; Net.api.presence({ gm: null }).catch(() => { }); }
   // own state ~30 Hz
   if (now - Net.lastSend > 33) {

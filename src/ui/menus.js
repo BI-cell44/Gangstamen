@@ -58,19 +58,48 @@ function renderSlots() {
   const gmode = HD ? (settings.gmode ?? (settings.teams ? 1 : 0)) : (settings.teams ? 1 : 0);
   document.querySelectorAll('#mSeg button').forEach(b => b.classList.toggle('on', +b.dataset.m === gmode));
   const used = new Set(settings.team.slice(0, settings.nPlayers).map(t => t ? 1 : 0));
-  $('splitHint').textContent = gmode === 2 ? 'Capture du drapeau : prends le drapeau adverse et ramène-le à ta base, entre la Butte et le boulevard. 3 captures pour gagner.'
-    : gmode === 3 ? 'Roi de la colline : reste seul sur la place Jean-Macé pour marquer des points. 60 points pour gagner.'
+  $('splitHint').textContent = gmode === 2 ? 'Capture du drapeau : prends le drapeau adverse et ramène-le à ta base, où ton drapeau doit être.'
+    : gmode === 3 ? 'Roi de la colline : reste seul dans le cercle jaune pour marquer des points.'
     : gmode === 4 ? 'Course de checkpoints à travers Chantenay : passe-les dans l’ordre, la circulation ne s’arrête pas pour toi.'
     : !settings.teams ? 'Chaque joueur tire sur les Rapaces… et sur les autres joueurs.'
     : used.size === 1 ? 'Tous dans la même bande : vous faites équipe avec trois voitures alliées contre les trois de l’autre bande.'
       : 'Rapaces de la Butte contre Chantenaysiens : pas de tir ami. Chaque bande a aussi trois voitures du quartier avec elle.';
-  renderSoloCtl();
+  renderSoloCtl(); renderPlaces();
+}
+// (19 nov., user) where the game is played, HD: start of « chacun pour soi », gangs' bases (teams, flag), place to hold.
+// The places are the starting points of the free-driving map (START_PLACES); -1 is « au hasard » (scattered for the start)
+function renderPlaces() {
+  if (!HD) return;
+  const n = START_PLACES.length, all = [...Array(n).keys()];
+  document.querySelectorAll('.placeRows').forEach(box => {
+    const online = box.closest('section').id === 'vOnline';
+    const k = online ? (settings.netGmode >= 3 ? settings.netGmode : settings.netTeams ? 1 : 0) : (settings.gmode ?? (settings.teams ? 1 : 0));
+    const rows = k === 0 ? [['Départ', 'placeFfa', [...all, -1], 'Dispersés au hasard']]
+      : k === 1 || k === 2 ? [['Base des Rapaces', 'placeRap', [...all, -1], 'Au hasard'], ['Base des Chantenaysiens', 'placeChant', [...all, -1], 'Au hasard']]
+      : k === 3 ? [['Place à tenir', 'placeHill', [...all, -1], 'Au hasard']] : [];
+    box.replaceChildren();
+    for (const [lab, key, opts, rnd] of rows) {
+      const row = document.createElement('div'); row.className = 'row';
+      const l = document.createElement('span'); l.className = 'lab'; l.textContent = lab;
+      const cyc = document.createElement('div'); cyc.className = 'cycle';
+      const prev = document.createElement('button'), out = document.createElement('output'), next = document.createElement('button');
+      prev.className = next.className = 'mbtn'; prev.textContent = '◀'; next.textContent = '▶'; prev.setAttribute('aria-label', lab + ' : précédent'); next.setAttribute('aria-label', lab + ' : suivant');
+      const show = () => { const v = settings[key]; out.textContent = v >= 0 && v < n ? placeName(v) : rnd; };
+      // the two bases cannot be the same place
+      const other = key === 'placeRap' ? 'placeChant' : key === 'placeChant' ? 'placeRap' : null;
+      const step = d => { let i = Math.max(0, opts.indexOf(settings[key])); for (let t = 0; t < opts.length; t++) { i = (i + d + opts.length) % opts.length; if (!other || opts[i] < 0 || opts[i] !== settings[other]) break; } settings[key] = opts[i]; saveSettings(); show(); };
+      prev.addEventListener('click', () => step(-1)); next.addEventListener('click', () => step(1));
+      cyc.append(prev, out, next); row.append(l, cyc); box.append(row); show();
+    }
+    if (k === 4) { const p = document.createElement('p'); p.className = 'fine'; p.style.margin = '0'; p.textContent = 'La course part de la grille du boulevard de la Liberté.'; box.append(p); }
+  });
 }
 document.querySelectorAll('#nSeg button').forEach(b => b.addEventListener('click', () => { settings.nPlayers = +b.dataset.n; saveSettings(); renderSlots(); }));
 document.querySelectorAll('#mSeg button').forEach(b => b.addEventListener('click', () => { settings.gmode = +b.dataset.m; settings.teams = b.dataset.m === '1' || b.dataset.m === '2'; saveSettings(); renderSlots(); renderEndSegs(); b.focus(); }));
 function renderOnlineSegs() {
   document.querySelectorAll('#oSeg button').forEach(b => b.classList.toggle('on', +b.dataset.m === (HD && settings.netGmode ? settings.netGmode : settings.netTeams ? 1 : 0)));
   document.querySelectorAll('#tSeg button').forEach(b => b.classList.toggle('on', +b.dataset.t === settings.netTeam));
+  renderPlaces();
 }
 document.querySelectorAll('#oSeg button').forEach(b => b.addEventListener('click', () => { settings.netTeams = b.dataset.m === '1'; settings.netGmode = +b.dataset.m >= 3 ? +b.dataset.m : 0; saveSettings(); renderOnlineSegs(); renderEndSegs(); }));
 document.querySelectorAll('#tSeg button').forEach(b => b.addEventListener('click', () => { settings.netTeam = +b.dataset.t; saveSettings(); renderOnlineSegs(); }));
@@ -158,7 +187,7 @@ function showroom(on) {
   if (!HD) return;
   if (!on) { if (showCar) showCar.mesh.visible = false; return; }
   const ch = carChoice(carSlot), key = ch.style.k + ch.paint[0];
-  if (key !== showKey) { if (showCar) scene.remove(showCar.mesh); showCar = new Car(makeCar(ch.paint[0], ch.paint[1], true, ch.style.k), true); showKey = key; const b = bases()[1]; showCar.place(b.x, b.z, Math.atan2(-b.ux, -b.uz)); }
+  if (key !== showKey) { if (showCar) scene.remove(showCar.mesh); showCar = new Car(makeCar(ch.paint[0], ch.paint[1], true, ch.style.k), true); showKey = key; const b = homeBases()[1]; showCar.place(b.x, b.z, Math.atan2(-b.ux, -b.uz)); }
   showCar.mesh.visible = true;
 }
 // gamepad navigation in menus: D-pad / stick to move, A to choose, B back, left/right on sliders

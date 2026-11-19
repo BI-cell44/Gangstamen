@@ -4,12 +4,7 @@
   // gamepad). The world waits while the map is open.
   // =====================================================================================
   const SpawnMap = (() => {
-    const SPOTS = [ // (16 nov.) the list chosen by the user
-      ['Place Jean-Macé', 59, 228, 160, -440], // (16 nov., user) on the boulevard just above the place (its middle is the Dérapage start), facing up towards the town hall
-      ['Mairie de Chantenay', 160, -440], ['Gare de Chantenay', -300, 540],
-      ['Place des Garennes · la butte', 864, 30],
-      ['Gare Maritime · le bac', 1345, -420], ['Grue grise · pointe de l’île', 1218, 366], ['Nefs Dubigeon', 1958, -363],
-    ];
+    const SPOTS = START_PLACES; // (16 nov.) the list chosen by the user; (19 nov.) shared with the multiplayer places (game/teams.js)
     const rejects = [];
     let el = null, cv = null, spots = null, open = false, view = null;
     function build() {

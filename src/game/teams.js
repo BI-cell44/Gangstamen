@@ -19,8 +19,58 @@ function roadFrame(road, m) {
 // Chantenaysiens in front of the town hall (FLAG_AT in gx/modes.js)
 let CTF_BASES = null;
 function frameNear(x, z) { let best = null, bd = 1e18; for (const r of W.roads) { if (!r.d || r.b) continue; for (let k = 0; k < r.p.length - 2; k += 2) { const d = (r.p[k] - x) ** 2 + (r.p[k + 1] - z) ** 2; if (d < bd) { bd = d; best = [r, k]; } } } return roadFrame(best[0], best[1]); }
+// (19 nov., user) the places a game can start from or be played around: the starting points of the free-driving map
+// (gx SpawnMap). [name, x, z, facing x, facing z]; the facing point is optional
+const START_PLACES = [
+  ['Place Jean-Macé', 59, 228, 160, -440], // (16 nov., user) on the boulevard just above the place, facing up towards the town hall
+  ['Mairie de Chantenay', 160, -440], ['Gare de Chantenay', -300, 540],
+  ['Place des Garennes · la butte', 864, 30],
+  ['Gare Maritime · le bac', 1345, -420], ['Grue grise · pointe de l’île', 1218, 366], ['Nefs Dubigeon', 1958, -363],
+];
+// the places of the game in progress, HD only: [start of « chacun pour soi » (-1: scattered), place to hold, Rapaces'
+// base, Chantenaysiens' base]; chosen in the menu (« Au hasard » drawn here), taken from the host by an online guest
+let gamePlaces = null;
+const placeFrames = {};
+function choosePlaces(fromHost) {
+  if (!HD) { gamePlaces = null; return; }
+  const n = START_PLACES.length, ok = v => Number.isInteger(v) && v >= 0 && v < n;
+  if (fromHost) { gamePlaces = fromHost.map((v, i) => ok(v) ? v : i ? [0, 0, 3, 1][i] : -1); return; }
+  const pick = (v, not) => { if (ok(v) && v !== not) return v; let r = 0; for (let k = 0; k < 20; k++) { r = (Math.random() * n) | 0; if (r !== not) break; } return r; };
+  const rap = pick(settings.placeRap);
+  gamePlaces = [ok(settings.placeFfa) ? settings.placeFfa : -1, pick(settings.placeHill), rap, pick(settings.placeChant, rap)];
+}
+function placeName(i) { return (START_PLACES[i] || ['?'])[0]; }
+function placeFrame(i) { return placeFrames[i] || (placeFrames[i] = frameNear(START_PLACES[i][1], START_PLACES[i][2])); }
+// a random crossing within 140 m of a place (start or comeback of an online player, comeback of anyone)
+function spotSpawn(b) {
+  for (let k = 0; k < 80; k++) {
+    const n = (Math.random() * G.x.length) | 0;
+    if (G.adj[n].length && nodeOk(n) && Math.hypot(G.x[n] - b.x, G.z[n] - b.z) < 140 && Math.abs(G.x[n] - CX) < HX - 20 && Math.abs(G.z[n] - CZ) < HZ - 20) {
+      const nb = G.adj[n][0] ?? n; return [G.x[n], G.z[n], Math.atan2(-(G.x[nb] - G.x[n]), -(G.z[nb] - G.z[n]))];
+    }
+  }
+  return gridSpawn(b, (Math.random() * 6) | 0);
+}
+function ffaPlace() { return HD && gamePlaces && gamePlaces[0] >= 0 ? placeFrame(gamePlaces[0]) : null; }
+// king of the hill: everybody starts and comes back 110 to 260 m from the place to hold, never on it
+function isHill() { return HD && gamePlaces && ((mode === 'split' && settings.gmode === 3) || (mode === 'online' && typeof Net !== 'undefined' && Net.gxm === 3)); }
+function hillSpawn() {
+  const i = gamePlaces[1], [hx, hz] = i ? START_PLACES[i].slice(1, 3) : [45, 283]; // [45, 283]: P.jeanMace (gx), the middle of the place
+  for (let k = 0; k < 200; k++) {
+    const n = (Math.random() * G.x.length) | 0, d = Math.hypot(G.x[n] - hx, G.z[n] - hz);
+    if (G.adj[n].length && nodeOk(n) && d > 110 && d < 260 && Math.abs(G.x[n] - CX) < HX - 20 && Math.abs(G.z[n] - CZ) < HZ - 20) {
+      return [G.x[n], G.z[n], Math.atan2(-(hx - G.x[n]), -(hz - G.z[n]))]; // facing the place
+    }
+  }
+  return randomSpawn();
+}
 function bases() {
-  if (HD && ((mode === 'split' && settings.gmode === 2) || (mode === 'online' && typeof Net !== 'undefined' && Net.gxm === 2))) return CTF_BASES || (CTF_BASES = [frameNear(864, 30), frameNear(160, -440)]);
+  // (19 nov., user) teams and capture the flag: each gang starts at the base picked in the menu
+  if (HD && gamePlaces && mode !== 'solo' && (teamMode || (mode === 'split' && settings.gmode === 2) || (mode === 'online' && typeof Net !== 'undefined' && Net.gxm === 2))) return [placeFrame(gamePlaces[2]), placeFrame(gamePlaces[3])];
+  return homeBases();
+}
+// the two historical bases (top of the butte, boulevard de la Liberté): the race grid and the showroom use them
+function homeBases() {
   if (BASES) return BASES;
   let ni = W.names.indexOf('Boulevard de la Liberté'); if (ni < 0) ni = W.names.indexOf('Place Jean Macé');
   const road = W.roads.find(r => r.d && r.n === ni && !r.b) || W.roads.find(r => r.d && r.w >= 9);
@@ -38,7 +88,7 @@ function bases() {
   BASES = [butte, lib];
   return BASES;
 }
-function baseName(t) { const b = bases()[t]; return W.names[b.road.n] || 'la butte'; }
+function baseName(t) { if (HD && gamePlaces && bases() !== BASES) return placeName(gamePlaces[2 + t]); const b = bases()[t]; return W.names[b.road.n] || 'la butte'; }
 function teamSpawn(t) { // a random crossing near the gang's base
   const b = bases()[t];
   for (let k = 0; k < 80; k++) {
@@ -127,6 +177,8 @@ function spawnPoint(slot, team) {
     const rank = locals.filter(L => L.team === team).length;
     return gridSpawn(bases()[team], rank);
   }
+  if (isHill()) return hillSpawn();
+  if (HD && gamePlaces) { const f = ffaPlace(); return f ? gridSpawn(f, slot) : randomSpawn(); }
   return gridSpawn(bases()[1], slot);
 }
 // (17 nov., user) checkpoint race: one starting grid on the boulevard de la Liberté, split screen and online alike,
@@ -134,12 +186,20 @@ function spawnPoint(slot, team) {
 const RACE_CP1 = [56, 50]; // a node of the street graph: the marker is not moved, the cars point right at it
 function isRace() { return HD && ((mode === 'split' && settings.gmode === 4) || (mode === 'online' && typeof Net !== 'undefined' && Net.gxm === 4)); }
 function raceGrid() {
-  const b = bases()[1], tx = RACE_CP1[0] - b.x, tz = RACE_CP1[1] - b.z, s = tx * b.ux + tz * b.uz < 0 ? -1 : 1;
+  const b = homeBases()[1], tx = RACE_CP1[0] - b.x, tz = RACE_CP1[1] - b.z, s = tx * b.ux + tz * b.uz < 0 ? -1 : 1;
   const g = { x: b.x, z: b.z, ux: b.ux * s, uz: b.uz * s, road: b.road };
   return g;
 }
 function raceSpawn(slot) { const p = gridSpawn(raceGrid(), slot); p[2] = Math.atan2(-(RACE_CP1[0] - p[0]), -(RACE_CP1[1] - p[1])); return p; }
-function onlineSpawn(team) { return isRace() ? raceSpawn(Net.gridSlot || 0) : team >= 0 ? teamSpawn(team) : randomSpawn(); }
+function onlineSpawn(team) { if (team < 0 && isHill()) return hillSpawn(); const f = team < 0 && ffaPlace(); return isRace() ? raceSpawn(Net.gridSlot || 0) : team >= 0 ? teamSpawn(team) : f ? spotSpawn(f) : randomSpawn(); }
+// where a wrecked player comes back: race checkpoint, gang's base, the chosen start of « chacun pour soi », else as before
+function respawnPoint(L) {
+  const r = gx && gx.raceRespawn && gx.raceRespawn(L); if (r) return r;
+  if (L.team >= 0) return teamSpawn(L.team);
+  if (isHill()) return hillSpawn();
+  const f = ffaPlace(); if (f) return spotSpawn(f);
+  return mode === 'online' || (HD && gamePlaces) ? randomSpawn() : L.spawn;
+}
 function randomSpawn() { // Math.random, not the seeded generator: every client must land somewhere different
   let n = 0; for (let k = 0; k < 50; k++) { n = (Math.random() * G.x.length) | 0; if (G.adj[n].length && Math.abs(G.x[n] - CX) < HX - 20 && Math.abs(G.z[n] - CZ) < HZ - 20) break; }
   const nb = G.adj[n][0] ?? n;

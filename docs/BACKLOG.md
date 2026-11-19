@@ -33,6 +33,9 @@ Dernier retour d'essai de l'utilisateur (15 nov., soir) : Ultra tourne sans prob
 18. [x] (fait : chaque voiture du tram s'incline selon la pente des rails) **Tram T1 dans la montée vers du Chaffault** (16 nov.) : les voitures du tram font des marches d'escalier dans la pente ; elles doivent s'incliner pour la suivre.
 19. [x] **Pont des Trois-Continents fermé** (16 nov., fait par Opus) : barrières « Route barrée » et mur à l'entrée du pont, plus aucune voiture de la circulation dessus (`roadClosed` dans `src/ai/bots.js`) ; le trou au bout, côté Rezé, n'est donc plus atteignable.
 
+- [ ] **Jeu en ligne depuis GitHub Pages** (19 nov.) : la page publique n’a pas de réseau. Choix de l’utilisateur à faire : héberger le serveur Node (`server`, Dockerfile prêt) et pointer la page dessus (`GM_SERVER`), ou relier les joueurs en WebRTC avec un service public de mise en relation. Accord de l’utilisateur requis (service externe).
+- [ ] **Capture du drapeau en ligne** : absente du menu en ligne ; à faire avec la synchronisation des drapeaux par l’hôte (voir « Partie en ligne robuste »).
+
 ## Pour Opus 5.5 (dans cet ordre)
 
 1. [x] (16 nov. : parvis dégagé, ni arbres ni barrières, les deux voitures garées côte à côte hors des murs) (fait le 15 nov. au soir : bandeaux bleus « POLICE NATIONALE » sur les murs du vrai bâtiment, drapeau, gyrophare, panneau et deux voitures garées devant, côté boulevard ; avant, le décor était près d'une rue de derrière) **Commissariat invisible devant la mairie** (x 170, z −343, `buildHQ` dans `src/gx/police.js`) : capture, puis le rendre visible et reconnaissable (pas masqué par un bâtiment OSM).

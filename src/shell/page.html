@@ -139,6 +139,7 @@ body.touch #radio { display: none; }
 #feed .qc { border-left-color: var(--ok); font-size: 20px; }
 .cycle output { min-width: 11em; text-align: center; font-family: var(--data); font-size: 20px; padding: 4px 8px; border: 2px solid var(--chalk); background: rgba(0,0,0,.4); }
 .cycle output.ok { border-color: var(--ok); }
+.placeRows { display: flex; flex-direction: column; gap: 8px; } .placeRows .lab { min-width: 9.5em; } .placeRows output { min-width: 15em; }
 .ctable { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; font-family: var(--data); font-size: 18px; }
 .ctable div { border: 2px solid rgba(243,234,216,.4); padding: 8px 10px; background: rgba(0,0,0,.35); }
 .ctable b { color: var(--sunset); font-weight: normal; display: block; font-size: 20px; }
@@ -472,6 +473,7 @@ body.cine #logo, body.cine #credit { display: none; }
       <h2>Écran partagé</h2>
       <div class="row"><span class="lab">Joueurs</span><div class="seg" id="nSeg"><button class="mbtn" data-n="2">2</button><button class="mbtn" data-n="3">3</button><button class="mbtn" data-n="4">4</button></div></div>
       <div class="row"><span class="lab">Mode</span><div class="seg wrap" id="mSeg"><button class="mbtn" data-m="0">Chacun pour soi</button><button class="mbtn" data-m="1">Par équipes</button><button class="mbtn hdOnly" data-m="2" hidden>Drapeau</button><button class="mbtn hdOnly" data-m="3" hidden>Roi de la colline</button><button class="mbtn hdOnly" data-m="4" hidden>Course</button></div></div>
+      <div class="placeRows hdOnly" hidden></div>
       <div class="row"><span class="lab">Fin de partie</span><div class="seg goalSeg"><button class="mbtn" data-g="10">10 KO</button><button class="mbtn" data-g="20">20 KO</button><button class="mbtn" data-g="30">30 KO</button><button class="mbtn" data-g="0">Sans</button></div></div>
       <div class="row"><span class="lab">Durée</span><div class="seg limitSeg"><button class="mbtn" data-l="5">5 min</button><button class="mbtn" data-l="10">10 min</button><button class="mbtn" data-l="15">15 min</button><button class="mbtn" data-l="0">Sans</button></div></div>
       <div id="slots" class="slots"></div>
@@ -542,6 +544,7 @@ body.cine #logo, body.cine #credit { display: none; }
       <div id="netStatus" class="netstatus">Connexion…</div>
       <div id="games" class="games"></div>
       <div class="row"><span class="lab">Nouvelle partie</span><div class="seg wrap" id="oSeg"><button class="mbtn" data-m="0">Chacun pour soi</button><button class="mbtn" data-m="1">Par équipes</button><button class="mbtn hdOnly" data-m="3" hidden>Roi de la colline</button><button class="mbtn hdOnly" data-m="4" hidden>Course</button></div></div>
+      <div class="placeRows hdOnly" hidden></div>
       <div class="row"><span class="lab">Fin de partie</span><div class="seg goalSeg"><button class="mbtn" data-g="10">10 KO</button><button class="mbtn" data-g="20">20 KO</button><button class="mbtn" data-g="30">30 KO</button><button class="mbtn" data-g="0">Sans</button></div></div>
       <div class="row"><span class="lab">Durée</span><div class="seg limitSeg"><button class="mbtn" data-l="5">5 min</button><button class="mbtn" data-l="10">10 min</button><button class="mbtn" data-l="15">15 min</button><button class="mbtn" data-l="0">Sans</button></div></div>
       <div class="menu"><button id="create" class="big">Créer une partie</button><button class="mbtn" data-go="vMain">Retour</button></div>

@@ -21,10 +21,14 @@
     gm = { kind: k, t: 0, objs: [] };
     if (k === 2) { // flags at the two bases
       gm.score = [0, 0];
-      gm.flags = [0, 1].map(t => { const [x, z] = roadPoint(...FLAG_AT[t]); const m = addMarker(x, z, 4, TEAMS[t].body); return { team: t, home: [x, z], x, z, carrier: null, atHome: true, mesh: flagMesh(t), marker: m, idle: 0 }; });
+      // (19 nov., user) each flag on its team's base picked in the menu
+      const at = t => gamePlaces ? [START_PLACES[gamePlaces[2 + t]][1], START_PLACES[gamePlaces[2 + t]][2]] : FLAG_AT[t];
+      gm.flags = [0, 1].map(t => { const [x, z] = roadPoint(...at(t)); const m = addMarker(x, z, 4, TEAMS[t].body); return { team: t, home: [x, z], x, z, carrier: null, atHome: true, mesh: flagMesh(t), marker: m, idle: 0 }; });
       Match.goal = goal ?? modeGoalSetting(2);
     } else if (k === 3) {
-      const [x, z] = roadPoint(...P.jeanMace); gm.hill = addMarker(x, z, 26, 0xf2c81e); gm.owner = null;
+      // (19 nov., user) the place to hold is picked in the menu (the place Jean-Macé itself for the first one)
+      const hp = gamePlaces ? gamePlaces[1] : 0, [x, z] = roadPoint(...(hp ? START_PLACES[hp].slice(1, 3) : P.jeanMace));
+      gm.hill = addMarker(x, z, 26, 0xf2c81e); gm.owner = null; gm.hillName = placeName(hp);
       for (const r of rivals) r.ai.goal = { x, z };
       for (const L of locals) L.hillT = 0;
       Match.goal = goal ?? modeGoalSetting(3);
@@ -110,7 +114,7 @@
     if (locals.length === 1 || true) {
       const txt = gm.kind === 2 ? 'Rapaces ' + gm.score[0] + ' – ' + gm.score[1] + ' Chantenaysiens' : gm.kind === 3 ? (gm.owner ? (gm.owner === 'bots' ? 'Les Rapaces tiennent la place' : gm.owner[0] === 'r' ? ((Net.remotes.get(gm.owner.slice(1)) || {}).nick || 'Un joueur') + ' tient la place' : gm.owner[0] === 't' ? TEAMS[+gm.owner[1]].short + ' tiennent la place' : 'J' + (+gm.owner.slice(1) + 1) + ' tient la place') : 'Place libre ou disputée')
         : locals.map(L => (mode === 'online' ? 'Toi' : 'J' + (L.slot + 1)) + ' ' + raceText(L.cp)).join(' · ') + (mode === 'online' && Net.remotes.size ? ' · en tête : ' + raceText(Math.max(0, ...[...Net.remotes.values()].map(R => R.kills))) : '');
-      objective(MODE_NAMES[gm.kind], txt); objDir(null);
+      objective(MODE_NAMES[gm.kind] + (gm.kind === 3 && gm.hillName ? ' · ' + gm.hillName : ''), txt); objDir(null);
     }
   }
   function raceText(cp) { const n = gm.cps.length, c = Math.min(cp, Match.goal); if (gm.laps === 1) return c + '/' + n; const lap = Math.min(gm.laps, Math.floor(c / n) + 1); return 'T' + lap + '/' + gm.laps + ' ' + (c >= Match.goal ? n : c % n) + '/' + n; }
@@ -137,4 +141,6 @@
   }
   function modeTeamScores() { return gm && gm.kind === 2 ? gm.score.slice() : null; }
   function goalText() { return gm ? (gm.kind === 2 ? Match.goal + (Match.goal > 1 ? ' captures' : ' capture') + ' pour gagner' : gm.kind === 3 ? Match.goal + ' points pour gagner' : (gm.laps > 1 ? gm.laps + ' tours de ' : '') + gm.cps.length + ' checkpoints') : ''; }
+  // for the tests: the state of the split / online mode
+  function modeInfo() { return gm && { kind: gm.kind, hill: gm.hill && [gm.hill.x, gm.hill.z, gm.hill.r], owner: gm.owner, flags: gm.flags && gm.flags.map(f => [f.x, f.z, f.atHome, !!f.carrier]), score: gm.score }; }
   function rematchMode() { if (!gm) return; const k = gm.kind, g = Match.goal; stopMode(); setupMode(k, g); }
