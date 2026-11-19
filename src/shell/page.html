@@ -57,7 +57,23 @@ body { background: var(--ink); color: var(--chalk); font-family: var(--body); ov
 #ticker small { display: block; font-family: var(--data); font-size: 24px; color: var(--sunset); text-shadow: 2px 2px 0 #000; white-space: normal; width: min(760px, 90vw); margin: 0 auto; line-height: 1.15; }
 #cross { top: 50%; left: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border: 2px solid rgba(255,255,255,.0); }
 
-#help { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); font-family: var(--data); font-size: 17px; letter-spacing: .06em; color: rgba(243,234,216,.75); white-space: nowrap; }
+/* (19 nov., user) the car radio above the street sign, one player at the keyboard: the bars dance while the music plays */
+#radio { display: inline-flex; align-items: center; gap: 9px; margin-bottom: 8px; padding: 5px 12px 5px 9px; background: rgba(12,8,20,.78); border: 2px solid var(--sunset); border-radius: 6px; box-shadow: 4px 4px 0 rgba(0,0,0,.5); font-family: var(--data); color: var(--chalk); transition: border-color .3s, opacity .3s; }
+#radio .eq { display: inline-flex; align-items: flex-end; gap: 2px; height: 20px; width: 24px; }
+#radio .eq i { flex: 1; height: 100%; background: var(--sunset); transform-origin: 50% 100%; animation: eqb .9s ease-in-out infinite alternate; }
+#radio .eq i:nth-child(2) { animation-duration: .62s; animation-delay: -.3s; } #radio .eq i:nth-child(3) { animation-duration: .78s; animation-delay: -.5s; }
+#radio .eq i:nth-child(4) { animation-duration: .55s; animation-delay: -.2s; } #radio .eq i:nth-child(5) { animation-duration: .7s; animation-delay: -.65s; }
+@keyframes eqb { 0% { transform: scaleY(.18); } 100% { transform: scaleY(1); } }
+#radio .rt { display: flex; flex-direction: column; line-height: 1.05; }
+#radio b { font-weight: normal; font-size: 19px; letter-spacing: .05em; white-space: nowrap; }
+#radio small { font-size: 14px; letter-spacing: .08em; color: var(--sunset); white-space: nowrap; }
+#radio.off { border-color: rgba(243,234,216,.35); opacity: .72; }
+#radio.off .eq i { animation: none; transform: scaleY(.15); background: rgba(243,234,216,.45); }
+#radio.off small { color: rgba(243,234,216,.6); }
+#radio.pop { animation: rpop .35s ease-out; } @keyframes rpop { 0% { transform: scale(1.12); } 100% { transform: scale(1); } }
+body.touch #radio { display: none; }
+@media (prefers-reduced-motion: reduce) { #radio .eq i { animation: none; transform: scaleY(.7); } }
+#help { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); font-family: var(--data); font-size: 15px; letter-spacing: .05em; line-height: 1.35; color: rgba(243,234,216,.8); text-shadow: 1px 1px 0 #000; text-align: center; width: max-content; max-width: calc(100vw - 840px); text-wrap: balance; } /* (19 nov.) on one or two lines between the street sign and the speed */
 #credit { position: fixed; z-index: 6; bottom: calc(2px + env(safe-area-inset-bottom, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); font-size: 10px; color: rgba(243,234,216,.6); font-family: var(--body); }
 #credit a { color: inherit; }
 
@@ -274,7 +290,7 @@ body.touch .chip.wanted { padding: 2px 8px; } body.touch .chip.wanted b { font-s
   .bar { width: 140px; }
   #logo small { font-size: 15px; }
 }
-@media (max-width: 1100px) { #help { display: none; } }
+@media (max-width: 1200px) { #help { display: none; } }
 @media (prefers-reduced-motion: reduce) { #ticker { transition: none; } }
 /* Campaign: dialogue box, objective, garage, mission result */
 #dlg { position: fixed; left: 0; right: 0; bottom: 0; z-index: 28; padding: 0 max(16px, env(safe-area-inset-left, 0px)) calc(18px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(to top, rgba(13,10,20,.92), rgba(13,10,20,.0)); padding-top: 60px; cursor: pointer; }
@@ -350,6 +366,18 @@ body:not(.ingame) #objective { display: none; }
 #postcard[hidden] { display: none; } #postcard.big { z-index: 45; } /* above the full screen start map */
 #postcard.toast { right: max(16px, env(safe-area-inset-right, 0px)); top: 34vh; width: min(320px, 70vw); transform: rotate(2.5deg); animation: pcIn .5s cubic-bezier(.2,.9,.3,1.2) both; }
 #postcard.big { left: 50%; top: 50%; width: min(620px, 92vw); transform: translate(-50%, -50%) rotate(-1.5deg); z-index: 40; }
+/* (19 nov., user) phones: the card never taller than the screen (the photo is 3:2, the text about 120 px under it); the
+   toast in the middle at the top, clear of the minimap and the touch buttons, photo and title only */
+#postcard { max-height: calc(100dvh - 16px); overflow: auto; overscroll-behavior: contain; }
+#postcard.big { width: min(620px, 92vw, calc((100dvh - 170px) * 1.5)); min-width: min(280px, 92vw); }
+body.touch #postcard.toast { right: auto; left: 50%; top: calc(10px + env(safe-area-inset-top, 0px)); width: min(230px, 50vw, calc((100dvh - 150px) * 1.5)); min-width: 160px; padding: 6px 6px 4px; animation-name: pcInT; transform: translateX(-50%) rotate(1.5deg); }
+@media (orientation: portrait) { body.touch #postcard.toast { top: calc(22vh + env(safe-area-inset-top, 0px)); } }
+/* (19 nov., user) landscape: on the left, between the pause button and the stick, the car and the road ahead stay visible */
+@media (orientation: landscape) { body.touch #postcard.toast { left: max(12px, env(safe-area-inset-left, 0px)); top: calc(62px + env(safe-area-inset-top, 0px)); width: min(190px, 24vw, calc((100dvh - 250px) * 1.5)); min-width: 130px; transform: rotate(-1.5deg); animation-name: pcInL; } }
+@keyframes pcInL { from { opacity: 0; transform: translateX(-60px) rotate(-6deg); } to { opacity: 1; transform: rotate(-1.5deg); } }
+body.touch #postcard.toast p { display: none; } body.touch #postcard.toast h3 { margin: 4px 0 0; font-size: 18px; }
+@keyframes pcInT { from { opacity: 0; transform: translate(-50%, -40px) rotate(5deg); } to { opacity: 1; transform: translateX(-50%) rotate(1.5deg); } }
+@media (max-height: 520px) { #postcard.big h3 { font-size: 19px; margin-top: 5px; } #postcard.big p { font-size: 12.5px; line-height: 1.3; } }
 @keyframes pcIn { from { opacity: 0; transform: translateX(80px) rotate(8deg); } to { opacity: 1; transform: rotate(2.5deg); } }
 #postcard .pcPhoto { position: relative; aspect-ratio: 3 / 2; overflow: hidden; background: #c9b89a; }
 #postcard .pcPhoto img { width: 100%; height: 100%; object-fit: cover; display: block; filter: sepia(.25) saturate(.9) contrast(1.05); }
@@ -395,14 +423,14 @@ body.cine #logo, body.cine #credit { display: none; }
   <div class="chip wanted" hidden>POLICE <b id="wanted"></b></div>
   <div class="chip" id="ammo" hidden></div>
 </div>
-<div id="plate" class="hud"><div class="sign"><div class="quarter">Nantes · Chantenay</div><div class="street" id="street">…</div></div></div>
+<div id="plate" class="hud"><div id="radio" class="off"><span class="eq"><i></i><i></i><i></i><i></i><i></i></span><span class="rt"><b id="radioName">Radio coupée</b><small id="radioSub">M : allumer</small></span></div><div class="sign"><div class="quarter">Nantes · Chantenay</div><div class="street" id="street">…</div></div></div>
 <div id="dash" class="hud">
   <div id="speed">0<span>KM/H</span></div>
   <div class="bar-label">CARROSSERIE</div>
   <div class="bar"><i id="hp" style="width:100%"></i></div>
 </div>
 <div id="ticker" class="hud"></div>
-<div id="help" class="hud">ZQSD conduire · Espace tir · E arme spéciale · A changer d’arme · Maj frein à main · C caméra · N moment · B météo · Échap menu</div>
+<div id="help" class="hud">ZQSD&nbsp;conduire · Espace&nbsp;tir · E&nbsp;spéciale · A&nbsp;changer&nbsp;d’arme · Maj&nbsp;frein&nbsp;à&nbsp;main · C&nbsp;caméra · R&nbsp;se&nbsp;rétablir · M&nbsp;radio · N&nbsp;moment · B&nbsp;météo · Échap&nbsp;menu</div>
 <div id="credit">Carte © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">contributeurs OpenStreetMap</a> · Hauteurs et relief © IGN · Façades © contributeurs Panoramax</div>
 
 <div id="touch">

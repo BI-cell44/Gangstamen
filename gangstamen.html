@@ -57,7 +57,23 @@ body { background: var(--ink); color: var(--chalk); font-family: var(--body); ov
 #ticker small { display: block; font-family: var(--data); font-size: 24px; color: var(--sunset); text-shadow: 2px 2px 0 #000; white-space: normal; width: min(760px, 90vw); margin: 0 auto; line-height: 1.15; }
 #cross { top: 50%; left: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border: 2px solid rgba(255,255,255,.0); }
 
-#help { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); font-family: var(--data); font-size: 17px; letter-spacing: .06em; color: rgba(243,234,216,.75); white-space: nowrap; }
+/* (19 nov., user) the car radio above the street sign, one player at the keyboard: the bars dance while the music plays */
+#radio { display: inline-flex; align-items: center; gap: 9px; margin-bottom: 8px; padding: 5px 12px 5px 9px; background: rgba(12,8,20,.78); border: 2px solid var(--sunset); border-radius: 6px; box-shadow: 4px 4px 0 rgba(0,0,0,.5); font-family: var(--data); color: var(--chalk); transition: border-color .3s, opacity .3s; }
+#radio .eq { display: inline-flex; align-items: flex-end; gap: 2px; height: 20px; width: 24px; }
+#radio .eq i { flex: 1; height: 100%; background: var(--sunset); transform-origin: 50% 100%; animation: eqb .9s ease-in-out infinite alternate; }
+#radio .eq i:nth-child(2) { animation-duration: .62s; animation-delay: -.3s; } #radio .eq i:nth-child(3) { animation-duration: .78s; animation-delay: -.5s; }
+#radio .eq i:nth-child(4) { animation-duration: .55s; animation-delay: -.2s; } #radio .eq i:nth-child(5) { animation-duration: .7s; animation-delay: -.65s; }
+@keyframes eqb { 0% { transform: scaleY(.18); } 100% { transform: scaleY(1); } }
+#radio .rt { display: flex; flex-direction: column; line-height: 1.05; }
+#radio b { font-weight: normal; font-size: 19px; letter-spacing: .05em; white-space: nowrap; }
+#radio small { font-size: 14px; letter-spacing: .08em; color: var(--sunset); white-space: nowrap; }
+#radio.off { border-color: rgba(243,234,216,.35); opacity: .72; }
+#radio.off .eq i { animation: none; transform: scaleY(.15); background: rgba(243,234,216,.45); }
+#radio.off small { color: rgba(243,234,216,.6); }
+#radio.pop { animation: rpop .35s ease-out; } @keyframes rpop { 0% { transform: scale(1.12); } 100% { transform: scale(1); } }
+body.touch #radio { display: none; }
+@media (prefers-reduced-motion: reduce) { #radio .eq i { animation: none; transform: scaleY(.7); } }
+#help { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); font-family: var(--data); font-size: 15px; letter-spacing: .05em; line-height: 1.35; color: rgba(243,234,216,.8); text-shadow: 1px 1px 0 #000; text-align: center; width: max-content; max-width: calc(100vw - 840px); text-wrap: balance; } /* (19 nov.) on one or two lines between the street sign and the speed */
 #credit { position: fixed; z-index: 6; bottom: calc(2px + env(safe-area-inset-bottom, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); font-size: 10px; color: rgba(243,234,216,.6); font-family: var(--body); }
 #credit a { color: inherit; }
 
@@ -274,7 +290,7 @@ body.touch .chip.wanted { padding: 2px 8px; } body.touch .chip.wanted b { font-s
   .bar { width: 140px; }
   #logo small { font-size: 15px; }
 }
-@media (max-width: 1100px) { #help { display: none; } }
+@media (max-width: 1200px) { #help { display: none; } }
 @media (prefers-reduced-motion: reduce) { #ticker { transition: none; } }
 /* Campaign: dialogue box, objective, garage, mission result */
 #dlg { position: fixed; left: 0; right: 0; bottom: 0; z-index: 28; padding: 0 max(16px, env(safe-area-inset-left, 0px)) calc(18px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(to top, rgba(13,10,20,.92), rgba(13,10,20,.0)); padding-top: 60px; cursor: pointer; }
@@ -350,6 +366,18 @@ body:not(.ingame) #objective { display: none; }
 #postcard[hidden] { display: none; } #postcard.big { z-index: 45; } /* above the full screen start map */
 #postcard.toast { right: max(16px, env(safe-area-inset-right, 0px)); top: 34vh; width: min(320px, 70vw); transform: rotate(2.5deg); animation: pcIn .5s cubic-bezier(.2,.9,.3,1.2) both; }
 #postcard.big { left: 50%; top: 50%; width: min(620px, 92vw); transform: translate(-50%, -50%) rotate(-1.5deg); z-index: 40; }
+/* (19 nov., user) phones: the card never taller than the screen (the photo is 3:2, the text about 120 px under it); the
+   toast in the middle at the top, clear of the minimap and the touch buttons, photo and title only */
+#postcard { max-height: calc(100dvh - 16px); overflow: auto; overscroll-behavior: contain; }
+#postcard.big { width: min(620px, 92vw, calc((100dvh - 170px) * 1.5)); min-width: min(280px, 92vw); }
+body.touch #postcard.toast { right: auto; left: 50%; top: calc(10px + env(safe-area-inset-top, 0px)); width: min(230px, 50vw, calc((100dvh - 150px) * 1.5)); min-width: 160px; padding: 6px 6px 4px; animation-name: pcInT; transform: translateX(-50%) rotate(1.5deg); }
+@media (orientation: portrait) { body.touch #postcard.toast { top: calc(22vh + env(safe-area-inset-top, 0px)); } }
+/* (19 nov., user) landscape: on the left, between the pause button and the stick, the car and the road ahead stay visible */
+@media (orientation: landscape) { body.touch #postcard.toast { left: max(12px, env(safe-area-inset-left, 0px)); top: calc(62px + env(safe-area-inset-top, 0px)); width: min(190px, 24vw, calc((100dvh - 250px) * 1.5)); min-width: 130px; transform: rotate(-1.5deg); animation-name: pcInL; } }
+@keyframes pcInL { from { opacity: 0; transform: translateX(-60px) rotate(-6deg); } to { opacity: 1; transform: rotate(-1.5deg); } }
+body.touch #postcard.toast p { display: none; } body.touch #postcard.toast h3 { margin: 4px 0 0; font-size: 18px; }
+@keyframes pcInT { from { opacity: 0; transform: translate(-50%, -40px) rotate(5deg); } to { opacity: 1; transform: translateX(-50%) rotate(1.5deg); } }
+@media (max-height: 520px) { #postcard.big h3 { font-size: 19px; margin-top: 5px; } #postcard.big p { font-size: 12.5px; line-height: 1.3; } }
 @keyframes pcIn { from { opacity: 0; transform: translateX(80px) rotate(8deg); } to { opacity: 1; transform: rotate(2.5deg); } }
 #postcard .pcPhoto { position: relative; aspect-ratio: 3 / 2; overflow: hidden; background: #c9b89a; }
 #postcard .pcPhoto img { width: 100%; height: 100%; object-fit: cover; display: block; filter: sepia(.25) saturate(.9) contrast(1.05); }
@@ -395,14 +423,14 @@ body.cine #logo, body.cine #credit { display: none; }
   <div class="chip wanted" hidden>POLICE <b id="wanted"></b></div>
   <div class="chip" id="ammo" hidden></div>
 </div>
-<div id="plate" class="hud"><div class="sign"><div class="quarter">Nantes · Chantenay</div><div class="street" id="street">…</div></div></div>
+<div id="plate" class="hud"><div id="radio" class="off"><span class="eq"><i></i><i></i><i></i><i></i><i></i></span><span class="rt"><b id="radioName">Radio coupée</b><small id="radioSub">M : allumer</small></span></div><div class="sign"><div class="quarter">Nantes · Chantenay</div><div class="street" id="street">…</div></div></div>
 <div id="dash" class="hud">
   <div id="speed">0<span>KM/H</span></div>
   <div class="bar-label">CARROSSERIE</div>
   <div class="bar"><i id="hp" style="width:100%"></i></div>
 </div>
 <div id="ticker" class="hud"></div>
-<div id="help" class="hud">ZQSD conduire · Espace tir · E arme spéciale · A changer d’arme · Maj frein à main · C caméra · N moment · B météo · Échap menu</div>
+<div id="help" class="hud">ZQSD&nbsp;conduire · Espace&nbsp;tir · E&nbsp;spéciale · A&nbsp;changer&nbsp;d’arme · Maj&nbsp;frein&nbsp;à&nbsp;main · C&nbsp;caméra · R&nbsp;se&nbsp;rétablir · M&nbsp;radio · N&nbsp;moment · B&nbsp;météo · Échap&nbsp;menu</div>
 <div id="credit">Carte © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">contributeurs OpenStreetMap</a> · Hauteurs et relief © IGN · Façades © contributeurs Panoramax</div>
 
 <div id="touch">
@@ -4269,6 +4297,21 @@ function radioNext(key) {
   if (HD) { const st = sfx.nextStation(); flashAll(st ? st.name : 'Radio OFF', st ? st.style + ' · ' + key + ' : station suivante' : key + ' : rallumer'); if (st && gx) gx.dj('station', st); }
   else { const on = sfx.toggle(); flashAll(on ? 'Radio ON' : 'Radio OFF', on ? 'Chantenay FM 92.4' : ''); }
 }
+// (19 nov., user) the radio display above the street sign (hidden on touch screens and in split screen by the CSS):
+// station and style while the music plays, « Radio coupée » otherwise; polled, so that every way of changing the music
+// (M, the menu volume, a mission) shows
+let radioKey = '';
+function radioHud() {
+  const el = $('radio'); if (!el) return;
+  const st = sfx.station, on = !!st && sfx.music && settings.music > 0.001, key = on ? st.name : settings.music > 0.001 ? 'off' : 'mute';
+  if (key === radioKey) return;
+  const first = !radioKey; radioKey = key;
+  el.classList.toggle('off', !on);
+  $('radioName').textContent = on ? st.name : 'Radio coupée';
+  $('radioSub').textContent = on ? (HD ? st.style + ' · M : station suivante' : 'M : couper') : key === 'mute' ? 'volume de la musique à 0 (menu)' : 'M : allumer';
+  if (!first) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+}
+setInterval(radioHud, 250);
 // (17 nov., user) the radio on touch screens: a tap on ♪
 // (17 nov., user) full screen, PC and phone: the ⛶ button, « Plein écran » in the pause, the F key; hidden where the
 // browser has no full screen (iPhone) — inside the claude.ai page the frame may also refuse it: a message says so
@@ -8779,8 +8822,9 @@ const gx = !HD ? null : (() => {
   }
   function showPostcard(s, secs) {
     if (!pcEl) { pcEl = document.createElement('div'); pcEl.id = 'postcard'; document.body.append(pcEl); pcEl.addEventListener('click', () => { pcEl.hidden = true; }); }
-    pcEl.innerHTML = cardHTML(s, !secs); pcEl.className = secs ? 'toast' : 'big'; pcEl.hidden = false; pcT = secs || 0;
-    if (secs) setTimeout(() => { if (pcT === secs) pcEl.hidden = true; }, secs * 1000);
+    // (19 nov.) a number per card shown: the timer of an earlier toast no longer hides the next card
+    const n = ++pcT; pcEl.innerHTML = cardHTML(s, !secs); pcEl.className = secs ? 'toast' : 'big'; pcEl.hidden = false;
+    if (secs) setTimeout(() => { if (pcT === n) pcEl.hidden = true; }, secs * 1000);
   }
   function postcardGallery(box) { // the cards found so far, in the menu: a click shows one large
     const g = document.createElement('div'); g.className = 'pcGrid';
@@ -8797,8 +8841,10 @@ const gx = !HD ? null : (() => {
   // =====================================================================================
   const _modelGeo = {}; let _modelMat = null;
   // -> geometry in model units, centred on its box (m.size gives the box); grey: colours turned to their brightness
-  function modelGeo(name, grey) {
-    const key = name + (grey ? ':g' : ''); if (_modelGeo[key]) return _modelGeo[key];
+  // cut (optional) [x, y] or a list of them: drop the pieces of the model lying wholly at x < cut[0] that hang below y = cut[1] (19 nov., user:
+  // the boom ends in a point, without the ladders, the rest legs and the hook hanging under the tip of the downloaded crane)
+  function modelGeo(name, grey, cut) {
+    const key = name + (grey ? ':g' : '') + (cut ? ':' + cut : ''); if (_modelGeo[key]) return _modelGeo[key];
     const m = (W.models || {})[name]; if (!m) return null;
     const bin = (s, T) => { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new T(u.buffer); };
     const pq = bin(m.p, Int16Array), cq = bin(m.c, Uint8Array), k = Math.max(...m.size) / 32767, pos = new Float32Array(pq.length), col = new Float32Array(cq.length), c = new THREE.Color();
@@ -8808,11 +8854,21 @@ const gx = !HD ? null : (() => {
       c.setRGB(r, g, b).convertSRGBToLinear(); col[i] = c.r; col[i + 1] = c.g; col[i + 2] = c.b;
     }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    g.setIndex(new THREE.BufferAttribute(bin(m.i, m.n > 65535 ? Uint32Array : Uint16Array), 1)); g.computeVertexNormals(); g.userData.shared = true; g.userData.size = m.size;
+    let idx = bin(m.i, m.n > 65535 ? Uint32Array : Uint16Array);
+    if (cut) { // pieces (sets of triangles sharing vertices) wholly at x < cut[0] that reach below y = cut[1]
+      const n = pos.length / 3, P = new Int32Array(n), f = i => { while (P[i] !== i) i = P[i] = P[P[i]]; return i; }; for (let i = 0; i < n; i++) P[i] = i;
+      for (let t = 0; t < idx.length; t += 3) { const a = f(idx[t]); P[f(idx[t + 1])] = a; P[f(idx[t + 2])] = a; }
+      const x1 = new Float32Array(n).fill(-1e9), y0 = new Float32Array(n).fill(1e9);
+      for (let i = 0; i < n; i++) { const r = f(i); x1[r] = Math.max(x1[r], pos[3 * i]); y0[r] = Math.min(y0[r], pos[3 * i + 1]); }
+      const cuts = Array.isArray(cut[0]) ? cut : [cut];
+      const keep = []; for (let t = 0; t < idx.length; t += 3) { const r = f(idx[t]); if (!cuts.some(k => x1[r] < k[0] && y0[r] < k[1])) keep.push(idx[t], idx[t + 1], idx[t + 2]); }
+      idx = m.n > 65535 ? new Uint32Array(keep) : new Uint16Array(keep);
+    }
+    g.setIndex(new THREE.BufferAttribute(idx, 1)); g.computeVertexNormals(); g.userData.shared = true; g.userData.size = m.size;
     return _modelGeo[key] = g;
   }
-  function modelMesh(name, grey) {
-    const g = modelGeo(name, grey); if (!g) return null;
+  function modelMesh(name, grey, cut) {
+    const g = modelGeo(name, grey, cut); if (!g) return null;
     if (!_modelMat) { _modelMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, metalness: 0.05, side: THREE.DoubleSide, flatShading: true, envMapIntensity: 0.4 }); _modelMat.userData.shared = true; }
     const o = new THREE.Mesh(g, _modelMat); o.castShadow = true; o.userData.hdLinear = true; o.userData.shared = true; return o;
   }
@@ -8850,7 +8906,17 @@ const gx = !HD ? null : (() => {
     pts.forEach(([x, z, top], i) => { const g = groundH(x, z) - 0.3, h = top - g; M.makeScale(1, h, 1); M.setPosition(x, g + h / 2, z); im.setMatrixAt(i, M); gridAdd([x - 0.6, z, x + 0.6, z], 3.5); gridAdd([x, z - 0.6, x, z + 0.6], 3.5); hallColumns.push([x, z, top]); });
     im.castShadow = true; im.receiveShadow = true; im.userData.hdLinear = true; im.frustumCulled = false; scene.add(im);
   }
+  // what to take away from the downloaded cranes: everything hanging under the boom, and the small block under its tip
+  const CRANE_CUT = [[2.5, 1.05], [-4.1, 1.7]];
   const portCranes = [];
+  // -> [x, z] centre of the feet of a model (vertices within 0.6 of its lowest point), in model units
+  function pedestalOf(geo) {
+    if (geo.userData.ped) return geo.userData.ped;
+    const p = geo.attributes.position.array; let y0 = 1e9; for (let i = 1; i < p.length; i += 3) y0 = Math.min(y0, p[i]);
+    let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9;
+    for (let i = 0; i < p.length; i += 3) if (p[i + 1] < y0 + 0.6) { x0 = Math.min(x0, p[i]); x1 = Math.max(x1, p[i]); z0 = Math.min(z0, p[i + 2]); z1 = Math.max(z1, p[i + 2]); }
+    return geo.userData.ped = [(x0 + x1) / 2, (z0 + z1) / 2];
+  }
   function buildPortCranes() {
     for (const [sx, sz, dx, dz, name, turn] of QUAY_CRANES) {
       const bk = bankFrom(sx, sz, dx, dz); if (!bk) continue;
@@ -8861,10 +8927,12 @@ const gx = !HD ? null : (() => {
       for (let back = 7; back <= 34 && !ok; back += 1.5) { x = bk[0] - dx * back; z = bk[1] - dz * back; const [lo, hi] = ring(x, z);
         ok = hi - lo < 0.4 && !(segHit(x, z, dx, dz, 5) < 5 || segHit(x, z, -dx, -dz, 5) < 5 || roadEdge(x, z)[0] < 1.5); } // not in a wall, not on a street
       if (!ok) continue;
-      const o = modelMesh(name); if (!o) return;
+      const o = modelMesh(name, false, CRANE_CUT); if (!o) return;
       const S = 2.3, sz3 = o.geometry.userData.size, gy = Math.max(...ring(x, z));
-      // the model: boom along -x, pedestal near +x; turn it so that the boom points to the water
-      const g = new THREE.Group(); o.scale.setScalar(S); o.position.set(-(sz3[0] / 2 - 0.82) * S, sz3[1] / 2 * S, 0); g.add(o);
+      // the model: boom along -x, pedestal near +x; turn it so that the boom points to the water. (19 nov., user: the
+      // cranes stood beside their plinth) the centre of the pedestal is measured on the lowest vertices of the model
+      const ped = pedestalOf(o.geometry);
+      const g = new THREE.Group(); o.scale.setScalar(S); o.position.set(-ped[0] * S, sz3[1] / 2 * S, -ped[1] * S); g.add(o);
       const plinth = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.8, 2.4, 12), new THREE.MeshLambertMaterial({ color: hd.lin(0x8a8880) })); plinth.position.y = -0.1; plinth.userData.hdLinear = true; g.add(plinth); // goes 1.3 m into the ground (18 nov.: this comment used to swallow g.add, the cranes had no plinth)
       g.position.set(x, gy + 0.9, z); g.rotation.y = Math.atan2(dz, -dx) + turn; g.userData.hdLinear = true; scene.add(g); portCranes.push(g);
       gridAdd([x - 2.2, z, x + 2.2, z], 3.5); gridAdd([x, z - 2.2, x, z + 2.2], 3.5);
@@ -9144,7 +9212,7 @@ const gx = !HD ? null : (() => {
     for (const y of [6, 13, 20, 26]) { add(new THREE.BoxGeometry(11, 0.6, 0.6), yel, 0, y, -5); add(new THREE.BoxGeometry(11, 0.6, 0.6), yel, 0, y, 5); add(new THREE.BoxGeometry(0.6, 0.6, 11), yel, -5, y, 0); add(new THREE.BoxGeometry(0.6, 0.6, 11), yel, 5, y, 0); }
     for (const y of [3, 10, 17]) { add(new THREE.BoxGeometry(0.35, 9.5, 0.35), yel, 0, y + 3.5, -5, 0, 0, 0.9); add(new THREE.BoxGeometry(0.35, 9.5, 0.35), yel, 0, y + 3.5, 5, 0, 0, -0.9); }
     add(new THREE.CylinderGeometry(2.4, 2.4, 1.2, 20), dark, 0, 27, 0);
-    const up = modelMesh('grue_peinte', paint !== 0xf2b705); // the downloaded crane for the upper works: the yellow one as it is, the other one greyed
+    const up = modelMesh('grue_peinte', paint !== 0xf2b705, CRANE_CUT); // the downloaded crane for the upper works: the yellow one as it is, the other one greyed
     if (up) { const K = 4.6, sz = up.geometry.userData.size; up.scale.setScalar(K); up.rotation.y = -Math.PI / 2; up.position.set(0, 27.6 + (sz[1] / 2 - 1.3) * K, -(sz[0] / 2 - 0.82) * K); g.add(up); // the pedestal stands on the slewing ring (the hook and the ladders hang lower)
       add(new THREE.BoxGeometry(1.2, 1.2, 16), yel, 0, 36, 11); add(new THREE.BoxGeometry(4.5, 4, 5), dark, 0, 34, 18); } // counter-jib and counterweight of a Titan
     else {
@@ -9158,7 +9226,19 @@ const gx = !HD ? null : (() => {
     add(new THREE.CylinderGeometry(0.04, 0.04, 20, 4), dark, 0, 24, -52); add(new THREE.BoxGeometry(1.2, 1.4, 1.2), dark, 0, 14, -52);
     }
     const redL = LM.titanLights || (LM.titanLights = new THREE.MeshBasicMaterial({ color: new THREE.Color(8, 0.3, 0.2) }));
-    for (const p of [[0, 46.2, 0], [0, 35.6, -55], [0, 35.6, 22]]) add(new THREE.SphereGeometry(0.35, 8, 6), redL, ...p);
+    let lights = [[0, 46.2, 0], [0, 35.6, -55], [0, 35.6, 22]];
+    // (19 nov., user: the lights floated beside the crane) with the downloaded model: at the tip of the boom, on top of the
+    // machinery and at the end of the counter-jib, from the vertices of the model (the triangles cut away left aside)
+    if (up) {
+      up.updateMatrix(); const p = up.geometry.attributes.position.array, ix = up.geometry.index.array, v = new THREE.Vector3();
+      let tip = null, top = null;
+      for (let t = 0; t < ix.length; t++) { const i = ix[t] * 3; v.set(p[i], p[i + 1], p[i + 2]);
+        if (!tip || v.x < tip.x - 0.05 || (v.x < tip.x + 0.3 && v.y > tip.y)) tip = v.clone();
+        if (!top || v.y > top.y) top = v.clone(); }
+      const w = q => q.applyMatrix4(up.matrix);
+      lights = [w(top).toArray(), w(tip).toArray(), [0, 36.85, 18.6]]; lights[0][1] += 0.4; lights[1][1] += 0.35;
+    }
+    for (const p of lights) add(new THREE.SphereGeometry(0.35, 8, 6), redL, ...p);
     g.position.set(x, Math.max(groundH(x, z), WATER_Y + 1.2), z); g.rotation.y = turn; g.scale.setScalar(1.15);
     hd.linearize(g); g.traverse(o => { o.userData.hdLinear = true; }); scene.add(g); LM[key] = g;
     for (const [lx, lz] of [[-5, -5], [5, -5], [5, 5], [-5, 5]]) { const c = Math.cos(turn), s = Math.sin(turn), px = x + (lx * c + lz * s) * 1.15, pz = z + (-lx * s + lz * c) * 1.15; gridAdd([px - 0.5, pz, px + 0.5, pz], 3.5); gridAdd([px, pz - 0.5, px, pz + 0.5], 3.5); } // the legs stop a car, one drives under the portal
@@ -9739,8 +9819,23 @@ const gx = !HD ? null : (() => {
         b.body.updateMatrix(); b.body.geometry.computeBoundingBox(); // in the boat's own frame
         const bb = b.body.geometry.boundingBox.clone().applyMatrix4(b.body.matrix), sz = bb.getSize(new THREE.Vector3()), big = b.kind === 'ferry', r = big ? 0.32 : 0.16;
         const top = big ? sz.y * 0.75 : sz.y * 0.95, side = Math.min(sz.x, sz.z) / 2 * 0.9, alongX = sz.x > sz.z, cx = (bb.min.x + bb.max.x) / 2, cz = (bb.min.z + bb.max.z) / 2, deck = big ? sz.y * 0.45 : sz.y * 0.18;
+        // (19 nov., user: the lights floated beside the hull) each light is put on the hull itself: a ray from inside the
+        // box towards the side (red, green) or from above down (white) finds the surface of the model
+        b.g.updateMatrixWorld(true); const rc = new THREE.Raycaster();
+        // from a point outside the hull along dir (boat frame): -> the first surface met, moved back by `back`, or null
+        const onHull = (from, dir, back) => {
+          const d = dir.clone().transformDirection(b.g.matrixWorld); rc.set(b.g.localToWorld(from.clone()), d);
+          const h = rc.intersectObject(b.body, true)[0]; return h ? b.g.worldToLocal(h.point.clone().addScaledVector(d, -back)) : null;
+        };
         for (const [m, a, y] of [[red, -side, deck], [green, side, deck], [white, 0, top]]) { // a: across the hull (the long axis can be x or z)
-          const o = new THREE.Mesh(ball, m); o.scale.setScalar(r); o.position.set(alongX ? cx : cx + a, y, alongX ? cz + a : cz); o.visible = false; o.userData.hdLinear = true; b.g.add(o); lamps.push(o);
+          const o = new THREE.Mesh(ball, m); o.scale.setScalar(r); o.position.set(alongX ? cx : cx + a, y, alongX ? cz + a : cz);
+          const p = a ? onHull(new THREE.Vector3(alongX ? cx : cx + a * 4, y, alongX ? cz + a * 4 : cz), alongX ? new THREE.Vector3(0, 0, -Math.sign(a)) : new THREE.Vector3(-Math.sign(a), 0, 0), r * 0.8)
+            : (() => { // the white light at the top of the mast: the highest vertex of the model
+              const q = b.body.geometry.attributes.position, v = new THREE.Vector3(); let best = -1e9, bi = -1;
+              for (let i = 0; i < q.count; i++) if (q.getY(i) > best) { best = q.getY(i); bi = i; }
+              return bi < 0 ? null : v.fromBufferAttribute(q, bi).applyMatrix4(b.body.matrix).add(new THREE.Vector3(0, r * 1.1, 0)); })();
+          if (p) o.position.copy(p);
+          o.visible = false; o.userData.hdLinear = true; b.g.add(o); lamps.push(o);
         }
       }
     }
@@ -9775,7 +9870,7 @@ const gx = !HD ? null : (() => {
   }
   // (17 nov.) a touch on a weapon pastille chooses that weapon (campaign.js); elsewhere on the line, the next weapon
   { const el = $('ammo'); if (el) { el.style.pointerEvents = 'auto'; el.style.cursor = 'pointer'; el.addEventListener('pointerdown', e => { if (e.target.closest && e.target.closest('.pill')) return; e.preventDefault(); if (locals[0]) cycleWeapon(locals[0]); }); } }
-  const api = { netIn, dj, cycleWeapon, hearShot, quickChat, chatIn, step: gameStep, world, landmarkTick, tick: dt => { tick(dt); Boats.step((paused && mode !== 'online') || Busy.on ? 0 : dt); NavLights.step(dt); }, Boats, People, portCranes, hallColumns, LM, walks: () => { if (!walks) buildWalks(); return walks; }, start: startHook, cars: () => npcs.concat(extras), copsOn, shieldHit, makeBus, policeHQ: HQ, hqNode, spots: SPOTS, unlocked, postcards, acts: () => (actsBuild(), acts), actRun: () => run, startAct, hearCars: carsHearShot, traffic: TF, Fences, LightPoles, lightState, roadRules, makeNpc, placeOnGraph, nextNode, spawnPatrol, npcs: () => npcs, damage: damageNpc, addHeat, say, peds: () => peds, stars, special, startMission, renderCampaign, cleanupMission, toMenu, roadblock, MISSIONS,
+  const api = { netIn, dj, cycleWeapon, showPostcard, postcardSpots, hearShot, quickChat, chatIn, step: gameStep, world, landmarkTick, tick: dt => { tick(dt); Boats.step((paused && mode !== 'online') || Busy.on ? 0 : dt); NavLights.step(dt); }, Boats, People, portCranes, hallColumns, LM, walks: () => { if (!walks) buildWalks(); return walks; }, start: startHook, cars: () => npcs.concat(extras), copsOn, shieldHit, makeBus, policeHQ: HQ, hqNode, spots: SPOTS, unlocked, postcards, acts: () => (actsBuild(), acts), actRun: () => run, startAct, hearCars: carsHearShot, traffic: TF, Fences, LightPoles, lightState, roadRules, makeNpc, placeOnGraph, nextNode, spawnPatrol, npcs: () => npcs, damage: damageNpc, addHeat, say, peds: () => peds, stars, special, startMission, renderCampaign, cleanupMission, toMenu, roadblock, MISSIONS,
     get gmode() { return gm ? gm.kind : 0; }, get gmState() { return gm; }, raceRespawn, modeTarget, scoreText, mines: () => mines, customers: () => customers, teamScores: modeTeamScores, goalText, rematch: rematchMode,
     get blocking() { return blocking; }, get mission() { return mission; }, foes: () => extras.filter(c => c.alive && c.team === 1), saveBank, pus: () => pus, furniture: () => furniture, garage: GARAGE, garages: GARAGES, campDiff, SpawnMap, copBump: c => oneStar(c, 0.1, 'Tu as percuté la police'),
     get onGarage() { return gx_onGarage; }, get objTarget() { return objEl.hidden ? null : objTgt; },
@@ -10087,6 +10182,8 @@ function step(dt, now) {
       L.deadT -= dt;
       if (L.deadT <= 0) {
         c.alive = true; c.hp = 100;
+        // (19 nov., user) free driving: the police forget a player who died
+        if (mode === 'solo' && soloKind === 'free' && !(gx && gx.mission)) { L.heat = 0; L.calm = 0; L.wasWanted = false; }
         c.mesh.userData.mBody.color.setHex(c.mesh.userData.base); c.mesh.userData.mPaint.color.setHex(c.mesh.userData.paint);
         c.place(...((gx && gx.raceRespawn && gx.raceRespawn(L)) || (L.team >= 0 ? teamSpawn(L.team) : mode === 'online' ? randomSpawn() : L.spawn)));
       }

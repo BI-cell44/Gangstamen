@@ -4,8 +4,10 @@
   // =====================================================================================
   const _modelGeo = {}; let _modelMat = null;
   // -> geometry in model units, centred on its box (m.size gives the box); grey: colours turned to their brightness
-  function modelGeo(name, grey) {
-    const key = name + (grey ? ':g' : ''); if (_modelGeo[key]) return _modelGeo[key];
+  // cut (optional) [x, y] or a list of them: drop the pieces of the model lying wholly at x < cut[0] that hang below y = cut[1] (19 nov., user:
+  // the boom ends in a point, without the ladders, the rest legs and the hook hanging under the tip of the downloaded crane)
+  function modelGeo(name, grey, cut) {
+    const key = name + (grey ? ':g' : '') + (cut ? ':' + cut : ''); if (_modelGeo[key]) return _modelGeo[key];
     const m = (W.models || {})[name]; if (!m) return null;
     const bin = (s, T) => { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new T(u.buffer); };
     const pq = bin(m.p, Int16Array), cq = bin(m.c, Uint8Array), k = Math.max(...m.size) / 32767, pos = new Float32Array(pq.length), col = new Float32Array(cq.length), c = new THREE.Color();
@@ -15,11 +17,21 @@
       c.setRGB(r, g, b).convertSRGBToLinear(); col[i] = c.r; col[i + 1] = c.g; col[i + 2] = c.b;
     }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    g.setIndex(new THREE.BufferAttribute(bin(m.i, m.n > 65535 ? Uint32Array : Uint16Array), 1)); g.computeVertexNormals(); g.userData.shared = true; g.userData.size = m.size;
+    let idx = bin(m.i, m.n > 65535 ? Uint32Array : Uint16Array);
+    if (cut) { // pieces (sets of triangles sharing vertices) wholly at x < cut[0] that reach below y = cut[1]
+      const n = pos.length / 3, P = new Int32Array(n), f = i => { while (P[i] !== i) i = P[i] = P[P[i]]; return i; }; for (let i = 0; i < n; i++) P[i] = i;
+      for (let t = 0; t < idx.length; t += 3) { const a = f(idx[t]); P[f(idx[t + 1])] = a; P[f(idx[t + 2])] = a; }
+      const x1 = new Float32Array(n).fill(-1e9), y0 = new Float32Array(n).fill(1e9);
+      for (let i = 0; i < n; i++) { const r = f(i); x1[r] = Math.max(x1[r], pos[3 * i]); y0[r] = Math.min(y0[r], pos[3 * i + 1]); }
+      const cuts = Array.isArray(cut[0]) ? cut : [cut];
+      const keep = []; for (let t = 0; t < idx.length; t += 3) { const r = f(idx[t]); if (!cuts.some(k => x1[r] < k[0] && y0[r] < k[1])) keep.push(idx[t], idx[t + 1], idx[t + 2]); }
+      idx = m.n > 65535 ? new Uint32Array(keep) : new Uint16Array(keep);
+    }
+    g.setIndex(new THREE.BufferAttribute(idx, 1)); g.computeVertexNormals(); g.userData.shared = true; g.userData.size = m.size;
     return _modelGeo[key] = g;
   }
-  function modelMesh(name, grey) {
-    const g = modelGeo(name, grey); if (!g) return null;
+  function modelMesh(name, grey, cut) {
+    const g = modelGeo(name, grey, cut); if (!g) return null;
     if (!_modelMat) { _modelMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, metalness: 0.05, side: THREE.DoubleSide, flatShading: true, envMapIntensity: 0.4 }); _modelMat.userData.shared = true; }
     const o = new THREE.Mesh(g, _modelMat); o.castShadow = true; o.userData.hdLinear = true; o.userData.shared = true; return o;
   }
@@ -57,7 +69,17 @@
     pts.forEach(([x, z, top], i) => { const g = groundH(x, z) - 0.3, h = top - g; M.makeScale(1, h, 1); M.setPosition(x, g + h / 2, z); im.setMatrixAt(i, M); gridAdd([x - 0.6, z, x + 0.6, z], 3.5); gridAdd([x, z - 0.6, x, z + 0.6], 3.5); hallColumns.push([x, z, top]); });
     im.castShadow = true; im.receiveShadow = true; im.userData.hdLinear = true; im.frustumCulled = false; scene.add(im);
   }
+  // what to take away from the downloaded cranes: everything hanging under the boom, and the small block under its tip
+  const CRANE_CUT = [[2.5, 1.05], [-4.1, 1.7]];
   const portCranes = [];
+  // -> [x, z] centre of the feet of a model (vertices within 0.6 of its lowest point), in model units
+  function pedestalOf(geo) {
+    if (geo.userData.ped) return geo.userData.ped;
+    const p = geo.attributes.position.array; let y0 = 1e9; for (let i = 1; i < p.length; i += 3) y0 = Math.min(y0, p[i]);
+    let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9;
+    for (let i = 0; i < p.length; i += 3) if (p[i + 1] < y0 + 0.6) { x0 = Math.min(x0, p[i]); x1 = Math.max(x1, p[i]); z0 = Math.min(z0, p[i + 2]); z1 = Math.max(z1, p[i + 2]); }
+    return geo.userData.ped = [(x0 + x1) / 2, (z0 + z1) / 2];
+  }
   function buildPortCranes() {
     for (const [sx, sz, dx, dz, name, turn] of QUAY_CRANES) {
       const bk = bankFrom(sx, sz, dx, dz); if (!bk) continue;
@@ -68,10 +90,12 @@
       for (let back = 7; back <= 34 && !ok; back += 1.5) { x = bk[0] - dx * back; z = bk[1] - dz * back; const [lo, hi] = ring(x, z);
         ok = hi - lo < 0.4 && !(segHit(x, z, dx, dz, 5) < 5 || segHit(x, z, -dx, -dz, 5) < 5 || roadEdge(x, z)[0] < 1.5); } // not in a wall, not on a street
       if (!ok) continue;
-      const o = modelMesh(name); if (!o) return;
+      const o = modelMesh(name, false, CRANE_CUT); if (!o) return;
       const S = 2.3, sz3 = o.geometry.userData.size, gy = Math.max(...ring(x, z));
-      // the model: boom along -x, pedestal near +x; turn it so that the boom points to the water
-      const g = new THREE.Group(); o.scale.setScalar(S); o.position.set(-(sz3[0] / 2 - 0.82) * S, sz3[1] / 2 * S, 0); g.add(o);
+      // the model: boom along -x, pedestal near +x; turn it so that the boom points to the water. (19 nov., user: the
+      // cranes stood beside their plinth) the centre of the pedestal is measured on the lowest vertices of the model
+      const ped = pedestalOf(o.geometry);
+      const g = new THREE.Group(); o.scale.setScalar(S); o.position.set(-ped[0] * S, sz3[1] / 2 * S, -ped[1] * S); g.add(o);
       const plinth = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.8, 2.4, 12), new THREE.MeshLambertMaterial({ color: hd.lin(0x8a8880) })); plinth.position.y = -0.1; plinth.userData.hdLinear = true; g.add(plinth); // goes 1.3 m into the ground (18 nov.: this comment used to swallow g.add, the cranes had no plinth)
       g.position.set(x, gy + 0.9, z); g.rotation.y = Math.atan2(dz, -dx) + turn; g.userData.hdLinear = true; scene.add(g); portCranes.push(g);
       gridAdd([x - 2.2, z, x + 2.2, z], 3.5); gridAdd([x, z - 2.2, x, z + 2.2], 3.5);

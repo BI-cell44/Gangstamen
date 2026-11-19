@@ -67,6 +67,21 @@ function radioNext(key) {
   if (HD) { const st = sfx.nextStation(); flashAll(st ? st.name : 'Radio OFF', st ? st.style + ' · ' + key + ' : station suivante' : key + ' : rallumer'); if (st && gx) gx.dj('station', st); }
   else { const on = sfx.toggle(); flashAll(on ? 'Radio ON' : 'Radio OFF', on ? 'Chantenay FM 92.4' : ''); }
 }
+// (19 nov., user) the radio display above the street sign (hidden on touch screens and in split screen by the CSS):
+// station and style while the music plays, « Radio coupée » otherwise; polled, so that every way of changing the music
+// (M, the menu volume, a mission) shows
+let radioKey = '';
+function radioHud() {
+  const el = $('radio'); if (!el) return;
+  const st = sfx.station, on = !!st && sfx.music && settings.music > 0.001, key = on ? st.name : settings.music > 0.001 ? 'off' : 'mute';
+  if (key === radioKey) return;
+  const first = !radioKey; radioKey = key;
+  el.classList.toggle('off', !on);
+  $('radioName').textContent = on ? st.name : 'Radio coupée';
+  $('radioSub').textContent = on ? (HD ? st.style + ' · M : station suivante' : 'M : couper') : key === 'mute' ? 'volume de la musique à 0 (menu)' : 'M : allumer';
+  if (!first) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+}
+setInterval(radioHud, 250);
 // (17 nov., user) the radio on touch screens: a tap on ♪
 // (17 nov., user) full screen, PC and phone: the ⛶ button, « Plein écran » in the pause, the F key; hidden where the
 // browser has no full screen (iPhone) — inside the claude.ai page the frame may also refuse it: a message says so

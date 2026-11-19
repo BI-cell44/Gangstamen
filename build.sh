@@ -65,7 +65,7 @@ mu = {}
 if os.path.exists('../data/music/rap_loop.mp3'):
     mu['rap'] = {'src': 'data:audio/mpeg;base64,' + base64.b64encode(open('../data/music/rap_loop.mp3', 'rb').read()).decode(), 'loopStart': 0.25, 'loopEnd': round(0.25 + 8 * 4 * 60 / 93.0, 6)}
 if os.path.exists('../data/music/yo.mp3'):
-    mu['yo'] = {'src': 'data:audio/mpeg;base64,' + base64.b64encode(open('../data/music/yo.mp3', 'rb').read()).decode(), 'gain': 0.6, 'lead': 0.40}  # lead: « man » 0.40 s in, on the first beat
+    mu['yo'] = {'src': 'data:audio/mpeg;base64,' + base64.b64encode(open('../data/music/yo.mp3', 'rb').read()).decode(), 'gain': 0.45, 'lead': 0.40}  # lead: « man » 0.40 s in, on the first beat
 if mu:
     t = t.replace(tag, '<script>window.MUSIC=' + json.dumps(mu) + ';</script>' + tag)
 open('gangstamen-ultra.html', 'w', encoding='utf-8').write(t)

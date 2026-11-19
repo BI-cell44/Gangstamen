@@ -67,8 +67,9 @@
   }
   function showPostcard(s, secs) {
     if (!pcEl) { pcEl = document.createElement('div'); pcEl.id = 'postcard'; document.body.append(pcEl); pcEl.addEventListener('click', () => { pcEl.hidden = true; }); }
-    pcEl.innerHTML = cardHTML(s, !secs); pcEl.className = secs ? 'toast' : 'big'; pcEl.hidden = false; pcT = secs || 0;
-    if (secs) setTimeout(() => { if (pcT === secs) pcEl.hidden = true; }, secs * 1000);
+    // (19 nov.) a number per card shown: the timer of an earlier toast no longer hides the next card
+    const n = ++pcT; pcEl.innerHTML = cardHTML(s, !secs); pcEl.className = secs ? 'toast' : 'big'; pcEl.hidden = false;
+    if (secs) setTimeout(() => { if (pcT === n) pcEl.hidden = true; }, secs * 1000);
   }
   function postcardGallery(box) { // the cards found so far, in the menu: a click shows one large
     const g = document.createElement('div'); g.className = 'pcGrid';
