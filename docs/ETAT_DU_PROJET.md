@@ -111,7 +111,7 @@ Performances réelles, son (intro, radio, voix, cloche du tram), vibrations, res
 - Le Vautour fuit « vers le quai de la Fosse » alors que le quai est dans la carte.
 - La nouvelle zone n'a que des façades dessinées (pas de photos Panoramax).
 - En ligne : capture du drapeau absente ; circulation, piétons, bonus et tram non synchronisés. Le 19 nov., les quatre modes en ligne (chacun pour soi, équipes, colline, course) passent `tools/tests/online_full.js` à deux pages sur le serveur Node local : salon, hôte, positions, Rapaces de l’hôte, tirs, KO, lieux choisis par l’hôte, fin de partie. Pas encore essayé sur claude.ai à plusieurs.
-- **GitHub Pages** (`https://bi-cell44.github.io/Gangstamen/`, branche `ultra`) : page statique, ni capacité `room` ni serveur : le jeu en ligne y est indisponible (vérifié le 19 nov.). Il faut un relais (serveur Node hébergé ou WebRTC), voir le backlog. Le dépôt est public depuis ~18 nov. : les modèles CGTrader et les personnages téléchargés y sont lisibles, ce que leur licence interdit ; décision à prendre par l’utilisateur.
+- **GitHub Pages** (`https://bi-cell44.github.io/Gangstamen/`, branche `ultra`) : page statique, ni capacité `room` ni serveur : le jeu en ligne y est indisponible (vérifié le 19 nov.). Il faut un relais (serveur Node hébergé ou WebRTC), voir le backlog. Le dépôt est public depuis ~18 nov. ; modèles CGTrader achetés en Royalty Free, usage dans le jeu autorisé (confirmé par l’utilisateur le 20 nov.). Point à garder en tête : la licence interdit de redistribuer les modèles seuls, et ils sont ici lisibles dans `data/models/`.
 - Mairie : fronton supposé, dos et côtés copiés de la face ; quelques toits ou rez-de-chaussée étranges ; enseignes nationales génériques.
 
 ## 5. Artifacts claude.ai
