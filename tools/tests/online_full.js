@@ -19,12 +19,12 @@ const log = (...a) => console.log('[' + M + ']', ...a); let fails = 0; const ok 
   const [A, B] = await Promise.all([mk('A'), mk('B')]);
   log('pages loaded');
   // host: mode, goal 3 KO / 10 points / 1 lap, then create
-  await A.evaluate(m => { const s = __gm.settings; s.netGmode = m >= 3 ? m : 0; s.netTeams = m === 1; s.netTeam = m === 1 ? 0 : undefined; s.goal = 3; s.goalHill = 10; s.limit = 0; s.placeFfa = 4; s.placeHill = 6; s.placeRap = 2; s.placeChant = 5; document.getElementById('nick').value = 'Alice'; document.getElementById('create').click(); }, M);
+  await A.evaluate(m => { const s = __gm.settings; s.netGmode = m >= 2 ? m : 0; s.netTeams = m === 1 || m === 2; s.netTeam = m === 1 || m === 2 ? 0 : undefined; s.goal = 3; s.goalHill = 10; s.limit = 0; s.placeFfa = 4; s.placeHill = 6; s.placeRap = 2; s.placeChant = 5; document.getElementById('nick').value = 'Alice'; document.getElementById('create').click(); }, M);
   await A.waitForTimeout(3000);
-  await B.evaluate(m => { __gm.settings.netTeam = m === 1 ? 1 : undefined; document.querySelector('[data-go="vOnline"]').click(); document.getElementById('nick').value = 'Bob'; }, M);
+  await B.evaluate(m => { __gm.settings.netTeam = m === 1 || m === 2 ? 1 : undefined; document.querySelector('[data-go="vOnline"]').click(); document.getElementById('nick').value = 'Bob'; }, M);
   await B.waitForFunction(() => document.querySelector('#games button'), null, { timeout: 60000 });
   const lobby = await B.textContent('#games'); log('lobby on B:', lobby);
-  ok(M === 3 ? /colline/.test(lobby) : M === 4 ? /Course/.test(lobby) : M === 1 ? /équipes/.test(lobby) : /Chacun/.test(lobby), 'le salon montre le bon mode');
+  ok(M === 2 ? /drapeau/.test(lobby) : M === 3 ? /colline/.test(lobby) : M === 4 ? /Course/.test(lobby) : M === 1 ? /équipes/.test(lobby) : /Chacun/.test(lobby), 'le salon montre le bon mode');
   await B.evaluate(() => document.querySelector('#games button').click());
   // let them see each other
   const both = async () => { for (let i = 0; i < 60; i++) { const [a, c] = await Promise.all([A.evaluate(() => __gm.Net.remotes.size), B.evaluate(() => __gm.Net.remotes.size)]); if (a && c) return true; await A.waitForTimeout(1000); } return false; };
@@ -37,12 +37,12 @@ const log = (...a) => console.log('[' + M + ']', ...a); let fails = 0; const ok 
   ok(JSON.stringify(pls[0].gp) === JSON.stringify(pls[1].gp) && JSON.stringify(pls[0].gp) === '[4,6,2,5]', 'les lieux de l’hôte sont repris par l’invité', pls.map(p => p.gp));
   const near = (p, P, r) => Math.hypot(p.x - P[0], p.z - P[1]) < r;
   if (M === 0) ok(pls.every(p => near(p, [1345, -420], 150)), 'chacun pour soi : départ autour de la Gare Maritime', pls);
-  if (M === 1) ok(near(pls[0], [-300, 540], 150) && near(pls[1], [1218, 366], 150), 'équipes : Rapaces à la gare, Chantenaysiens à la grue grise', pls);
+  if (M === 1 || M === 2) ok(near(pls[0], [-300, 540], 150) && near(pls[1], [1218, 366], 150), 'équipes : Rapaces à la gare, Chantenaysiens à la grue grise', pls);
   if (M === 3) { const d = pls.map(p => Math.hypot(p.x - 1958, p.z + 363)); ok(d.every(v => v > 100 && v < 280), 'colline : départ à 110-260 m des Nefs', d.map(Math.round));
     ok(await A.evaluate(() => /Nefs/.test(document.getElementById('objective') ? document.getElementById('objective').textContent : '')), 'l’objectif nomme la place à tenir'); }
   ok(c.gxm === a.gxm && c.goal === a.goal, 'B a le même mode et le même objectif', [a.gxm, c.gxm, a.goal, c.goal]);
-  if (M === 1) ok(a.team === 0 && c.team === 1 && a.R[0].team === 1 && c.R[0].team === 0, 'équipes choisies, vues des deux côtés');
-  if (M === 4) ok(Math.hypot(a.x - c.x, a.z - c.z) < 40, 'course : les deux sur la grille de départ', Math.hypot(a.x - c.x, a.z - c.z));
+  if (M === 1 || M === 2) ok(a.team === 0 && c.team === 1 && a.R[0].team === 1 && c.R[0].team === 0, 'équipes choisies, vues des deux côtés');
+  if (M === 4) ok(Math.hypot(a.x - c.x, a.z - c.z) < 70, 'course : les deux sur la grille de départ (12 places)', Math.hypot(a.x - c.x, a.z - c.z));
   // positions: move B somewhere, A must see it there
   await B.evaluate(() => { const L = __gm.locals()[0]; L.car.place(L.car.x + 30, L.car.z, L.car.h); L.car.vx = L.car.vz = 0; });
   for (let i = 0; i < 20; i++) { await A.waitForTimeout(1000); a = await st(A); c = await st(B); if (Math.hypot(a.R[0].x - c.x, a.R[0].z - c.z) < 4) break; }
@@ -58,7 +58,7 @@ const log = (...a) => console.log('[' + M + ']', ...a); let fails = 0; const ok 
   await A.evaluate(peer => __gm.Net.queue('hit', peer, 12), c.me);
   await A.waitForTimeout(2500);
   const hp1 = (await st(B)).hpCar;
-  ok(M === 1 || hp1 < hp0, 'un tir de A abîme B (sauf coéquipier)', [hp0, hp1]);
+  ok(M === 1 || M === 2 || hp1 < hp0, 'un tir de A abîme B (sauf coéquipier)', [hp0, hp1]);
   // KO: B nearly dead, A finishes: A gets the KO
   if (M === 0) {
     const k0 = (await st(A)); 
@@ -79,8 +79,22 @@ const log = (...a) => console.log('[' + M + ']', ...a); let fails = 0; const ok 
     const cps = await Promise.all([A.evaluate(() => __gm.locals()[0].cp), B.evaluate(() => __gm.locals()[0].cp)]);
     log('race cps', JSON.stringify(cps));
   }
+  if (M === 2) { // B (Chantenaysiens) takes the Rapaces' flag (at the gare de Chantenay) and brings it to the grue grise
+    await A.evaluate(() => { for (const r of __gm.rivals()) r.place(r.x + 3000, r.z, 0); __gm.locals()[0].car.place(0, 0, 0); });
+    const f0 = await B.evaluate(() => __gm.gx.modeInfo().flags);
+    log('flags on B', JSON.stringify(f0));
+    await B.evaluate(f => { const c = __gm.locals()[0].car; c.place(f[0][0] + 1, f[0][1] + 1, 0); c.vx = c.vz = 0; }, f0);
+    let fa, fb; for (let i = 0; i < 25; i++) { await A.waitForTimeout(1000); [fa, fb] = await Promise.all([A.evaluate(() => __gm.gx.modeInfo().flags), B.evaluate(() => __gm.gx.modeInfo().flags)]); if (fa[0][3] && fb[0][3]) break; }
+    ok(fa[0][3] && fb[0][3], 'drapeau : l’hôte voit B prendre le drapeau des Rapaces, B aussi', [fa[0], fb[0]]);
+    await B.evaluate(f => { const c = __gm.locals()[0].car; c.place(f[1][0] + 1, f[1][1] + 1, 0); c.vx = c.vz = 0; }, f0);
+    let sa, sb; for (let i = 0; i < 25; i++) { await A.waitForTimeout(1000); [sa, sb] = await Promise.all([A.evaluate(() => __gm.gx.modeInfo().score), B.evaluate(() => __gm.gx.modeInfo().score)]); if (sa[1] && sb[1]) break; }
+    ok(sa[1] === 1 && sb[1] === 1, 'drapeau : capture comptée chez l’hôte et chez B', [sa, sb]);
+    ok(await B.evaluate(() => __gm.locals()[0].kills) === 1, 'drapeau : B est crédité de sa capture');
+    const back = await Promise.all([A.evaluate(() => __gm.gx.modeInfo().flags[0][2]), B.evaluate(() => __gm.gx.modeInfo().flags[0][2])]);
+    ok(back[0] && back[1], 'drapeau : le drapeau capturé revient à sa base des deux côtés', back);
+  }
   // end of match: the host reaches the goal
-  await A.evaluate(() => { const L = __gm.locals()[0]; L.kills = __gm.Match.goal; if (L.hillT !== undefined) L.hillT = __gm.Match.goal; if (L.cp !== undefined) L.cp = __gm.Match.goal; });
+  await A.evaluate(() => { const L = __gm.locals()[0]; L.kills = __gm.Match.goal; const st = __gm.gx.gmState; if (st && st.score) st.score[L.team] = __gm.Match.goal; if (L.hillT !== undefined) L.hillT = __gm.Match.goal; if (L.cp !== undefined) L.cp = __gm.Match.goal; });
   for (let i = 0; i < 30; i++) { await A.waitForTimeout(1000); const o = await Promise.all([A.evaluate(() => __gm.Match.over), B.evaluate(() => __gm.Match.over)]); if (o[0] && o[1]) break; }
   const ends = await Promise.all([A, B].map(p => p.evaluate(() => ({ over: __gm.Match.over, title: __gm.Match.title, res: !document.getElementById('results').hidden }))));
   ok(ends[0].over && ends[1].over && ends[0].title === ends[1].title, 'fin de partie des deux côtés, même titre', ends);

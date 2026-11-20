@@ -135,7 +135,10 @@ function step(dt, now) {
     for (const L of locals) {
       if (!pk.on || !L.car.alive || Math.hypot(pk.x - L.car.x, pk.z - L.car.z) >= 3.5) continue;
       L.car.hp = Math.min(100, L.car.hp + 35); sfx.pick(); flashFor(L, 'Clé à molette', '+35 carrosserie'); rumbleFor(L, 0, 0.3, 80);
-      pk.on = false; pk.mesh.visible = false; setTimeout(() => spawnPickup(pk), 12000);
+      pk.on = false; pk.mesh.visible = false;
+      // (20 nov.) online, a guest tells the host which one it took (its presence, pt) and the host puts it back elsewhere
+      if (netGuest()) { pk.takenT = performance.now(); Net.pickSeq = (Net.pickSeq || 0) + 1; Net.picked = [pickups.indexOf(pk), Net.pickSeq]; }
+      else setTimeout(() => spawnPickup(pk), 12000);
     }
   }
   updateFx(dt); updateTracers(dt); tramStep(dt);

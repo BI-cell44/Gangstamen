@@ -53,18 +53,23 @@
     const now = performance.now();
     if (gm.kind === 2) {
       const cars = [...allPlayerCars(), ...rivals].filter(c => c.alive && c.team >= 0);
+      // (20 nov.) online, the host decides who takes, brings back and captures the flags; a guest shows the host's state
+      // (applyFlags) and only moves a carried flag with its carrier
+      const guest = mode === 'online' && !Net.isHost;
       for (const f of gm.flags) {
-        if (f.carrier && !f.carrier.alive) { f.carrier = null; f.idle = 0; flashAll('Drapeau ' + (f.team ? 'chantenaysien' : 'des Rapaces') + ' à terre', ''); }
+        if (guest) { if (f.carrier) { f.x = f.carrier.x; f.z = f.carrier.z; } }
+        else if (f.carrier && !f.carrier.alive) { f.carrier = null; f.idle = 0; flashAll('Drapeau ' + (f.team ? 'chantenaysien' : 'des Rapaces') + ' à terre', ''); }
         if (f.carrier) { f.x = f.carrier.x; f.z = f.carrier.z; }
         else if (!f.atHome) { f.idle += dt; if (f.idle > 25) { f.atHome = true; [f.x, f.z] = f.home; } }
-        for (const c of cars) {
+        if (!guest) for (const c of cars) {
           if (f.carrier || Math.hypot(c.x - f.x, c.z - f.z) > 4.5) continue;
           if (c.team !== f.team) { f.carrier = c; f.atHome = false; f.idle = 0; sfx.pick(); flashAll((c.owner && c.owner.slot !== undefined ? 'J' + (c.owner.slot + 1) : TEAMS[c.team].one) + ' a le drapeau !', 'Ramène-le à ta base'); break; }
           if (!f.atHome) { f.atHome = true; [f.x, f.z] = f.home; sfx.pick(); flashAll('Drapeau ramené', TEAMS[f.team].short); break; }
         }
         // capture: carrier reaches its own flag, which must be at home
-        if (f.carrier) { const own = gm.flags[f.carrier.team]; if (own.atHome && Math.hypot(f.carrier.x - own.home[0], f.carrier.z - own.home[1]) < 6) {
+        if (f.carrier && !guest) { const own = gm.flags[f.carrier.team]; if (own.atHome && Math.hypot(f.carrier.x - own.home[0], f.carrier.z - own.home[1]) < 6) {
           const tm = f.carrier.team; gm.score[tm]++; if (f.carrier.owner && f.carrier.local) { f.carrier.owner.kills++; f.carrier.owner.respect += 300; }
+          if (mode === 'online') gm.capBy = [idOfCar(f.carrier), gm.score[0] + gm.score[1]];
           flashAll('Capture ! ' + TEAMS[tm].short, gm.score[0] + ' – ' + gm.score[1]); say('Drapeau capturé pour les ' + TEAMS[tm].short + ' !', { cancel: true });
           f.carrier = null; f.atHome = true; [f.x, f.z] = f.home; for (const L of locals) rumbleFor(L, 0.5, 0.6, 300);
         } }
@@ -141,6 +146,31 @@
   }
   function modeTeamScores() { return gm && gm.kind === 2 ? gm.score.slice() : null; }
   function goalText() { return gm ? (gm.kind === 2 ? Match.goal + (Match.goal > 1 ? ' captures' : ' capture') + ' pour gagner' : gm.kind === 3 ? Match.goal + ' points pour gagner' : (gm.laps > 1 ? gm.laps + ' tours de ' : '') + gm.cps.length + ' checkpoints') : ''; }
+  // online flags: a car named by its peer (players) or 'b' + index (the host's Rapaces)
+  function idOfCar(c) { if (!c) return null; const L = locals.find(L => L.car === c); if (L) return Net.me; for (const R of Net.remotes.values()) if (R.car === c) return R.peer; const i = rivals.indexOf(c); return i >= 0 ? 'b' + i : null; }
+  function carOfId(id) { if (id == null) return null; if (id === Net.me) return locals[0] && locals[0].car; if (typeof id === 'string' && /^b\d+$/.test(id)) return rivals[+id.slice(1)] || null; const R = Net.remotes.get(id); return R ? R.car : null; }
+  // the host's presence: [score 0, score 1, [x, z, at home, carrier] per flag, last capture [carrier, captures so far]]
+  function netFlags() { return gm && gm.kind === 2 ? [gm.score[0], gm.score[1], gm.flags.map(f => [Math.round(f.x * 10) / 10, Math.round(f.z * 10) / 10, f.atHome ? 1 : 0, idOfCar(f.carrier)]), gm.capBy || null] : null; }
+  // a guest takes the host's state, with the messages a change brings
+  function applyFlags(cf) {
+    if (!gm || gm.kind !== 2 || !Array.isArray(cf) || !Array.isArray(cf[2]) || cf[2].length !== 2) return;
+    const s = [+cf[0] || 0, +cf[1] || 0];
+    if (s[0] + s[1] > gm.score[0] + gm.score[1]) {
+      const tm = s[0] > gm.score[0] ? 0 : 1, cap = Array.isArray(cf[3]) ? cf[3] : null;
+      flashAll('Capture ! ' + TEAMS[tm].short, s[0] + ' – ' + s[1]); say('Drapeau capturé pour les ' + TEAMS[tm].short + ' !', { cancel: true }); sfx.pick();
+      // my own capture counts for me
+      if (cap && cap[0] === Net.me && locals[0]) { locals[0].kills++; locals[0].respect += 300; for (const L of locals) rumbleFor(L, 0.5, 0.6, 300); }
+    }
+    gm.score = s;
+    gm.flags.forEach((f, t) => {
+      const [x, z, home, id] = cf[2][t] || []; const car = carOfId(id);
+      if (car && car !== f.carrier) { sfx.pick(); flashAll((car === (locals[0] && locals[0].car) ? 'Tu as' : car.owner && car.owner.nick ? car.owner.nick + ' a' : TEAMS[car.team] ? TEAMS[car.team].one + ' a' : 'Quelqu’un a') + ' le drapeau !', car === (locals[0] && locals[0].car) ? 'Ramène-le à ta base' : ''); }
+      else if (!car && f.carrier && !home) flashAll('Drapeau ' + (t ? 'chantenaysien' : 'des Rapaces') + ' à terre', '');
+      else if (home && !f.atHome && !car && !f.carrier) flashAll('Drapeau ramené', TEAMS[t].short);
+      f.carrier = car; f.atHome = !!home;
+      if (!car && Number.isFinite(+x) && Number.isFinite(+z)) { f.x = +x; f.z = +z; }
+    });
+  }
   // for the tests: the state of the split / online mode
   function modeInfo() { return gm && { kind: gm.kind, hill: gm.hill && [gm.hill.x, gm.hill.z, gm.hill.r], owner: gm.owner, flags: gm.flags && gm.flags.map(f => [f.x, f.z, f.atHome, !!f.carrier]), score: gm.score }; }
   function rematchMode() { if (!gm) return; const k = gm.kind, g = Match.goal; stopMode(); setupMode(k, g); }

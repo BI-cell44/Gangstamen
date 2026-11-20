@@ -184,6 +184,18 @@ function buildTrams() {
   const wg = new THREE.BufferGeometry(); wg.setAttribute('position', new THREE.BufferAttribute(wire.subarray(0, wi), 3));
   scene.add(new THREE.LineSegments(wg, new THREE.LineBasicMaterial({ color: 0x202024 })));
 }
+// (20 nov.) online, the host's trams: everybody sees them at the same place (before, each screen had its own timetable, a
+// random pause at the end of the line); a guest follows [x, speed, wait, sleep] from the host's presence
+function netGuest() { return mode === 'online' && typeof Net !== 'undefined' && Net.room && !Net.isHost; }
+function tramNet() { const r = v => Math.round(v * 10) / 10; return trams.map(T => [r(T.x), r(T.v), r(T.wait), r(T.sleep)]); }
+function applyTram(a) {
+  if (!Array.isArray(a) || a.length !== trams.length) return;
+  trams.forEach((T, i) => {
+    const s = a[i]; if (!Array.isArray(s) || !s.every(Number.isFinite)) return;
+    const dx = s[0] - T.x;
+    T.x = Math.abs(dx) > 8 || (s[3] > 0) !== (T.sleep > 0) ? s[0] : T.x + dx * 0.3; T.v = s[1]; T.wait = s[2]; T.sleep = s[3];
+  });
+}
 function tramStep(dt) {
   for (const T of trams) {
     if (T.sleep > 0) { T.sleep -= dt; for (const s of T.segs) s.visible = false; continue; }
@@ -198,6 +210,8 @@ function tramStep(dt) {
       if (toStop < 0.8 && T.left !== next) { T.wait = 14; T.v = 0; }
     }
     T.x += T.v * T.dir * dt;
+    // a guest lets the host decide when the tram goes back to the start of the line
+    if (((T.dir > 0 && T.x > EDGE.x1 + 90) || (T.dir < 0 && T.x < EDGE.x0 - 90)) && netGuest()) continue;
     if ((T.dir > 0 && T.x > EDGE.x1 + 90) || (T.dir < 0 && T.x < EDGE.x0 - 90)) { T.x = T.dir > 0 ? EDGE.x0 - 90 : EDGE.x1 + 90; T.sleep = 20 + Math.random() * 25; T.left = null; continue; }
     // place the sections along the track (each one follows the rails)
     for (let k = 0; k < T.segs.length; k++) {

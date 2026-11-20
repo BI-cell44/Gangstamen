@@ -39,7 +39,9 @@ function wsRoom(url) { // minimal client for the self-hosted server (server/ fol
   function onMsg(m) {
     if (m.t === 'hello') { me = m.peer; for (const st of rooms.values()) { if (st.name) send({ t: 'join', room: st.name }); if (Object.keys(st.my).length) send({ t: 'pres', room: st.name, data: st.my }); } return; }
     const st = rooms.get(m.room); if (!st) return;
-    if (m.t === 'peers') { const joined = []; st.peers.clear(); for (const p of m.list) { const o = st.peerObj(p.peer, p.presence); st.peers.set(p.peer, o); joined.push(o); } st.notify(joined, [], []); }
+    // (20 nov.) after a reconnection the server gives new ids: whoever is missing from the new list has left (before, the
+    // old ids stayed as frozen ghost players)
+    if (m.t === 'peers') { const old = new Map(st.peers), joined = [], updated = []; st.peers.clear(); for (const p of m.list) { const o = st.peerObj(p.peer, p.presence); st.peers.set(p.peer, o); (old.has(p.peer) ? updated : joined).push(o); } st.notify(joined, [...old.values()].filter(o => !st.peers.has(o.peer)), updated); }
     else if (m.t === 'pres') { const had = st.peers.has(m.peer); const o = st.peerObj(m.peer, m.data); st.peers.set(m.peer, o); st.notify(had ? [] : [o], [], had ? [o] : []); }
     else if (m.t === 'left') { const o = st.peers.get(m.peer); if (o) { st.peers.delete(m.peer); st.notify([], [o], []); } }
     else if (m.t === 'msg') { const s = st.topics.get(m.topic); if (s) for (const f of s) f({ topic: m.topic, data: m.data, peer: m.peer, by: null, isMe: m.peer === me, sameTab: m.peer === me, kind: 'viewer', guest: false }); }
@@ -54,28 +56,38 @@ function wsRoom(url) { // minimal client for the self-hosted server (server/ fol
   connect();
   return lobby.api;
 }
+// (20 nov., user) the public page on GitHub Pages has no claude.ai room: it plays through the relay server hosted on Render
+// (branch server, server/server.js) once its address is set here, e.g. 'wss://gangstamen.onrender.com/ws'; empty: no online
+// play on that page. ?server=wss://… still overrides it, for a test
+const PUBLIC_SERVER = '';
 async function netInit() {
   let url = window.GM_SERVER || null;
+  if (!url && PUBLIC_SERVER && /(^|\.)github\.io$/.test(location.hostname)) url = PUBLIC_SERVER;
   try { const q = new URLSearchParams(location.search).get('server'); if (q) url = q; } catch (e) { }
   if (url === 'auto') url = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
-  if (url) Net.api = wsRoom(url);
+  if (url) {
+    // a free Render server asleep takes up to a minute to wake up: the menu says so instead of looking broken
+    Net.api = wsRoom(url); Net.wsT0 = Date.now();
+    const tick = setInterval(() => { if (Net.connected === true) clearInterval(tick); renderGames(); }, 1000);
+  }
   else { try { Net.api = window.claude && window.claude.use ? await window.claude.use('room') : null; } catch (e) { Net.api = null; } }
   if (!Net.api) { Net.status = 'none'; renderGames(); return; }
   Net.status = 'lobby';
   Net.api.onPeers(() => renderGames(), () => { Net.status = 'none'; renderGames(); });
-  Net.api.onConnection(c => { Net.connected = c; renderGames(); });
+  Net.api.onConnection(c => { Net.connected = c; if (c) Net.everConnected = true; renderGames(); });
   renderGames();
 }
 function lobbyGames() {
   if (!Net.api) return [];
   const out = [];
-  for (const p of Net.api.peers()) { const g = p.presence && p.presence.gm; if (g && typeof g.code === 'string' && /^[a-z0-9]{4}$/.test(g.code) && !p.sameTab) out.push({ code: g.code, n: Math.max(1, Math.min(12, +g.n || 1)), host: String(g.host || '?').slice(0, 14), md: g.md === 1 ? 1 : 0, gx: [3, 4].includes(g.gx) ? g.gx : 0, gl: Number.isInteger(g.gl) && g.gl >= 0 && g.gl <= 600 ? g.gl : 0, tl: [5, 10, 15].includes(g.tl) ? g.tl : 0, pl: Array.isArray(g.pl) && g.pl.length === 4 ? g.pl.map(v => Number.isInteger(v) && v >= -1 && v < 16 ? v : -1) : null }); }
+  for (const p of Net.api.peers()) { const g = p.presence && p.presence.gm; if (g && typeof g.code === 'string' && /^[a-z0-9]{4}$/.test(g.code) && !p.sameTab) out.push({ code: g.code, n: Math.max(1, Math.min(12, +g.n || 1)), host: String(g.host || '?').slice(0, 14), md: g.md === 1 ? 1 : 0, gx: [2, 3, 4].includes(g.gx) ? g.gx : 0, gl: Number.isInteger(g.gl) && g.gl >= 0 && g.gl <= 600 ? g.gl : 0, tl: [5, 10, 15].includes(g.tl) ? g.tl : 0, pl: Array.isArray(g.pl) && g.pl.length === 4 ? g.pl.map(v => Number.isInteger(v) && v >= -1 && v < 16 ? v : -1) : null }); }
   return out;
 }
 function renderGames() {
   const st = $('netStatus'), box = $('games'); if (!st) return;
   if (Net.status === 'none') { st.textContent = 'Jeu en ligne indisponible ici : ouvrez la version publiée sur claude.ai en étant connecté (ou la version serveur).'; $('create').disabled = true; box.replaceChildren(); return; }
   if (!Net.api) { st.textContent = 'Connexion…'; return; }
+  if (Net.wsT0 && !Net.everConnected) { st.textContent = Date.now() - Net.wsT0 > 4000 ? 'Le serveur se réveille, ça peut prendre jusqu’à une minute…' : 'Connexion au serveur…'; $('create').disabled = true; return; }
   $('create').disabled = false;
   st.textContent = Net.connected === false ? 'Reconnexion…' : 'Parties ouvertes';
   const games = lobbyGames();
@@ -85,7 +97,7 @@ function renderGames() {
   if (!games.length) { const e = document.createElement('div'); e.className = 'empty'; e.textContent = 'Aucune partie pour l’instant : créez-en une.'; box.replaceChildren(e); return; }
   box.replaceChildren(...games.map(g => {
     const b = document.createElement('button'); b.className = 'mbtn';
-    b.textContent = 'Partie ' + g.code.toUpperCase() + ' · ' + g.host + ' · ' + (g.gx === 3 ? 'Roi de la colline' : g.gx === 4 ? 'Course' : g.md ? 'Par équipes' : 'Chacun pour soi') + (g.gl ? ' · ' + (g.gx === 3 ? g.gl + ' points' : g.gx === 4 ? (g.gl > 8 ? Math.round(g.gl / 8) + ' tours' : '1 tour') : g.gl + ' KO') : '') + (g.tl ? ' · ' + g.tl + ' min' : '') + (HD && g.pl ? ' · ' + (g.gx === 3 ? placeName(g.pl[1]) : g.gx === 4 ? 'boulevard de la Liberté' : g.md ? placeName(g.pl[2]) + ' contre ' + placeName(g.pl[3]) : g.pl[0] >= 0 ? placeName(g.pl[0]) : 'dispersés') : '') + ' · ' + g.n + '/12';
+    b.textContent = 'Partie ' + g.code.toUpperCase() + ' · ' + g.host + ' · ' + (g.gx === 2 ? 'Capture du drapeau' : g.gx === 3 ? 'Roi de la colline' : g.gx === 4 ? 'Course' : g.md ? 'Par équipes' : 'Chacun pour soi') + (g.gl ? ' · ' + (g.gx === 2 ? g.gl + (g.gl > 1 ? ' captures' : ' capture') : g.gx === 3 ? g.gl + ' points' : g.gx === 4 ? (g.gl > 8 ? Math.round(g.gl / 8) + ' tours' : '1 tour') : g.gl + ' KO') : '') + (g.tl ? ' · ' + g.tl + ' min' : '') + (HD && g.pl ? ' · ' + (g.gx === 3 ? placeName(g.pl[1]) : g.gx === 4 ? 'boulevard de la Liberté' : g.md ? placeName(g.pl[2]) + ' contre ' + placeName(g.pl[3]) : g.pl[0] >= 0 ? placeName(g.pl[0]) : 'dispersés') : '') + ' · ' + g.n + '/12';
     b.disabled = g.n >= 12;
     b.addEventListener('click', () => { Net.places = g.pl; startOnline(g.code, false, g.md, g.gl, g.tl, g.gx); });
     return b;
@@ -144,7 +156,8 @@ async function startOnline(code, create, md, gl, tl, gxm) {
   if (!create && others >= 12) { room.leave(); $('netStatus').textContent = 'Partie pleine (12 joueurs).'; return; }
   Net.room = room; Net.code = code; mode = 'online';
   Net.gxm = HD ? (create ? (settings.netGmode || 0) : (gxm || 0)) : 0;
-  teamMode = Net.gxm ? false : create ? !!settings.netTeams : !!md;
+  // the flag is played by two gangs; the hill and the race, each for themselves
+  teamMode = Net.gxm === 2 ? true : Net.gxm ? false : create ? !!settings.netTeams : !!md;
   setupMatch(create ? (Net.gxm ? modeGoalSetting(Net.gxm) : settings.goal) : gl || 0, create ? settings.limit : tl || 0);
   Net.team = -1;
   if (teamMode) { // chosen team, or the smaller one
@@ -163,8 +176,13 @@ async function startOnline(code, create, md, gl, tl, gxm) {
     for (const p of [...ch.joined, ...ch.updated]) {
       if (p.sameTab) { Net.me = p.peer; continue; }
       remoteFromPeer(p);
+      if (Net.isHost && p.presence.pt) { const R = Net.remotes.get(p.peer); if (R) guestPicked(R, p.presence.pt); }
+      if (!Net.isHost && p.peer === Net.hostPeer && p.presence.pk) { if (gx && gx.applyPus) gx.applyPus(p.presence.pk); else applyPickups(p.presence.pk); }
       if (!Net.isHost && p.peer === Net.hostPeer && Array.isArray(p.presence.b)) applyBots(p.presence.b);
       if (!Net.isHost && p.peer === Net.hostPeer) applyMatch(p.presence.m);
+      if (!Net.isHost && p.peer === Net.hostPeer && gx && gx.applyFlags && p.presence.cf) gx.applyFlags(p.presence.cf);
+      if (!Net.isHost && p.peer === Net.hostPeer && p.presence.tr) applyTram(p.presence.tr);
+      if (!Net.isHost && p.peer === Net.hostPeer && gx && gx.Boats && gx.Boats.applyNet && p.presence.fb) gx.Boats.applyNet(p.presence.fb);
     }
     electHost();
   });
@@ -212,6 +230,12 @@ function netTick(dt, now) {
     const pres = { c: [r1(c.x), r1(c.z), Math.round(c.h * 1000) / 1000, r1(c.vx), r1(c.vz), Math.round(c.steer * 100) / 100, Math.round(c.hp), c.alive ? 1 : 0, L.firing ? 1 : 0],
       nick: settings.nick, col: Net.colIdx, cs: L.car.style || 'saloon', pc: HD && L.team < 0 ? carChoice(0).paint[0] : undefined, tm: L.team, r: L.respect, k: L.kills, host: Net.isHost ? 1 : 0 };
     if (Net.isHost) pres.m = [Match.n, Math.round(Match.left), Match.over ? 1 : 0, Match.over ? Match.title : '', Match.over ? Match.sub : ''];
+    if (Net.isHost && gx && gx.netFlags) { const cf = gx.netFlags(); if (cf) pres.cf = cf; }
+    // (20 nov.) the host's tram and ferry, so that every player sees them at the same place
+    if (Net.isHost && trams.length) pres.tr = tramNet();
+    // the bonuses (HD) or the wrenches (classic)
+    if (Net.isHost) pres.pk = gx && gx.netPus ? gx.netPus() : pickupsNet(); else if (Net.picked) pres.pt = Net.picked;
+    if (Net.isHost && gx && gx.Boats && gx.Boats.netState) { const fb = gx.Boats.netState(); if (fb) pres.fb = fb; }
     if (Net.isHost) pres.b = rivals.map(r => [r1(r.x), r1(r.z), Math.round(r.h * 1000) / 1000, r1(r.vx), r1(r.vz), Math.round(r.hp), r.alive ? 1 : 0, r.ai && r.ai.firing ? 1 : 0]);
     Net.room.presence(pres).catch(() => { });
   }

@@ -85,7 +85,8 @@
     for (let k = 0; k < 40; k++) {
       const n = (R() * G.x.length) | 0; if (!G.adj[n].length) continue;
       const x = G.x[n], z = G.z[n], d = Math.hypot(x - cx, z - cz);
-      if (d < 60 || d > 420 || Math.abs(x - CX) > HX - 15 || Math.abs(z - CZ) > HZ - 15 || pus.some(o => o !== pu && o.on && Math.hypot(o.x - x, o.z - z) < 60)) continue;
+      // (20 nov.) never under a player's wheels (it came back under the car that had just taken it)
+      if (d < 60 || d > 420 || Math.abs(x - CX) > HX - 15 || Math.abs(z - CZ) > HZ - 15 || pus.some(o => o !== pu && o.on && Math.hypot(o.x - x, o.z - z) < 60) || allPlayerCars().some(c => Math.hypot(c.x - x, c.z - z) < 40)) continue;
       pu.x = x; pu.z = z; pu.on = true; pu.g.visible = true; return;
     }
   }
@@ -97,10 +98,29 @@
       pu.halo.material.opacity = 0.7 + Math.sin(now / 200) * 0.3;
       for (const L of locals) {
         const c = L.car; if (!c.alive || Math.hypot(pu.x - c.x, pu.z - c.z) > 3.6) continue;
-        grant(L, pu.kind); pu.on = false; pu.g.visible = false; pu.t = 14 + R() * 10; break;
+        grant(L, pu.kind); pu.on = false; pu.g.visible = false; pu.t = 14 + R() * 10;
+        // (20 nov.) online, a guest tells the host which bonus it took (presence pt); the host puts it back elsewhere
+        if (netGuest()) { pu.t = 1e9; pu.takenT = performance.now(); Net.pickSeq = (Net.pickSeq || 0) + 1; Net.picked = [pus.indexOf(pu), Net.pickSeq]; }
+        break;
       }
     }
   }
+  // online: the host's bonuses, [x, z] or 0 when taken; a guest shows them (except one it has just taken itself)
+  function netPus() { return pus.map(pu => pu.on ? [Math.round(pu.x * 10) / 10, Math.round(pu.z * 10) / 10] : 0); }
+  function applyPus(a) {
+    if (!Array.isArray(a) || a.length !== pus.length) return;
+    pus.forEach((pu, i) => {
+      const s = a[i];
+      if (Array.isArray(s) && Number.isFinite(s[0]) && Number.isFinite(s[1])) {
+        const moved = Math.hypot(s[0] - pu.x, s[1] - pu.z) > 1;
+        // the one I have just taken: the host's state is late until it says « taken » or puts it elsewhere
+        if (pu.takenT && !moved) return;
+        pu.x = s[0]; pu.z = s[1]; pu.on = true; pu.g.visible = true; pu.takenT = 0;
+      } else { pu.on = false; pu.g.visible = false; pu.takenT = 0; pu.t = 1e9; }
+    });
+  }
+  // the host: a guest took bonus i
+  function puTaken(i) { const pu = pus[i]; if (pu && pu.on) { pu.on = false; pu.g.visible = false; pu.t = 14 + R() * 10; } }
   function grant(L, kind) {
     const a = L.ammo || (L.ammo = { rockets: 0, mines: 0, nitro: 0 }), c = L.car;
     if (kind === 'repair') c.hp = Math.min(100, c.hp + 40);

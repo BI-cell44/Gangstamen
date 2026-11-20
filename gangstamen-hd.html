@@ -543,7 +543,7 @@ body.cine #logo, body.cine #credit { display: none; }
       <div class="row"><span class="lab">Équipe</span><div class="seg" id="tSeg"><button class="mbtn" data-t="-1">Auto</button><button class="mbtn" data-t="0">Rapaces</button><button class="mbtn" data-t="1">Chantenaysiens</button></div></div>
       <div id="netStatus" class="netstatus">Connexion…</div>
       <div id="games" class="games"></div>
-      <div class="row"><span class="lab">Nouvelle partie</span><div class="seg wrap" id="oSeg"><button class="mbtn" data-m="0">Chacun pour soi</button><button class="mbtn" data-m="1">Par équipes</button><button class="mbtn hdOnly" data-m="3" hidden>Roi de la colline</button><button class="mbtn hdOnly" data-m="4" hidden>Course</button></div></div>
+      <div class="row"><span class="lab">Nouvelle partie</span><div class="seg wrap" id="oSeg"><button class="mbtn" data-m="0">Chacun pour soi</button><button class="mbtn" data-m="1">Par équipes</button><button class="mbtn hdOnly" data-m="2" hidden>Drapeau</button><button class="mbtn hdOnly" data-m="3" hidden>Roi de la colline</button><button class="mbtn hdOnly" data-m="4" hidden>Course</button></div></div>
       <div class="placeRows hdOnly" hidden></div>
       <div class="row"><span class="lab">Fin de partie</span><div class="seg goalSeg"><button class="mbtn" data-g="10">10 KO</button><button class="mbtn" data-g="20">20 KO</button><button class="mbtn" data-g="30">30 KO</button><button class="mbtn" data-g="0">Sans</button></div></div>
       <div class="row"><span class="lab">Durée</span><div class="seg limitSeg"><button class="mbtn" data-l="5">5 min</button><button class="mbtn" data-l="10">10 min</button><button class="mbtn" data-l="15">15 min</button><button class="mbtn" data-l="0">Sans</button></div></div>
@@ -4587,6 +4587,27 @@ function scatterRivals(minD = 320, maxD = 1e9) {
     r.calmT = 12 + 7 * k++; // seconds of cruising before it starts looking for players
   }
 }
+// (20 nov.) online: the host's wrenches, [x, z] or 0 when taken; a guest shows them, except one it has just taken itself
+function pickupsNet() { return pickups.map(pk => pk.on ? [Math.round(pk.x * 10) / 10, Math.round(pk.z * 10) / 10] : 0); }
+function applyPickups(a) {
+  if (!Array.isArray(a) || a.length !== pickups.length) return;
+  pickups.forEach((pk, i) => {
+    const s = a[i];
+    if (Array.isArray(s) && Number.isFinite(s[0]) && Number.isFinite(s[1])) {
+      const moved = Math.hypot(s[0] - pk.x, s[1] - pk.z) > 1;
+      // the one I have just taken: the host's state is late until it says « taken » or puts it elsewhere
+      if (pk.takenT && !moved) return;
+      pk.x = s[0]; pk.z = s[1]; pk.on = true; pk.mesh.visible = true; pk.takenT = 0;
+    } else { pk.on = false; pk.mesh.visible = false; pk.takenT = 0; }
+  });
+}
+// the host: a guest has taken wrench i (its presence pt = [i, sequence number])
+function guestPicked(R, pt) {
+  if (!Array.isArray(pt) || !Number.isInteger(pt[0]) || pt[1] === R.ptSeq) return;
+  R.ptSeq = pt[1]; const pk = pickups[pt[0]];
+  if (gx && gx.puTaken) return gx.puTaken(pt[0]);
+  if (pk && pk.on) { pk.on = false; pk.mesh.visible = false; setTimeout(() => spawnPickup(pk), 12000); }
+}
 function spawnPickup(pk) {
   const [cx, cz] = playersCentre();
   const n = farNode(cx, cz, 120);
@@ -5286,7 +5307,9 @@ function wsRoom(url) { // minimal client for the self-hosted server (server/ fol
   function onMsg(m) {
     if (m.t === 'hello') { me = m.peer; for (const st of rooms.values()) { if (st.name) send({ t: 'join', room: st.name }); if (Object.keys(st.my).length) send({ t: 'pres', room: st.name, data: st.my }); } return; }
     const st = rooms.get(m.room); if (!st) return;
-    if (m.t === 'peers') { const joined = []; st.peers.clear(); for (const p of m.list) { const o = st.peerObj(p.peer, p.presence); st.peers.set(p.peer, o); joined.push(o); } st.notify(joined, [], []); }
+    // (20 nov.) after a reconnection the server gives new ids: whoever is missing from the new list has left (before, the
+    // old ids stayed as frozen ghost players)
+    if (m.t === 'peers') { const old = new Map(st.peers), joined = [], updated = []; st.peers.clear(); for (const p of m.list) { const o = st.peerObj(p.peer, p.presence); st.peers.set(p.peer, o); (old.has(p.peer) ? updated : joined).push(o); } st.notify(joined, [...old.values()].filter(o => !st.peers.has(o.peer)), updated); }
     else if (m.t === 'pres') { const had = st.peers.has(m.peer); const o = st.peerObj(m.peer, m.data); st.peers.set(m.peer, o); st.notify(had ? [] : [o], [], had ? [o] : []); }
     else if (m.t === 'left') { const o = st.peers.get(m.peer); if (o) { st.peers.delete(m.peer); st.notify([], [o], []); } }
     else if (m.t === 'msg') { const s = st.topics.get(m.topic); if (s) for (const f of s) f({ topic: m.topic, data: m.data, peer: m.peer, by: null, isMe: m.peer === me, sameTab: m.peer === me, kind: 'viewer', guest: false }); }
@@ -5301,28 +5324,38 @@ function wsRoom(url) { // minimal client for the self-hosted server (server/ fol
   connect();
   return lobby.api;
 }
+// (20 nov., user) the public page on GitHub Pages has no claude.ai room: it plays through the relay server hosted on Render
+// (branch server, server/server.js) once its address is set here, e.g. 'wss://gangstamen.onrender.com/ws'; empty: no online
+// play on that page. ?server=wss://… still overrides it, for a test
+const PUBLIC_SERVER = '';
 async function netInit() {
   let url = window.GM_SERVER || null;
+  if (!url && PUBLIC_SERVER && /(^|\.)github\.io$/.test(location.hostname)) url = PUBLIC_SERVER;
   try { const q = new URLSearchParams(location.search).get('server'); if (q) url = q; } catch (e) { }
   if (url === 'auto') url = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
-  if (url) Net.api = wsRoom(url);
+  if (url) {
+    // a free Render server asleep takes up to a minute to wake up: the menu says so instead of looking broken
+    Net.api = wsRoom(url); Net.wsT0 = Date.now();
+    const tick = setInterval(() => { if (Net.connected === true) clearInterval(tick); renderGames(); }, 1000);
+  }
   else { try { Net.api = window.claude && window.claude.use ? await window.claude.use('room') : null; } catch (e) { Net.api = null; } }
   if (!Net.api) { Net.status = 'none'; renderGames(); return; }
   Net.status = 'lobby';
   Net.api.onPeers(() => renderGames(), () => { Net.status = 'none'; renderGames(); });
-  Net.api.onConnection(c => { Net.connected = c; renderGames(); });
+  Net.api.onConnection(c => { Net.connected = c; if (c) Net.everConnected = true; renderGames(); });
   renderGames();
 }
 function lobbyGames() {
   if (!Net.api) return [];
   const out = [];
-  for (const p of Net.api.peers()) { const g = p.presence && p.presence.gm; if (g && typeof g.code === 'string' && /^[a-z0-9]{4}$/.test(g.code) && !p.sameTab) out.push({ code: g.code, n: Math.max(1, Math.min(12, +g.n || 1)), host: String(g.host || '?').slice(0, 14), md: g.md === 1 ? 1 : 0, gx: [3, 4].includes(g.gx) ? g.gx : 0, gl: Number.isInteger(g.gl) && g.gl >= 0 && g.gl <= 600 ? g.gl : 0, tl: [5, 10, 15].includes(g.tl) ? g.tl : 0, pl: Array.isArray(g.pl) && g.pl.length === 4 ? g.pl.map(v => Number.isInteger(v) && v >= -1 && v < 16 ? v : -1) : null }); }
+  for (const p of Net.api.peers()) { const g = p.presence && p.presence.gm; if (g && typeof g.code === 'string' && /^[a-z0-9]{4}$/.test(g.code) && !p.sameTab) out.push({ code: g.code, n: Math.max(1, Math.min(12, +g.n || 1)), host: String(g.host || '?').slice(0, 14), md: g.md === 1 ? 1 : 0, gx: [2, 3, 4].includes(g.gx) ? g.gx : 0, gl: Number.isInteger(g.gl) && g.gl >= 0 && g.gl <= 600 ? g.gl : 0, tl: [5, 10, 15].includes(g.tl) ? g.tl : 0, pl: Array.isArray(g.pl) && g.pl.length === 4 ? g.pl.map(v => Number.isInteger(v) && v >= -1 && v < 16 ? v : -1) : null }); }
   return out;
 }
 function renderGames() {
   const st = $('netStatus'), box = $('games'); if (!st) return;
   if (Net.status === 'none') { st.textContent = 'Jeu en ligne indisponible ici : ouvrez la version publiée sur claude.ai en étant connecté (ou la version serveur).'; $('create').disabled = true; box.replaceChildren(); return; }
   if (!Net.api) { st.textContent = 'Connexion…'; return; }
+  if (Net.wsT0 && !Net.everConnected) { st.textContent = Date.now() - Net.wsT0 > 4000 ? 'Le serveur se réveille, ça peut prendre jusqu’à une minute…' : 'Connexion au serveur…'; $('create').disabled = true; return; }
   $('create').disabled = false;
   st.textContent = Net.connected === false ? 'Reconnexion…' : 'Parties ouvertes';
   const games = lobbyGames();
@@ -5332,7 +5365,7 @@ function renderGames() {
   if (!games.length) { const e = document.createElement('div'); e.className = 'empty'; e.textContent = 'Aucune partie pour l’instant : créez-en une.'; box.replaceChildren(e); return; }
   box.replaceChildren(...games.map(g => {
     const b = document.createElement('button'); b.className = 'mbtn';
-    b.textContent = 'Partie ' + g.code.toUpperCase() + ' · ' + g.host + ' · ' + (g.gx === 3 ? 'Roi de la colline' : g.gx === 4 ? 'Course' : g.md ? 'Par équipes' : 'Chacun pour soi') + (g.gl ? ' · ' + (g.gx === 3 ? g.gl + ' points' : g.gx === 4 ? (g.gl > 8 ? Math.round(g.gl / 8) + ' tours' : '1 tour') : g.gl + ' KO') : '') + (g.tl ? ' · ' + g.tl + ' min' : '') + (HD && g.pl ? ' · ' + (g.gx === 3 ? placeName(g.pl[1]) : g.gx === 4 ? 'boulevard de la Liberté' : g.md ? placeName(g.pl[2]) + ' contre ' + placeName(g.pl[3]) : g.pl[0] >= 0 ? placeName(g.pl[0]) : 'dispersés') : '') + ' · ' + g.n + '/12';
+    b.textContent = 'Partie ' + g.code.toUpperCase() + ' · ' + g.host + ' · ' + (g.gx === 2 ? 'Capture du drapeau' : g.gx === 3 ? 'Roi de la colline' : g.gx === 4 ? 'Course' : g.md ? 'Par équipes' : 'Chacun pour soi') + (g.gl ? ' · ' + (g.gx === 2 ? g.gl + (g.gl > 1 ? ' captures' : ' capture') : g.gx === 3 ? g.gl + ' points' : g.gx === 4 ? (g.gl > 8 ? Math.round(g.gl / 8) + ' tours' : '1 tour') : g.gl + ' KO') : '') + (g.tl ? ' · ' + g.tl + ' min' : '') + (HD && g.pl ? ' · ' + (g.gx === 3 ? placeName(g.pl[1]) : g.gx === 4 ? 'boulevard de la Liberté' : g.md ? placeName(g.pl[2]) + ' contre ' + placeName(g.pl[3]) : g.pl[0] >= 0 ? placeName(g.pl[0]) : 'dispersés') : '') + ' · ' + g.n + '/12';
     b.disabled = g.n >= 12;
     b.addEventListener('click', () => { Net.places = g.pl; startOnline(g.code, false, g.md, g.gl, g.tl, g.gx); });
     return b;
@@ -5391,7 +5424,8 @@ async function startOnline(code, create, md, gl, tl, gxm) {
   if (!create && others >= 12) { room.leave(); $('netStatus').textContent = 'Partie pleine (12 joueurs).'; return; }
   Net.room = room; Net.code = code; mode = 'online';
   Net.gxm = HD ? (create ? (settings.netGmode || 0) : (gxm || 0)) : 0;
-  teamMode = Net.gxm ? false : create ? !!settings.netTeams : !!md;
+  // the flag is played by two gangs; the hill and the race, each for themselves
+  teamMode = Net.gxm === 2 ? true : Net.gxm ? false : create ? !!settings.netTeams : !!md;
   setupMatch(create ? (Net.gxm ? modeGoalSetting(Net.gxm) : settings.goal) : gl || 0, create ? settings.limit : tl || 0);
   Net.team = -1;
   if (teamMode) { // chosen team, or the smaller one
@@ -5410,8 +5444,13 @@ async function startOnline(code, create, md, gl, tl, gxm) {
     for (const p of [...ch.joined, ...ch.updated]) {
       if (p.sameTab) { Net.me = p.peer; continue; }
       remoteFromPeer(p);
+      if (Net.isHost && p.presence.pt) { const R = Net.remotes.get(p.peer); if (R) guestPicked(R, p.presence.pt); }
+      if (!Net.isHost && p.peer === Net.hostPeer && p.presence.pk) { if (gx && gx.applyPus) gx.applyPus(p.presence.pk); else applyPickups(p.presence.pk); }
       if (!Net.isHost && p.peer === Net.hostPeer && Array.isArray(p.presence.b)) applyBots(p.presence.b);
       if (!Net.isHost && p.peer === Net.hostPeer) applyMatch(p.presence.m);
+      if (!Net.isHost && p.peer === Net.hostPeer && gx && gx.applyFlags && p.presence.cf) gx.applyFlags(p.presence.cf);
+      if (!Net.isHost && p.peer === Net.hostPeer && p.presence.tr) applyTram(p.presence.tr);
+      if (!Net.isHost && p.peer === Net.hostPeer && gx && gx.Boats && gx.Boats.applyNet && p.presence.fb) gx.Boats.applyNet(p.presence.fb);
     }
     electHost();
   });
@@ -5459,6 +5498,12 @@ function netTick(dt, now) {
     const pres = { c: [r1(c.x), r1(c.z), Math.round(c.h * 1000) / 1000, r1(c.vx), r1(c.vz), Math.round(c.steer * 100) / 100, Math.round(c.hp), c.alive ? 1 : 0, L.firing ? 1 : 0],
       nick: settings.nick, col: Net.colIdx, cs: L.car.style || 'saloon', pc: HD && L.team < 0 ? carChoice(0).paint[0] : undefined, tm: L.team, r: L.respect, k: L.kills, host: Net.isHost ? 1 : 0 };
     if (Net.isHost) pres.m = [Match.n, Math.round(Match.left), Match.over ? 1 : 0, Match.over ? Match.title : '', Match.over ? Match.sub : ''];
+    if (Net.isHost && gx && gx.netFlags) { const cf = gx.netFlags(); if (cf) pres.cf = cf; }
+    // (20 nov.) the host's tram and ferry, so that every player sees them at the same place
+    if (Net.isHost && trams.length) pres.tr = tramNet();
+    // the bonuses (HD) or the wrenches (classic)
+    if (Net.isHost) pres.pk = gx && gx.netPus ? gx.netPus() : pickupsNet(); else if (Net.picked) pres.pt = Net.picked;
+    if (Net.isHost && gx && gx.Boats && gx.Boats.netState) { const fb = gx.Boats.netState(); if (fb) pres.fb = fb; }
     if (Net.isHost) pres.b = rivals.map(r => [r1(r.x), r1(r.z), Math.round(r.h * 1000) / 1000, r1(r.vx), r1(r.vz), Math.round(r.hp), r.alive ? 1 : 0, r.ai && r.ai.firing ? 1 : 0]);
     Net.room.presence(pres).catch(() => { });
   }
@@ -5555,7 +5600,7 @@ function renderPlaces() {
   const n = START_PLACES.length, all = [...Array(n).keys()];
   document.querySelectorAll('.placeRows').forEach(box => {
     const online = box.closest('section').id === 'vOnline';
-    const k = online ? (settings.netGmode >= 3 ? settings.netGmode : settings.netTeams ? 1 : 0) : (settings.gmode ?? (settings.teams ? 1 : 0));
+    const k = online ? (settings.netGmode >= 2 ? settings.netGmode : settings.netTeams ? 1 : 0) : (settings.gmode ?? (settings.teams ? 1 : 0));
     const rows = k === 0 ? [['Départ', 'placeFfa', [...all, -1], 'Dispersés au hasard']]
       : k === 1 || k === 2 ? [['Base des Rapaces', 'placeRap', [...all, -1], 'Au hasard'], ['Base des Chantenaysiens', 'placeChant', [...all, -1], 'Au hasard']]
       : k === 3 ? [['Place à tenir', 'placeHill', [...all, -1], 'Au hasard']] : [];
@@ -5583,7 +5628,7 @@ function renderOnlineSegs() {
   document.querySelectorAll('#tSeg button').forEach(b => b.classList.toggle('on', +b.dataset.t === settings.netTeam));
   renderPlaces();
 }
-document.querySelectorAll('#oSeg button').forEach(b => b.addEventListener('click', () => { settings.netTeams = b.dataset.m === '1'; settings.netGmode = +b.dataset.m >= 3 ? +b.dataset.m : 0; saveSettings(); renderOnlineSegs(); renderEndSegs(); }));
+document.querySelectorAll('#oSeg button').forEach(b => b.addEventListener('click', () => { settings.netTeams = b.dataset.m === '1' || b.dataset.m === '2'; settings.netGmode = +b.dataset.m >= 2 ? +b.dataset.m : 0; saveSettings(); renderOnlineSegs(); renderEndSegs(); }));
 document.querySelectorAll('#tSeg button').forEach(b => b.addEventListener('click', () => { settings.netTeam = +b.dataset.t; saveSettings(); renderOnlineSegs(); }));
 renderOnlineSegs();
 // (17 nov., user) the « Fin de partie » choices follow the mode picked in the same menu: KO, captures, points or laps
@@ -7701,7 +7746,8 @@ const gx = !HD ? null : (() => {
     for (let k = 0; k < 40; k++) {
       const n = (R() * G.x.length) | 0; if (!G.adj[n].length) continue;
       const x = G.x[n], z = G.z[n], d = Math.hypot(x - cx, z - cz);
-      if (d < 60 || d > 420 || Math.abs(x - CX) > HX - 15 || Math.abs(z - CZ) > HZ - 15 || pus.some(o => o !== pu && o.on && Math.hypot(o.x - x, o.z - z) < 60)) continue;
+      // (20 nov.) never under a player's wheels (it came back under the car that had just taken it)
+      if (d < 60 || d > 420 || Math.abs(x - CX) > HX - 15 || Math.abs(z - CZ) > HZ - 15 || pus.some(o => o !== pu && o.on && Math.hypot(o.x - x, o.z - z) < 60) || allPlayerCars().some(c => Math.hypot(c.x - x, c.z - z) < 40)) continue;
       pu.x = x; pu.z = z; pu.on = true; pu.g.visible = true; return;
     }
   }
@@ -7713,10 +7759,29 @@ const gx = !HD ? null : (() => {
       pu.halo.material.opacity = 0.7 + Math.sin(now / 200) * 0.3;
       for (const L of locals) {
         const c = L.car; if (!c.alive || Math.hypot(pu.x - c.x, pu.z - c.z) > 3.6) continue;
-        grant(L, pu.kind); pu.on = false; pu.g.visible = false; pu.t = 14 + R() * 10; break;
+        grant(L, pu.kind); pu.on = false; pu.g.visible = false; pu.t = 14 + R() * 10;
+        // (20 nov.) online, a guest tells the host which bonus it took (presence pt); the host puts it back elsewhere
+        if (netGuest()) { pu.t = 1e9; pu.takenT = performance.now(); Net.pickSeq = (Net.pickSeq || 0) + 1; Net.picked = [pus.indexOf(pu), Net.pickSeq]; }
+        break;
       }
     }
   }
+  // online: the host's bonuses, [x, z] or 0 when taken; a guest shows them (except one it has just taken itself)
+  function netPus() { return pus.map(pu => pu.on ? [Math.round(pu.x * 10) / 10, Math.round(pu.z * 10) / 10] : 0); }
+  function applyPus(a) {
+    if (!Array.isArray(a) || a.length !== pus.length) return;
+    pus.forEach((pu, i) => {
+      const s = a[i];
+      if (Array.isArray(s) && Number.isFinite(s[0]) && Number.isFinite(s[1])) {
+        const moved = Math.hypot(s[0] - pu.x, s[1] - pu.z) > 1;
+        // the one I have just taken: the host's state is late until it says « taken » or puts it elsewhere
+        if (pu.takenT && !moved) return;
+        pu.x = s[0]; pu.z = s[1]; pu.on = true; pu.g.visible = true; pu.takenT = 0;
+      } else { pu.on = false; pu.g.visible = false; pu.takenT = 0; pu.t = 1e9; }
+    });
+  }
+  // the host: a guest took bonus i
+  function puTaken(i) { const pu = pus[i]; if (pu && pu.on) { pu.on = false; pu.g.visible = false; pu.t = 14 + R() * 10; } }
   function grant(L, kind) {
     const a = L.ammo || (L.ammo = { rockets: 0, mines: 0, nitro: 0 }), c = L.car;
     if (kind === 'repair') c.hp = Math.min(100, c.hp + 40);
@@ -8592,18 +8657,23 @@ const gx = !HD ? null : (() => {
     const now = performance.now();
     if (gm.kind === 2) {
       const cars = [...allPlayerCars(), ...rivals].filter(c => c.alive && c.team >= 0);
+      // (20 nov.) online, the host decides who takes, brings back and captures the flags; a guest shows the host's state
+      // (applyFlags) and only moves a carried flag with its carrier
+      const guest = mode === 'online' && !Net.isHost;
       for (const f of gm.flags) {
-        if (f.carrier && !f.carrier.alive) { f.carrier = null; f.idle = 0; flashAll('Drapeau ' + (f.team ? 'chantenaysien' : 'des Rapaces') + ' à terre', ''); }
+        if (guest) { if (f.carrier) { f.x = f.carrier.x; f.z = f.carrier.z; } }
+        else if (f.carrier && !f.carrier.alive) { f.carrier = null; f.idle = 0; flashAll('Drapeau ' + (f.team ? 'chantenaysien' : 'des Rapaces') + ' à terre', ''); }
         if (f.carrier) { f.x = f.carrier.x; f.z = f.carrier.z; }
         else if (!f.atHome) { f.idle += dt; if (f.idle > 25) { f.atHome = true; [f.x, f.z] = f.home; } }
-        for (const c of cars) {
+        if (!guest) for (const c of cars) {
           if (f.carrier || Math.hypot(c.x - f.x, c.z - f.z) > 4.5) continue;
           if (c.team !== f.team) { f.carrier = c; f.atHome = false; f.idle = 0; sfx.pick(); flashAll((c.owner && c.owner.slot !== undefined ? 'J' + (c.owner.slot + 1) : TEAMS[c.team].one) + ' a le drapeau !', 'Ramène-le à ta base'); break; }
           if (!f.atHome) { f.atHome = true; [f.x, f.z] = f.home; sfx.pick(); flashAll('Drapeau ramené', TEAMS[f.team].short); break; }
         }
         // capture: carrier reaches its own flag, which must be at home
-        if (f.carrier) { const own = gm.flags[f.carrier.team]; if (own.atHome && Math.hypot(f.carrier.x - own.home[0], f.carrier.z - own.home[1]) < 6) {
+        if (f.carrier && !guest) { const own = gm.flags[f.carrier.team]; if (own.atHome && Math.hypot(f.carrier.x - own.home[0], f.carrier.z - own.home[1]) < 6) {
           const tm = f.carrier.team; gm.score[tm]++; if (f.carrier.owner && f.carrier.local) { f.carrier.owner.kills++; f.carrier.owner.respect += 300; }
+          if (mode === 'online') gm.capBy = [idOfCar(f.carrier), gm.score[0] + gm.score[1]];
           flashAll('Capture ! ' + TEAMS[tm].short, gm.score[0] + ' – ' + gm.score[1]); say('Drapeau capturé pour les ' + TEAMS[tm].short + ' !', { cancel: true });
           f.carrier = null; f.atHome = true; [f.x, f.z] = f.home; for (const L of locals) rumbleFor(L, 0.5, 0.6, 300);
         } }
@@ -8680,6 +8750,31 @@ const gx = !HD ? null : (() => {
   }
   function modeTeamScores() { return gm && gm.kind === 2 ? gm.score.slice() : null; }
   function goalText() { return gm ? (gm.kind === 2 ? Match.goal + (Match.goal > 1 ? ' captures' : ' capture') + ' pour gagner' : gm.kind === 3 ? Match.goal + ' points pour gagner' : (gm.laps > 1 ? gm.laps + ' tours de ' : '') + gm.cps.length + ' checkpoints') : ''; }
+  // online flags: a car named by its peer (players) or 'b' + index (the host's Rapaces)
+  function idOfCar(c) { if (!c) return null; const L = locals.find(L => L.car === c); if (L) return Net.me; for (const R of Net.remotes.values()) if (R.car === c) return R.peer; const i = rivals.indexOf(c); return i >= 0 ? 'b' + i : null; }
+  function carOfId(id) { if (id == null) return null; if (id === Net.me) return locals[0] && locals[0].car; if (typeof id === 'string' && /^b\d+$/.test(id)) return rivals[+id.slice(1)] || null; const R = Net.remotes.get(id); return R ? R.car : null; }
+  // the host's presence: [score 0, score 1, [x, z, at home, carrier] per flag, last capture [carrier, captures so far]]
+  function netFlags() { return gm && gm.kind === 2 ? [gm.score[0], gm.score[1], gm.flags.map(f => [Math.round(f.x * 10) / 10, Math.round(f.z * 10) / 10, f.atHome ? 1 : 0, idOfCar(f.carrier)]), gm.capBy || null] : null; }
+  // a guest takes the host's state, with the messages a change brings
+  function applyFlags(cf) {
+    if (!gm || gm.kind !== 2 || !Array.isArray(cf) || !Array.isArray(cf[2]) || cf[2].length !== 2) return;
+    const s = [+cf[0] || 0, +cf[1] || 0];
+    if (s[0] + s[1] > gm.score[0] + gm.score[1]) {
+      const tm = s[0] > gm.score[0] ? 0 : 1, cap = Array.isArray(cf[3]) ? cf[3] : null;
+      flashAll('Capture ! ' + TEAMS[tm].short, s[0] + ' – ' + s[1]); say('Drapeau capturé pour les ' + TEAMS[tm].short + ' !', { cancel: true }); sfx.pick();
+      // my own capture counts for me
+      if (cap && cap[0] === Net.me && locals[0]) { locals[0].kills++; locals[0].respect += 300; for (const L of locals) rumbleFor(L, 0.5, 0.6, 300); }
+    }
+    gm.score = s;
+    gm.flags.forEach((f, t) => {
+      const [x, z, home, id] = cf[2][t] || []; const car = carOfId(id);
+      if (car && car !== f.carrier) { sfx.pick(); flashAll((car === (locals[0] && locals[0].car) ? 'Tu as' : car.owner && car.owner.nick ? car.owner.nick + ' a' : TEAMS[car.team] ? TEAMS[car.team].one + ' a' : 'Quelqu’un a') + ' le drapeau !', car === (locals[0] && locals[0].car) ? 'Ramène-le à ta base' : ''); }
+      else if (!car && f.carrier && !home) flashAll('Drapeau ' + (t ? 'chantenaysien' : 'des Rapaces') + ' à terre', '');
+      else if (home && !f.atHome && !car && !f.carrier) flashAll('Drapeau ramené', TEAMS[t].short);
+      f.carrier = car; f.atHome = !!home;
+      if (!car && Number.isFinite(+x) && Number.isFinite(+z)) { f.x = +x; f.z = +z; }
+    });
+  }
   // for the tests: the state of the split / online mode
   function modeInfo() { return gm && { kind: gm.kind, hill: gm.hill && [gm.hill.x, gm.hill.z, gm.hill.r], owner: gm.owner, flags: gm.flags && gm.flags.map(f => [f.x, f.z, f.atHome, !!f.carrier]), score: gm.score }; }
   function rematchMode() { if (!gm) return; const k = gm.kind, g = Match.goal; stopMode(); setupMode(k, g); }
@@ -9658,7 +9753,8 @@ const gx = !HD ? null : (() => {
           roll = (0.13 + Math.sin(T * 0.5 + b.ph) * 0.035) * (t.x > 0 ? 1 : -1) * Math.min(1, b.v / 2); pitch = Math.sin(T * 0.8 + b.ph) * 0.018;
         } else {
           // b.t: metres along the route from the Gare Maritime; b.side: the dock it is at, or leaving from
-          const goal = b.side ? 0 : routeLen, cars = typeof locals !== 'undefined' ? locals.map(L => L.car).filter(c => c && c.alive) : [], x0 = b.x, z0 = b.z, h0 = b.h;
+          // (20 nov.) online, the host waits for every player (a guest halfway up the ramp no longer falls into the Loire)
+          const goal = b.side ? 0 : routeLen, cars = typeof locals !== 'undefined' ? (mode === 'online' && typeof allPlayerCars === 'function' ? allPlayerCars() : locals.map(L => L.car)).filter(c => c && c.alive) : [], x0 = b.x, z0 = b.z, h0 = b.h;
           const riders = cars.filter(c => b.onDeck(c.x, c.z)), wrecks = (typeof locals !== 'undefined' ? locals.map(L => L.car) : []).concat(typeof rivals !== 'undefined' ? rivals : [], typeof npcs !== 'undefined' ? npcs : []).filter(c => c && c.alive === false && b.onDeck(c.x, c.z)), allCars = cars.concat(gx && typeof npcs !== 'undefined' ? npcs.filter(c => c && c.alive !== false) : []);
           const landEnd = (() => { const P = LAND[b.side], sn = Math.sin(b.h), cs = Math.cos(b.h); return Math.sign((P.bx - b.x) * sn + (P.bz - b.z) * cs) || 1; })();
           if (b.wait > 0) {
@@ -9672,7 +9768,9 @@ const gx = !HD ? null : (() => {
           } else {
             const left = Math.abs(goal - b.t), done = routeLen - left, want = Math.min(riders.length ? 11 : 8, 0.7 + left * 0.2, 0.7 + done * 0.3);
             b.v += (want - b.v) * Math.min(1, dt * 1.2); b.t += (b.side ? -1 : 1) * b.v * dt;
-            if (left < 0.6) { for (const bn of b.benches || []) if (bn.broken) { bn.broken = false; for (const o of bn.parts) { o.position.copy(o.userData.p0); o.rotation.set(0, 0, 0); } } b.t = goal; b.side = 1 - b.side; b.wait = 25; b.v = 0; b.still = 0; b.came = riders.slice();
+            // a guest waits at the dock for the host to say the ferry has arrived (applyNet)
+            if (left < 0.6 && netGuest()) { b.t = goal; b.v = 0; }
+            else if (left < 0.6) { for (const bn of b.benches || []) if (bn.broken) { bn.broken = false; for (const o of bn.parts) { o.position.copy(o.userData.p0); o.rotation.set(0, 0, 0); } } b.t = goal; b.side = 1 - b.side; b.wait = 25; b.v = 0; b.still = 0; b.came = riders.slice();
               for (const L of locals) if (riders.includes(L.car)) flashFor(L, LAND[b.side].name.toUpperCase(), 'Feu vert : descends par la rampe'); }
           }
           const u = Math.min(1, Math.max(0, b.t / routeLen)), p = route.getPointAt(u), tg = route.getTangentAt(u);
@@ -9734,7 +9832,16 @@ const gx = !HD ? null : (() => {
         b.wk.visible = b.v > 0.5; b.wk.scale.set(1, 1, Math.min(1, b.v / 3));
       }
     }
-    return { build, step, list, LAND, ROUTE, pax, fcars: () => fcars, get ferry() { return fy; }, get curve() { return curve; }, get moored() { return moored; }, DOCK };
+    // online: the host's ferry [metres along the route, dock, wait, speed]; a guest follows it, gently when close
+    function netState() { const r = v => Math.round(v * 10) / 10; return fy ? [r(fy.t), fy.side, r(fy.wait), r(fy.v)] : null; }
+    function applyNet(s) {
+      if (!fy || !Array.isArray(s) || s.length !== 4 || !s.every(Number.isFinite)) return;
+      const arrived = s[1] !== fy.side;
+      if (arrived || Math.abs(s[0] - fy.t) > 6) fy.t = s[0]; else fy.t += (s[0] - fy.t) * 0.3;
+      if (arrived) { fy.came = locals.map(L => L.car).filter(c => fy.onDeck(c.x, c.z)); for (const L of locals) if (fy.came.includes(L.car)) flashFor(L, LAND[s[1]].name.toUpperCase(), 'Feu vert : descends par la rampe'); }
+      fy.side = s[1]; fy.wait = s[2]; fy.v = s[3];
+    }
+    return { build, step, list, LAND, ROUTE, pax, netState, applyNet, fcars: () => fcars, get ferry() { return fy; }, get curve() { return curve; }, get moored() { return moored; }, DOCK };
   })();
   // =====================================================================================
   // (16 nov., user request) free driving: a map of the area with starting points, at the start of the mode and at any
@@ -9963,7 +10070,7 @@ const gx = !HD ? null : (() => {
   }
   // (17 nov.) a touch on a weapon pastille chooses that weapon (campaign.js); elsewhere on the line, the next weapon
   { const el = $('ammo'); if (el) { el.style.pointerEvents = 'auto'; el.style.cursor = 'pointer'; el.addEventListener('pointerdown', e => { if (e.target.closest && e.target.closest('.pill')) return; e.preventDefault(); if (locals[0]) cycleWeapon(locals[0]); }); } }
-  const api = { netIn, dj, cycleWeapon, showPostcard, postcardSpots, modeInfo, hearShot, quickChat, chatIn, step: gameStep, world, landmarkTick, tick: dt => { tick(dt); Boats.step((paused && mode !== 'online') || Busy.on ? 0 : dt); NavLights.step(dt); }, Boats, People, portCranes, hallColumns, LM, walks: () => { if (!walks) buildWalks(); return walks; }, start: startHook, cars: () => npcs.concat(extras), copsOn, shieldHit, makeBus, policeHQ: HQ, hqNode, spots: SPOTS, unlocked, postcards, acts: () => (actsBuild(), acts), actRun: () => run, startAct, hearCars: carsHearShot, traffic: TF, Fences, LightPoles, lightState, roadRules, makeNpc, placeOnGraph, nextNode, spawnPatrol, npcs: () => npcs, damage: damageNpc, addHeat, say, peds: () => peds, stars, special, startMission, renderCampaign, cleanupMission, toMenu, roadblock, MISSIONS,
+  const api = { netIn, dj, cycleWeapon, showPostcard, postcardSpots, modeInfo, netFlags, applyFlags, netPus, applyPus, puTaken, pus: () => pus, hearShot, quickChat, chatIn, step: gameStep, world, landmarkTick, tick: dt => { tick(dt); Boats.step((paused && mode !== 'online') || Busy.on ? 0 : dt); NavLights.step(dt); }, Boats, People, portCranes, hallColumns, LM, walks: () => { if (!walks) buildWalks(); return walks; }, start: startHook, cars: () => npcs.concat(extras), copsOn, shieldHit, makeBus, policeHQ: HQ, hqNode, spots: SPOTS, unlocked, postcards, acts: () => (actsBuild(), acts), actRun: () => run, startAct, hearCars: carsHearShot, traffic: TF, Fences, LightPoles, lightState, roadRules, makeNpc, placeOnGraph, nextNode, spawnPatrol, npcs: () => npcs, damage: damageNpc, addHeat, say, peds: () => peds, stars, special, startMission, renderCampaign, cleanupMission, toMenu, roadblock, MISSIONS,
     get gmode() { return gm ? gm.kind : 0; }, get gmState() { return gm; }, raceRespawn, modeTarget, scoreText, mines: () => mines, customers: () => customers, teamScores: modeTeamScores, goalText, rematch: rematchMode,
     get blocking() { return blocking; }, get mission() { return mission; }, foes: () => extras.filter(c => c.alive && c.team === 1), saveBank, pus: () => pus, furniture: () => furniture, garage: GARAGE, garages: GARAGES, campDiff, SpawnMap, copBump: c => oneStar(c, 0.1, 'Tu as percuté la police'),
     get onGarage() { return gx_onGarage; }, get objTarget() { return objEl.hidden ? null : objTgt; },
@@ -10315,7 +10422,10 @@ function step(dt, now) {
     for (const L of locals) {
       if (!pk.on || !L.car.alive || Math.hypot(pk.x - L.car.x, pk.z - L.car.z) >= 3.5) continue;
       L.car.hp = Math.min(100, L.car.hp + 35); sfx.pick(); flashFor(L, 'Clé à molette', '+35 carrosserie'); rumbleFor(L, 0, 0.3, 80);
-      pk.on = false; pk.mesh.visible = false; setTimeout(() => spawnPickup(pk), 12000);
+      pk.on = false; pk.mesh.visible = false;
+      // (20 nov.) online, a guest tells the host which one it took (its presence, pt) and the host puts it back elsewhere
+      if (netGuest()) { pk.takenT = performance.now(); Net.pickSeq = (Net.pickSeq || 0) + 1; Net.picked = [pickups.indexOf(pk), Net.pickSeq]; }
+      else setTimeout(() => spawnPickup(pk), 12000);
     }
   }
   updateFx(dt); updateTracers(dt); tramStep(dt);
@@ -10577,6 +10687,18 @@ function buildTrams() {
   const wg = new THREE.BufferGeometry(); wg.setAttribute('position', new THREE.BufferAttribute(wire.subarray(0, wi), 3));
   scene.add(new THREE.LineSegments(wg, new THREE.LineBasicMaterial({ color: 0x202024 })));
 }
+// (20 nov.) online, the host's trams: everybody sees them at the same place (before, each screen had its own timetable, a
+// random pause at the end of the line); a guest follows [x, speed, wait, sleep] from the host's presence
+function netGuest() { return mode === 'online' && typeof Net !== 'undefined' && Net.room && !Net.isHost; }
+function tramNet() { const r = v => Math.round(v * 10) / 10; return trams.map(T => [r(T.x), r(T.v), r(T.wait), r(T.sleep)]); }
+function applyTram(a) {
+  if (!Array.isArray(a) || a.length !== trams.length) return;
+  trams.forEach((T, i) => {
+    const s = a[i]; if (!Array.isArray(s) || !s.every(Number.isFinite)) return;
+    const dx = s[0] - T.x;
+    T.x = Math.abs(dx) > 8 || (s[3] > 0) !== (T.sleep > 0) ? s[0] : T.x + dx * 0.3; T.v = s[1]; T.wait = s[2]; T.sleep = s[3];
+  });
+}
 function tramStep(dt) {
   for (const T of trams) {
     if (T.sleep > 0) { T.sleep -= dt; for (const s of T.segs) s.visible = false; continue; }
@@ -10591,6 +10713,8 @@ function tramStep(dt) {
       if (toStop < 0.8 && T.left !== next) { T.wait = 14; T.v = 0; }
     }
     T.x += T.v * T.dir * dt;
+    // a guest lets the host decide when the tram goes back to the start of the line
+    if (((T.dir > 0 && T.x > EDGE.x1 + 90) || (T.dir < 0 && T.x < EDGE.x0 - 90)) && netGuest()) continue;
     if ((T.dir > 0 && T.x > EDGE.x1 + 90) || (T.dir < 0 && T.x < EDGE.x0 - 90)) { T.x = T.dir > 0 ? EDGE.x0 - 90 : EDGE.x1 + 90; T.sleep = 20 + Math.random() * 25; T.left = null; continue; }
     // place the sections along the track (each one follows the rails)
     for (let k = 0; k < T.segs.length; k++) {
@@ -10754,6 +10878,6 @@ const paintNow = () => new Promise(r => { let done = false; const go = () => { i
   netInit();
   Intro.loaded(settings.intro !== false && !window.__noIntro); // loading screen → « appuie sur une touche » → cinematic → menu; the menu is never seen half-built
 })();
-window.__gm = { get paused() { return paused; }, roadEdge, segHit, get started() { return started; }, renderer, scene, camera, PerfHud, Tiles, W, BOOT, planarReal, planarArcade, VEHICLES, engineState, Soundscape, sfx, PhotoMode, updateCamera, CAM_MODES, G, nodeOk, groundH, Profile, makeCar, saveSettingsHook: () => saveSettings(), surfaceH, Intro, hd, gx, settings, trams, edges, tramS, tramWall, EDGE, cellOf, collideWalls, muzzleOf, shoot, damage, applyHit, locals: () => locals, rivals: () => rivals, Net, Match, step: s => step(s, performance.now()), start: (k, sub) => startGame(k || 'solo', sub), gpl: () => gamePlaces, codes };
+window.__gm = { get paused() { return paused; }, roadEdge, segHit, get started() { return started; }, renderer, scene, camera, PerfHud, Tiles, W, BOOT, planarReal, planarArcade, VEHICLES, engineState, Soundscape, sfx, PhotoMode, updateCamera, CAM_MODES, G, nodeOk, groundH, Profile, makeCar, saveSettingsHook: () => saveSettings(), surfaceH, Intro, hd, gx, settings, trams, edges, tramS, tramWall, EDGE, cellOf, collideWalls, muzzleOf, shoot, damage, applyHit, locals: () => locals, rivals: () => rivals, Net, Match, step: s => step(s, performance.now()), start: (k, sub) => startGame(k || 'solo', sub), gpl: () => gamePlaces, pickups, codes };
 })();
 </script>

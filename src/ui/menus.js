@@ -73,7 +73,7 @@ function renderPlaces() {
   const n = START_PLACES.length, all = [...Array(n).keys()];
   document.querySelectorAll('.placeRows').forEach(box => {
     const online = box.closest('section').id === 'vOnline';
-    const k = online ? (settings.netGmode >= 3 ? settings.netGmode : settings.netTeams ? 1 : 0) : (settings.gmode ?? (settings.teams ? 1 : 0));
+    const k = online ? (settings.netGmode >= 2 ? settings.netGmode : settings.netTeams ? 1 : 0) : (settings.gmode ?? (settings.teams ? 1 : 0));
     const rows = k === 0 ? [['Départ', 'placeFfa', [...all, -1], 'Dispersés au hasard']]
       : k === 1 || k === 2 ? [['Base des Rapaces', 'placeRap', [...all, -1], 'Au hasard'], ['Base des Chantenaysiens', 'placeChant', [...all, -1], 'Au hasard']]
       : k === 3 ? [['Place à tenir', 'placeHill', [...all, -1], 'Au hasard']] : [];
@@ -101,7 +101,7 @@ function renderOnlineSegs() {
   document.querySelectorAll('#tSeg button').forEach(b => b.classList.toggle('on', +b.dataset.t === settings.netTeam));
   renderPlaces();
 }
-document.querySelectorAll('#oSeg button').forEach(b => b.addEventListener('click', () => { settings.netTeams = b.dataset.m === '1'; settings.netGmode = +b.dataset.m >= 3 ? +b.dataset.m : 0; saveSettings(); renderOnlineSegs(); renderEndSegs(); }));
+document.querySelectorAll('#oSeg button').forEach(b => b.addEventListener('click', () => { settings.netTeams = b.dataset.m === '1' || b.dataset.m === '2'; settings.netGmode = +b.dataset.m >= 2 ? +b.dataset.m : 0; saveSettings(); renderOnlineSegs(); renderEndSegs(); }));
 document.querySelectorAll('#tSeg button').forEach(b => b.addEventListener('click', () => { settings.netTeam = +b.dataset.t; saveSettings(); renderOnlineSegs(); }));
 renderOnlineSegs();
 // (17 nov., user) the « Fin de partie » choices follow the mode picked in the same menu: KO, captures, points or laps

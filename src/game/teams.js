@@ -165,6 +165,27 @@ function scatterRivals(minD = 320, maxD = 1e9) {
     r.calmT = 12 + 7 * k++; // seconds of cruising before it starts looking for players
   }
 }
+// (20 nov.) online: the host's wrenches, [x, z] or 0 when taken; a guest shows them, except one it has just taken itself
+function pickupsNet() { return pickups.map(pk => pk.on ? [Math.round(pk.x * 10) / 10, Math.round(pk.z * 10) / 10] : 0); }
+function applyPickups(a) {
+  if (!Array.isArray(a) || a.length !== pickups.length) return;
+  pickups.forEach((pk, i) => {
+    const s = a[i];
+    if (Array.isArray(s) && Number.isFinite(s[0]) && Number.isFinite(s[1])) {
+      const moved = Math.hypot(s[0] - pk.x, s[1] - pk.z) > 1;
+      // the one I have just taken: the host's state is late until it says « taken » or puts it elsewhere
+      if (pk.takenT && !moved) return;
+      pk.x = s[0]; pk.z = s[1]; pk.on = true; pk.mesh.visible = true; pk.takenT = 0;
+    } else { pk.on = false; pk.mesh.visible = false; pk.takenT = 0; }
+  });
+}
+// the host: a guest has taken wrench i (its presence pt = [i, sequence number])
+function guestPicked(R, pt) {
+  if (!Array.isArray(pt) || !Number.isInteger(pt[0]) || pt[1] === R.ptSeq) return;
+  R.ptSeq = pt[1]; const pk = pickups[pt[0]];
+  if (gx && gx.puTaken) return gx.puTaken(pt[0]);
+  if (pk && pk.on) { pk.on = false; pk.mesh.visible = false; setTimeout(() => spawnPickup(pk), 12000); }
+}
 function spawnPickup(pk) {
   const [cx, cz] = playersCentre();
   const n = farNode(cx, cz, 120);

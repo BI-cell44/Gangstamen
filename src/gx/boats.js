@@ -296,7 +296,8 @@
           roll = (0.13 + Math.sin(T * 0.5 + b.ph) * 0.035) * (t.x > 0 ? 1 : -1) * Math.min(1, b.v / 2); pitch = Math.sin(T * 0.8 + b.ph) * 0.018;
         } else {
           // b.t: metres along the route from the Gare Maritime; b.side: the dock it is at, or leaving from
-          const goal = b.side ? 0 : routeLen, cars = typeof locals !== 'undefined' ? locals.map(L => L.car).filter(c => c && c.alive) : [], x0 = b.x, z0 = b.z, h0 = b.h;
+          // (20 nov.) online, the host waits for every player (a guest halfway up the ramp no longer falls into the Loire)
+          const goal = b.side ? 0 : routeLen, cars = typeof locals !== 'undefined' ? (mode === 'online' && typeof allPlayerCars === 'function' ? allPlayerCars() : locals.map(L => L.car)).filter(c => c && c.alive) : [], x0 = b.x, z0 = b.z, h0 = b.h;
           const riders = cars.filter(c => b.onDeck(c.x, c.z)), wrecks = (typeof locals !== 'undefined' ? locals.map(L => L.car) : []).concat(typeof rivals !== 'undefined' ? rivals : [], typeof npcs !== 'undefined' ? npcs : []).filter(c => c && c.alive === false && b.onDeck(c.x, c.z)), allCars = cars.concat(gx && typeof npcs !== 'undefined' ? npcs.filter(c => c && c.alive !== false) : []);
           const landEnd = (() => { const P = LAND[b.side], sn = Math.sin(b.h), cs = Math.cos(b.h); return Math.sign((P.bx - b.x) * sn + (P.bz - b.z) * cs) || 1; })();
           if (b.wait > 0) {
@@ -310,7 +311,9 @@
           } else {
             const left = Math.abs(goal - b.t), done = routeLen - left, want = Math.min(riders.length ? 11 : 8, 0.7 + left * 0.2, 0.7 + done * 0.3);
             b.v += (want - b.v) * Math.min(1, dt * 1.2); b.t += (b.side ? -1 : 1) * b.v * dt;
-            if (left < 0.6) { for (const bn of b.benches || []) if (bn.broken) { bn.broken = false; for (const o of bn.parts) { o.position.copy(o.userData.p0); o.rotation.set(0, 0, 0); } } b.t = goal; b.side = 1 - b.side; b.wait = 25; b.v = 0; b.still = 0; b.came = riders.slice();
+            // a guest waits at the dock for the host to say the ferry has arrived (applyNet)
+            if (left < 0.6 && netGuest()) { b.t = goal; b.v = 0; }
+            else if (left < 0.6) { for (const bn of b.benches || []) if (bn.broken) { bn.broken = false; for (const o of bn.parts) { o.position.copy(o.userData.p0); o.rotation.set(0, 0, 0); } } b.t = goal; b.side = 1 - b.side; b.wait = 25; b.v = 0; b.still = 0; b.came = riders.slice();
               for (const L of locals) if (riders.includes(L.car)) flashFor(L, LAND[b.side].name.toUpperCase(), 'Feu vert : descends par la rampe'); }
           }
           const u = Math.min(1, Math.max(0, b.t / routeLen)), p = route.getPointAt(u), tg = route.getTangentAt(u);
@@ -372,5 +375,14 @@
         b.wk.visible = b.v > 0.5; b.wk.scale.set(1, 1, Math.min(1, b.v / 3));
       }
     }
-    return { build, step, list, LAND, ROUTE, pax, fcars: () => fcars, get ferry() { return fy; }, get curve() { return curve; }, get moored() { return moored; }, DOCK };
+    // online: the host's ferry [metres along the route, dock, wait, speed]; a guest follows it, gently when close
+    function netState() { const r = v => Math.round(v * 10) / 10; return fy ? [r(fy.t), fy.side, r(fy.wait), r(fy.v)] : null; }
+    function applyNet(s) {
+      if (!fy || !Array.isArray(s) || s.length !== 4 || !s.every(Number.isFinite)) return;
+      const arrived = s[1] !== fy.side;
+      if (arrived || Math.abs(s[0] - fy.t) > 6) fy.t = s[0]; else fy.t += (s[0] - fy.t) * 0.3;
+      if (arrived) { fy.came = locals.map(L => L.car).filter(c => fy.onDeck(c.x, c.z)); for (const L of locals) if (fy.came.includes(L.car)) flashFor(L, LAND[s[1]].name.toUpperCase(), 'Feu vert : descends par la rampe'); }
+      fy.side = s[1]; fy.wait = s[2]; fy.v = s[3];
+    }
+    return { build, step, list, LAND, ROUTE, pax, netState, applyNet, fcars: () => fcars, get ferry() { return fy; }, get curve() { return curve; }, get moored() { return moored; }, DOCK };
   })();
