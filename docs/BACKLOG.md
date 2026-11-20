@@ -34,6 +34,7 @@ Dernier retour d'essai de l'utilisateur (15 nov., soir) : Ultra tourne sans prob
 19. [x] **Pont des Trois-Continents fermé** (16 nov., fait par Opus) : barrières « Route barrée » et mur à l'entrée du pont, plus aucune voiture de la circulation dessus (`roadClosed` dans `src/ai/bots.js`) ; le trou au bout, côté Rezé, n'est donc plus atteignable.
 
 - [ ] **Jeu en ligne depuis GitHub Pages** (19 nov.) : la page publique n’a pas de réseau. Choix de l’utilisateur à faire : héberger le serveur Node (`server`, Dockerfile prêt) et pointer la page dessus (`GM_SERVER`), ou relier les joueurs en WebRTC avec un service public de mise en relation. Accord de l’utilisateur requis (service externe).
+- [ ] **Dépôt à repasser en privé** (20 nov., décision de l’utilisateur, « pas maintenant ») : tant qu’il est public, les modèles CGTrader de `data/models/` sont récupérables à part, ce que la licence Royalty Free ne permet pas. Prévoir alors une publication GitHub Pages qui ne contient que les HTML construits (dépôt ou branche publique dédiée), un léger brouillage des modèles dans la page, et vérifier la licence des personnages.
 - [ ] **Capture du drapeau en ligne** : absente du menu en ligne ; à faire avec la synchronisation des drapeaux par l’hôte (voir « Partie en ligne robuste »).
 
 ## Pour Opus 5.5 (dans cet ordre)
