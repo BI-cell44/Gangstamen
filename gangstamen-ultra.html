@@ -3302,7 +3302,7 @@ class Car {
   }
   get speed() { return Math.hypot(this.vx, this.vz); }
   get fwd() { return [-Math.sin(this.h), -Math.cos(this.h)]; }
-  place(x, z, h) { this.x = x; this.z = z; this.h = h; this.vx = this.vz = 0; this.yb = undefined; this.yv = 0; this.air = 0; this.nitro = 0; this.sink = 0; this._sp = undefined; if (this.phys) { this.phys.r = 0; this.phys.gear = 1; this.phys.ax = 0; } this.sync(); }
+  place(x, z, h) { this.x = x; this.z = z; this.h = h; this.vx = this.vz = 0; this.yb = undefined; this.yv = 0; this.air = 0; this.nitro = 0; this.sink = 0; this._sp = undefined; this._ap = undefined; this._pe = this._re = this._pev = this._rev = this.sq = this.sqv = 0; if (this.phys) { this.phys.r = 0; this.phys.gear = 1; this.phys.ax = 0; } this.sync(); }
   sync() {
     const [fx, fz] = this.fwd, rx = -fz, rz = fx, wb = this.bus ? 4.4 : 1.7; // (16 nov., user) the bus's axles are far apart: measured there, its ends no longer dig into a bump
     let hf = surfaceH(this.x + fx * wb, this.z + fz * wb), hb = surfaceH(this.x - fx * wb, this.z - fz * wb);
@@ -3320,10 +3320,29 @@ class Car {
         if (void_(this.x + fx * 1.7, this.z + fz * 1.7)) hf = h0; if (void_(this.x - fx * 1.7, this.z - fz * 1.7)) hb = h0;
         if (void_(this.x + rx * 0.9, this.z + rz * 0.9)) hr = h0; if (void_(this.x - rx * 0.9, this.z - rz * 0.9)) hl = h0;
       } }
-    this.mesh.position.set(this.x, Math.max(surfaceH(this.x, this.z), (hf + hb) / 2) + 0.34 + (this.air || 0), this.z);
-    if (this.air > 0.2) { this._ap = (this._ap ?? Math.atan2(hf - hb, 3.4)) - 0.35 * (1 / 60); this.mesh.rotation.set(Math.max(-0.5, this._ap), this.h, this.mesh.rotation.z * 0.98, 'YXZ'); return; }
-    this._ap = undefined;
-    this.mesh.rotation.set(Math.atan2(hf - hb, wb * 2), this.h, Math.atan2(hr - hl, 1.8), 'YXZ');
+    // (20 nov.) jumps: in the air the body keeps the pitch and roll rates it had when it left the ground, the nose slowly
+    // drops; on landing the body sinks on its springs (sq, set by the landing in vertical()) and the difference between its
+    // attitude in the air and the ground's comes back with a damped bounce. Real time, so the same at any frame rate
+    const now = performance.now(), sdt = Math.min(0.05, Math.max(0, (now - (this._st || now)) / 1000)); this._st = now;
+    const gp = Math.atan2(hf - hb, wb * 2), groll = Math.atan2(hr - hl, 1.8), base = Math.max(surfaceH(this.x, this.z), (hf + hb) / 2) + 0.34;
+    if (this.air > 0.2) {
+      if (this._ap === undefined) { this._ap = this._gp ?? gp; this._ar = this._gr ?? groll; this._apv = Math.max(-1.2, Math.min(1.2, this._gpv || 0)); this._arv = Math.max(-1, Math.min(1, this._grv || 0)); }
+      this._apv = (this._apv - 0.6 * sdt) * Math.exp(-0.4 * sdt); this._arv *= Math.exp(-1.5 * sdt);
+      this._ap = Math.max(-0.75, Math.min(0.6, this._ap + this._apv * sdt)); this._ar = Math.max(-0.5, Math.min(0.5, this._ar + this._arv * sdt));
+      this.mesh.position.set(this.x, base + this.air, this.z); this.mesh.rotation.set(this._ap, this.h, this._ar, 'YXZ'); return;
+    }
+    if (this._ap !== undefined) { this._pe = Math.max(-0.5, Math.min(0.5, this._ap - gp)); this._re = Math.max(-0.4, Math.min(0.4, this._ar - groll)); this._pev = this._rev = 0; this._ap = undefined; }
+    // the ground's pitch and roll rates, handed to the body at the next take-off
+    if (sdt > 0) { this._gpv = (gp - (this._gp ?? gp)) / sdt; this._grv = (groll - (this._gr ?? groll)) / sdt; } this._gp = gp; this._gr = groll;
+    if (this._pe || this._re || this.sq || this.sqv) {
+      this._pe = this._pe || 0; this._re = this._re || 0; this._pev = this._pev || 0; this._rev = this._rev || 0;
+      this._pev += (-150 * this._pe - 13 * this._pev) * sdt; this._pe += this._pev * sdt;
+      this._rev += (-170 * this._re - 15 * this._rev) * sdt; this._re += this._rev * sdt;
+      this.sqv = (this.sqv || 0) + (-190 * (this.sq || 0) - 17 * (this.sqv || 0)) * sdt; this.sq = Math.max(-0.12, Math.min(0.32, (this.sq || 0) + this.sqv * sdt));
+      if (Math.abs(this._pe) + Math.abs(this._pev) * 0.05 < 1e-3 && Math.abs(this._re) + Math.abs(this._rev) * 0.05 < 1e-3 && Math.abs(this.sq) + Math.abs(this.sqv) * 0.05 < 1e-3) this._pe = this._re = this._pev = this._rev = this.sq = this.sqv = 0;
+    }
+    this.mesh.position.set(this.x, base - (this.sq || 0), this.z);
+    this.mesh.rotation.set(gp + (this._pe || 0), this.h, groll + (this._re || 0), 'YXZ');
   }
 }
 
@@ -3367,6 +3386,8 @@ function drive(c, inp, dt) {
     const ny = c.yb + (c.yv || 0) * dt - G / 2 * dt * dt;
     if (ny > g + 0.14) { c.yv -= G * dt; c.yb = ny; c.air = c.yb - g; }
     else {
+      // (20 nov.) the springs take the landing: the body sinks, more for a bigger fall (sync)
+      if (c.air > 0.3 && c.yv < -2.5) c.sqv = (c.sqv || 0) + Math.min(7, -c.yv * 0.55);
       if (c.air > 0.4 && c.yv < -6) { spawnFx(c.x, 0.3, c.z, 0.5, 0xffe28a, 0.2, 2, 2); if (c.local) { sfx.impact(-c.yv * 0.8); rumbleFor(c.owner, 0.5, 0.5, 150); } if (c.yv < -hurt) damage(c, (-c.yv - hurt) * hk); }
       // (16 nov., user: « sauts très étranges ») the climb rate comes from the grade of the ground under the wheels, capped and
       // smoothed over a few hundredths of a second: a kerb, the edge of a bridge deck or the top of the ferry ramp is a step of a
