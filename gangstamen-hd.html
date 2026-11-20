@@ -9622,6 +9622,34 @@ const gx = !HD ? null : (() => {
             b.benches.push({ sd, lz, parts: bg.children.slice(), broken: false, t: 9 });
           }
         }
+        // (20 nov.) the ramps were bare slabs: a ribbed steel deck, yellow and black chevrons along the edges, low kerbs and
+        // the hinge drum at the boat's end; for the eyes only (the ramp itself is the DECKS entry below)
+        let hazardTex = null;
+        const dressRamp = (hinge, hw, sl) => {
+          // only the part out of the ground: near the top of the bank the slab runs under the paving of the quay
+          hinge.updateMatrixWorld(true); const v = new THREE.Vector3(); let z0 = 0;
+          for (let z = 0; z < sl; z += 0.5) { let under = false; for (const x of [-hw, 0, hw]) { v.set(x, 0, z).applyMatrix4(hinge.matrixWorld); if (v.y < groundH(v.x, v.z) + 0.03) under = true; } if (!under) { z0 = z; break; } z0 = z + 0.5; }
+          if (z0 > sl - 2) return;
+          const len = sl - z0, mid = z0 + len / 2;
+          if (!hazardTex) { const cv = document.createElement('canvas'); cv.width = 64; cv.height = 64; const g = cv.getContext('2d'); g.fillStyle = '#f2c40c'; g.fillRect(0, 0, 64, 64); g.fillStyle = '#16161a';
+            for (let i = -64; i < 128; i += 32) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i + 16, 0); g.lineTo(i + 80, 64); g.lineTo(i + 64, 64); g.closePath(); g.fill(); }
+            hazardTex = new THREE.CanvasTexture(cv); hazardTex.wrapS = hazardTex.wrapT = THREE.RepeatWrapping; hazardTex.encoding = THREE.sRGBEncoding; hazardTex.anisotropy = 4; }
+          const steel = new THREE.MeshStandardMaterial({ color: hd.lin(0x5b6066), roughness: 0.55, metalness: 0.6 });
+          const deck = new THREE.Mesh(new THREE.PlaneGeometry(hw * 2 - 0.9, len - 0.2).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ color: hd.lin(0x6a6e72), roughness: 0.8, metalness: 0.35 }));
+          deck.position.set(0, -0.04, mid); deck.receiveShadow = true; hinge.add(deck);
+          // ribs across, every 0.7 m: what the tyres grip on the way up
+          const n = Math.floor((len - 1) / 0.7), ribs = new THREE.InstancedMesh(new THREE.BoxGeometry(hw * 2 - 1, 0.06, 0.09), steel, n), M = new THREE.Matrix4();
+          for (let i = 0; i < n; i++) { M.makeTranslation(0, -0.01, z0 + 0.6 + i * 0.7); ribs.setMatrixAt(i, M); }
+          ribs.receiveShadow = true; ribs.frustumCulled = false; hinge.add(ribs);
+          for (const sx of [-1, 1]) {
+            const t = hazardTex.clone(); t.needsUpdate = true; t.repeat.set(1, len / 1.2);
+            const strip = new THREE.Mesh(new THREE.PlaneGeometry(0.42, len).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ map: t }));
+            strip.position.set(sx * (hw - 0.21), -0.035, mid); strip.receiveShadow = true; hinge.add(strip);
+            const kerb = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.2, len), steel); kerb.position.set(sx * (hw + 0.06), 0.05, mid); kerb.castShadow = kerb.receiveShadow = true; hinge.add(kerb);
+          }
+          const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, hw * 2 + 0.3, 14).rotateZ(Math.PI / 2), steel); drum.position.set(0, -0.25, sl - 0.1); drum.castShadow = true; hinge.add(drum);
+          hinge.traverse(o => { o.userData.hdLinear = true; });
+        };
         const lampG = new THREE.SphereGeometry(0.75, 12, 8), postM = new THREE.MeshLambertMaterial({ color: hd.lin(0x3a3f44) }), rampM = new THREE.MeshLambertMaterial({ color: hd.lin(0x70757a) });
         LAND.forEach((L, k) => {
           // the boat's pose at this dock, the end of its deck that touches the land, and the ramp from there up the bank
@@ -9634,7 +9662,7 @@ const gx = !HD ? null : (() => {
           const sl = Math.hypot(L.len, L.y - WATER_Y - DECK_Y) + 0.6, m = new THREE.Mesh(new THREE.BoxGeometry(L.hw * 2, 0.3, sl), rampM), hinge = new THREE.Group();
           m.position.set(0, -0.2, sl / 2); m.receiveShadow = true; m.castShadow = true; m.userData.hdLinear = true; hinge.add(m);
           hinge.position.set(L.x, L.y, L.z); hinge.rotation.order = 'YXZ'; hinge.rotation.y = Math.atan2(-ax, -az); L.slope = Math.atan2(L.y - WATER_Y - DECK_Y, L.len); hinge.rotation.x = L.slope;
-          hinge.userData.hdLinear = true; scene.add(hinge); L.hinge = hinge;
+          hinge.userData.hdLinear = true; scene.add(hinge); L.hinge = hinge; dressRamp(hinge, L.hw, sl);
           // (16 nov., user) a strip of road from the top of the ramp to the nearest street, drawn like the streets: straight
           // up the ramp's axis while that meets a street within 80 m, otherwise to the nearest point of a street
           { let pts = null;
