@@ -16,5 +16,8 @@ const gx = !HD ? null : (() => {
   const CIV_PAINT = [0xc8c8c4, 0xa31d1d, 0x1d3f8a, 0xe8e0c8, 0x2b6b3a, 0xd8a400, 0x6a6a72, 0x8a1d4a, 0x2a2a2e, 0x4fa0c8, 0xe86a1a, 0x9ab84a];
   const CIV_STYLES = ['r5', 'p205', 'twingo', 'r5', 'p205', 'twingo', 'hatch', 'van'];
   // limits scale with the number of screens
-  const budget = () => { const n = Math.max(1, locals.length), k = settings.traffic === 1 ? 0.5 : 1; return { civ: Math.round([14, 10, 8, 7][n - 1] * k), peds: Math.round([64, 44, 34, 26][n - 1] * k) }; };
+  // (20 nov., user) online each player has his own traffic, so another player sometimes drives through a car that only
+  // exists on my screen: there it is « calme » by default (its own setting in the online menu)
+  const trafficLevel = () => mode === 'online' ? (settings.trafficNet ?? 1) : settings.traffic;
+  const budget = () => { const n = Math.max(1, locals.length), k = trafficLevel() === 1 ? 0.5 : 1; return { civ: Math.round([14, 10, 8, 7][n - 1] * k), peds: Math.round([64, 44, 34, 26][n - 1] * k) }; };
 

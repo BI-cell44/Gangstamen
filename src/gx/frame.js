@@ -118,7 +118,7 @@
   function start(kind) {
     for (const c of npcs.slice()) removeNpc(c);
     for (const L of locals) { L.heat = 0; L.calm = 0; }
-    active = settings.traffic !== false && settings.traffic !== 0;
+    active = trafficLevel() !== false && trafficLevel() !== 0;
     for (const p of peds) p.on = false;
     if (!active) { crowd.begin(); crowd.end(); People.hideAll(); return; }
     for (let i = 0; i < budget().civ; i++) spawnCiv();

@@ -547,6 +547,7 @@ body.cine #logo, body.cine #credit { display: none; }
       <div class="placeRows hdOnly" hidden></div>
       <div class="row"><span class="lab">Fin de partie</span><div class="seg goalSeg"><button class="mbtn" data-g="10">10 KO</button><button class="mbtn" data-g="20">20 KO</button><button class="mbtn" data-g="30">30 KO</button><button class="mbtn" data-g="0">Sans</button></div></div>
       <div class="row"><span class="lab">Durée</span><div class="seg limitSeg"><button class="mbtn" data-l="5">5 min</button><button class="mbtn" data-l="10">10 min</button><button class="mbtn" data-l="15">15 min</button><button class="mbtn" data-l="0">Sans</button></div></div>
+      <div class="row hdOnly" hidden><span class="lab">Circulation</span><div class="seg" id="trafNetSeg"><button class="mbtn" data-v="0">Aucune</button><button class="mbtn" data-v="1">Calme</button><button class="mbtn" data-v="2">Normale</button></div></div>
       <div class="menu"><button id="create" class="big">Créer une partie</button><button class="mbtn" data-go="vMain">Retour</button></div>
       <p class="fine">Version claude.ai : les autres joueurs doivent être connectés et avoir accès à cette page avec le droit de participer (Contributeur ou plus), sinon ils voient les voitures mais leurs tirs ne comptent pas. Chacun conduit sa voiture sans attendre l'hôte ; l'hôte fait rouler les voitures du quartier. L'équipe ne sert que dans les parties « Par équipes » (choisie par le créateur).</p>
     </section>
@@ -4161,7 +4162,7 @@ const SETTINGS_KEY = 'gangstamen.settings.v1';
 const settings = Object.assign({
   ctl: ['kb1', 'kb2', 'kb3', 'kb4'], soloCtl: 'kb1+pad0', nPlayers: 2,
   music: 0.7, fx: 0.8, amb: 0.8, rumble: true, retro: true, nick: '',
-  hdq: isTouch ? 0 : 2, hdSafe: 0, tctl0: 'touch', autoQ: true, physics: 'arcade', tod: 'sunset', rain: '0', traffic: 2, voices: true, shadows: 1, dist: 2, intro: true, teams: false, team: [0, 1, 0, 1], netTeams: false, netTeam: -1, goal: 20, limit: 10, campDiff: 1, goalCtf: 3, goalHill: 60, placeFfa: 0, placeHill: 0, placeRap: 3, placeChant: 1, raceLaps: 1, // physics 'real' = realistic mode (cycle 4), chosen in the options
+  hdq: isTouch ? 0 : 2, hdSafe: 0, tctl0: 'touch', autoQ: true, physics: 'arcade', tod: 'sunset', rain: '0', traffic: 2, trafficNet: 1, voices: true, shadows: 1, dist: 2, intro: true, teams: false, team: [0, 1, 0, 1], netTeams: false, netTeam: -1, goal: 20, limit: 10, campDiff: 1, goalCtf: 3, goalHill: 60, placeFfa: 0, placeHill: 0, placeRap: 3, placeChant: 1, raceLaps: 1, // physics 'real' = realistic mode (cycle 4), chosen in the options
 }, (() => { try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); } catch (e) { return {}; } })());
 // (17 nov., user) end of a game in the HD modes (split screen and online): captures, hill points or laps instead of KO
 const MODE_GOALS = {
@@ -5703,7 +5704,7 @@ function initOptions() {
     document.querySelectorAll('#rainSeg button').forEach(b => b.addEventListener('click', () => { settings.rain = b.dataset.v; saveSettings(); applyAmbience(); }));
     const segOpt = (id, key, after) => { const bs = document.querySelectorAll('#' + id + ' button'), show = () => bs.forEach(b => b.classList.toggle('on', +b.dataset.v === +settings[key]));
       bs.forEach(b => b.addEventListener('click', () => { settings[key] = +b.dataset.v; saveSettings(); show(); if (after) after(); })); show(); };
-    segOpt('shSeg', 'shadows', applyPerf); segOpt('distSeg', 'dist', applyPerf); segOpt('trafSeg', 'traffic');
+    segOpt('shSeg', 'shadows', applyPerf); segOpt('distSeg', 'dist', applyPerf); segOpt('trafSeg', 'traffic'); segOpt('trafNetSeg', 'trafficNet');
     { const bs = document.querySelectorAll('#physSeg button'), show = () => bs.forEach(b => b.classList.toggle('on', b.dataset.v === settings.physics));
       bs.forEach(b => b.addEventListener('click', () => { settings.physics = b.dataset.v; saveSettings(); show(); })); show(); }
     $('optAutoQ').checked = settings.autoQ !== false; $('optAutoQ').addEventListener('change', e => { settings.autoQ = e.target.checked; saveSettings(); });
@@ -6098,7 +6099,10 @@ const gx = !HD ? null : (() => {
   const CIV_PAINT = [0xc8c8c4, 0xa31d1d, 0x1d3f8a, 0xe8e0c8, 0x2b6b3a, 0xd8a400, 0x6a6a72, 0x8a1d4a, 0x2a2a2e, 0x4fa0c8, 0xe86a1a, 0x9ab84a];
   const CIV_STYLES = ['r5', 'p205', 'twingo', 'r5', 'p205', 'twingo', 'hatch', 'van'];
   // limits scale with the number of screens
-  const budget = () => { const n = Math.max(1, locals.length), k = settings.traffic === 1 ? 0.5 : 1; return { civ: Math.round([14, 10, 8, 7][n - 1] * k), peds: Math.round([64, 44, 34, 26][n - 1] * k) }; };
+  // (20 nov., user) online each player has his own traffic, so another player sometimes drives through a car that only
+  // exists on my screen: there it is « calme » by default (its own setting in the online menu)
+  const trafficLevel = () => mode === 'online' ? (settings.trafficNet ?? 1) : settings.traffic;
+  const budget = () => { const n = Math.max(1, locals.length), k = trafficLevel() === 1 ? 0.5 : 1; return { civ: Math.round([14, 10, 8, 7][n - 1] * k), peds: Math.round([64, 44, 34, 26][n - 1] * k) }; };
 
   // ---------- civilian traffic v2 (cycle 7) ----------
   // Cars keep to the right of the street, follow one-way streets (OSM), prefer real streets to narrow lanes, stop at the
@@ -7302,7 +7306,7 @@ const gx = !HD ? null : (() => {
   function start(kind) {
     for (const c of npcs.slice()) removeNpc(c);
     for (const L of locals) { L.heat = 0; L.calm = 0; }
-    active = settings.traffic !== false && settings.traffic !== 0;
+    active = trafficLevel() !== false && trafficLevel() !== 0;
     for (const p of peds) p.on = false;
     if (!active) { crowd.begin(); crowd.end(); People.hideAll(); return; }
     for (let i = 0; i < budget().civ; i++) spawnCiv();
@@ -10175,7 +10179,7 @@ const gx = !HD ? null : (() => {
   }
   // (17 nov.) a touch on a weapon pastille chooses that weapon (campaign.js); elsewhere on the line, the next weapon
   { const el = $('ammo'); if (el) { el.style.pointerEvents = 'auto'; el.style.cursor = 'pointer'; el.addEventListener('pointerdown', e => { if (e.target.closest && e.target.closest('.pill')) return; e.preventDefault(); if (locals[0]) cycleWeapon(locals[0]); }); } }
-  const api = { netIn, dj, cycleWeapon, showPostcard, postcardSpots, modeInfo, netFlags, applyFlags, netPus, applyPus, puTaken, pus: () => pus, hallTruss: () => hallTruss, hearShot, quickChat, chatIn, step: gameStep, world, landmarkTick, tick: dt => { tick(dt); Boats.step((paused && mode !== 'online') || Busy.on ? 0 : dt); NavLights.step(dt); }, Boats, People, portCranes, hallColumns, LM, walks: () => { if (!walks) buildWalks(); return walks; }, start: startHook, cars: () => npcs.concat(extras), copsOn, shieldHit, makeBus, policeHQ: HQ, hqNode, spots: SPOTS, unlocked, postcards, acts: () => (actsBuild(), acts), actRun: () => run, startAct, hearCars: carsHearShot, traffic: TF, Fences, LightPoles, lightState, roadRules, makeNpc, placeOnGraph, nextNode, spawnPatrol, npcs: () => npcs, damage: damageNpc, addHeat, say, peds: () => peds, stars, special, startMission, renderCampaign, cleanupMission, toMenu, roadblock, MISSIONS,
+  const api = { netIn, dj, cycleWeapon, showPostcard, postcardSpots, modeInfo, netFlags, applyFlags, netPus, applyPus, puTaken, pus: () => pus, budget: () => budget(), hallTruss: () => hallTruss, hearShot, quickChat, chatIn, step: gameStep, world, landmarkTick, tick: dt => { tick(dt); Boats.step((paused && mode !== 'online') || Busy.on ? 0 : dt); NavLights.step(dt); }, Boats, People, portCranes, hallColumns, LM, walks: () => { if (!walks) buildWalks(); return walks; }, start: startHook, cars: () => npcs.concat(extras), copsOn, shieldHit, makeBus, policeHQ: HQ, hqNode, spots: SPOTS, unlocked, postcards, acts: () => (actsBuild(), acts), actRun: () => run, startAct, hearCars: carsHearShot, traffic: TF, Fences, LightPoles, lightState, roadRules, makeNpc, placeOnGraph, nextNode, spawnPatrol, npcs: () => npcs, damage: damageNpc, addHeat, say, peds: () => peds, stars, special, startMission, renderCampaign, cleanupMission, toMenu, roadblock, MISSIONS,
     get gmode() { return gm ? gm.kind : 0; }, get gmState() { return gm; }, raceRespawn, modeTarget, scoreText, mines: () => mines, customers: () => customers, teamScores: modeTeamScores, goalText, rematch: rematchMode,
     get blocking() { return blocking; }, get mission() { return mission; }, foes: () => extras.filter(c => c.alive && c.team === 1), saveBank, pus: () => pus, furniture: () => furniture, garage: GARAGE, garages: GARAGES, campDiff, SpawnMap, copBump: c => oneStar(c, 0.1, 'Tu as percuté la police'),
     get onGarage() { return gx_onGarage; }, get objTarget() { return objEl.hidden ? null : objTgt; },

@@ -155,7 +155,7 @@ function initOptions() {
     document.querySelectorAll('#rainSeg button').forEach(b => b.addEventListener('click', () => { settings.rain = b.dataset.v; saveSettings(); applyAmbience(); }));
     const segOpt = (id, key, after) => { const bs = document.querySelectorAll('#' + id + ' button'), show = () => bs.forEach(b => b.classList.toggle('on', +b.dataset.v === +settings[key]));
       bs.forEach(b => b.addEventListener('click', () => { settings[key] = +b.dataset.v; saveSettings(); show(); if (after) after(); })); show(); };
-    segOpt('shSeg', 'shadows', applyPerf); segOpt('distSeg', 'dist', applyPerf); segOpt('trafSeg', 'traffic');
+    segOpt('shSeg', 'shadows', applyPerf); segOpt('distSeg', 'dist', applyPerf); segOpt('trafSeg', 'traffic'); segOpt('trafNetSeg', 'trafficNet');
     { const bs = document.querySelectorAll('#physSeg button'), show = () => bs.forEach(b => b.classList.toggle('on', b.dataset.v === settings.physics));
       bs.forEach(b => b.addEventListener('click', () => { settings.physics = b.dataset.v; saveSettings(); show(); })); show(); }
     $('optAutoQ').checked = settings.autoQ !== false; $('optAutoQ').addEventListener('change', e => { settings.autoQ = e.target.checked; saveSettings(); });
