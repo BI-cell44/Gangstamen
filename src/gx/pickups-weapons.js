@@ -162,6 +162,15 @@
   function netIn(topic, peer, d) { // rockets and blasts from the other players, for the eyes only
     if (!d || ![d.x, d.z].every(v => typeof v === 'number' && isFinite(v) && Math.abs(v) < 3000)) return;
     const R = Net.remotes.get(peer);
+    // another player's mine: shown here, it blows up when its owner's game says so (topic bl)
+    if (topic === 'rk' && d.mine) {
+      const m = mineMesh(), fly = [d.y, d.vx, d.vz, d.vy].every(v => typeof v === 'number' && isFinite(v) && Math.abs(v) < 200);
+      if (fly) mines.push({ m, x: d.x, z: d.z, y: d.y, vx: d.vx, vz: d.vz, vy: d.vy, fly: true, owner: R ? R.car : { team: -9 }, t: 0, ghost: true });
+      else { m.position.set(d.x, surfaceH(d.x, d.z) + 0.45, d.z); mines.push({ m, x: d.x, z: d.z, owner: R ? R.car : { team: -9 }, t: 0, ghost: true }); }
+      if (mines.length > 40) { const o = mines.shift(); scene.remove(o.m); }
+      return;
+    }
+    if (topic === 'bl') for (const mn of mines.slice()) if (mn.ghost && Math.hypot(mn.x - d.x, mn.z - d.z) < 6) { scene.remove(mn.m); mines.splice(mines.indexOf(mn), 1); }
     if (topic === 'rk' && [d.vx, d.vz].every(v => typeof v === 'number' && isFinite(v) && Math.abs(v) < 200)) fireRocket(R ? R.car : { team: -9 }, null, d);
     if (topic === 'bl') explode(d.x, d.z);
   }
@@ -233,6 +242,11 @@
       const x = c.x - fx * 3.2, z = c.z - fz * 3.2; m.position.set(x, surfaceH(x, z) + 0.45, z);
       mines.push({ m, x, z, owner: c, t: 0 }); sfx.hit();
     }
+    // (20 nov.) online, the other players see the mine (the owner's game still decides when it blows up, as before)
+    if (c.local && mode === 'online') {
+      const mn = mines[mines.length - 1], r = v => Math.round(v * 10) / 10;
+      Net.emit('rk', mn.fly ? { mine: 1, x: r(mn.x), z: r(mn.z), y: r(mn.y), vx: r(mn.vx), vz: r(mn.vz), vy: r(mn.vy) } : { mine: 1, x: r(mn.x), z: r(mn.z) });
+    }
   }
   function mineStep(dt, now) {
     for (const mn of mines.slice()) {
@@ -243,6 +257,8 @@
         if (mn.y <= gy) { mn.y = gy; mn.fly = false; mn.t = 0; mn.m.rotation.x = 0; sfx.hit(); }
         mn.m.position.set(mn.x, mn.y, mn.z);
       } else if (mn.t < 0.2) continue; // armed almost at once: whoever follows the car that dropped it drives straight into it
+      // another player's mine: for the eyes only, gone with its owner's blast (netIn) or after 90 s
+      if (mn.ghost) { if (mn.t > 90) { scene.remove(mn.m); mines.splice(mines.indexOf(mn), 1); } continue; }
       for (const c of [...allPlayerCars(), ...rivals, ...npcs, ...extras]) {
         if (!c.alive || (c === mn.owner && (mn.t < 3 || mn.fly))) continue;
         if (Math.hypot(c.x - mn.x, c.z - mn.z) < (mn.fly ? 2.4 : 3) && (!mn.fly || mn.y < c.mesh.position.y + 2)) { scene.remove(mn.m); mines.splice(mines.indexOf(mn), 1); blast(mn.x, mn.z, mn.owner, 52, 6.5); if (mn.owner.local && mode === 'online') Net.emit('bl', { x: Math.round(mn.x), z: Math.round(mn.z) }); break; }

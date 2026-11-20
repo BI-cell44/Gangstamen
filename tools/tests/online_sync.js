@@ -38,6 +38,13 @@ let fails = 0, log_; const ok = (c, msg, extra) => { if (!c) fails++; console.lo
   await A.evaluate(i => { __gm.gx.pus()[i].t = 0.01; for (let k = 0; k < 4; k++) __gm.step(0.05); }, took[0]);
   let back = false; for (let i = 0; i < 20 && !back; i++) { await A.waitForTimeout(1000); [pa, pb] = await Promise.all([pks(A), pks(B)]); back = pa[took[0]] && JSON.stringify(pa) === JSON.stringify(pb); }
   ok(back, 'bonus : il revient ailleurs, au même endroit pour les deux', [pa[took[0]], pb[took[0]]]);
+  // mines: one dropped by the host is seen by the guest, and goes with the host's blast
+  await A.evaluate(() => { const L = __gm.locals()[0]; L.ammo = { rockets: 0, mines: 1, nitro: 0 }; L.weapon = 'mines'; L.specCd = 0; __gm.gx.special(L); });
+  let seenMine = false; for (let i = 0; i < 15 && !seenMine; i++) { await A.waitForTimeout(1000); seenMine = await B.evaluate(() => __gm.gx.mines().some(m => m.ghost)); }
+  ok(seenMine, 'mines : l’invité voit la mine posée par l’hôte');
+  await A.evaluate(() => { const mn = __gm.gx.mines().find(m => !m.ghost); const r = __gm.rivals()[0]; r.alive = true; r.place(mn.x, mn.z, 0); for (let k = 0; k < 3; k++) __gm.step(0.05); });
+  let goneMine = false; for (let i = 0; i < 15 && !goneMine; i++) { await A.waitForTimeout(1000); goneMine = await B.evaluate(() => !__gm.gx.mines().some(m => m.ghost)); }
+  ok(goneMine, 'mines : elle disparaît chez l’invité quand elle explose chez l’hôte');
   // the ferry waits for a guest on its ramp: put the ferry at the Gare Maritime about to leave, B on the ramp
   await A.evaluate(() => { const f = __gm.gx.Boats.ferry; f.side = 0; f.t = 0; f.wait = 1.5; __gm.locals()[0].car.place(0, 0, 0); });
   await B.evaluate(() => { const L = __gm.gx.Boats.LAND[0], c = __gm.locals()[0].car; c.place(L.bx + L.ax * L.len * 0.5, L.bz + L.az * L.len * 0.5, Math.atan2(L.ax, L.az)); c.vx = c.vz = 0; c.hp = 100; c.shield = 30; });

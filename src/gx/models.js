@@ -68,7 +68,47 @@
     const im = new THREE.InstancedMesh(new THREE.BoxGeometry(0.8, 1, 0.8), new THREE.MeshStandardMaterial({ color: hd.lin(0x55625f), roughness: 0.7, metalness: 0.35 }), pts.length), M = new THREE.Matrix4();
     pts.forEach(([x, z, top], i) => { const g = groundH(x, z) - 0.3, h = top - g; M.makeScale(1, h, 1); M.setPosition(x, g + h / 2, z); im.setMatrixAt(i, M); gridAdd([x - 0.6, z, x + 0.6, z], 3.5); gridAdd([x, z - 0.6, x, z + 0.6], 3.5); hallColumns.push([x, z, top]); });
     im.castShadow = true; im.receiveShadow = true; im.userData.hdLinear = true; im.frustumCulled = false; scene.add(im);
+    hallTrusses(inside);
   }
+  // (20 nov.) the steel lattice under the sawtooth roof of the Nefs: a frame across the hall every 10 m, following the folds
+  // of the roof (top chord just under it, bottom chord level with the low gutters, diagonals in between). The fold
+  // geometry is the one of world/city.js (ridges along the longest side, a nave every 20 m or so, rise up to 5.5 m)
+  function hallTrusses(inside) {
+    const beams = [];
+    for (const b of W.buildings) {
+      if (!b.o || !b.u || b._roofY == null) continue;
+      const p = b.p, n = p.length / 2, h = b._roofY - 0.2;
+      let Lm = 0, ux = 1, uz = 0; for (let i = 0; i < n; i++) { const ax = p[2 * i], az = p[2 * i + 1], bx = p[2 * ((i + 1) % n)], bz = p[2 * ((i + 1) % n) + 1], l = Math.hypot(bx - ax, bz - az); if (l > Lm) { Lm = l; ux = (bx - ax) / l; uz = (bz - az) / l; } }
+      const vx = -uz, vz = ux; let s0 = 1e9, s1 = -1e9, t0 = 1e9, t1 = -1e9;
+      for (let i = 0; i < n; i++) { const s = p[2 * i] * ux + p[2 * i + 1] * uz, t = p[2 * i] * vx + p[2 * i + 1] * vz; s0 = Math.min(s0, s); s1 = Math.max(s1, s); t0 = Math.min(t0, t); t1 = Math.max(t1, t); }
+      const bays = Math.max(2, Math.round((t1 - t0) / 20)), bw = (t1 - t0) / bays, rise = Math.min(5.5, bw * 0.3), low = h - 1.1;
+      const P3 = (s, t, y) => [ux * s + vx * t, y, uz * s + vz * t];
+      const ok = (s, t) => { const q = P3(s, t, 0); return inside(q[0], q[2], p); };
+      const frames = Math.max(1, Math.round((s1 - s0) / 10));
+      for (let f = 0; f <= frames; f++) {
+        const s = s0 + 1.5 + (s1 - s0 - 3) * f / frames;
+        for (let k = 0; k < bays * 2; k++) {
+          const ta = t0 + k * bw / 2, tb = ta + bw / 2, ya = k % 2 ? h + rise : h, yb = k % 2 ? h : h + rise;
+          if (!ok(s, ta + 0.5) || !ok(s, tb - 0.5)) continue;
+          beams.push([P3(s, ta, ya), P3(s, tb, yb), 0.3]); // top chord under the roof
+          beams.push([P3(s, ta, low), P3(s, tb, low), 0.26]); // bottom chord
+          const m = 3; for (let j = 0; j < m; j++) { // web: verticals and diagonals
+            const u0 = j / m, u1 = (j + 1) / m, tA = ta + (tb - ta) * u0, tB = ta + (tb - ta) * u1, yA = ya + (yb - ya) * u0, yB = ya + (yb - ya) * u1;
+            beams.push([P3(s, tA, low), P3(s, tA, yA), 0.16]); beams.push([P3(s, tA, low), P3(s, tB, yB), 0.16]);
+          }
+        }
+      }
+      // ties along the hall under every ridge and gutter, from one frame to the next
+      for (let k = 0; k <= bays * 2; k++) { const t = t0 + k * bw / 2, y = (k % 2 ? h + rise : h) - 0.25;
+        for (let f = 0; f < frames; f++) { const sa = s0 + 1.5 + (s1 - s0 - 3) * f / frames, sb = s0 + 1.5 + (s1 - s0 - 3) * (f + 1) / frames; if (ok(sa, t + (k ? -0.5 : 0.5)) && ok(sb, t + (k ? -0.5 : 0.5))) beams.push([P3(sa, t, y), P3(sb, t, y), 0.18]); } }
+    }
+    if (!beams.length) return;
+    const im = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: hd.lin(0x4c5654), roughness: 0.65, metalness: 0.45 }), beams.length);
+    const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), X = new THREE.Vector3(1, 0, 0), D = new THREE.Vector3(), S = new THREE.Vector3(), C = new THREE.Vector3();
+    beams.forEach(([A, B, w], i) => { D.set(B[0] - A[0], B[1] - A[1], B[2] - A[2]); const L = D.length(); D.normalize(); Q.setFromUnitVectors(X, D); S.set(L + w, w, w); C.set((A[0] + B[0]) / 2, (A[1] + B[1]) / 2, (A[2] + B[2]) / 2); M.compose(C, Q, S); im.setMatrixAt(i, M); });
+    im.castShadow = true; im.receiveShadow = true; im.userData.hdLinear = true; im.frustumCulled = false; scene.add(im); hallTruss = im;
+  }
+  let hallTruss = null;
   // what to take away from the downloaded cranes: everything hanging under the boom, and the small block under its tip
   const CRANE_CUT = [[2.5, 1.05], [-4.1, 1.7]];
   const portCranes = [];
