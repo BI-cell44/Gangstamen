@@ -80,6 +80,8 @@ function updateCamera(L, dt) {
   cam.position.lerp(camPos, k);
   L.look = L.look || camLook.clone();
   L.look.lerp(camLook, mode >= 2 ? 1 : k);
+  if (settings.motion === 0 && mode !== 5) { fov = Math.min(fov, mode === 2 ? 64 : 56); L.shake = 0; }
+  // (21 nov., audit UX) « Mouvements de caméra : réduits » in the options: no widening with speed, no shaking
   if (HD || mode === 5) { // speed widens the view (HD); explosions shake it
     if (Math.abs(cam.fov - fov) > 0.05) { cam.fov += (fov - cam.fov) * Math.min(1, dt * (mode === 5 ? 6 : 3)); cam.updateProjectionMatrix(); }
   }

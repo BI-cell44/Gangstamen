@@ -278,6 +278,10 @@ const sfx = (() => {
     engine(speed, on) { if (!ac) return; engO.frequency.setTargetAtTime(38 + speed * 2.4, ac.currentTime, 0.05); engF.frequency.setTargetAtTime(300 + speed * 25, ac.currentTime, 0.1); engG.gain.setTargetAtTime(on ? 0.05 : 0, ac.currentTime, 0.1); },
     gun(enemy) { if (ac) noise(ac.currentTime, 0.07, enemy ? 1100 : 1600, 0.9, enemy ? 0.25 : 0.4); },
     hit() { if (ac) noise(ac.currentTime, 0.12, 600, 1.2, 0.5); },
+    // (21 nov., audit UX) a dry metallic tick when the player's bullets land (at most every 70 ms), and the alarm of a car
+    // about to be wrecked
+    tick() { if (!ac || ac.currentTime - (this._tk || 0) < 0.07) return; this._tk = ac.currentTime; const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain(); o.type = 'triangle'; o.frequency.setValueAtTime(2300, t); o.frequency.exponentialRampToValueAtTime(1400, t + 0.05); g.gain.setValueAtTime(0.16, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.07); o.connect(g).connect(fxG); o.start(t); o.stop(t + 0.08); },
+    alarm() { if (!ac) return; const t = ac.currentTime; for (const k of [0, 0.16]) { const o = ac.createOscillator(), g = ac.createGain(); o.type = 'square'; o.frequency.setValueAtTime(880, t + k); g.gain.setValueAtTime(0.06, t + k); g.gain.exponentialRampToValueAtTime(0.001, t + k + 0.11); o.connect(g).connect(fxG); o.start(t + k); o.stop(t + k + 0.12); } },
     boom() { if (ac) noise(ac.currentTime, 1.1, 300, 0.6, 1.0, null, 'lowpass'); },
     pick() { if (!ac) return; const o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(660, ac.currentTime); o.frequency.setValueAtTime(990, ac.currentTime + 0.08); g.gain.setValueAtTime(0.25, ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.3); o.connect(g).connect(fxG); o.start(); o.stop(ac.currentTime + 0.32); },
     arr(n) { arr = n; },

@@ -47,6 +47,7 @@ function frame(now) {
   PerfHud.end();
 }
 function render(dt) {
+  aimMarks();
   if (HD) {
     if (!started || !locals.length) { if (!Intro.playing) updateTitleCamera(dt); return hd.render([{ x: 0, y: 0, w: innerWidth, h: innerHeight, cam: camera, car: Intro.playing ? Intro.focusCar : null }]); }
     for (const L of locals) updateCamera(L, dt);

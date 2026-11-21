@@ -145,7 +145,7 @@
     if (!L.weapon || !a[L.weapon]) L.weapon = order.find(k => a[k] > 0) || null;
     if (!L.weapon) { flashFor(L, 'Rien en stock', 'Ramasse des bonus ou passe au garage'); return; }
     if (L.specCd > 0) return;
-    if (L.weapon === 'rockets') { a.rockets--; L.specCd = 1.3; fireRocket(c, null); }
+    if (L.weapon === 'rockets') { a.rockets--; L.specCd = 1.3; fireRocket(c, aimLevel() ? aimTarget(c, 140, 0.35) : null); }
     else if (L.weapon === 'mines') { a.mines--; L.specCd = 0.6; dropMine(c, true); }
     else if (L.weapon === 'nitro') { a.nitro--; L.specCd = 0.4; c.nitro = 2.6; sfx.whoosh(); rumbleFor(L, 0.4, 0.6, 400); }
   }
@@ -192,7 +192,7 @@
       r.t += dt;
       if (r.target && r.target.alive) { // homing a little (the Grand Duc's rockets)
         const dx = r.target.x - r.x, dz = r.target.z - r.z, d = Math.hypot(dx, dz) || 1, sp = Math.hypot(r.vx, r.vz);
-        r.vx += (dx / d * sp - r.vx) * dt * 0.9; r.vz += (dz / d * sp - r.vz) * dt * 0.9;
+        const k = r.from && r.from.local ? 2.6 : 0.9; r.vx += (dx / d * sp - r.vx) * dt * k; r.vz += (dz / d * sp - r.vz) * dt * k; // (21 nov.) a player's rocket locks on firmly (aim assist)
       }
       const sp = Math.hypot(r.vx, r.vz), ux = r.vx / sp, uz = r.vz / sp, step_ = sp * dt;
       const wall = segHit(r.x, r.z, ux, uz, step_ + 0.5);

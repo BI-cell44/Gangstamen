@@ -170,6 +170,12 @@
   let UPG = UPG_BASE;
   const gEl = document.createElement('div'); gEl.id = 'garage'; gEl.hidden = true; document.body.append(gEl);
   const upg = () => settings.upg || (settings.upg = { engine: 0, armor: 0, guns: 0, paint: 0 });
+  // (21 nov., audit UX) the next improvement in reach, shown beside the respect in solo: what the respect is for
+  function nextBuy() {
+    const u = upg(); let best = null;
+    for (const o of UPG_BASE) if (o.max && (u[o.k] || 0) < o.max) { const cost = o.cost(u[o.k] || 0); if (!best || cost < best.cost) best = { name: o.name, cost }; }
+    return best;
+  }
   function applyUpgrades(L) {
     if (!L || (mode !== 'solo')) return;
     const u = upg(), c = L.car;

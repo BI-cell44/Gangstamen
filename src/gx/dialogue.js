@@ -23,7 +23,7 @@
     dlgEl.querySelector('.dlgFace').style.background = c.col;
     dlgEl.querySelector('.dlgWho b').textContent = c.name; dlgEl.querySelector('.dlgWho span').textContent = c.role;
     dlgEl.querySelector('.dlgTxt').textContent = ''; dq.shown = 0; dq.t = 0; dq.text = text;
-    if (who !== 'toi') say(text, { pitch: c.pitch, rate: c.rate, cancel: true });
+    if (who !== 'toi') say(text, { pitch: c.pitch, rate: c.rate, cancel: true, nosub: true });
   }
   function dlgAdvance() { if (!dq) return; if (dq.shown < dq.text.length) { dq.shown = dq.text.length; dlgEl.querySelector('.dlgTxt').textContent = dq.text; } else nextLine(); }
   function dlgSkip() { if (!dq) return; dq.i = dq.lines.length; nextLine(); }

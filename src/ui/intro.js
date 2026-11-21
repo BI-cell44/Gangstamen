@@ -213,7 +213,7 @@ const Intro = (() => {
     sfx.arr(4); sfx.engine(0, false);
     shot = -1; state = 'off'; document.body.classList.remove('cine');
   }
-  function showMenu() { $('title').hidden = false; const f = $('startFree'), b = HD && f && !f.hidden ? f : $('start'); if (fromMenu) showView('vOpt'); else if (b) b.focus(); }
+  function showMenu() { $('title').hidden = false; const f = $('startFree'), b = HD && f && !f.hidden ? f : $('start'); if (fromMenu) showView('vOpt'); else { showView('vMain'); if (b) b.focus(); } }
   function finish() { // back to the menu through black
     if (state === 'off') return;
     const playing = state === 'play';
@@ -234,6 +234,7 @@ const Intro = (() => {
   function splash() { state = 'splash'; fromMenu = false; $('title').hidden = true; el.hidden = false; el.className = 'splash'; document.body.classList.add('cine'); }
   function play(menu) {
     sfx.init(); build();
+    if (!settings.introSeen) { settings.introSeen = true; saveSettings(); }
     fromMenu = !!menu; $('title').hidden = true; el.hidden = false; el.className = 'play'; document.body.classList.add('cine');
     saved = saved || rivals; for (const r of saved) r.mesh.visible = false; rivals = cars;
     for (const pk of pickups) pk.mesh.visible = false;
@@ -244,7 +245,9 @@ const Intro = (() => {
   }
   // any key or click starts it; Escape, Enter, Space, a click or a pad button skips it
   function key(e) {
-    if (state === 'splash') { play(false); return true; }
+    // (21 nov., audit UX) the cinematic plays in full the first time only; afterwards a key opens the menu (« Revoir l’intro »
+    // in the options plays it again)
+    if (state === 'splash') { if (settings.introSeen && !window.__introT) { sfx.init(); finish(); } else play(false); return true; }
     if (state === 'play' && performance.now() - t0 > 500 && (!e || !e.code || ['Escape', 'Enter', 'Space', 'NumpadEnter'].includes(e.code))) { finish(); return true; }
     return state !== 'off';
   }

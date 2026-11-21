@@ -3,6 +3,10 @@ let fromPause = false; // (16 nov., user) Options and Controls opened from the p
 function showView(id) {
   if (fromPause && id === 'vMain') { fromPause = false; $('title').hidden = true; pauseEl.hidden = false; $('pResume').focus(); return; }
   document.querySelectorAll('#title .view').forEach(v => { v.hidden = v.id !== id; });
+  // (21 nov., audit UX) a small title in the sub-menus, so the choices come up without scrolling; and a « Commence ici » on the
+  // free driving until a first game is played
+  $('title').classList.toggle('sub', id !== 'vMain');
+  if (id === 'vMain') { const b = $('startFree') && !$('startFree').hidden ? $('startFree') : $('start'); document.querySelectorAll('#title .here').forEach(e => e.remove()); if (b && !settings.played) b.insertAdjacentHTML('afterbegin', '<span class="here">Commence ici</span>'); }
   const f = document.querySelector('#' + id + ' .big, #' + id + ' .mbtn, #' + id + ' input'); if (f) f.focus();
   if (id === 'vOnline') { $('nick').value = settings.nick || ''; renderGames(); }
   if (id === 'vCamp' && gx) gx.renderCampaign();
@@ -148,17 +152,19 @@ function initOptions() {
   $('optIntro').checked = settings.intro !== false; $('optIntro').addEventListener('change', e => { settings.intro = e.target.checked; saveSettings(); });
   $('introPlay').addEventListener('click', () => Intro.play(true));
   $('optRetro').checked = retro; $('optRetro').addEventListener('change', () => toggleRetro());
+  const segOpt = (id, key, after) => { const bs = document.querySelectorAll('#' + id + ' button'), show = () => bs.forEach(b => b.classList.toggle('on', +b.dataset.v === +settings[key]));
+    bs.forEach(b => b.addEventListener('click', () => { settings[key] = +b.dataset.v; saveSettings(); show(); if (after) after(); })); show(); };
+  segOpt('aimSeg', 'aim'); segOpt('motionSeg', 'motion');
   if (HD) {
     $('retroRow').hidden = true; $('hdRow').hidden = false;
     document.querySelectorAll('.hdOnly').forEach(r => { r.hidden = false; });
     document.querySelectorAll('#todSeg button').forEach(b => b.addEventListener('click', () => { settings.tod = b.dataset.v; saveSettings(); applyAmbience(); }));
     document.querySelectorAll('#rainSeg button').forEach(b => b.addEventListener('click', () => { settings.rain = b.dataset.v; saveSettings(); applyAmbience(); }));
-    const segOpt = (id, key, after) => { const bs = document.querySelectorAll('#' + id + ' button'), show = () => bs.forEach(b => b.classList.toggle('on', +b.dataset.v === +settings[key]));
-      bs.forEach(b => b.addEventListener('click', () => { settings[key] = +b.dataset.v; saveSettings(); show(); if (after) after(); })); show(); };
     segOpt('shSeg', 'shadows', applyPerf); segOpt('distSeg', 'dist', applyPerf); segOpt('trafSeg', 'traffic'); segOpt('trafNetSeg', 'trafficNet');
     { const bs = document.querySelectorAll('#physSeg button'), show = () => bs.forEach(b => b.classList.toggle('on', b.dataset.v === settings.physics));
       bs.forEach(b => b.addEventListener('click', () => { settings.physics = b.dataset.v; saveSettings(); show(); })); show(); }
     $('optAutoQ').checked = settings.autoQ !== false; $('optAutoQ').addEventListener('change', e => { settings.autoQ = e.target.checked; saveSettings(); });
+    $('optSubs').checked = settings.subs !== false; $('optSubs').addEventListener('change', e => { settings.subs = e.target.checked; saveSettings(); });
     $('optVoices').checked = settings.voices !== false; $('optVoices').addEventListener('change', e => { settings.voices = e.target.checked; saveSettings(); try { if (!e.target.checked) speechSynthesis.cancel(); } catch (x) { } });
     const seg = document.querySelectorAll('#hdSeg button'), show = () => seg.forEach(b => b.classList.toggle('on', +b.dataset.q === hd.quality));
     seg.forEach(b => b.addEventListener('click', () => { if (hd.safe) hd.setSafe(0); settings.hdSafe = 0; hd.setQuality(+b.dataset.q); settings.hdq = hd.quality; saveSettings(); show(); }));

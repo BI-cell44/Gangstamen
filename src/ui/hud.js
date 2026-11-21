@@ -158,6 +158,8 @@ function updateHud(dt) {
     { const sp = $('speed').lastChild, t = c.phys && useRealPhysics(c) ? 'KM/H · ' + c.phys.gear + (c.phys.gear === 1 ? 're' : 'e') : 'KM/H'; if (sp.textContent !== t) sp.textContent = t; } // gear in the realistic mode
     $('hp').style.width = c.hp + '%';
     $('respect').textContent = L.respect; $('kills').textContent = L.kills;
+    if (HD && gx && gx.nextBuy) { const nb = mode === 'solo' && !gx.gmode ? gx.nextBuy() : null, el = $('nextBuy'), t = nb ? (L.respect >= nb.cost ? '✔ garage : ' + nb.name : nb.name + ' · ' + nb.cost) : '';
+      if (el.textContent !== t) { el.textContent = t; el.hidden = !t; el.classList.toggle('ok', !!nb && L.respect >= nb.cost); } }
     L.streetAcc += dt; if (L.streetAcc > 0.25) { L.streetAcc = 0; const s = streetAt(c.x, c.z); if (s !== L.street) { L.street = s; $('street').textContent = s; } }
     drawMinimapOn($('minimap'), c);
   } else {

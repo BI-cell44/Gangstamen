@@ -5,6 +5,8 @@ const isBot = c => !!c && c.botIndex !== undefined && !c.friendly;
 function markFight(c, foe) { if (c && c.local && isBot(foe)) { c.lastBot = foe; c.lastBotT = performance.now(); } }
 function applyHit(shooter, target, dmg, ex, ez) {
   spawnFx(ex, 1.2, ez, 0.35, 0xffe28a, 0.15, 0, 1);
+  // (21 nov., audit UX) the player feels each bullet that lands: a tick, and the target diamond flashes (aimMarks)
+  if (shooter && shooter.local && target && (target.botIndex !== undefined || target.remote || target.npc === 'police' || (target.local && target !== shooter))) { shooter.hitMarkT = performance.now(); sfx.tick(); }
   markFight(shooter, target); markFight(target, shooter);
   if (target.npc) return gx.damage(target, dmg, shooter);
   if (target.local) return damage(target, dmg, shooter);
@@ -29,8 +31,102 @@ function tracerEnd(mx, my, mz, ex, ez, hitCar) {
   if (hitCar) return hitCar.mesh.position.y + 0.75;
   return surfaceH(ex, ez) + Math.max(0.4, my - surfaceH(mx, mz));
 }
+// (21 nov., audit UX) aim assist: a player's bullets bend toward the enemy nearest the line of fire, inside a cone that
+// the settings set (none, light 7°, strong 14°; light at most when playing against other people), never through a wall.
+// Before, a bullet hit only a car within 1.9 m of the straight line ahead: luck more than skill on a keyboard
+const AIM_CONE = [0, 0.12, 0.24];
+function aimLevel() { const s = settings.aim ?? 2; return mode === 'solo' ? s : Math.min(s, 1); }
+function aimTarget(c, range = 95, cone = AIM_CONE[aimLevel()]) {
+  if (!cone || !c || !c.local) return null;
+  const [fx, fz] = c.fwd; let best = null, bs = 1e9;
+  for (const t of [...rivals, ...allPlayerCars()]) {
+    if (t === c || !t.alive || !enemies(c, t)) continue;
+    const dx = t.x - c.x, dz = t.z - c.z, d = Math.hypot(dx, dz); if (d < 3 || d > range) continue;
+    const ang = Math.acos(Math.max(-1, Math.min(1, (dx * fx + dz * fz) / d))); if (ang > cone) continue;
+    if (segHit(c.x, c.z, dx / d, dz / d, d) < d - 2.5) continue; // a wall between
+    const s = ang / cone + 0.6 * d / range; if (s < bs) { bs = s; best = t; }
+  }
+  return best;
+}
+// the yellow diamond over each local player's assist target (one sprite per screen slot, hidden when there is none)
+const AIM_SPR = []; let _aimTex = null;
+function aimMarks() {
+  for (const s of AIM_SPR) s.visible = false;
+  if (!started) return;
+  for (const L of locals) {
+    const c = L.car; c.aimT = c.alive && !(gx && gx.blocking) ? aimTarget(c) : null; const t = c.aimT; if (!t) continue;
+    let s = AIM_SPR[L.slot];
+    if (!s) {
+      if (!_aimTex) { const cv = document.createElement('canvas'); cv.width = cv.height = 64; const g = cv.getContext('2d'); g.lineJoin = 'round';
+        g.beginPath(); g.moveTo(32, 6); g.lineTo(56, 32); g.lineTo(32, 58); g.lineTo(8, 32); g.closePath(); g.lineWidth = 12; g.strokeStyle = 'rgba(13,10,20,.85)'; g.stroke(); g.lineWidth = 6; g.strokeStyle = '#ffd23f'; g.stroke();
+        _aimTex = new THREE.CanvasTexture(cv); if (HD) _aimTex.encoding = THREE.sRGBEncoding; }
+      s = AIM_SPR[L.slot] = new THREE.Sprite(new THREE.SpriteMaterial({ map: _aimTex, depthTest: false, transparent: true, fog: false }));
+      s.renderOrder = 20; s.scale.set(1.8, 1.8, 1); s.userData.hdLinear = true; scene.add(s);
+    }
+    const fl = performance.now() - (c.hitMarkT || 0) < 130;
+    s.scale.setScalar(fl ? 2.6 : 1.8); s.material.color.setRGB(1, fl ? 0.4 : 1, fl ? 0.35 : 1);
+    s.visible = true; s.position.set(t.x, (t.mesh ? t.mesh.position.y : surfaceH(t.x, t.z)) + 2.9 + Math.sin(performance.now() / 160) * 0.12, t.z);
+  }
+  feedbackHud();
+}
+// (21 nov., audit UX) arrows on the edge of each screen toward the three nearest enemies out of sight, with their distance
+const _ofv = new THREE.Vector3();
+function offscreenArrows(L, el, vp) {
+  const c = L.car, list = [];
+  if (c.alive && L.cam && !(gx && gx.blocking)) for (const t of [...rivals, ...allPlayerCars()]) {
+    if (!t || t === c || !t.alive || t.npc || !enemies(c, t)) continue;
+    const d = Math.hypot(t.x - c.x, t.z - c.z); if (d > 230) continue;
+    _ofv.set(t.x, (t.mesh ? t.mesh.position.y : surfaceH(t.x, t.z)) + 1, t.z).project(L.cam);
+    const behind = _ofv.z > 1; if (!behind && Math.abs(_ofv.x) < 0.95 && Math.abs(_ofv.y) < 0.92) continue;
+    let sx = _ofv.x, sy = -_ofv.y; if (behind) { sx = -sx; sy = -sy; if (Math.abs(sy) < 0.2) sy = 0.6; }
+    list.push({ d, a: Math.atan2(sy * vp.h, sx * vp.w) });
+  }
+  list.sort((p, q) => p.d - q.d);
+  let i = 0;
+  for (const o of list.slice(0, 3)) {
+    let ar = el.children[2 + i]; if (!ar) { ar = document.createElement('b'); ar.className = 'ofs'; ar.innerHTML = '<i></i><span></span>'; el.append(ar); }
+    ar.hidden = false; i++;
+    const x = vp.w / 2 + Math.cos(o.a) * (vp.w / 2 - 46), y = vp.h / 2 + Math.sin(o.a) * (vp.h / 2 - 46);
+    ar.style.transform = 'translate(' + x.toFixed(0) + 'px,' + y.toFixed(0) + 'px)';
+    ar.firstChild.style.transform = 'rotate(' + o.a.toFixed(2) + 'rad)';
+    ar.lastChild.textContent = Math.round(o.d) + ' m';
+    ar.style.opacity = (o.d < 60 ? 1 : 1 - (o.d - 60) / 240).toFixed(2);
+  }
+  for (let k = 2 + i; k < el.children.length; k++) el.children[k].hidden = true;
+}
+// (21 nov., audit UX) per screen: a red arc on the side the hits come from (fades in 1 s), and a red pulsing edge with an
+// alarm when the car is about to be wrecked (under 25 %)
+let _fbOn = false, _helpT0 = 0, _idleT = 0;
+function feedbackHud() {
+  let root = document.getElementById('fbk');
+  if (!root) { root = document.createElement('div'); root.id = 'fbk'; document.body.append(root); }
+  const now = performance.now();
+  if (started && !_fbOn) _helpT0 = now; _fbOn = started;
+  const c0 = locals[0] && locals[0].car;
+  if (c0 && Math.abs(c0.speed || 0) > 3) _idleT = now;
+  document.body.classList.toggle('helpOff', started && now - _helpT0 > 25000 && now - _idleT < 6000);
+  for (const el of root.children) el.dataset.used = '';
+  if (!started) { root.hidden = true; return; } root.hidden = false;
+  for (const L of locals) {
+    let el = root.querySelector('[data-slot="' + L.slot + '"]');
+    if (!el) { el = document.createElement('div'); el.className = 'fbv'; el.dataset.slot = L.slot; el.innerHTML = '<i class="arc"></i><i class="low"></i>'; root.append(el); }
+    el.dataset.used = '1';
+    const vp = L.vp || { x: 0, y: 0, w: innerWidth, h: innerHeight }, key = vp.x + ',' + vp.y + ',' + vp.w + ',' + vp.h;
+    if (el.dataset.key !== key) { el.dataset.key = key; Object.assign(el.style, { left: vp.x + 'px', top: vp.y + 'px', width: vp.w + 'px', height: vp.h + 'px' }); }
+    const c = L.car, arc = el.firstChild, low = el.lastChild, a = 1 - (now - (L.hitT || -1e9)) / 1000;
+    if (a > 0) { const [fx, fz] = c.fwd, rel = Math.atan2(Math.sin(L.hitDir) * fz - Math.cos(L.hitDir) * fx, Math.sin(L.hitDir) * fx + Math.cos(L.hitDir) * fz); arc.style.opacity = a.toFixed(2); arc.style.transform = 'translate(-50%,-50%) rotate(' + (-rel).toFixed(3) + 'rad)'; }
+    else if (arc.style.opacity !== '0') arc.style.opacity = '0';
+    const danger = c.alive && c.hp < 25 && !(gx && gx.blocking);
+    low.style.opacity = danger ? (0.55 + 0.45 * Math.sin(now / 180)).toFixed(2) : '0';
+    if (danger && L.slot === 0 && now - (L.alarmT || 0) > 1400) { L.alarmT = now; sfx.alarm(); }
+    offscreenArrows(L, el, vp);
+  }
+  for (const el of [...root.children]) if (!el.dataset.used) el.remove();
+}
 function shoot(from, targets, dmg, range, spread, enemy) {
-  const [fx, fz] = from.fwd;
+  let [fx, fz] = from.fwd;
+  const aim = from.local ? (from.aimT && from.aimT.alive ? from.aimT : aimTarget(from, range)) : null;
+  if (aim) { const ax = aim.x - from.x, az = aim.z - from.z, d = Math.hypot(ax, az) || 1; fx = ax / d; fz = az / d; spread *= 0.5; }
   const a = (Math.random() - 0.5) * spread, dx = fx * Math.cos(a) - fz * Math.sin(a), dz = fx * Math.sin(a) + fz * Math.cos(a);
   const [ox, oy, oz] = muzzleOf(from);
   let best = segHit(ox, oz, dx, dz, range), hitCar = null;
@@ -69,7 +165,7 @@ function damage(c, d, by) {
   markFight(c, by); if (by && by.local) markFight(by, c);
   if (c.local && gx && gx.mission && gx.mission.live && gx.campDiff) d *= gx.campDiff().hurt; // (15 nov.) campaign difficulty
   c.hp -= d * (c.armor || 1) * (CAT_DMG[c.style] || 1); // (cycle 13) the van takes less, the coupé more
-  if (c.local) { sfx.hit(); rumbleFor(c.owner, 0.35, 0.6, 90); }
+  if (c.local) { sfx.hit(); rumbleFor(c.owner, 0.35, 0.6, 90); if (by && by !== c && by.x !== undefined && c.owner) { c.owner.hitDir = Math.atan2(by.x - c.x, by.z - c.z); c.owner.hitT = performance.now(); } }
   if (c.hp > 0) return;
   c.alive = false; c.hp = 0; explode(c.x, c.z);
   c.mesh.userData.mBody.color.setHex(0x1a1414); c.mesh.userData.mPaint.color.setHex(0x1a1414);
