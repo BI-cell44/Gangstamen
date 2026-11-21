@@ -196,7 +196,7 @@ class Car {
   }
   get speed() { return Math.hypot(this.vx, this.vz); }
   get fwd() { return [-Math.sin(this.h), -Math.cos(this.h)]; }
-  place(x, z, h) { this.x = x; this.z = z; this.h = h; this.vx = this.vz = 0; this.yb = undefined; this.yv = 0; this.air = 0; this.nitro = 0; this.sink = 0; this._sp = undefined; this._ap = undefined; this._pe = this._re = this._pev = this._rev = this.sq = this.sqv = 0; if (this.phys) { this.phys.r = 0; this.phys.gear = 1; this.phys.ax = 0; } this.sync(); }
+  place(x, z, h) { this.x = x; this.z = z; this.h = h; this.vx = this.vz = 0; this.yb = undefined; this.yv = 0; this.air = 0; this.nitro = 0; this.sink = 0; this._sp = undefined; this._ap = undefined; this._pe = this._re = this._pev = this._rev = this.sq = this.sqv = 0; this.jt = null; if (this.phys) { this.phys.r = 0; this.phys.gear = 1; this.phys.ax = 0; } this.sync(); }
   sync() {
     const [fx, fz] = this.fwd, rx = -fz, rz = fx, wb = this.bus ? 4.4 : 1.7; // (16 nov., user) the bus's axles are far apart: measured there, its ends no longer dig into a bump
     let hf = surfaceH(this.x + fx * wb, this.z + fz * wb), hb = surfaceH(this.x - fx * wb, this.z - fz * wb);
@@ -233,7 +233,7 @@ class Car {
       this._pev += (-150 * this._pe - 13 * this._pev) * sdt; this._pe += this._pev * sdt;
       this._rev += (-170 * this._re - 15 * this._rev) * sdt; this._re += this._rev * sdt;
       this.sqv = (this.sqv || 0) + (-190 * (this.sq || 0) - 17 * (this.sqv || 0)) * sdt; this.sq = Math.max(-0.12, Math.min(0.32, (this.sq || 0) + this.sqv * sdt));
-      if (Math.abs(this._pe) + Math.abs(this._pev) * 0.05 < 1e-3 && Math.abs(this._re) + Math.abs(this._rev) * 0.05 < 1e-3 && Math.abs(this.sq) + Math.abs(this.sqv) * 0.05 < 1e-3) this._pe = this._re = this._pev = this._rev = this.sq = this.sqv = 0;
+      if (Math.abs(this._pe) + Math.abs(this._pev) * 0.05 < 1e-3 && Math.abs(this._re) + Math.abs(this._rev) * 0.05 < 1e-3 && Math.abs(this.sq) + Math.abs(this.sqv) * 0.05 < 1e-3) this._pe = this._re = this._pev = this._rev = this.sq = this.sqv = 0; this.jt = null;
     }
     this.mesh.position.set(this.x, base - (this.sq || 0), this.z);
     this.mesh.rotation.set(gp + (this._pe || 0), this.h, groll + (this._re || 0), 'YXZ');
@@ -244,7 +244,9 @@ class Car {
 function sinking(c, dt) {
   c.sink += dt; const k = Math.exp(-4.5 * dt); // the water stops it within a few metres c.vx *= k; c.vz *= k; c.x += c.vx * dt; c.z += c.vz * dt; c.air = 0; c.yv = 0;
   if (Math.random() < dt * 9) spawnFx(c.x + (Math.random() - 0.5) * 2.4, WATER_Y + 0.2, c.z + (Math.random() - 0.5) * 3.4, 0.35, 0xe8f4f8, 0.25, 2, 1.2); // bubbles
-  if (c.sink > 3.2 && c.alive) { c.alive = false; c.hp = 0; if (c.owner) c.owner.deadT = 1.4; if (!c.local) { c.wreck = 1.5; c.dead = 0; c.mesh.visible = false; c.vx = c.vz = 0; } } // a bot under water: gone, then back as a wreck would
+  if (c.sink > 3.2 && c.alive) { c.alive = false; c.hp = 0;
+    // (21 nov., audit UX) a Rapace pushed or shot into the Loire is the player's KO
+    if (c.botIndex !== undefined && c.lastHitBy && c.lastHitBy.alive && performance.now() - (c.lastHitT || 0) < 8000 && typeof credit === 'function') credit(c.lastHitBy, 150, botLabel(c) + ' : plongeon dans la Loire'); if (c.owner) c.owner.deadT = 1.4; if (!c.local) { c.wreck = 1.5; c.dead = 0; c.mesh.visible = false; c.vx = c.vz = 0; } } // a bot under water: gone, then back as a wreck would
   return 0;
 }
 function drive(c, inp, dt) {
@@ -307,8 +309,12 @@ function planarArcade(c, inp, dt) {
   let MAX = c.maxV || (c.player ? 44 : (c.ai && c.ai.mode === 'hunt' ? 36 : 15));
   const boost = c.nitro > 0 ? 1.6 : 1; MAX *= c.nitro > 0 ? 1.3 : 1;
   const grip = c.air > 0.25 ? 0.08 : 1; // airborne: no traction
+  // (21 nov., audit UX) quick half-turn: backing up fast, handbrake and full lock spin the car round in half a second
+  // (a J-turn); the speed goes on in the same direction, so the car comes out of it driving forward
+  if (c.jt) { const d = Math.min(c.jt.left, 6.5 * dt); c.h += c.jt.dir * d; c.jt.left -= d; c.vx *= Math.exp(-0.8 * dt); c.vz *= Math.exp(-0.8 * dt); c.steer = 0; if (c.jt.left <= 0) c.jt = null; return; }
   const [fx, fz] = c.fwd, rx = -fz, rz = fx; // right vector
   let vf = c.vx * fx + c.vz * fz, vr = c.vx * rx + c.vz * rz;
+  if (c.player && vf < -6 && inp.hb && Math.abs(inp.s) > 0.5 && grip === 1) { c.jt = { left: Math.PI, dir: inp.s > 0 ? 1 : -1 }; return; }
   const acc = (c.accK || 1) * boost * grip;
   const T = c.tune || {}; // garage settings (cycle 12)
   if (inp.t > 0) { if (vf < MAX) vf += inp.t * (vf < 0 ? 26 : Math.max(2, 15 - vf * 0.12 * 44 / MAX)) * acc * dt; }

@@ -13,6 +13,7 @@ function startGame(kind, sub) {
   if (kind === 'split') teamMode = !!settings.teams;
   else if (kind === 'solo') teamMode = false;
   if (kind !== 'online') { if (soloKind === 'free') setupMatch(0, 0); else setupMatch(settings.goal, settings.limit); }
+  chiefKo = 0; for (const r of rivals) if (r.chief) { r.chief = 'x'; chiefCheck(r); r.hp = 60; }
   document.body.classList.toggle('teams', teamMode);
   // (19 nov., user) where the game is played: the menu's places (split screen, online host), the host's for a guest
   if (kind === 'split' || (kind === 'online' && Net.isHost)) choosePlaces(); else if (kind === 'online') choosePlaces(Net.places || [-1, 0, 3, 1]); else gamePlaces = null;
@@ -40,6 +41,7 @@ function startGame(kind, sub) {
   else flashAll('Chasse aux Rapaces', locals.length > 1 ? 'Chacun pour soi · les Rapaces rôdent' : 'Boulevard de la Liberté · les Rapaces rôdent');
   if (gx) gx.start(kind);
   if (gx && gx.SpawnMap && soloKind === 'free') gx.SpawnMap.show();
+  statsReset();
   try { renderer.domElement.focus(); } catch (e) { }
 }
 

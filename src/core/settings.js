@@ -3,7 +3,7 @@ const SETTINGS_KEY = 'gangstamen.settings.v1';
 const settings = Object.assign({
   ctl: ['kb1', 'kb2', 'kb3', 'kb4'], soloCtl: 'kb1+pad0', nPlayers: 2,
   music: 0.7, fx: 0.8, amb: 0.8, rumble: true, retro: true, nick: '',
-  hdq: isTouch ? 0 : 2, hdSafe: 0, tctl0: 'touch', autoQ: true, physics: 'arcade', tod: 'sunset', rain: '0', traffic: 2, trafficNet: 1, aim: 2, motion: 1, voices: true, subs: true, shadows: 1, dist: 2, intro: true, introSeen: false, played: false, teams: false, team: [0, 1, 0, 1], netTeams: false, netTeam: -1, goal: 20, limit: 10, campDiff: 1, goalCtf: 3, goalHill: 60, placeFfa: 0, placeHill: 0, placeRap: 3, placeChant: 1, raceLaps: 1, // physics 'real' = realistic mode (cycle 4), chosen in the options
+  hdq: isTouch ? 0 : 2, hdSafe: 0, tctl0: 'touch', autoQ: true, physics: 'arcade', tod: 'sunset', rain: '0', traffic: 2, trafficNet: 1, aim: 2, motion: 1, voices: true, subs: true, shadows: 1, dist: 2, intro: true, introSeen: false, played: false, guided: false, teams: false, team: [0, 1, 0, 1], netTeams: false, netTeam: -1, goal: 20, limit: 10, campDiff: 1, goalCtf: 3, goalHill: 60, placeFfa: 0, placeHill: 0, placeRap: 3, placeChant: 1, raceLaps: 1, // physics 'real' = realistic mode (cycle 4), chosen in the options
 }, (() => { try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); } catch (e) { return {}; } })());
 // (17 nov., user) end of a game in the HD modes (split screen and online): captures, hill points or laps instead of KO
 const MODE_GOALS = {

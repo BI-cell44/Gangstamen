@@ -6,7 +6,7 @@ function showView(id) {
   // (21 nov., audit UX) a small title in the sub-menus, so the choices come up without scrolling; and a « Commence ici » on the
   // free driving until a first game is played
   $('title').classList.toggle('sub', id !== 'vMain');
-  if (id === 'vMain') { const b = $('startFree') && !$('startFree').hidden ? $('startFree') : $('start'); document.querySelectorAll('#title .here').forEach(e => e.remove()); if (b && !settings.played) b.insertAdjacentHTML('afterbegin', '<span class="here">Commence ici</span>'); }
+  if (id === 'vMain') { const b = $('startFree') && !$('startFree').hidden ? $('startFree') : $('start'); document.querySelectorAll('#title .here').forEach(e => e.remove()); if (b && !settings.played) b.insertAdjacentHTML('afterbegin', '<span class="here">Commence ici</span>'); if (HD && gx && gx.dailyBox) gx.dailyBox(document.querySelector('#vMain .drvBox')); }
   const f = document.querySelector('#' + id + ' .big, #' + id + ' .mbtn, #' + id + ' input'); if (f) f.focus();
   if (id === 'vOnline') { $('nick').value = settings.nick || ''; renderGames(); }
   if (id === 'vCamp' && gx) gx.renderCampaign();

@@ -129,6 +129,7 @@
     else if (kind === 'rockets') a.rockets = Math.min(9, a.rockets + 3);
     else if (kind === 'shield') c.shield = 8;
     if (kind !== 'repair' && kind !== 'shield') L.weapon = kind;
+    L.puN = (L.puN || 0) + 1;
     sfx.pick(); flashFor(L, PU_NAME[kind][0], PU_NAME[kind][1]); rumbleFor(L, 0, 0.3, 80);
   }
   // special weapon: cycles with the next press when the current one is empty

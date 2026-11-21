@@ -76,7 +76,7 @@ function step(dt, now) {
     const c = L.car;
     if (c.alive) {
       const inp = paused ? { t: 0, s: 0, hb: true, fire: false } : readInput(L);
-      L.firing = inp.fire; L._inp = inp;
+      L.firing = inp.fire; L._inp = inp; if (L.st && !paused) L.st.dist += c.speed * dt;
       const imp = drive(c, inp, dt);
       const braking = inp.t < 0 && (c.vx * c.fwd[0] + c.vz * c.fwd[1]) > 0.5;
       c.mesh.userData.tail.emissive.setHex(braking ? 0xff2a2a : 0x400000);

@@ -57,6 +57,7 @@ function togglePause() {
   }
   paused = !paused; pauseEl.hidden = !paused; if (paused) $('pResume').focus();
   renderPauseAmb();
+  if (paused && HD && gx && gx.dailyBox && mode === 'solo') gx.dailyBox(pauseEl.querySelector('.card'));
   $('pMap').hidden = !(gx && gx.SpawnMap && mode === 'solo' && soloKind === 'free');
 }
 $('pMap').addEventListener('click', () => { paused = false; pauseEl.hidden = true; if (gx && gx.SpawnMap) gx.SpawnMap.show(); });

@@ -80,6 +80,7 @@ function radioHud() {
   $('radioName').textContent = on ? st.name : 'Radio coupée';
   $('radioSub').textContent = on ? (HD ? st.style + ' · M : station suivante' : 'M : couper') : key === 'mute' ? 'volume de la musique à 0 (menu)' : 'M : allumer';
   if (!first) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+  el.classList.remove('small'); clearTimeout(radioHud.t); radioHud.t = setTimeout(() => el.classList.add('small'), 5000);
 }
 setInterval(radioHud, 250);
 // (17 nov., user) the radio on touch screens: a tap on ♪

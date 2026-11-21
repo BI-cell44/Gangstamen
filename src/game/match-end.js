@@ -5,7 +5,14 @@ const resEl = $('results');
 function fmtClock(t) { t = Math.max(0, Math.ceil(t)); return ((t / 60) | 0) + ':' + String(t % 60).padStart(2, '0'); }
 function setupMatch(goal, limit) {
   Match.goal = goal; Match.limit = limit; Match.left = limit * 60; Match.over = false; Match.n = 0; Match.synced = false;
-  resEl.hidden = true; updateClock();
+  resEl.hidden = true; updateClock(); statsReset();
+}
+// (21 nov., audit UX) what each player did in the game, on the results card: distance, damage dealt, best KO, respect won
+function statsReset() { for (const L of locals) L.st = { dist: 0, dmg: 0, best: null, r0: L.respect || 0 }; }
+function statsHTML() {
+  return locals.map(L => { const s = L.st; if (!s) return '';
+    const who = locals.length > 1 ? '<b>Joueur ' + (L.slot + 1) + '</b> · ' : '';
+    return '<p class="resStat">' + who + (s.dist / 1000).toFixed(1).replace('.', ',') + ' km · ' + Math.round(s.dmg) + ' dégâts infligés · ' + Math.max(0, L.respect - s.r0) + ' respect gagné' + (s.best ? '<br><small>Meilleur coup : ' + s.best.text + ' (+' + s.best.p + ')</small>' : '') + '</p>'; }).join('');
 }
 function updateClock() {
   const el = $('clock'), parts = [];
@@ -48,6 +55,7 @@ function endMatch(title, sub) {
   Match.over = true; Match.title = String(title).slice(0, 60); Match.sub = String(sub).slice(0, 60);
   $('resTitle').textContent = Match.title; $('resSub').textContent = Match.sub;
   $('resTable').replaceChildren(boardTable(boardRows()));
+  { let el = $('resStats'); if (!el) { el = document.createElement('div'); el.id = 'resStats'; $('resTable').after(el); } el.innerHTML = statsHTML(); }
   const canRestart = mode !== 'online' || Net.isHost;
   $('resAgain').hidden = !canRestart; $('resWait').hidden = canRestart;
   paused = false; pauseEl.hidden = true; resEl.hidden = false; updateClock();
@@ -57,7 +65,7 @@ function endMatch(title, sub) {
 function rematch() { // everyone back to the start, scores to zero
   Match.over = false; Match.left = Match.limit * 60; Match.grace = 2; resEl.hidden = true;
   for (const L of locals) {
-    const c = L.car; L.respect = 0; L.kills = 0; L.deadT = 0;
+    const c = L.car; L.respect = 0; L.kills = 0; L.deadT = 0; L.st = { dist: 0, dmg: 0, best: null, r0: 0 };
     c.alive = true; c.hp = 100; c.vx = c.vz = 0;
     c.mesh.userData.mBody.color.setHex(c.mesh.userData.base); c.mesh.userData.mPaint.color.setHex(c.mesh.userData.paint);
     c.place(...(mode === 'online' ? onlineSpawn(L.team) : L.spawn));

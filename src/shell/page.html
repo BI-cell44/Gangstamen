@@ -48,7 +48,7 @@ body { background: var(--ink); color: var(--chalk); font-family: var(--body); ov
 #dash { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 #speed { font-family: var(--data); font-size: 64px; line-height: .8; color: var(--chalk); text-shadow: 3px 3px 0 var(--magenta); font-variant-numeric: tabular-nums; }
 #speed span { font-size: 22px; color: var(--sunset); text-shadow: none; margin-left: 4px; }
-.bar { width: 200px; height: 14px; border: 2px solid var(--chalk); background: rgba(0,0,0,.6); position: relative; }
+.bar { width: 200px; height: 18px; border: 2px solid var(--chalk); background: rgba(0,0,0,.6); position: relative; }
 .bar i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, var(--magenta), var(--sunset)); }
 .bar-label { font-family: var(--data); font-size: 16px; letter-spacing: .12em; color: var(--chalk); }
 
@@ -67,6 +67,8 @@ body { background: var(--ink); color: var(--chalk); font-family: var(--body); ov
 #radio .rt { display: flex; flex-direction: column; line-height: 1.05; }
 #radio b { font-weight: normal; font-size: 19px; letter-spacing: .05em; white-space: nowrap; }
 #radio small { font-size: 14px; letter-spacing: .08em; color: var(--sunset); white-space: nowrap; }
+/* (21 nov., audit UX) after 5 s the radio keeps only the name of the station */
+#radio.small small { display: none; } #radio.small .eq { height: 14px; width: 18px; } #radio.small b { font-size: 16px; }
 #radio.off { border-color: rgba(243,234,216,.35); opacity: .72; }
 #radio.off .eq i { animation: none; transform: scaleY(.15); background: rgba(243,234,216,.45); }
 #radio.off small { color: rgba(243,234,216,.6); }
@@ -88,6 +90,25 @@ body:not(.ingame) #subs, body.split #subs { display: none; }
 body.touch #subs { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); font-size: 15px; }
 #nextBuy { display: block; font-size: 11px; letter-spacing: .04em; opacity: .75; text-transform: none; margin-top: 2px; }
 #nextBuy.ok { color: #7dff9a; opacity: 1; }
+/* (21 nov., audit UX) the guide of the first game and the challenges of the day */
+#guide { bottom: calc(118px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; max-width: min(640px, 86vw); padding: 10px 12px 10px 16px; background: rgba(13,10,20,.82); border: 2px solid var(--sunset); border-radius: 8px; box-shadow: 4px 4px 0 #000; font: 600 17px/1.3 system-ui, sans-serif; color: var(--chalk); pointer-events: auto; }
+#guide small { font: 700 12px/1 var(--data); color: var(--sunset); white-space: nowrap; }
+#guide button { background: none; border: 0; color: var(--chalk); font-size: 22px; line-height: 1; cursor: pointer; padding: 0 4px; opacity: .7; }
+body.touch #guide { bottom: auto; top: calc(64px + env(safe-area-inset-top, 0px)); font-size: 14px; }
+body:not(.ingame) #guide { display: none; }
+.dailyBox { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; max-width: 300px; }
+.dailyBox .dly { position: relative; padding: 6px 10px 8px; background: rgba(13,10,20,.6); border: 1px solid rgba(243,234,216,.35); border-radius: 4px; overflow: hidden; }
+.dailyBox .dly b { display: block; font: 600 14px/1.25 system-ui, sans-serif; color: var(--chalk); }
+.dailyBox .dly small { font: 12px/1.2 var(--data); color: var(--sunset); }
+.dailyBox .dly i { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--sunset); }
+.dailyBox .dly.done { border-color: #7dff9a; } .dailyBox .dly.done b, .dailyBox .dly.done small { color: #7dff9a; } .dailyBox .dly.done i { background: #7dff9a; }
+#resStats .resStat { margin: 6px 0 0; font: 14px/1.4 system-ui, sans-serif; color: var(--chalk); } #resStats small { color: var(--sunset); }
+body.lowHp .bar { animation: hpBlink .5s steps(2) infinite; border-color: #ff4a3a; } @keyframes hpBlink { 50% { border-color: var(--chalk); } }
+body.lowHp .bar-label { color: #ff4a3a; }
+body.touch #ticker { top: 14%; }
+#stats .chip { transition: opacity .5s; } body.ingame #stats .chip:has(#respect, #kills):not(.fresh) { opacity: .55; }
+body:has(#pause:not([hidden])) #guide, body:has(#results:not([hidden])) #guide, body:has(#pause:not([hidden])) #fbk, body:has(#results:not([hidden])) #fbk { display: none; }
+.drvBox .dailyBox { gap: 4px; } .drvBox .dailyBox .dly { padding: 4px 8px 6px; } .drvBox .dailyBox .dly b { font-size: 13px; } .drvBox .dailyBox .dly small { font-size: 11px; }
 #help { transition: opacity .6s; }
 body.helpOff #help { opacity: 0; }
 #logo { display: none; } /* (21 nov., audit UX) the title is on the menu, no need for it over the game or behind the menus */
@@ -277,7 +298,7 @@ body.touch.joy #touch { align-items: flex-end; padding-bottom: calc(26px + env(s
 body.touch.joy #joy { width: 136px; height: 136px; flex: none; margin-bottom: 0; }
 body.touch.joy #touch .grp:last-child { display: grid; grid-template-columns: 66px 66px; grid-template-rows: 54px 72px; gap: 8px 10px; align-items: end; justify-items: center; }
 body.touch.joy #tRadio { grid-area: 1 / 1; align-self: end; }
-body.touch.joy #tSpec { grid-area: 1 / 2; width: 60px; height: 60px; font-size: 15px; padding: 0; }
+body.touch.joy #tSpec { grid-area: 1 / 2; width: 70px; height: 70px; font-size: 16px; padding: 0; }
 body.touch.joy #tHb { grid-area: 2 / 1; width: 66px; height: 66px; }
 body.touch.joy #tFire { grid-area: 2 / 2; width: 72px; height: 72px; font-size: 22px; border-color: var(--sunset); }
 body.touch #dash { bottom: calc(176px + env(safe-area-inset-bottom, 0px)); gap: 4px; }
@@ -537,6 +558,7 @@ body.cine #logo, body.cine #credit { display: none; }
       <div class="row"><span class="lab">Joueur 1 (solo / en ligne)</span><div class="cycle" id="soloCtl"></div></div>
       <div class="ctable" id="ctable"></div>
       <p class="fine">Les touches correspondent à des positions du clavier : sur un clavier AZERTY, le joueur 1 joue avec Z Q S D. En HD, la touche spéciale (E pour le joueur 1, B à la manette) lance les roquettes, pose les mines ou déclenche la nitro ramassées sur la carte ; A pour le joueur 1 (RB à la manette, ou un appui sur le compteur d’armes) passe à l’arme suivante. Touches communes : N jour/nuit (HD : moment de la journée) · B météo (HD) · M musique · P pixels · Tab classement en ligne · Échap menu.</p>
+      <p class="fine">Demi-tour rapide : en marche arrière lancée, frein à main et volant à fond, la voiture pivote d’un coup et repart en avant.</p>
       <div class="menu"><button class="mbtn" data-go="vMain">Retour</button></div>
     </section>
 

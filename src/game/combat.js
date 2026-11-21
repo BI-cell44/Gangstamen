@@ -156,15 +156,26 @@ function ghostShot(from, enemy) {
 }
 function credit(by, points, text) {
   if (!by || Match.over) return;
-  if (by.local) { const L = by.owner; L.respect += points; if (!(gx && gx.gmode)) L.kills++; flashFor(L, '+' + points + ' RESPECT', text); rumbleFor(L, 0.2, 0.5, 120); if (gx) { gx.dj('ko', L); gx.saveBank(L); } }
+  if (by.local) { const L = by.owner;
+    // (21 nov., audit UX) style pays: a KO while sliding, flying or with the police on your tail is worth more, and is named
+    const st = [];
+    if ((by.drift || 0) > 0.3) st.push(['en dérapage', 50]);
+    if ((by.air || 0) > 0.3) st.push(['en plein vol', 80]);
+    if ((L.heat || 0) > 0 && mode === 'solo') st.push(['sous les gyrophares', 60]);
+    for (const [, p] of st) points += p;
+    if (st.length) text += ' · ' + st.map(s => s[0]).join(', ') + ' !';
+    if (L.st && (!L.st.best || points > L.st.best.p)) L.st.best = { p: points, text };
+    L.respect += points; L.koN = (L.koN || 0) + 1; if (!(gx && gx.gmode)) L.kills++; flashFor(L, '+' + points + ' RESPECT', text); rumbleFor(L, 0.2, 0.5, 120); if (gx) { gx.dj('ko', L); gx.saveBank(L); } }
 }
 function damage(c, d, by) {
   if (c.npc) return gx.damage(c, d, by);
   if (c.alive && c.shield > 0 && gx && gx.shieldHit) gx.shieldHit(c, by && by.x !== undefined ? by : null);
   if (!c.alive || c.shield > 0) return;
   markFight(c, by); if (by && by.local) markFight(by, c);
+  if (by && by.local && c.botIndex !== undefined) { c.lastHitBy = by; c.lastHitT = performance.now(); }
   if (c.local && gx && gx.mission && gx.mission.live && gx.campDiff) d *= gx.campDiff().hurt; // (15 nov.) campaign difficulty
   c.hp -= d * (c.armor || 1) * (CAT_DMG[c.style] || 1); // (cycle 13) the van takes less, the coupé more
+  if (by && by.local && by !== c && by.owner && by.owner.st) by.owner.st.dmg += Math.min(d, c.hp + d);
   if (c.local) { sfx.hit(); rumbleFor(c.owner, 0.35, 0.6, 90); if (by && by !== c && by.x !== undefined && c.owner) { c.owner.hitDir = Math.atan2(by.x - c.x, by.z - c.z); c.owner.hitT = performance.now(); } }
   if (c.hp > 0) return;
   c.alive = false; c.hp = 0; explode(c.x, c.z);
@@ -181,7 +192,7 @@ function damage(c, d, by) {
     if (mode === 'online') feed((settings.nick || 'Vous') + (who ? ' démoli par ' + who : ' s’est planté'));
   } else if (c.botIndex !== undefined) {
     c.wreck = 14;
-    if (by && by.local) credit(by, 100, botLabel(c) + ' au tapis');
+    if (by && by.local) credit(by, c.chief ? 400 : 100, c.chief ? c.chief + ' est tombé !' : botLabel(c) + ' au tapis');
     else if (by && by.remotePeer && Net.isHost) Net.emit('bko', { by: by.remotePeer, i: c.botIndex });
   }
 }

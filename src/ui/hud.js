@@ -55,7 +55,10 @@ function drawMinimapOn(cv, me) {
   mg.translate(-(me.x + mapC.ox), -(me.z + mapC.oz));
   mg.drawImage(mapC, 0, 0);
   for (const pk of pickups) if (pk.on) { mg.fillStyle = '#7be07b'; mg.fillRect(pk.x + mapC.ox - 4, pk.z + mapC.oz - 4, 8, 8); }
-  for (const r of rivals) { mg.fillStyle = !r.alive ? '#555' : teamMode ? TEAMS[r.team].css : '#ff3b3b'; mg.beginPath(); mg.arc(r.x + mapC.ox, r.z + mapC.oz, 6, 0, Math.PI * 2); mg.fill(); }
+  // (21 nov., audit UX) not by colour alone: enemies are diamonds, team-mates rounds; a chief of the Rapaces has a gold ring
+  for (const r of rivals) { const x = r.x + mapC.ox, z = r.z + mapC.oz, foe = r.alive && enemies(me, r); mg.fillStyle = !r.alive ? '#555' : teamMode ? TEAMS[r.team].css : '#ff3b3b'; mg.beginPath();
+    if (foe) { mg.moveTo(x, z - 8); mg.lineTo(x + 7, z); mg.lineTo(x, z + 8); mg.lineTo(x - 7, z); mg.closePath(); } else mg.arc(x, z, 6, 0, Math.PI * 2);
+    mg.fill(); if (r.chief && r.alive) { mg.strokeStyle = '#ffcf3a'; mg.lineWidth = 3; mg.beginPath(); mg.arc(x, z, 12, 0, Math.PI * 2); mg.stroke(); } }
   if (gx) gx.minimap(me, (c, colr) => { mg.fillStyle = colr; mg.beginPath(); mg.arc(c.x + mapC.ox, c.z + mapC.oz, 6, 0, Math.PI * 2); mg.fill(); });
   for (const c of allPlayerCars()) {
     if (c === me) continue;
@@ -156,8 +159,9 @@ function updateHud(dt) {
     const L = locals[0], c = L.car;
     $('speed').firstChild.nodeValue = Math.round(c.speed * 3.6);
     { const sp = $('speed').lastChild, t = c.phys && useRealPhysics(c) ? 'KM/H · ' + c.phys.gear + (c.phys.gear === 1 ? 're' : 'e') : 'KM/H'; if (sp.textContent !== t) sp.textContent = t; } // gear in the realistic mode
-    $('hp').style.width = c.hp + '%';
-    $('respect').textContent = L.respect; $('kills').textContent = L.kills;
+    $('hp').style.width = c.hp + '%'; document.body.classList.toggle('lowHp', c.alive && c.hp < 25);
+    // (21 nov., audit UX) the respect and KO frames fade when nothing changes, and light up when they move
+    for (const [id, v] of [['respect', L.respect], ['kills', L.kills]]) { const e = $(id); if (e.textContent !== String(v)) { e.textContent = v; e.parentNode.classList.add('fresh'); clearTimeout(e._ft); e._ft = setTimeout(() => e.parentNode.classList.remove('fresh'), 4000); } }
     if (HD && gx && gx.nextBuy) { const nb = mode === 'solo' && !gx.gmode ? gx.nextBuy() : null, el = $('nextBuy'), t = nb ? (L.respect >= nb.cost ? '✔ garage : ' + nb.name : nb.name + ' · ' + nb.cost) : '';
       if (el.textContent !== t) { el.textContent = t; el.hidden = !t; el.classList.toggle('ok', !!nb && L.respect >= nb.cost); } }
     L.streetAcc += dt; if (L.streetAcc > 0.25) { L.streetAcc = 0; const s = streetAt(c.x, c.z); if (s !== L.street) { L.street = s; $('street').textContent = s; } }

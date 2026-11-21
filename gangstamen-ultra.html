@@ -48,7 +48,7 @@ body { background: var(--ink); color: var(--chalk); font-family: var(--body); ov
 #dash { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 #speed { font-family: var(--data); font-size: 64px; line-height: .8; color: var(--chalk); text-shadow: 3px 3px 0 var(--magenta); font-variant-numeric: tabular-nums; }
 #speed span { font-size: 22px; color: var(--sunset); text-shadow: none; margin-left: 4px; }
-.bar { width: 200px; height: 14px; border: 2px solid var(--chalk); background: rgba(0,0,0,.6); position: relative; }
+.bar { width: 200px; height: 18px; border: 2px solid var(--chalk); background: rgba(0,0,0,.6); position: relative; }
 .bar i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, var(--magenta), var(--sunset)); }
 .bar-label { font-family: var(--data); font-size: 16px; letter-spacing: .12em; color: var(--chalk); }
 
@@ -67,6 +67,8 @@ body { background: var(--ink); color: var(--chalk); font-family: var(--body); ov
 #radio .rt { display: flex; flex-direction: column; line-height: 1.05; }
 #radio b { font-weight: normal; font-size: 19px; letter-spacing: .05em; white-space: nowrap; }
 #radio small { font-size: 14px; letter-spacing: .08em; color: var(--sunset); white-space: nowrap; }
+/* (21 nov., audit UX) after 5 s the radio keeps only the name of the station */
+#radio.small small { display: none; } #radio.small .eq { height: 14px; width: 18px; } #radio.small b { font-size: 16px; }
 #radio.off { border-color: rgba(243,234,216,.35); opacity: .72; }
 #radio.off .eq i { animation: none; transform: scaleY(.15); background: rgba(243,234,216,.45); }
 #radio.off small { color: rgba(243,234,216,.6); }
@@ -88,6 +90,25 @@ body:not(.ingame) #subs, body.split #subs { display: none; }
 body.touch #subs { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); font-size: 15px; }
 #nextBuy { display: block; font-size: 11px; letter-spacing: .04em; opacity: .75; text-transform: none; margin-top: 2px; }
 #nextBuy.ok { color: #7dff9a; opacity: 1; }
+/* (21 nov., audit UX) the guide of the first game and the challenges of the day */
+#guide { bottom: calc(118px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; max-width: min(640px, 86vw); padding: 10px 12px 10px 16px; background: rgba(13,10,20,.82); border: 2px solid var(--sunset); border-radius: 8px; box-shadow: 4px 4px 0 #000; font: 600 17px/1.3 system-ui, sans-serif; color: var(--chalk); pointer-events: auto; }
+#guide small { font: 700 12px/1 var(--data); color: var(--sunset); white-space: nowrap; }
+#guide button { background: none; border: 0; color: var(--chalk); font-size: 22px; line-height: 1; cursor: pointer; padding: 0 4px; opacity: .7; }
+body.touch #guide { bottom: auto; top: calc(64px + env(safe-area-inset-top, 0px)); font-size: 14px; }
+body:not(.ingame) #guide { display: none; }
+.dailyBox { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; max-width: 300px; }
+.dailyBox .dly { position: relative; padding: 6px 10px 8px; background: rgba(13,10,20,.6); border: 1px solid rgba(243,234,216,.35); border-radius: 4px; overflow: hidden; }
+.dailyBox .dly b { display: block; font: 600 14px/1.25 system-ui, sans-serif; color: var(--chalk); }
+.dailyBox .dly small { font: 12px/1.2 var(--data); color: var(--sunset); }
+.dailyBox .dly i { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--sunset); }
+.dailyBox .dly.done { border-color: #7dff9a; } .dailyBox .dly.done b, .dailyBox .dly.done small { color: #7dff9a; } .dailyBox .dly.done i { background: #7dff9a; }
+#resStats .resStat { margin: 6px 0 0; font: 14px/1.4 system-ui, sans-serif; color: var(--chalk); } #resStats small { color: var(--sunset); }
+body.lowHp .bar { animation: hpBlink .5s steps(2) infinite; border-color: #ff4a3a; } @keyframes hpBlink { 50% { border-color: var(--chalk); } }
+body.lowHp .bar-label { color: #ff4a3a; }
+body.touch #ticker { top: 14%; }
+#stats .chip { transition: opacity .5s; } body.ingame #stats .chip:has(#respect, #kills):not(.fresh) { opacity: .55; }
+body:has(#pause:not([hidden])) #guide, body:has(#results:not([hidden])) #guide, body:has(#pause:not([hidden])) #fbk, body:has(#results:not([hidden])) #fbk { display: none; }
+.drvBox .dailyBox { gap: 4px; } .drvBox .dailyBox .dly { padding: 4px 8px 6px; } .drvBox .dailyBox .dly b { font-size: 13px; } .drvBox .dailyBox .dly small { font-size: 11px; }
 #help { transition: opacity .6s; }
 body.helpOff #help { opacity: 0; }
 #logo { display: none; } /* (21 nov., audit UX) the title is on the menu, no need for it over the game or behind the menus */
@@ -277,7 +298,7 @@ body.touch.joy #touch { align-items: flex-end; padding-bottom: calc(26px + env(s
 body.touch.joy #joy { width: 136px; height: 136px; flex: none; margin-bottom: 0; }
 body.touch.joy #touch .grp:last-child { display: grid; grid-template-columns: 66px 66px; grid-template-rows: 54px 72px; gap: 8px 10px; align-items: end; justify-items: center; }
 body.touch.joy #tRadio { grid-area: 1 / 1; align-self: end; }
-body.touch.joy #tSpec { grid-area: 1 / 2; width: 60px; height: 60px; font-size: 15px; padding: 0; }
+body.touch.joy #tSpec { grid-area: 1 / 2; width: 70px; height: 70px; font-size: 16px; padding: 0; }
 body.touch.joy #tHb { grid-area: 2 / 1; width: 66px; height: 66px; }
 body.touch.joy #tFire { grid-area: 2 / 2; width: 72px; height: 72px; font-size: 22px; border-color: var(--sunset); }
 body.touch #dash { bottom: calc(176px + env(safe-area-inset-bottom, 0px)); gap: 4px; }
@@ -537,6 +558,7 @@ body.cine #logo, body.cine #credit { display: none; }
       <div class="row"><span class="lab">Joueur 1 (solo / en ligne)</span><div class="cycle" id="soloCtl"></div></div>
       <div class="ctable" id="ctable"></div>
       <p class="fine">Les touches correspondent à des positions du clavier : sur un clavier AZERTY, le joueur 1 joue avec Z Q S D. En HD, la touche spéciale (E pour le joueur 1, B à la manette) lance les roquettes, pose les mines ou déclenche la nitro ramassées sur la carte ; A pour le joueur 1 (RB à la manette, ou un appui sur le compteur d’armes) passe à l’arme suivante. Touches communes : N jour/nuit (HD : moment de la journée) · B météo (HD) · M musique · P pixels · Tab classement en ligne · Échap menu.</p>
+      <p class="fine">Demi-tour rapide : en marche arrière lancée, frein à main et volant à fond, la voiture pivote d’un coup et repart en avant.</p>
       <div class="menu"><button class="mbtn" data-go="vMain">Retour</button></div>
     </section>
 
@@ -3330,7 +3352,7 @@ class Car {
   }
   get speed() { return Math.hypot(this.vx, this.vz); }
   get fwd() { return [-Math.sin(this.h), -Math.cos(this.h)]; }
-  place(x, z, h) { this.x = x; this.z = z; this.h = h; this.vx = this.vz = 0; this.yb = undefined; this.yv = 0; this.air = 0; this.nitro = 0; this.sink = 0; this._sp = undefined; this._ap = undefined; this._pe = this._re = this._pev = this._rev = this.sq = this.sqv = 0; if (this.phys) { this.phys.r = 0; this.phys.gear = 1; this.phys.ax = 0; } this.sync(); }
+  place(x, z, h) { this.x = x; this.z = z; this.h = h; this.vx = this.vz = 0; this.yb = undefined; this.yv = 0; this.air = 0; this.nitro = 0; this.sink = 0; this._sp = undefined; this._ap = undefined; this._pe = this._re = this._pev = this._rev = this.sq = this.sqv = 0; this.jt = null; if (this.phys) { this.phys.r = 0; this.phys.gear = 1; this.phys.ax = 0; } this.sync(); }
   sync() {
     const [fx, fz] = this.fwd, rx = -fz, rz = fx, wb = this.bus ? 4.4 : 1.7; // (16 nov., user) the bus's axles are far apart: measured there, its ends no longer dig into a bump
     let hf = surfaceH(this.x + fx * wb, this.z + fz * wb), hb = surfaceH(this.x - fx * wb, this.z - fz * wb);
@@ -3367,7 +3389,7 @@ class Car {
       this._pev += (-150 * this._pe - 13 * this._pev) * sdt; this._pe += this._pev * sdt;
       this._rev += (-170 * this._re - 15 * this._rev) * sdt; this._re += this._rev * sdt;
       this.sqv = (this.sqv || 0) + (-190 * (this.sq || 0) - 17 * (this.sqv || 0)) * sdt; this.sq = Math.max(-0.12, Math.min(0.32, (this.sq || 0) + this.sqv * sdt));
-      if (Math.abs(this._pe) + Math.abs(this._pev) * 0.05 < 1e-3 && Math.abs(this._re) + Math.abs(this._rev) * 0.05 < 1e-3 && Math.abs(this.sq) + Math.abs(this.sqv) * 0.05 < 1e-3) this._pe = this._re = this._pev = this._rev = this.sq = this.sqv = 0;
+      if (Math.abs(this._pe) + Math.abs(this._pev) * 0.05 < 1e-3 && Math.abs(this._re) + Math.abs(this._rev) * 0.05 < 1e-3 && Math.abs(this.sq) + Math.abs(this.sqv) * 0.05 < 1e-3) this._pe = this._re = this._pev = this._rev = this.sq = this.sqv = 0; this.jt = null;
     }
     this.mesh.position.set(this.x, base - (this.sq || 0), this.z);
     this.mesh.rotation.set(gp + (this._pe || 0), this.h, groll + (this._re || 0), 'YXZ');
@@ -3378,7 +3400,9 @@ class Car {
 function sinking(c, dt) {
   c.sink += dt; const k = Math.exp(-4.5 * dt); // the water stops it within a few metres c.vx *= k; c.vz *= k; c.x += c.vx * dt; c.z += c.vz * dt; c.air = 0; c.yv = 0;
   if (Math.random() < dt * 9) spawnFx(c.x + (Math.random() - 0.5) * 2.4, WATER_Y + 0.2, c.z + (Math.random() - 0.5) * 3.4, 0.35, 0xe8f4f8, 0.25, 2, 1.2); // bubbles
-  if (c.sink > 3.2 && c.alive) { c.alive = false; c.hp = 0; if (c.owner) c.owner.deadT = 1.4; if (!c.local) { c.wreck = 1.5; c.dead = 0; c.mesh.visible = false; c.vx = c.vz = 0; } } // a bot under water: gone, then back as a wreck would
+  if (c.sink > 3.2 && c.alive) { c.alive = false; c.hp = 0;
+    // (21 nov., audit UX) a Rapace pushed or shot into the Loire is the player's KO
+    if (c.botIndex !== undefined && c.lastHitBy && c.lastHitBy.alive && performance.now() - (c.lastHitT || 0) < 8000 && typeof credit === 'function') credit(c.lastHitBy, 150, botLabel(c) + ' : plongeon dans la Loire'); if (c.owner) c.owner.deadT = 1.4; if (!c.local) { c.wreck = 1.5; c.dead = 0; c.mesh.visible = false; c.vx = c.vz = 0; } } // a bot under water: gone, then back as a wreck would
   return 0;
 }
 function drive(c, inp, dt) {
@@ -3441,8 +3465,12 @@ function planarArcade(c, inp, dt) {
   let MAX = c.maxV || (c.player ? 44 : (c.ai && c.ai.mode === 'hunt' ? 36 : 15));
   const boost = c.nitro > 0 ? 1.6 : 1; MAX *= c.nitro > 0 ? 1.3 : 1;
   const grip = c.air > 0.25 ? 0.08 : 1; // airborne: no traction
+  // (21 nov., audit UX) quick half-turn: backing up fast, handbrake and full lock spin the car round in half a second
+  // (a J-turn); the speed goes on in the same direction, so the car comes out of it driving forward
+  if (c.jt) { const d = Math.min(c.jt.left, 6.5 * dt); c.h += c.jt.dir * d; c.jt.left -= d; c.vx *= Math.exp(-0.8 * dt); c.vz *= Math.exp(-0.8 * dt); c.steer = 0; if (c.jt.left <= 0) c.jt = null; return; }
   const [fx, fz] = c.fwd, rx = -fz, rz = fx; // right vector
   let vf = c.vx * fx + c.vz * fz, vr = c.vx * rx + c.vz * rz;
+  if (c.player && vf < -6 && inp.hb && Math.abs(inp.s) > 0.5 && grip === 1) { c.jt = { left: Math.PI, dir: inp.s > 0 ? 1 : -1 }; return; }
   const acc = (c.accK || 1) * boost * grip;
   const T = c.tune || {}; // garage settings (cycle 12)
   if (inp.t > 0) { if (vf < MAX) vf += inp.t * (vf < 0 ? 26 : Math.max(2, 15 - vf * 0.12 * 44 / MAX)) * acc * dt; }
@@ -4193,7 +4221,7 @@ const SETTINGS_KEY = 'gangstamen.settings.v1';
 const settings = Object.assign({
   ctl: ['kb1', 'kb2', 'kb3', 'kb4'], soloCtl: 'kb1+pad0', nPlayers: 2,
   music: 0.7, fx: 0.8, amb: 0.8, rumble: true, retro: true, nick: '',
-  hdq: isTouch ? 0 : 2, hdSafe: 0, tctl0: 'touch', autoQ: true, physics: 'arcade', tod: 'sunset', rain: '0', traffic: 2, trafficNet: 1, aim: 2, motion: 1, voices: true, subs: true, shadows: 1, dist: 2, intro: true, introSeen: false, played: false, teams: false, team: [0, 1, 0, 1], netTeams: false, netTeam: -1, goal: 20, limit: 10, campDiff: 1, goalCtf: 3, goalHill: 60, placeFfa: 0, placeHill: 0, placeRap: 3, placeChant: 1, raceLaps: 1, // physics 'real' = realistic mode (cycle 4), chosen in the options
+  hdq: isTouch ? 0 : 2, hdSafe: 0, tctl0: 'touch', autoQ: true, physics: 'arcade', tod: 'sunset', rain: '0', traffic: 2, trafficNet: 1, aim: 2, motion: 1, voices: true, subs: true, shadows: 1, dist: 2, intro: true, introSeen: false, played: false, guided: false, teams: false, team: [0, 1, 0, 1], netTeams: false, netTeam: -1, goal: 20, limit: 10, campDiff: 1, goalCtf: 3, goalHill: 60, placeFfa: 0, placeHill: 0, placeRap: 3, placeChant: 1, raceLaps: 1, // physics 'real' = realistic mode (cycle 4), chosen in the options
 }, (() => { try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); } catch (e) { return {}; } })());
 // (17 nov., user) end of a game in the HD modes (split screen and online): captures, hill points or laps instead of KO
 const MODE_GOALS = {
@@ -4366,6 +4394,7 @@ function radioHud() {
   $('radioName').textContent = on ? st.name : 'Radio coupée';
   $('radioSub').textContent = on ? (HD ? st.style + ' · M : station suivante' : 'M : couper') : key === 'mute' ? 'volume de la musique à 0 (menu)' : 'M : allumer';
   if (!first) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+  el.classList.remove('small'); clearTimeout(radioHud.t); radioHud.t = setTimeout(() => el.classList.add('small'), 5000);
 }
 setInterval(radioHud, 250);
 // (17 nov., user) the radio on touch screens: a tap on ♪
@@ -4626,6 +4655,25 @@ function spawnRival(r) {
   r.hp = 60; r.alive = true; r.wreck = 0; r.mesh.visible = true; // (hidden if it sank)
   r.mesh.userData.mBody.color.setHex(r.mesh.userData.base); r.mesh.userData.mPaint.color.setHex(r.mesh.userData.paint);
   r.ai = { mode: 'cruise', target: nearestNode(r.x, r.z), prev: -1, stuck: 0, back: 0, lost: 0, burst: 0, firing: 0 };
+  chiefCheck(r);
+}
+// (21 nov., audit UX) in the Rapaces hunt, every five KO a chief of the gang comes back in place of a Rapace: named, tougher
+// and faster, with his name over the car, worth 400 respect
+const CHIEFS = ['Le Grand Duc', 'Le Vautour', 'La Buse', 'L’Épervier', 'Le Milan'];
+let chiefKo = 0, chiefN = 0;
+function chiefCheck(r) {
+  if (r.chief) { r.chief = null; r.maxV = undefined; if (r.chiefTag) { r.mesh.remove(r.chiefTag); r.chiefTag.material.map.dispose(); r.chiefTag.material.dispose(); r.chiefTag = null; } }
+  const L = locals[0];
+  if (mode !== 'solo' || soloKind !== 'hunt' || !L || (gx && (gx.mission || gx.gmode)) || rivals.some(o => o.chief)) return;
+  if ((L.koN || 0) - chiefKo < 5) return;
+  chiefKo = L.koN || 0;
+  r.chief = CHIEFS[chiefN++ % CHIEFS.length]; r.hp = 180; r.maxV = 40;
+  const cv = document.createElement('canvas'); cv.width = 512; cv.height = 96; const g = cv.getContext('2d');
+  g.font = 'bold 54px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineWidth = 10; g.strokeStyle = '#000'; g.strokeText('♛ ' + r.chief, 256, 50); g.fillStyle = '#ffcf3a'; g.fillText('♛ ' + r.chief, 256, 50);
+  const tex = new THREE.CanvasTexture(cv); if (HD) tex.encoding = THREE.sRGBEncoding;
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true })); s.scale.set(7, 1.3, 1); s.position.y = 3.6; s.renderOrder = 19;
+  r.mesh.add(s); r.chiefTag = s;
+  flashFor(L, 'Un chef des Rapaces', r.chief + ' rôde dans le quartier');
 }
 // (15 nov.) at the start of a game the six Rapaces used to be where the menu left them, one of them always on the
 // player's starting grid, shooting at once: they now start far away and join the hunt one after the other
@@ -4811,7 +4859,10 @@ function drawMinimapOn(cv, me) {
   mg.translate(-(me.x + mapC.ox), -(me.z + mapC.oz));
   mg.drawImage(mapC, 0, 0);
   for (const pk of pickups) if (pk.on) { mg.fillStyle = '#7be07b'; mg.fillRect(pk.x + mapC.ox - 4, pk.z + mapC.oz - 4, 8, 8); }
-  for (const r of rivals) { mg.fillStyle = !r.alive ? '#555' : teamMode ? TEAMS[r.team].css : '#ff3b3b'; mg.beginPath(); mg.arc(r.x + mapC.ox, r.z + mapC.oz, 6, 0, Math.PI * 2); mg.fill(); }
+  // (21 nov., audit UX) not by colour alone: enemies are diamonds, team-mates rounds; a chief of the Rapaces has a gold ring
+  for (const r of rivals) { const x = r.x + mapC.ox, z = r.z + mapC.oz, foe = r.alive && enemies(me, r); mg.fillStyle = !r.alive ? '#555' : teamMode ? TEAMS[r.team].css : '#ff3b3b'; mg.beginPath();
+    if (foe) { mg.moveTo(x, z - 8); mg.lineTo(x + 7, z); mg.lineTo(x, z + 8); mg.lineTo(x - 7, z); mg.closePath(); } else mg.arc(x, z, 6, 0, Math.PI * 2);
+    mg.fill(); if (r.chief && r.alive) { mg.strokeStyle = '#ffcf3a'; mg.lineWidth = 3; mg.beginPath(); mg.arc(x, z, 12, 0, Math.PI * 2); mg.stroke(); } }
   if (gx) gx.minimap(me, (c, colr) => { mg.fillStyle = colr; mg.beginPath(); mg.arc(c.x + mapC.ox, c.z + mapC.oz, 6, 0, Math.PI * 2); mg.fill(); });
   for (const c of allPlayerCars()) {
     if (c === me) continue;
@@ -4912,8 +4963,9 @@ function updateHud(dt) {
     const L = locals[0], c = L.car;
     $('speed').firstChild.nodeValue = Math.round(c.speed * 3.6);
     { const sp = $('speed').lastChild, t = c.phys && useRealPhysics(c) ? 'KM/H · ' + c.phys.gear + (c.phys.gear === 1 ? 're' : 'e') : 'KM/H'; if (sp.textContent !== t) sp.textContent = t; } // gear in the realistic mode
-    $('hp').style.width = c.hp + '%';
-    $('respect').textContent = L.respect; $('kills').textContent = L.kills;
+    $('hp').style.width = c.hp + '%'; document.body.classList.toggle('lowHp', c.alive && c.hp < 25);
+    // (21 nov., audit UX) the respect and KO frames fade when nothing changes, and light up when they move
+    for (const [id, v] of [['respect', L.respect], ['kills', L.kills]]) { const e = $(id); if (e.textContent !== String(v)) { e.textContent = v; e.parentNode.classList.add('fresh'); clearTimeout(e._ft); e._ft = setTimeout(() => e.parentNode.classList.remove('fresh'), 4000); } }
     if (HD && gx && gx.nextBuy) { const nb = mode === 'solo' && !gx.gmode ? gx.nextBuy() : null, el = $('nextBuy'), t = nb ? (L.respect >= nb.cost ? '✔ garage : ' + nb.name : nb.name + ' · ' + nb.cost) : '';
       if (el.textContent !== t) { el.textContent = t; el.hidden = !t; el.classList.toggle('ok', !!nb && L.respect >= nb.cost); } }
     L.streetAcc += dt; if (L.streetAcc > 0.25) { L.streetAcc = 0; const s = streetAt(c.x, c.z); if (s !== L.street) { L.street = s; $('street').textContent = s; } }
@@ -4982,7 +5034,14 @@ const resEl = $('results');
 function fmtClock(t) { t = Math.max(0, Math.ceil(t)); return ((t / 60) | 0) + ':' + String(t % 60).padStart(2, '0'); }
 function setupMatch(goal, limit) {
   Match.goal = goal; Match.limit = limit; Match.left = limit * 60; Match.over = false; Match.n = 0; Match.synced = false;
-  resEl.hidden = true; updateClock();
+  resEl.hidden = true; updateClock(); statsReset();
+}
+// (21 nov., audit UX) what each player did in the game, on the results card: distance, damage dealt, best KO, respect won
+function statsReset() { for (const L of locals) L.st = { dist: 0, dmg: 0, best: null, r0: L.respect || 0 }; }
+function statsHTML() {
+  return locals.map(L => { const s = L.st; if (!s) return '';
+    const who = locals.length > 1 ? '<b>Joueur ' + (L.slot + 1) + '</b> · ' : '';
+    return '<p class="resStat">' + who + (s.dist / 1000).toFixed(1).replace('.', ',') + ' km · ' + Math.round(s.dmg) + ' dégâts infligés · ' + Math.max(0, L.respect - s.r0) + ' respect gagné' + (s.best ? '<br><small>Meilleur coup : ' + s.best.text + ' (+' + s.best.p + ')</small>' : '') + '</p>'; }).join('');
 }
 function updateClock() {
   const el = $('clock'), parts = [];
@@ -5025,6 +5084,7 @@ function endMatch(title, sub) {
   Match.over = true; Match.title = String(title).slice(0, 60); Match.sub = String(sub).slice(0, 60);
   $('resTitle').textContent = Match.title; $('resSub').textContent = Match.sub;
   $('resTable').replaceChildren(boardTable(boardRows()));
+  { let el = $('resStats'); if (!el) { el = document.createElement('div'); el.id = 'resStats'; $('resTable').after(el); } el.innerHTML = statsHTML(); }
   const canRestart = mode !== 'online' || Net.isHost;
   $('resAgain').hidden = !canRestart; $('resWait').hidden = canRestart;
   paused = false; pauseEl.hidden = true; resEl.hidden = false; updateClock();
@@ -5034,7 +5094,7 @@ function endMatch(title, sub) {
 function rematch() { // everyone back to the start, scores to zero
   Match.over = false; Match.left = Match.limit * 60; Match.grace = 2; resEl.hidden = true;
   for (const L of locals) {
-    const c = L.car; L.respect = 0; L.kills = 0; L.deadT = 0;
+    const c = L.car; L.respect = 0; L.kills = 0; L.deadT = 0; L.st = { dist: 0, dmg: 0, best: null, r0: 0 };
     c.alive = true; c.hp = 100; c.vx = c.vz = 0;
     c.mesh.userData.mBody.color.setHex(c.mesh.userData.base); c.mesh.userData.mPaint.color.setHex(c.mesh.userData.paint);
     c.place(...(mode === 'online' ? onlineSpawn(L.team) : L.spawn));
@@ -5114,6 +5174,7 @@ function togglePause() {
   }
   paused = !paused; pauseEl.hidden = !paused; if (paused) $('pResume').focus();
   renderPauseAmb();
+  if (paused && HD && gx && gx.dailyBox && mode === 'solo') gx.dailyBox(pauseEl.querySelector('.card'));
   $('pMap').hidden = !(gx && gx.SpawnMap && mode === 'solo' && soloKind === 'free');
 }
 $('pMap').addEventListener('click', () => { paused = false; pauseEl.hidden = true; if (gx && gx.SpawnMap) gx.SpawnMap.show(); });
@@ -5281,15 +5342,26 @@ function ghostShot(from, enemy) {
 }
 function credit(by, points, text) {
   if (!by || Match.over) return;
-  if (by.local) { const L = by.owner; L.respect += points; if (!(gx && gx.gmode)) L.kills++; flashFor(L, '+' + points + ' RESPECT', text); rumbleFor(L, 0.2, 0.5, 120); if (gx) { gx.dj('ko', L); gx.saveBank(L); } }
+  if (by.local) { const L = by.owner;
+    // (21 nov., audit UX) style pays: a KO while sliding, flying or with the police on your tail is worth more, and is named
+    const st = [];
+    if ((by.drift || 0) > 0.3) st.push(['en dérapage', 50]);
+    if ((by.air || 0) > 0.3) st.push(['en plein vol', 80]);
+    if ((L.heat || 0) > 0 && mode === 'solo') st.push(['sous les gyrophares', 60]);
+    for (const [, p] of st) points += p;
+    if (st.length) text += ' · ' + st.map(s => s[0]).join(', ') + ' !';
+    if (L.st && (!L.st.best || points > L.st.best.p)) L.st.best = { p: points, text };
+    L.respect += points; L.koN = (L.koN || 0) + 1; if (!(gx && gx.gmode)) L.kills++; flashFor(L, '+' + points + ' RESPECT', text); rumbleFor(L, 0.2, 0.5, 120); if (gx) { gx.dj('ko', L); gx.saveBank(L); } }
 }
 function damage(c, d, by) {
   if (c.npc) return gx.damage(c, d, by);
   if (c.alive && c.shield > 0 && gx && gx.shieldHit) gx.shieldHit(c, by && by.x !== undefined ? by : null);
   if (!c.alive || c.shield > 0) return;
   markFight(c, by); if (by && by.local) markFight(by, c);
+  if (by && by.local && c.botIndex !== undefined) { c.lastHitBy = by; c.lastHitT = performance.now(); }
   if (c.local && gx && gx.mission && gx.mission.live && gx.campDiff) d *= gx.campDiff().hurt; // (15 nov.) campaign difficulty
   c.hp -= d * (c.armor || 1) * (CAT_DMG[c.style] || 1); // (cycle 13) the van takes less, the coupé more
+  if (by && by.local && by !== c && by.owner && by.owner.st) by.owner.st.dmg += Math.min(d, c.hp + d);
   if (c.local) { sfx.hit(); rumbleFor(c.owner, 0.35, 0.6, 90); if (by && by !== c && by.x !== undefined && c.owner) { c.owner.hitDir = Math.atan2(by.x - c.x, by.z - c.z); c.owner.hitT = performance.now(); } }
   if (c.hp > 0) return;
   c.alive = false; c.hp = 0; explode(c.x, c.z);
@@ -5306,7 +5378,7 @@ function damage(c, d, by) {
     if (mode === 'online') feed((settings.nick || 'Vous') + (who ? ' démoli par ' + who : ' s’est planté'));
   } else if (c.botIndex !== undefined) {
     c.wreck = 14;
-    if (by && by.local) credit(by, 100, botLabel(c) + ' au tapis');
+    if (by && by.local) credit(by, c.chief ? 400 : 100, c.chief ? c.chief + ' est tombé !' : botLabel(c) + ' au tapis');
     else if (by && by.remotePeer && Net.isHost) Net.emit('bko', { by: by.remotePeer, i: c.botIndex });
   }
 }
@@ -5686,7 +5758,7 @@ function showView(id) {
   // (21 nov., audit UX) a small title in the sub-menus, so the choices come up without scrolling; and a « Commence ici » on the
   // free driving until a first game is played
   $('title').classList.toggle('sub', id !== 'vMain');
-  if (id === 'vMain') { const b = $('startFree') && !$('startFree').hidden ? $('startFree') : $('start'); document.querySelectorAll('#title .here').forEach(e => e.remove()); if (b && !settings.played) b.insertAdjacentHTML('afterbegin', '<span class="here">Commence ici</span>'); }
+  if (id === 'vMain') { const b = $('startFree') && !$('startFree').hidden ? $('startFree') : $('start'); document.querySelectorAll('#title .here').forEach(e => e.remove()); if (b && !settings.played) b.insertAdjacentHTML('afterbegin', '<span class="here">Commence ici</span>'); if (HD && gx && gx.dailyBox) gx.dailyBox(document.querySelector('#vMain .drvBox')); }
   const f = document.querySelector('#' + id + ' .big, #' + id + ' .mbtn, #' + id + ' input'); if (f) f.focus();
   if (id === 'vOnline') { $('nick').value = settings.nick || ''; renderGames(); }
   if (id === 'vCamp' && gx) gx.renderCampaign();
@@ -7970,6 +8042,7 @@ const gx = !HD ? null : (() => {
     else if (kind === 'rockets') a.rockets = Math.min(9, a.rockets + 3);
     else if (kind === 'shield') c.shield = 8;
     if (kind !== 'repair' && kind !== 'shield') L.weapon = kind;
+    L.puN = (L.puN || 0) + 1;
     sfx.pick(); flashFor(L, PU_NAME[kind][0], PU_NAME[kind][1]); rumbleFor(L, 0, 0.3, 80);
   }
   // special weapon: cycles with the next press when the current one is empty
@@ -8689,7 +8762,7 @@ const gx = !HD ? null : (() => {
   function gameStep(dt) { // inside the world step
     const now = performance.now();
     step(dt);
-    puStep(dt, now); rocketStep(dt); mineStep(dt, now); shieldStep(dt); furnitureStep(dt); Fences.step(dt); LightPoles.step(dt); actStep(dt); discoverStep(dt);
+    puStep(dt, now); rocketStep(dt); mineStep(dt, now); shieldStep(dt); furnitureStep(dt); Fences.step(dt); LightPoles.step(dt); actStep(dt); discoverStep(dt); guideStep(dt); dailyStep(dt);
     for (const L of locals) {
       L.specCd = (L.specCd || 0) - dt;
       const c = L.car;
@@ -9224,6 +9297,101 @@ const gx = !HD ? null : (() => {
   }
   function postcardSpots() { return SPOTS.map(s => ({ s, x: s.x, z: s.z, found: found().includes(s.id) })); } // (spawnmap.js draws them)
   function postcards() { return SPOTS.map(s => ({ name: found().includes(s.id) ? s.name : '???', text: found().includes(s.id) ? s.text : '' })); }
+  // ---------- (21 nov., audit UX) first game guided step by step, and three challenges of the day ----------
+  // The guide shows one short instruction at a time at the bottom of the screen, the first time a solo game is played;
+  // each step ends when the player has done it, or after a while so nobody is stuck. The challenges change every day (the
+  // same three for everybody on a given date), count in every solo game, and pay respect into the bank.
+  const GUIDE = [
+    { k: 'go', kb: 'Avance avec Z (ou flèche haut)', tc: 'Accélère avec la pédale ▲', pad: 'Accélère avec la gâchette droite', t: 20, ok: (L, c) => c.speed > 9 },
+    { k: 'hb', kb: 'Frein à main : Maj en braquant pour tourner serré', tc: 'Frein à main : bouton FREIN en braquant', pad: 'Frein à main : bouton A en braquant', t: 25, ok: (L, c) => L._inp && L._inp.hb && c.speed > 5 },
+    { k: 'fire', kb: 'Tire avec Espace : le losange jaune montre ta cible', tc: 'Tire avec le bouton TIR : le losange jaune montre ta cible', pad: 'Tire avec RB : le losange jaune montre ta cible', t: 35, hunt: true, ok: L => L.locals0Hit },
+    { k: 'pu', kb: 'Ramasse un bonus : les boîtes chromées qui tournent', t: 45, ok: L => (L.puN || 0) > (L._gPu || 0) },
+    { k: 'free', kb: 'Les colonnes de lumière lancent courses et défis ; le respect gagné paie le garage', t: 9, free: true, ok: () => false },
+    { k: 'end', kb: 'R pour se remettre sur ses roues, Échap pour la pause et la carte. Bonne route !', tc: 'Le bouton ↻ remet la voiture sur ses roues, ❚❚ ouvre la pause et la carte. Bonne route !', pad: 'Y pour se remettre sur ses roues, Start pour la pause. Bonne route !', t: 7, ok: () => false },
+  ];
+  let guide = null;
+  function guideCard(text, n) {
+    let el = $('guide');
+    if (!el) { el = document.createElement('div'); el.id = 'guide'; el.className = 'hud'; el.innerHTML = '<small></small><span></span><button type="button" aria-label="Fermer le guide">×</button>'; document.body.append(el); el.lastChild.addEventListener('click', () => guideEnd()); }
+    el.hidden = !text; if (!text) return;
+    el.children[0].textContent = n; el.children[1].textContent = text;
+  }
+  function guideEnd() { guide = null; guideCard(null); if (!settings.guided) { settings.guided = true; saveSettings(); } }
+  function guideStep(dt) {
+    const L = locals[0];
+    if (!guide) {
+      if (settings.guided || mode !== 'solo' || !L || gm || mission || !started || Intro.playing) return;
+      guide = { i: 0, t: 0, hunt: !freeDrive() }; guide.L = L; L._gPu = L.puN || 0; L.locals0Hit = false;
+    }
+    if (mode !== 'solo' || gm || mission || !started || L !== guide.L) { guide = null; guideCard(null); return; }
+    let s = GUIDE[guide.i];
+    while (s && ((s.hunt && !guide.hunt) || (s.free && guide.hunt))) s = GUIDE[++guide.i];
+    if (!s) { guideEnd(); return; }
+    if (paused || blocking || ($('spawnMap') && !$('spawnMap').hidden)) { guideCard(null); return; }
+    if (L.car.hitMarkT && performance.now() - L.car.hitMarkT < 500) L.locals0Hit = true;
+    guide.t += dt;
+    const dev = isTouch && (!L.ctl || L.ctl === 'touch') ? 'tc' : L.ctl && padIndexOf(L.ctl) >= 0 && pads[padIndexOf(L.ctl)] && pads[padIndexOf(L.ctl)].gp ? 'pad' : 'kb';
+    const n = GUIDE.filter(g => !((g.hunt && !guide.hunt) || (g.free && guide.hunt))), k = n.indexOf(s);
+    guideCard(s[dev] || s.kb, (k + 1) + ' / ' + n.length);
+    if (s.ok(L, L.car) && guide.t > 0.6) { sfx.pick(); guide.i++; guide.t = 0; L._gPu = L.puN || 0; }
+    else if (guide.t > s.t) { guide.i++; guide.t = 0; L._gPu = L.puN || 0; }
+  }
+  const freeDrive = () => soloKind === 'free';
+
+  const DAILY = [
+    { k: 'ko', n: [4, 6, 8], txt: v => 'Démolis ' + v + ' Rapaces' },
+    { k: 'speed', n: [110, 125, 140], txt: v => 'Atteins ' + v + ' km/h' },
+    { k: 'dist', n: [3, 5, 8], txt: v => 'Roule ' + v + ' km' },
+    { k: 'air', n: [1.2, 1.6, 2], txt: v => 'Reste ' + String(v).replace('.', ',') + ' s en l’air d’un seul saut' },
+    { k: 'pu', n: [3, 5, 7], txt: v => 'Ramasse ' + v + ' bonus' },
+    { k: 'smash', n: [12, 20, 30], txt: v => 'Casse ' + v + ' objets du mobilier urbain' },
+  ];
+  const REWARD = [150, 200, 250];
+  function dayKey(d = new Date()) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function dailyList() {
+    const key = dayKey(); let h = 0; for (const ch of key) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    const rnd = () => { h = (h * 1103515245 + 12345) >>> 0; return h / 4294967296; };
+    const pool = DAILY.slice(), out = [];
+    for (let i = 0; i < 3; i++) { const d = pool.splice(Math.floor(rnd() * pool.length), 1)[0]; out.push({ k: d.k, goal: d.n[i], text: d.txt(d.n[i]), reward: REWARD[i] }); }
+    let s = settings.daily; if (!s || s.d !== key) { s = settings.daily = { d: key, p: [0, 0, 0] }; saveSettings(); }
+    out.forEach((o, i) => { o.p = s.p[i] || 0; o.done = o.p >= o.goal; });
+    return out;
+  }
+  let dSave = 0, dLast = null;
+  function dailyStep(dt) {
+    const L = locals[0];
+    if (mode !== 'solo' || !L || !started || paused || !L.car.alive) { dLast = null; return; }
+    const list = dailyList(), s = settings.daily, c = L.car;
+    const now = { ko: L.koN || 0, pu: L.puN || 0, smash: brokenCount() };
+    if (!dLast || dLast.L !== L) { dLast = { L, ...now, air: 0 }; return; }
+    c.air > 0.25 ? (dLast.air += dt) : (dLast.air = 0);
+    const add = { ko: Math.max(0, now.ko - dLast.ko), pu: Math.max(0, now.pu - dLast.pu), smash: Math.max(0, now.smash - dLast.smash), dist: c.speed * dt / 1000 };
+    Object.assign(dLast, now);
+    let changed = false;
+    list.forEach((o, i) => {
+      if (o.done) return;
+      let v = s.p[i] || 0;
+      if (o.k === 'speed') v = Math.max(v, Math.round(c.speed * 3.6));
+      else if (o.k === 'air') v = Math.max(v, Math.round(dLast.air * 10) / 10);
+      else v += add[o.k] || 0;
+      if (v !== s.p[i]) { s.p[i] = v; changed = true; }
+      if (v >= o.goal) {
+        L.respect += o.reward; saveBank(L); sfx.pick(); rumbleFor(L, 0.3, 0.6, 200);
+        flashFor(L, 'Défi du jour réussi', o.text + ' · +' + o.reward + ' respect');
+      }
+    });
+    dSave += dt; if (changed && dSave > 3) { dSave = 0; saveSettings(); }
+  }
+  // in the main menu, beside the driving style, and in the pause
+  function dailyHTML() {
+    const fmt = o => o.k === 'dist' ? (Math.min(o.p, o.goal)).toFixed(1).replace('.', ',') + ' / ' + o.goal : o.k === 'air' ? String(Math.min(o.p, o.goal)).replace('.', ',') + ' / ' + String(o.goal).replace('.', ',') + ' s' : o.k === 'speed' ? Math.min(o.p, o.goal) + ' / ' + o.goal : Math.floor(Math.min(o.p, o.goal)) + ' / ' + o.goal;
+    return '<span class="lab">Défis du jour</span>' + dailyList().map(o => '<div class="dly' + (o.done ? ' done' : '') + '"><b>' + (o.done ? '✔ ' : '') + o.text + '</b><small>' + (o.done ? 'réussi' : fmt(o)) + ' · +' + o.reward + ' respect</small><i style="width:' + Math.min(100, 100 * o.p / o.goal).toFixed(0) + '%"></i></div>').join('');
+  }
+  function dailyBox(host) {
+    if (!host) return;
+    let el = host.querySelector('.dailyBox'); if (!el) { el = document.createElement('div'); el.className = 'dailyBox'; host.append(el); }
+    el.innerHTML = dailyHTML();
+  }
   // =====================================================================================
   // Downloaded models baked by tools/assets/bake_model.js (W.models): decoding shared by the port cranes, the pontoons
   // and whatever comes next. The boats keep their own decoder (water line, bow direction).
@@ -10336,7 +10504,7 @@ const gx = !HD ? null : (() => {
   { const el = $('ammo'); if (el) { el.style.pointerEvents = 'auto'; el.style.cursor = 'pointer'; el.addEventListener('pointerdown', e => { if (e.target.closest && e.target.closest('.pill')) return; e.preventDefault(); if (locals[0]) cycleWeapon(locals[0]); }); } }
   const api = { netIn, dj, cycleWeapon, showPostcard, postcardSpots, modeInfo, netFlags, applyFlags, netPus, applyPus, puTaken, pus: () => pus, budget: () => budget(), hallTruss: () => hallTruss, hearShot, quickChat, chatIn, step: gameStep, world, landmarkTick, tick: dt => { tick(dt); Boats.step((paused && mode !== 'online') || Busy.on ? 0 : dt); NavLights.step(dt); }, Boats, People, portCranes, hallColumns, LM, walks: () => { if (!walks) buildWalks(); return walks; }, start: startHook, cars: () => npcs.concat(extras), copsOn, shieldHit, makeBus, policeHQ: HQ, hqNode, spots: SPOTS, unlocked, postcards, acts: () => (actsBuild(), acts), actRun: () => run, startAct, hearCars: carsHearShot, traffic: TF, Fences, LightPoles, lightState, roadRules, makeNpc, placeOnGraph, nextNode, spawnPatrol, npcs: () => npcs, damage: damageNpc, addHeat, say, peds: () => peds, stars, special, startMission, renderCampaign, cleanupMission, toMenu, roadblock, MISSIONS,
     get gmode() { return gm ? gm.kind : 0; }, get gmState() { return gm; }, raceRespawn, modeTarget, scoreText, mines: () => mines, customers: () => customers, teamScores: modeTeamScores, goalText, rematch: rematchMode,
-    get blocking() { return blocking; }, get mission() { return mission; }, nextBuy, foes: () => extras.filter(c => c.alive && c.team === 1), saveBank, pus: () => pus, furniture: () => furniture, garage: GARAGE, garages: GARAGES, campDiff, SpawnMap, copBump: c => oneStar(c, 0.1, 'Tu as percuté la police'),
+    get blocking() { return blocking; }, get mission() { return mission; }, nextBuy, dailyBox, dailyList, guideEnd, foes: () => extras.filter(c => c.alive && c.team === 1), saveBank, pus: () => pus, furniture: () => furniture, garage: GARAGE, garages: GARAGES, campDiff, SpawnMap, copBump: c => oneStar(c, 0.1, 'Tu as percuté la police'),
     get onGarage() { return gx_onGarage; }, get objTarget() { return objEl.hidden ? null : objTgt; },
     minimap(me, add) { minimap(me, add); actMinimap(add); discMinimap(add); for (const pu of pus) if (pu.on) add(pu, '#' + new THREE.Color(PU_COL[pu.kind]).getHexString()); for (const c of extras) if (c.alive) add(c, c.friendly ? '#f2c81e' : '#ff3b3b'); for (const m of markers) { if (gm && gm.cps && gm.cps.includes(m) && gm.cps[(me.owner && me.owner.cp || 0) % gm.cps.length] !== m) continue; add(m, gm && gm.cps && gm.cps.includes(m) ? OBJ_CSS : '#ffffff'); } if (GARAGE.pad && mode === 'solo') for (const G of GARAGES) add(G, '#3a8aff'); } };
   return api;
@@ -10359,6 +10527,7 @@ function startGame(kind, sub) {
   if (kind === 'split') teamMode = !!settings.teams;
   else if (kind === 'solo') teamMode = false;
   if (kind !== 'online') { if (soloKind === 'free') setupMatch(0, 0); else setupMatch(settings.goal, settings.limit); }
+  chiefKo = 0; for (const r of rivals) if (r.chief) { r.chief = 'x'; chiefCheck(r); r.hp = 60; }
   document.body.classList.toggle('teams', teamMode);
   // (19 nov., user) where the game is played: the menu's places (split screen, online host), the host's for a guest
   if (kind === 'split' || (kind === 'online' && Net.isHost)) choosePlaces(); else if (kind === 'online') choosePlaces(Net.places || [-1, 0, 3, 1]); else gamePlaces = null;
@@ -10386,6 +10555,7 @@ function startGame(kind, sub) {
   else flashAll('Chasse aux Rapaces', locals.length > 1 ? 'Chacun pour soi · les Rapaces rôdent' : 'Boulevard de la Liberté · les Rapaces rôdent');
   if (gx) gx.start(kind);
   if (gx && gx.SpawnMap && soloKind === 'free') gx.SpawnMap.show();
+  statsReset();
   try { renderer.domElement.focus(); } catch (e) { }
 }
 
@@ -10630,7 +10800,7 @@ function step(dt, now) {
     const c = L.car;
     if (c.alive) {
       const inp = paused ? { t: 0, s: 0, hb: true, fire: false } : readInput(L);
-      L.firing = inp.fire; L._inp = inp;
+      L.firing = inp.fire; L._inp = inp; if (L.st && !paused) L.st.dist += c.speed * dt;
       const imp = drive(c, inp, dt);
       const braking = inp.t < 0 && (c.vx * c.fwd[0] + c.vz * c.fwd[1]) > 0.5;
       c.mesh.userData.tail.emissive.setHex(braking ? 0xff2a2a : 0x400000);
@@ -11146,6 +11316,6 @@ const paintNow = () => new Promise(r => { let done = false; const go = () => { i
   netInit();
   Intro.loaded(settings.intro !== false && !window.__noIntro); // loading screen → « appuie sur une touche » → cinematic → menu; the menu is never seen half-built
 })();
-window.__gm = { get paused() { return paused; }, roadEdge, segHit, get started() { return started; }, renderer, scene, camera, PerfHud, Tiles, W, BOOT, planarReal, planarArcade, VEHICLES, engineState, Soundscape, sfx, PhotoMode, updateCamera, CAM_MODES, G, nodeOk, groundH, Profile, makeCar, saveSettingsHook: () => saveSettings(), surfaceH, Intro, hd, gx, settings, trams, edges, tramS, tramWall, EDGE, cellOf, collideWalls, muzzleOf, shoot, damage, applyHit, locals: () => locals, rivals: () => rivals, Net, Match, step: s => step(s, performance.now()), start: (k, sub) => startGame(k || 'solo', sub), gpl: () => gamePlaces, pickups, aimTarget, shootTest: c => shoot(c, [...rivals, ...allPlayerCars()], 6, 95, 0.05, false), codes };
+window.__gm = { get paused() { return paused; }, endMatch, togglePause, roadEdge, segHit, get started() { return started; }, renderer, scene, camera, PerfHud, Tiles, W, BOOT, planarReal, planarArcade, VEHICLES, engineState, Soundscape, sfx, PhotoMode, updateCamera, CAM_MODES, G, nodeOk, groundH, Profile, makeCar, saveSettingsHook: () => saveSettings(), surfaceH, Intro, hd, gx, settings, trams, edges, tramS, tramWall, EDGE, cellOf, collideWalls, muzzleOf, shoot, damage, applyHit, locals: () => locals, rivals: () => rivals, Net, Match, step: s => step(s, performance.now()), start: (k, sub) => startGame(k || 'solo', sub), gpl: () => gamePlaces, pickups, aimTarget, shootTest: c => shoot(c, [...rivals, ...allPlayerCars()], 6, 95, 0.05, false), codes };
 })();
 </script>

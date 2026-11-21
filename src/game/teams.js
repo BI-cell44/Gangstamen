@@ -151,6 +151,25 @@ function spawnRival(r) {
   r.hp = 60; r.alive = true; r.wreck = 0; r.mesh.visible = true; // (hidden if it sank)
   r.mesh.userData.mBody.color.setHex(r.mesh.userData.base); r.mesh.userData.mPaint.color.setHex(r.mesh.userData.paint);
   r.ai = { mode: 'cruise', target: nearestNode(r.x, r.z), prev: -1, stuck: 0, back: 0, lost: 0, burst: 0, firing: 0 };
+  chiefCheck(r);
+}
+// (21 nov., audit UX) in the Rapaces hunt, every five KO a chief of the gang comes back in place of a Rapace: named, tougher
+// and faster, with his name over the car, worth 400 respect
+const CHIEFS = ['Le Grand Duc', 'Le Vautour', 'La Buse', 'L’Épervier', 'Le Milan'];
+let chiefKo = 0, chiefN = 0;
+function chiefCheck(r) {
+  if (r.chief) { r.chief = null; r.maxV = undefined; if (r.chiefTag) { r.mesh.remove(r.chiefTag); r.chiefTag.material.map.dispose(); r.chiefTag.material.dispose(); r.chiefTag = null; } }
+  const L = locals[0];
+  if (mode !== 'solo' || soloKind !== 'hunt' || !L || (gx && (gx.mission || gx.gmode)) || rivals.some(o => o.chief)) return;
+  if ((L.koN || 0) - chiefKo < 5) return;
+  chiefKo = L.koN || 0;
+  r.chief = CHIEFS[chiefN++ % CHIEFS.length]; r.hp = 180; r.maxV = 40;
+  const cv = document.createElement('canvas'); cv.width = 512; cv.height = 96; const g = cv.getContext('2d');
+  g.font = 'bold 54px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineWidth = 10; g.strokeStyle = '#000'; g.strokeText('♛ ' + r.chief, 256, 50); g.fillStyle = '#ffcf3a'; g.fillText('♛ ' + r.chief, 256, 50);
+  const tex = new THREE.CanvasTexture(cv); if (HD) tex.encoding = THREE.sRGBEncoding;
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true })); s.scale.set(7, 1.3, 1); s.position.y = 3.6; s.renderOrder = 19;
+  r.mesh.add(s); r.chiefTag = s;
+  flashFor(L, 'Un chef des Rapaces', r.chief + ' rôde dans le quartier');
 }
 // (15 nov.) at the start of a game the six Rapaces used to be where the menu left them, one of them always on the
 // player's starting grid, shooting at once: they now start far away and join the hunt one after the other
