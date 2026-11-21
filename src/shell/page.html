@@ -116,6 +116,10 @@ body:has(#pause:not([hidden])) #guide, body:has(#results:not([hidden])) #guide, 
 #rebind > .mbtn, #rebind > .fine { grid-column: 1 / -1; justify-self: start; }
 .wi { width: 1.1em; height: 1.1em; vertical-align: -0.2em; }
 #ammo.cd, #tSpec.cd { opacity: .5; filter: grayscale(.6); }
+#stylePop { top: 36%; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 2px; pointer-events: none; }
+#stylePop div { font: 700 17px/1.2 var(--data); color: #ffd84a; text-shadow: 2px 2px 0 #000; animation: popUp 2.2s ease-out forwards; }
+@keyframes popUp { 0% { opacity: 0; transform: scale(1.4); } 12% { opacity: 1; transform: scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
+body.touch #stylePop { top: 24%; }
 #help { transition: opacity .6s; }
 body.helpOff #help { opacity: 0; }
 #logo { display: none; } /* (21 nov., audit UX) the title is on the menu, no need for it over the game or behind the menus */
@@ -518,6 +522,7 @@ body.cine #logo, body.cine #credit { display: none; }
       <p>Les six caisses noires des Rapaces de la Butte tournent dans le quartier et te cherchent. Rentre-leur dedans, tire-leur dessus : chaque Rapace démoli compte un KO, et il revient plus loin. Ramasse les clés à molette pour réparer ta caisse et les bonus pour tes armes. Gare à la police si tu sèmes le désordre. Ni courses ni défis ici : la partie s’arrête au nombre de KO choisi ou à la fin du temps.</p>
       <div class="row"><span class="lab">Fin de partie</span><div class="seg goalSeg"><button class="mbtn" data-g="10">10 KO</button><button class="mbtn" data-g="20">20 KO</button><button class="mbtn" data-g="30">30 KO</button><button class="mbtn" data-g="0">Sans</button></div></div>
       <div class="row"><span class="lab">Durée</span><div class="seg limitSeg"><button class="mbtn" data-l="5">5 min</button><button class="mbtn" data-l="10">10 min</button><button class="mbtn" data-l="15">15 min</button><button class="mbtn" data-l="0">Sans</button></div></div>
+      <p class="fine" id="huntRec"></p>
       <div class="menu"><button id="huntGo" class="big">Démarrer</button><button class="mbtn" data-go="vMain">Retour</button></div>
     </section>
 

@@ -306,7 +306,7 @@ function drive(c, inp, dt) {
 }
 // arcade driving (the original model): forward and lateral speeds, drift on the handbrake; bots and traffic use it
 function planarArcade(c, inp, dt) {
-  let MAX = c.maxV || (c.player ? 44 : (c.ai && c.ai.mode === 'hunt' ? 36 : 15));
+  let MAX = c.maxV || (c.player ? 44 : (c.ai && c.ai.mode === 'hunt' ? (c.huntV || 36) : 15));
   const boost = c.nitro > 0 ? 1.6 : 1; MAX *= c.nitro > 0 ? 1.3 : 1;
   const grip = c.air > 0.25 ? 0.08 : 1; // airborne: no traction
   // (21 nov., audit UX) quick half-turn: backing up fast, handbrake and full lock spin the car round in half a second

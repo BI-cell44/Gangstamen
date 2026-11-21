@@ -1,3 +1,4 @@
+let slowMo = 0;
 // ---------- loop ----------
 let last = performance.now(), boardAcc = 0;
 // performance overlay (F3): frame time, draw calls and triangles of the whole frame (every pass), scene size
@@ -30,7 +31,9 @@ const PerfHud = (() => {
 })();
 function frame(now) {
   requestAnimationFrame(frame);
-  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  let dt = Math.min(0.05, (now - last) / 1000); last = now;
+  // (21 nov.) the slow motion of a KO: the world runs at a third of its speed for 0.4 s
+  if (now < slowMo && !paused) dt *= 0.35;
   PerfHud.begin();
   pollPads();
   if (Intro.state !== 'off') { if (pads.some(P => P.press && (P.press[0] || P.press[9]))) Intro.key(null); } else if (!(gx && gx.blocking) || (gx.SpawnMap && gx.SpawnMap.open)) menuPadNav(dt);
@@ -81,6 +84,7 @@ function step(dt, now) {
       const braking = inp.t < 0 && (c.vx * c.fwd[0] + c.vz * c.fwd[1]) > 0.5;
       c.mesh.userData.tail.emissive.setHex(braking ? 0xff2a2a : 0x400000);
       if (imp > 3 && L.slot === 0) sfx.impact(imp);
+      if (imp > 4) L._hitT = performance.now();
       if (imp > 9) { rumbleFor(L, Math.min(1, imp / 25), 0.4, 160); damage(c, (imp - 8) * 1.2); spawnFx(c.x, 1, c.z, 0.6, 0xffe28a, 0.2, 2, 2); }
       L.fireCd -= dt;
       if (inp.fire && L.fireCd <= 0) {

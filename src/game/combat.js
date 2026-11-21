@@ -162,6 +162,11 @@ function credit(by, points, text) {
     if ((by.drift || 0) > 0.3) st.push(['en dérapage', 50]);
     if ((by.air || 0) > 0.3) st.push(['en plein vol', 80]);
     if ((L.heat || 0) > 0 && mode === 'solo') st.push(['sous les gyrophares', 60]);
+    // a streak: KO after KO within 8 seconds
+    const nowT = performance.now(); L.streak = nowT - (L.koT || -1e9) < 8000 ? (L.streak || 1) + 1 : 1; L.koT = nowT;
+    if (L.streak >= 2) st.push([L.streak === 2 ? 'doublé' : L.streak === 3 ? 'triplé' : 'carnage ×' + L.streak, 50 * Math.min(4, L.streak - 1)]);
+    // a short slow motion on the KO (not online, not with « Mouvements de caméra : réduits »)
+    if (mode !== 'online' && settings.motion !== 0) slowMo = nowT + 420;
     for (const [, p] of st) points += p;
     if (st.length) text += ' · ' + st.map(s => s[0]).join(', ') + ' !';
     if (L.st && (!L.st.best || points > L.st.best.p)) L.st.best = { p: points, text };

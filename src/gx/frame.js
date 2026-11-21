@@ -43,7 +43,7 @@
       // started at once and one star (heat just over 1) was gone within a second
       L.unseen = seen ? 0 : (L.unseen || 0) + dt;
       if (seen ? L.calm > 12 : L.unseen > 5 + 2.5 * stars(L)) L.heat = Math.max(0, heat(L) - dt * (seen ? 0.03 : 0.12));
-      if (heat(L) < 1 && L.heat > 0 && L.wasWanted) { L.heat = 0; flashFor(L, 'Semés !', 'La police abandonne'); }
+      if (heat(L) < 1 && L.heat > 0 && L.wasWanted) { L.heat = 0; flashFor(L, 'Semés !', 'La police abandonne'); escaped(L); }
       L.wasWanted = heat(L) >= 1;
       for (const c of mine) { sirenOn = true; sirenD = Math.min(sirenD, near(c, L.car.x, L.car.z)); }
     }

@@ -158,12 +158,15 @@ function spawnRival(r) {
 const CHIEFS = ['Le Grand Duc', 'Le Vautour', 'La Buse', 'L’Épervier', 'Le Milan'];
 let chiefKo = 0, chiefN = 0;
 function chiefCheck(r) {
-  if (r.chief) { r.chief = null; r.maxV = undefined; if (r.chiefTag) { r.mesh.remove(r.chiefTag); r.chiefTag.material.map.dispose(); r.chiefTag.material.dispose(); r.chiefTag = null; } }
+  r.huntV = undefined;
+  if (r.chief) { r.chief = null; if (r.chiefTag) { r.mesh.remove(r.chiefTag); r.chiefTag.material.map.dispose(); r.chiefTag.material.dispose(); r.chiefTag = null; } }
   const L = locals[0];
   if (mode !== 'solo' || soloKind !== 'hunt' || !L || (gx && (gx.mission || gx.gmode)) || rivals.some(o => o.chief)) return;
+  // the hunt gets harder: each KO makes the Rapaces who come back a little faster (up to +6 m/s after 15 KO)
+  r.huntV = 36 + Math.min(6, (L.koN || 0) * 0.4);
   if ((L.koN || 0) - chiefKo < 5) return;
   chiefKo = L.koN || 0;
-  r.chief = CHIEFS[chiefN++ % CHIEFS.length]; r.hp = 180; r.maxV = 40;
+  r.chief = CHIEFS[chiefN++ % CHIEFS.length]; r.hp = 180; r.huntV = 42;
   const cv = document.createElement('canvas'); cv.width = 512; cv.height = 96; const g = cv.getContext('2d');
   g.font = 'bold 54px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineWidth = 10; g.strokeStyle = '#000'; g.strokeText('♛ ' + r.chief, 256, 50); g.fillStyle = '#ffcf3a'; g.fillText('♛ ' + r.chief, 256, 50);
   const tex = new THREE.CanvasTexture(cv); if (HD) tex.encoding = THREE.sRGBEncoding;

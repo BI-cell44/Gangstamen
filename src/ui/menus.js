@@ -7,6 +7,7 @@ function showView(id) {
   // free driving until a first game is played
   $('title').classList.toggle('sub', id !== 'vMain');
   if (id === 'vCtrl') { keyCapture = null; renderRebind(); }
+  if (id === 'vHunt') renderEndSegs();
   if (id === 'vMain') { const b = $('startFree') && !$('startFree').hidden ? $('startFree') : $('start'); document.querySelectorAll('#title .here').forEach(e => e.remove()); if (b && !settings.played) b.insertAdjacentHTML('afterbegin', '<span class="here">Commence ici</span>'); if (HD && gx && gx.dailyBox) gx.dailyBox(document.querySelector('#vMain .drvBox')); }
   const f = document.querySelector('#' + id + ' .big, #' + id + ' .mbtn, #' + id + ' input'); if (f) f.focus();
   if (id === 'vOnline') { $('nick').value = settings.nick || ''; renderGames(); }
@@ -118,6 +119,8 @@ function renderEndSegs() {
     seg.querySelectorAll('button').forEach((b, i) => { const o = opts[i]; b.hidden = !o; if (!o) return; b.dataset.g = o[0]; if (b.textContent !== o[1]) b.textContent = o[1]; b.classList.toggle('on', o[0] === cur); });
   });
   document.querySelectorAll('.limitSeg button').forEach(b => b.classList.toggle('on', +b.dataset.l === settings.limit));
+  // (21 nov.) the record for the chosen goal and duration, under the choices of the Rapaces hunt
+  const hr = $('huntRec'); if (hr) { const b = (settings.huntRec || {})[settings.goal + '/' + settings.limit]; hr.textContent = b ? 'Ton record ici : ' + b.ko + ' KO en ' + fmtClock(b.t) : 'Pas encore de record pour ces réglages.'; }
 }
 document.querySelectorAll('.goalSeg button').forEach(b => b.addEventListener('click', () => { const k = segMode(b); if (k) settings[MODE_GOALS[k].key] = +b.dataset.g; else settings.goal = +b.dataset.g; saveSettings(); renderEndSegs(); }));
 document.querySelectorAll('.limitSeg button').forEach(b => b.addEventListener('click', () => { settings.limit = +b.dataset.l; saveSettings(); renderEndSegs(); }));

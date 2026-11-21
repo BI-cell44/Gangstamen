@@ -55,6 +55,12 @@ function endMatch(title, sub) {
   Match.over = true; Match.title = String(title).slice(0, 60); Match.sub = String(sub).slice(0, 60);
   $('resTitle').textContent = Match.title; $('resSub').textContent = Match.sub;
   $('resTable').replaceChildren(boardTable(boardRows()));
+  // (21 nov.) the record of the Rapaces hunt: most KO, then the shortest time to reach the goal
+  if (mode === 'solo' && soloKind === 'hunt' && locals[0] && !(gx && (gx.gmode || gx.mission))) {
+    const L = locals[0], t = Match.limit * 60 - Match.left, rec = settings.huntRec || {}, k = Match.goal + '/' + Match.limit, b = rec[k];
+    const better = !b || L.kills > b.ko || (L.kills === b.ko && t < b.t);
+    if (better && L.kills > 0) { rec[k] = { ko: L.kills, t: Math.round(t) }; settings.huntRec = rec; saveSettings(); Match.sub = (Match.sub + ' · nouveau record !').slice(0, 80); $('resSub').textContent = Match.sub; }
+  }
   { let el = $('resStats'); if (!el) { el = document.createElement('div'); el.id = 'resStats'; $('resTable').after(el); } el.innerHTML = statsHTML(); }
   const canRestart = mode !== 'online' || Net.isHost;
   $('resAgain').hidden = !canRestart; $('resWait').hidden = canRestart;

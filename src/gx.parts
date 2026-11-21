@@ -23,6 +23,7 @@ gx/modes.js
 gx/activities.js
 gx/discover.js
 gx/goals.js
+gx/style.js
 gx/models.js
 gx/landmarks.js
 gx/boats.js

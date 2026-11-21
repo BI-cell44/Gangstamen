@@ -116,6 +116,10 @@ body:has(#pause:not([hidden])) #guide, body:has(#results:not([hidden])) #guide, 
 #rebind > .mbtn, #rebind > .fine { grid-column: 1 / -1; justify-self: start; }
 .wi { width: 1.1em; height: 1.1em; vertical-align: -0.2em; }
 #ammo.cd, #tSpec.cd { opacity: .5; filter: grayscale(.6); }
+#stylePop { top: 36%; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 2px; pointer-events: none; }
+#stylePop div { font: 700 17px/1.2 var(--data); color: #ffd84a; text-shadow: 2px 2px 0 #000; animation: popUp 2.2s ease-out forwards; }
+@keyframes popUp { 0% { opacity: 0; transform: scale(1.4); } 12% { opacity: 1; transform: scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
+body.touch #stylePop { top: 24%; }
 #help { transition: opacity .6s; }
 body.helpOff #help { opacity: 0; }
 #logo { display: none; } /* (21 nov., audit UX) the title is on the menu, no need for it over the game or behind the menus */
@@ -518,6 +522,7 @@ body.cine #logo, body.cine #credit { display: none; }
       <p>Les six caisses noires des Rapaces de la Butte tournent dans le quartier et te cherchent. Rentre-leur dedans, tire-leur dessus : chaque Rapace démoli compte un KO, et il revient plus loin. Ramasse les clés à molette pour réparer ta caisse et les bonus pour tes armes. Gare à la police si tu sèmes le désordre. Ni courses ni défis ici : la partie s’arrête au nombre de KO choisi ou à la fin du temps.</p>
       <div class="row"><span class="lab">Fin de partie</span><div class="seg goalSeg"><button class="mbtn" data-g="10">10 KO</button><button class="mbtn" data-g="20">20 KO</button><button class="mbtn" data-g="30">30 KO</button><button class="mbtn" data-g="0">Sans</button></div></div>
       <div class="row"><span class="lab">Durée</span><div class="seg limitSeg"><button class="mbtn" data-l="5">5 min</button><button class="mbtn" data-l="10">10 min</button><button class="mbtn" data-l="15">15 min</button><button class="mbtn" data-l="0">Sans</button></div></div>
+      <p class="fine" id="huntRec"></p>
       <div class="menu"><button id="huntGo" class="big">Démarrer</button><button class="mbtn" data-go="vMain">Retour</button></div>
     </section>
 
@@ -3471,7 +3476,7 @@ function drive(c, inp, dt) {
 }
 // arcade driving (the original model): forward and lateral speeds, drift on the handbrake; bots and traffic use it
 function planarArcade(c, inp, dt) {
-  let MAX = c.maxV || (c.player ? 44 : (c.ai && c.ai.mode === 'hunt' ? 36 : 15));
+  let MAX = c.maxV || (c.player ? 44 : (c.ai && c.ai.mode === 'hunt' ? (c.huntV || 36) : 15));
   const boost = c.nitro > 0 ? 1.6 : 1; MAX *= c.nitro > 0 ? 1.3 : 1;
   const grip = c.air > 0.25 ? 0.08 : 1; // airborne: no traction
   // (21 nov., audit UX) quick half-turn: backing up fast, handbrake and full lock spin the car round in half a second
@@ -4053,6 +4058,7 @@ const sfx = (() => {
     // (21 nov., audit UX) a dry metallic tick when the player's bullets land (at most every 70 ms), and the alarm of a car
     // about to be wrecked
     tick() { if (!ac || ac.currentTime - (this._tk || 0) < 0.07) return; this._tk = ac.currentTime; const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain(); o.type = 'triangle'; o.frequency.setValueAtTime(2300, t); o.frequency.exponentialRampToValueAtTime(1400, t + 0.05); g.gain.setValueAtTime(0.16, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.07); o.connect(g).connect(fxG); o.start(t); o.stop(t + 0.08); },
+    style() { if (!ac) return; const t = ac.currentTime; [660, 990].forEach((f, i) => { const o = ac.createOscillator(), g = ac.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(f, t + i * 0.07); g.gain.setValueAtTime(0.09, t + i * 0.07); g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.07 + 0.18); o.connect(g).connect(fxG); o.start(t + i * 0.07); o.stop(t + i * 0.07 + 0.2); }); },
     alarm() { if (!ac) return; const t = ac.currentTime; for (const k of [0, 0.16]) { const o = ac.createOscillator(), g = ac.createGain(); o.type = 'square'; o.frequency.setValueAtTime(880, t + k); g.gain.setValueAtTime(0.06, t + k); g.gain.exponentialRampToValueAtTime(0.001, t + k + 0.11); o.connect(g).connect(fxG); o.start(t + k); o.stop(t + k + 0.12); } },
     boom() { if (ac) noise(ac.currentTime, 1.1, 300, 0.6, 1.0, null, 'lowpass'); },
     pick() { if (!ac) return; const o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(660, ac.currentTime); o.frequency.setValueAtTime(990, ac.currentTime + 0.08); g.gain.setValueAtTime(0.25, ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.3); o.connect(g).connect(fxG); o.start(); o.stop(ac.currentTime + 0.32); },
@@ -4716,12 +4722,15 @@ function spawnRival(r) {
 const CHIEFS = ['Le Grand Duc', 'Le Vautour', 'La Buse', 'L’Épervier', 'Le Milan'];
 let chiefKo = 0, chiefN = 0;
 function chiefCheck(r) {
-  if (r.chief) { r.chief = null; r.maxV = undefined; if (r.chiefTag) { r.mesh.remove(r.chiefTag); r.chiefTag.material.map.dispose(); r.chiefTag.material.dispose(); r.chiefTag = null; } }
+  r.huntV = undefined;
+  if (r.chief) { r.chief = null; if (r.chiefTag) { r.mesh.remove(r.chiefTag); r.chiefTag.material.map.dispose(); r.chiefTag.material.dispose(); r.chiefTag = null; } }
   const L = locals[0];
   if (mode !== 'solo' || soloKind !== 'hunt' || !L || (gx && (gx.mission || gx.gmode)) || rivals.some(o => o.chief)) return;
+  // the hunt gets harder: each KO makes the Rapaces who come back a little faster (up to +6 m/s after 15 KO)
+  r.huntV = 36 + Math.min(6, (L.koN || 0) * 0.4);
   if ((L.koN || 0) - chiefKo < 5) return;
   chiefKo = L.koN || 0;
-  r.chief = CHIEFS[chiefN++ % CHIEFS.length]; r.hp = 180; r.maxV = 40;
+  r.chief = CHIEFS[chiefN++ % CHIEFS.length]; r.hp = 180; r.huntV = 42;
   const cv = document.createElement('canvas'); cv.width = 512; cv.height = 96; const g = cv.getContext('2d');
   g.font = 'bold 54px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineWidth = 10; g.strokeStyle = '#000'; g.strokeText('♛ ' + r.chief, 256, 50); g.fillStyle = '#ffcf3a'; g.fillText('♛ ' + r.chief, 256, 50);
   const tex = new THREE.CanvasTexture(cv); if (HD) tex.encoding = THREE.sRGBEncoding;
@@ -5138,6 +5147,12 @@ function endMatch(title, sub) {
   Match.over = true; Match.title = String(title).slice(0, 60); Match.sub = String(sub).slice(0, 60);
   $('resTitle').textContent = Match.title; $('resSub').textContent = Match.sub;
   $('resTable').replaceChildren(boardTable(boardRows()));
+  // (21 nov.) the record of the Rapaces hunt: most KO, then the shortest time to reach the goal
+  if (mode === 'solo' && soloKind === 'hunt' && locals[0] && !(gx && (gx.gmode || gx.mission))) {
+    const L = locals[0], t = Match.limit * 60 - Match.left, rec = settings.huntRec || {}, k = Match.goal + '/' + Match.limit, b = rec[k];
+    const better = !b || L.kills > b.ko || (L.kills === b.ko && t < b.t);
+    if (better && L.kills > 0) { rec[k] = { ko: L.kills, t: Math.round(t) }; settings.huntRec = rec; saveSettings(); Match.sub = (Match.sub + ' · nouveau record !').slice(0, 80); $('resSub').textContent = Match.sub; }
+  }
   { let el = $('resStats'); if (!el) { el = document.createElement('div'); el.id = 'resStats'; $('resTable').after(el); } el.innerHTML = statsHTML(); }
   const canRestart = mode !== 'online' || Net.isHost;
   $('resAgain').hidden = !canRestart; $('resWait').hidden = canRestart;
@@ -5402,6 +5417,11 @@ function credit(by, points, text) {
     if ((by.drift || 0) > 0.3) st.push(['en dérapage', 50]);
     if ((by.air || 0) > 0.3) st.push(['en plein vol', 80]);
     if ((L.heat || 0) > 0 && mode === 'solo') st.push(['sous les gyrophares', 60]);
+    // a streak: KO after KO within 8 seconds
+    const nowT = performance.now(); L.streak = nowT - (L.koT || -1e9) < 8000 ? (L.streak || 1) + 1 : 1; L.koT = nowT;
+    if (L.streak >= 2) st.push([L.streak === 2 ? 'doublé' : L.streak === 3 ? 'triplé' : 'carnage ×' + L.streak, 50 * Math.min(4, L.streak - 1)]);
+    // a short slow motion on the KO (not online, not with « Mouvements de caméra : réduits »)
+    if (mode !== 'online' && settings.motion !== 0) slowMo = nowT + 420;
     for (const [, p] of st) points += p;
     if (st.length) text += ' · ' + st.map(s => s[0]).join(', ') + ' !';
     if (L.st && (!L.st.best || points > L.st.best.p)) L.st.best = { p: points, text };
@@ -5818,6 +5838,7 @@ function showView(id) {
   // free driving until a first game is played
   $('title').classList.toggle('sub', id !== 'vMain');
   if (id === 'vCtrl') { keyCapture = null; renderRebind(); }
+  if (id === 'vHunt') renderEndSegs();
   if (id === 'vMain') { const b = $('startFree') && !$('startFree').hidden ? $('startFree') : $('start'); document.querySelectorAll('#title .here').forEach(e => e.remove()); if (b && !settings.played) b.insertAdjacentHTML('afterbegin', '<span class="here">Commence ici</span>'); if (HD && gx && gx.dailyBox) gx.dailyBox(document.querySelector('#vMain .drvBox')); }
   const f = document.querySelector('#' + id + ' .big, #' + id + ' .mbtn, #' + id + ' input'); if (f) f.focus();
   if (id === 'vOnline') { $('nick').value = settings.nick || ''; renderGames(); }
@@ -5929,6 +5950,8 @@ function renderEndSegs() {
     seg.querySelectorAll('button').forEach((b, i) => { const o = opts[i]; b.hidden = !o; if (!o) return; b.dataset.g = o[0]; if (b.textContent !== o[1]) b.textContent = o[1]; b.classList.toggle('on', o[0] === cur); });
   });
   document.querySelectorAll('.limitSeg button').forEach(b => b.classList.toggle('on', +b.dataset.l === settings.limit));
+  // (21 nov.) the record for the chosen goal and duration, under the choices of the Rapaces hunt
+  const hr = $('huntRec'); if (hr) { const b = (settings.huntRec || {})[settings.goal + '/' + settings.limit]; hr.textContent = b ? 'Ton record ici : ' + b.ko + ' KO en ' + fmtClock(b.t) : 'Pas encore de record pour ces réglages.'; }
 }
 document.querySelectorAll('.goalSeg button').forEach(b => b.addEventListener('click', () => { const k = segMode(b); if (k) settings[MODE_GOALS[k].key] = +b.dataset.g; else settings.goal = +b.dataset.g; saveSettings(); renderEndSegs(); }));
 document.querySelectorAll('.limitSeg button').forEach(b => b.addEventListener('click', () => { settings.limit = +b.dataset.l; saveSettings(); renderEndSegs(); }));
@@ -7512,7 +7535,7 @@ const gx = !HD ? null : (() => {
       // started at once and one star (heat just over 1) was gone within a second
       L.unseen = seen ? 0 : (L.unseen || 0) + dt;
       if (seen ? L.calm > 12 : L.unseen > 5 + 2.5 * stars(L)) L.heat = Math.max(0, heat(L) - dt * (seen ? 0.03 : 0.12));
-      if (heat(L) < 1 && L.heat > 0 && L.wasWanted) { L.heat = 0; flashFor(L, 'Semés !', 'La police abandonne'); }
+      if (heat(L) < 1 && L.heat > 0 && L.wasWanted) { L.heat = 0; flashFor(L, 'Semés !', 'La police abandonne'); escaped(L); }
       L.wasWanted = heat(L) >= 1;
       for (const c of mine) { sirenOn = true; sirenD = Math.min(sirenD, near(c, L.car.x, L.car.z)); }
     }
@@ -8822,7 +8845,7 @@ const gx = !HD ? null : (() => {
   function gameStep(dt) { // inside the world step
     const now = performance.now();
     step(dt);
-    puStep(dt, now); rocketStep(dt); mineStep(dt, now); shieldStep(dt); furnitureStep(dt); Fences.step(dt); LightPoles.step(dt); actStep(dt); discoverStep(dt); guideStep(dt); dailyStep(dt);
+    puStep(dt, now); rocketStep(dt); mineStep(dt, now); shieldStep(dt); furnitureStep(dt); Fences.step(dt); LightPoles.step(dt); actStep(dt); discoverStep(dt); guideStep(dt); dailyStep(dt); styleStep(dt);
     for (const L of locals) {
       L.specCd = (L.specCd || 0) - dt;
       const c = L.car;
@@ -9416,11 +9439,12 @@ const gx = !HD ? null : (() => {
     { k: 'air', n: [1.2, 1.6, 2], txt: v => 'Reste ' + String(v).replace('.', ',') + ' s en l’air d’un seul saut' },
     { k: 'pu', n: [3, 5, 7], txt: v => 'Ramasse ' + v + ' bonus' },
     { k: 'smash', n: [12, 20, 30], txt: v => 'Casse ' + v + ' objets du mobilier urbain' },
+    { k: 'esc', n: [1, 2, 3], txt: v => v > 1 ? 'Sème la police ' + v + ' fois' : 'Sème la police' },
   ];
   const REWARD = [150, 200, 250];
   function dayKey(d = new Date()) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   function dailyList() {
-    const key = dayKey(); let h = 0; for (const ch of key) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    const key = dayKey() + '·2'; let h = 0; for (const ch of key) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
     const rnd = () => { h = (h * 1103515245 + 12345) >>> 0; return h / 4294967296; };
     const pool = DAILY.slice(), out = [];
     for (let i = 0; i < 3; i++) { const d = pool.splice(Math.floor(rnd() * pool.length), 1)[0]; out.push({ k: d.k, goal: d.n[i], text: d.txt(d.n[i]), reward: REWARD[i] }); }
@@ -9433,10 +9457,10 @@ const gx = !HD ? null : (() => {
     const L = locals[0];
     if (mode !== 'solo' || !L || !started || paused || !L.car.alive) { dLast = null; return; }
     const list = dailyList(), s = settings.daily, c = L.car;
-    const now = { ko: L.koN || 0, pu: L.puN || 0, smash: brokenCount() };
+    const now = { ko: L.koN || 0, pu: L.puN || 0, smash: brokenCount(), esc: L.escN || 0 };
     if (!dLast || dLast.L !== L) { dLast = { L, ...now, air: 0 }; return; }
     c.air > 0.25 ? (dLast.air += dt) : (dLast.air = 0);
-    const add = { ko: Math.max(0, now.ko - dLast.ko), pu: Math.max(0, now.pu - dLast.pu), smash: Math.max(0, now.smash - dLast.smash), dist: c.speed * dt / 1000 };
+    const add = { ko: Math.max(0, now.ko - dLast.ko), pu: Math.max(0, now.pu - dLast.pu), smash: Math.max(0, now.smash - dLast.smash), esc: Math.max(0, now.esc - dLast.esc), dist: c.speed * dt / 1000 };
     Object.assign(dLast, now);
     let changed = false;
     list.forEach((o, i) => {
@@ -9463,6 +9487,38 @@ const gx = !HD ? null : (() => {
     let el = host.querySelector('.dailyBox'); if (!el) { el = document.createElement('div'); el.className = 'dailyBox'; host.append(el); }
     el.innerHTML = dailyHTML();
   }
+  // ---------- (21 nov.) driving with style pays: near misses, big jumps, KO streaks, losing the police ----------
+  // Small sums of respect for the risks the player takes, announced in a line under the big messages (popStyle), so the
+  // screen does not fill with titles. Solo and split screen; online, only the player's own respect moves.
+  function popStyle(L, text, pts) {
+    L.respect += pts; saveBank(L); if (L.slot === 0) sfx.style();
+    let el = $('stylePop');
+    if (!el) { el = document.createElement('div'); el.id = 'stylePop'; el.className = 'hud'; document.body.append(el); }
+    if (locals.length > 1) { flashFor(L, '+' + pts, text); return; }
+    const s = document.createElement('div'); s.textContent = text + '  +' + pts; el.append(s);
+    while (el.children.length > 3) el.firstChild.remove();
+    setTimeout(() => s.remove(), 2200);
+  }
+  const missT = new WeakMap();
+  function styleStep(dt) {
+    const now = performance.now();
+    for (const L of locals) {
+      const c = L.car; if (!c.alive || c.sink > 0) { L._air = 0; continue; }
+      // a jump: time in the air, paid on a clean landing (not on the roof, not into the water)
+      if ((c.air || 0) > 0.25) L._air = (L._air || 0) + dt;
+      else if (L._air) { const t = L._air; L._air = 0; if (t > 0.9 && c.hp > 0) popStyle(L, t > 1.8 ? 'Envol monumental !' : t > 1.3 ? 'Beau saut' : 'Saut', Math.round(t * 40)); }
+      // a near miss: a civilian or police car passed within a metre and a half at speed, without touching
+      if (c.speed > 20) for (const o of npcs) {
+        if (!o.alive || o.mesh && !o.mesh.visible) continue;
+        const dx = o.x - c.x, dz = o.z - c.z; if (dx * dx + dz * dz > 16) continue;
+        const [fx, fz] = c.fwd, side = Math.abs(dx * fz - dz * fx), along = dx * fx + dz * fz;
+        if (side > 1.9 && side < 3.4 && Math.abs(along) < 1.5 && now - (missT.get(o) || 0) > 6000 && now - (L._hitT || 0) > 1500) { missT.set(o, now); popStyle(L, o.npc === 'cop' ? 'Frôlé la police !' : 'Frôlé !', o.npc === 'cop' ? 40 : 20); }
+      }
+      if ((L.heat || 0) >= 1) L.peakStars = Math.max(L.peakStars || 0, stars(L));
+    }
+  }
+  // called by police.js when the police give up: the more stars, the more respect
+  function escaped(L) { const n = Math.max(1, L.peakStars || 1); L.peakStars = 0; L.escN = (L.escN || 0) + 1; popStyle(L, 'Police semée ' + '★'.repeat(n), 60 * n); }
   // =====================================================================================
   // Downloaded models baked by tools/assets/bake_model.js (W.models): decoding shared by the port cranes, the pontoons
   // and whatever comes next. The boats keep their own decoder (water line, bow direction).
@@ -10793,6 +10849,7 @@ const PhotoMode = (() => {
   addEventListener('blur', () => { keys = {}; });
   return { toggle, tick, apply, shot, get on() { return P.on; }, get exposure() { return P.on ? P.exp : 1; }, get dof() { return P.on ? P.dof : 0; }, _P: P };
 })();
+let slowMo = 0;
 // ---------- loop ----------
 let last = performance.now(), boardAcc = 0;
 // performance overlay (F3): frame time, draw calls and triangles of the whole frame (every pass), scene size
@@ -10825,7 +10882,9 @@ const PerfHud = (() => {
 })();
 function frame(now) {
   requestAnimationFrame(frame);
-  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  let dt = Math.min(0.05, (now - last) / 1000); last = now;
+  // (21 nov.) the slow motion of a KO: the world runs at a third of its speed for 0.4 s
+  if (now < slowMo && !paused) dt *= 0.35;
   PerfHud.begin();
   pollPads();
   if (Intro.state !== 'off') { if (pads.some(P => P.press && (P.press[0] || P.press[9]))) Intro.key(null); } else if (!(gx && gx.blocking) || (gx.SpawnMap && gx.SpawnMap.open)) menuPadNav(dt);
@@ -10876,6 +10935,7 @@ function step(dt, now) {
       const braking = inp.t < 0 && (c.vx * c.fwd[0] + c.vz * c.fwd[1]) > 0.5;
       c.mesh.userData.tail.emissive.setHex(braking ? 0xff2a2a : 0x400000);
       if (imp > 3 && L.slot === 0) sfx.impact(imp);
+      if (imp > 4) L._hitT = performance.now();
       if (imp > 9) { rumbleFor(L, Math.min(1, imp / 25), 0.4, 160); damage(c, (imp - 8) * 1.2); spawnFx(c.x, 1, c.z, 0.6, 0xffe28a, 0.2, 2, 2); }
       L.fireCd -= dt;
       if (inp.fire && L.fireCd <= 0) {

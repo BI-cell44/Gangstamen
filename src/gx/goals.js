@@ -47,11 +47,12 @@
     { k: 'air', n: [1.2, 1.6, 2], txt: v => 'Reste ' + String(v).replace('.', ',') + ' s en l’air d’un seul saut' },
     { k: 'pu', n: [3, 5, 7], txt: v => 'Ramasse ' + v + ' bonus' },
     { k: 'smash', n: [12, 20, 30], txt: v => 'Casse ' + v + ' objets du mobilier urbain' },
+    { k: 'esc', n: [1, 2, 3], txt: v => v > 1 ? 'Sème la police ' + v + ' fois' : 'Sème la police' },
   ];
   const REWARD = [150, 200, 250];
   function dayKey(d = new Date()) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   function dailyList() {
-    const key = dayKey(); let h = 0; for (const ch of key) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    const key = dayKey() + '·2'; let h = 0; for (const ch of key) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
     const rnd = () => { h = (h * 1103515245 + 12345) >>> 0; return h / 4294967296; };
     const pool = DAILY.slice(), out = [];
     for (let i = 0; i < 3; i++) { const d = pool.splice(Math.floor(rnd() * pool.length), 1)[0]; out.push({ k: d.k, goal: d.n[i], text: d.txt(d.n[i]), reward: REWARD[i] }); }
@@ -64,10 +65,10 @@
     const L = locals[0];
     if (mode !== 'solo' || !L || !started || paused || !L.car.alive) { dLast = null; return; }
     const list = dailyList(), s = settings.daily, c = L.car;
-    const now = { ko: L.koN || 0, pu: L.puN || 0, smash: brokenCount() };
+    const now = { ko: L.koN || 0, pu: L.puN || 0, smash: brokenCount(), esc: L.escN || 0 };
     if (!dLast || dLast.L !== L) { dLast = { L, ...now, air: 0 }; return; }
     c.air > 0.25 ? (dLast.air += dt) : (dLast.air = 0);
-    const add = { ko: Math.max(0, now.ko - dLast.ko), pu: Math.max(0, now.pu - dLast.pu), smash: Math.max(0, now.smash - dLast.smash), dist: c.speed * dt / 1000 };
+    const add = { ko: Math.max(0, now.ko - dLast.ko), pu: Math.max(0, now.pu - dLast.pu), smash: Math.max(0, now.smash - dLast.smash), esc: Math.max(0, now.esc - dLast.esc), dist: c.speed * dt / 1000 };
     Object.assign(dLast, now);
     let changed = false;
     list.forEach((o, i) => {
