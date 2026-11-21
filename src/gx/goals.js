@@ -3,14 +3,15 @@
   // each step ends when the player has done it, or after a while so nobody is stuck. The challenges change every day (the
   // same three for everybody on a given date), count in every solo game, and pay respect into the bank.
   const GUIDE = [
-    { k: 'go', kb: 'Avance avec Z (ou flèche haut)', tc: 'Accélère avec la pédale ▲', pad: 'Accélère avec la gâchette droite', t: 20, ok: (L, c) => c.speed > 9 },
-    { k: 'hb', kb: 'Frein à main : Maj en braquant pour tourner serré', tc: 'Frein à main : bouton FREIN en braquant', pad: 'Frein à main : bouton A en braquant', t: 25, ok: (L, c) => L._inp && L._inp.hb && c.speed > 5 },
-    { k: 'fire', kb: 'Tire avec Espace : le losange jaune montre ta cible', tc: 'Tire avec le bouton TIR : le losange jaune montre ta cible', pad: 'Tire avec RB : le losange jaune montre ta cible', t: 35, hunt: true, ok: L => L.locals0Hit },
+    { k: 'go', kb: () => 'Avance avec ' + kk('up'), tc: 'Accélère avec la pédale ▲', pad: 'Accélère avec la gâchette droite', t: 20, ok: (L, c) => c.speed > 9 },
+    { k: 'hb', kb: () => 'Frein à main : ' + kk('hb') + ' en braquant pour tourner serré', tc: 'Frein à main : bouton FREIN en braquant', pad: 'Frein à main : bouton A en braquant', t: 25, ok: (L, c) => L._inp && L._inp.hb && c.speed > 5 },
+    { k: 'fire', kb: () => 'Tire avec ' + kk('fire') + ' : le losange jaune montre ta cible', tc: 'Tire avec le bouton TIR : le losange jaune montre ta cible', pad: 'Tire avec RB : le losange jaune montre ta cible', t: 35, hunt: true, ok: L => L.locals0Hit },
     { k: 'pu', kb: 'Ramasse un bonus : les boîtes chromées qui tournent', t: 45, ok: L => (L.puN || 0) > (L._gPu || 0) },
     { k: 'free', kb: 'Les colonnes de lumière lancent courses et défis ; le respect gagné paie le garage', t: 9, free: true, ok: () => false },
-    { k: 'end', kb: 'R pour se remettre sur ses roues, Échap pour la pause et la carte. Bonne route !', tc: 'Le bouton ↻ remet la voiture sur ses roues, ❚❚ ouvre la pause et la carte. Bonne route !', pad: 'Y pour se remettre sur ses roues, Start pour la pause. Bonne route !', t: 7, ok: () => false },
+    { k: 'end', kb: () => kk('fix') + ' pour se remettre sur ses roues, Échap pour la pause et la carte. Bonne route !', tc: 'Le bouton ↻ remet la voiture sur ses roues, ❚❚ ouvre la pause et la carte. Bonne route !', pad: 'Y pour se remettre sur ses roues, Start pour la pause. Bonne route !', t: 7, ok: () => false },
   ];
   let guide = null;
+  const kk = a => { const v = SCHEMES.kb1[a]; return keyName(Array.isArray(v) ? v[0] : v); };
   function guideCard(text, n) {
     let el = $('guide');
     if (!el) { el = document.createElement('div'); el.id = 'guide'; el.className = 'hud'; el.innerHTML = '<small></small><span></span><button type="button" aria-label="Fermer le guide">×</button>'; document.body.append(el); el.lastChild.addEventListener('click', () => guideEnd()); }
@@ -33,7 +34,7 @@
     guide.t += dt;
     const dev = isTouch && (!L.ctl || L.ctl === 'touch') ? 'tc' : L.ctl && padIndexOf(L.ctl) >= 0 && pads[padIndexOf(L.ctl)] && pads[padIndexOf(L.ctl)].gp ? 'pad' : 'kb';
     const n = GUIDE.filter(g => !((g.hunt && !guide.hunt) || (g.free && guide.hunt))), k = n.indexOf(s);
-    guideCard(s[dev] || s.kb, (k + 1) + ' / ' + n.length);
+    const tx = s[dev] || s.kb; guideCard(typeof tx === 'function' ? tx() : tx, (k + 1) + ' / ' + n.length);
     if (s.ok(L, L.car) && guide.t > 0.6) { sfx.pick(); guide.i++; guide.t = 0; L._gPu = L.puN || 0; }
     else if (guide.t > s.t) { guide.i++; guide.t = 0; L._gPu = L.puN || 0; }
   }

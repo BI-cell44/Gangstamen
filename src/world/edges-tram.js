@@ -237,7 +237,7 @@ function tramStep(dt) {
         if (d < 2.4) { // contact: shoved off the rails, and one knock per pass if the tram was moving
           c.z = tz + 3; c.vz = Math.max(c.vz, 5 + T.v * 0.4); c.vx += T.v * 0.5;
           T.hit = T.hit || new Set();
-          if (T.v > 2 && !T.hit.has(c) && !c.remote && !c.proxy) { T.hit.add(c); setTimeout(() => T.hit.delete(c), 4000); spawnFx(c.x, 1, c.z - 1, 0.6, 0xffe28a, 0.2, 2, 2); damage(c, 10 + T.v * 1.2); if (c.local) { sfx.hit(); rumbleFor(c.owner, 0.8, 0.6, 250); flashFor(c.owner, 'Le tram !', 'Il ne s’arrête pas pour toi'); } }
+          if (T.v > 2 && !T.hit.has(c) && !c.remote && !c.proxy) { T.hit.add(c); c.tramT = performance.now(); setTimeout(() => T.hit.delete(c), 4000); spawnFx(c.x, 1, c.z - 1, 0.6, 0xffe28a, 0.2, 2, 2); damage(c, 10 + T.v * 1.2); if (c.local) { sfx.hit(); rumbleFor(c.owner, 0.8, 0.6, 250); flashFor(c.owner, 'Le tram !', 'Il ne s’arrête pas pour toi'); } }
         }
       }
     }

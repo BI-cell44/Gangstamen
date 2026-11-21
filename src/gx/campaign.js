@@ -276,6 +276,8 @@
           + (L.car.shield > 0 ? '<span class="pill shield">🛡 ' + Math.ceil(L.car.shield) + '</span>' : ''); }
     } else { el.classList.remove('pills'); delete el.dataset.sig; if (el.textContent !== txt) el.textContent = txt; }
     // (17 nov., user) on touch screens the special button shows the weapon it fires and what is left
+    // (21 nov., audit UX) the weapon line and the special button grey out while the weapon reloads
+    el.classList.toggle('cd', (L.specCd || 0) > 0); if ($('tSpec')) $('tSpec').classList.toggle('cd', (L.specCd || 0) > 0);
     const tb = $('tSpec'), cur = items.find(x => x[0] === L.weapon) || items[0], lab = cur ? cur[1] + ' ' + cur[2] : 'SPÉ';
     if (isTouch && tb && tb.textContent !== lab) tb.textContent = lab;
   }

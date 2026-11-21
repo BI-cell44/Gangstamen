@@ -126,7 +126,7 @@ Demandes du 16 nov. en fin d'après-midi, par priorité (d'abord ce que j'ai cas
 
 ## En attente d'un essai de l'utilisateur
 
-- [ ] **Branche `ux-audit` (21 nov.)** : essayer l’artifact de test https://claude.ai/artifact/E9Som2LKGG8ue3YjLCGbTp (aide à la visée, retours de touche, flèches, HUD allégé, menus, sous-titres) puis décider de la fusion dans `ultra`. Restent de l’audit : choix des touches, icônes d’armes dessinées avec temps de recharge, pièges du décor (coincer un Rapace contre le tram), objectif seul affiché en conduite libre.
+- [ ] **Branche `ux-audit` (21 nov.)** : essayer l’artifact de test https://claude.ai/artifact/E9Som2LKGG8ue3YjLCGbTp (aide à la visée, retours de touche, flèches, HUD allégé, menus, sous-titres) puis décider de la fusion dans `ultra`. Restent de l’audit : icônes d’armes dessinées (aujourd’hui des émojis), choix des touches de la manette et des claviers 2 à 4, d’autres pièges du décor (bac, rampes des ponts).
 
 - Retours traités le 15 nov. par Opus : police à une étoile, Rapaces au départ, feux cassables, flèches en chevron, missions plus longues, **escalier Sainte-Anne refait** (paliers, terrasse : à juger, volées du bas à caler sur le terrain si besoin), passages piétons peints.
 - Son : équilibre des volumes, timbre du moteur, goélands, stations de radio rap, techno et funk.

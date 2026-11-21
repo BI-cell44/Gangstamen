@@ -7,7 +7,7 @@ const SCHEMES = {
 };
 const CTL_OPTIONS = ['kb1+pad0', 'kb1', 'kb2', 'kb3', 'kb4', 'pad0', 'pad1', 'pad2', 'pad3'];
 let layoutMap = null;
-try { navigator.keyboard && navigator.keyboard.getLayoutMap && navigator.keyboard.getLayoutMap().then(m => { layoutMap = m; renderCtlTable(); }).catch(() => { }); } catch (e) { }
+try { navigator.keyboard && navigator.keyboard.getLayoutMap && navigator.keyboard.getLayoutMap().then(m => { layoutMap = m; renderCtlTable(); helpLine(); renderRebind(); }).catch(() => { }); } catch (e) { }
 const KEY_NAMES = { Space: 'Espace', ShiftLeft: 'Maj g.', ShiftRight: 'Maj d.', ControlRight: 'Ctrl d.', Enter: 'Entrée', End: 'Fin', PageDown: 'Pg suiv.',
   Delete: 'Suppr', Slash: ':', NumpadEnter: 'Entrée num.', ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→', NumpadDecimal: 'Num .', NumpadAdd: 'Num +', NumpadSubtract: 'Num −' };
 function keyName(code) {
@@ -181,3 +181,48 @@ function readInput(L) {
   return { t, s: st, hb, fire, special, swap };
 }
 
+// (21 nov., audit UX) the keys of keyboard 1 (solo, online, player 1) can be chosen in Commandes; the keys the game keeps for
+// itself (Échap, F, M, N, B, G, P, Tab, the digits of the quick chat) cannot be taken
+const REBIND = [['up', 'Gaz'], ['down', 'Frein / marche arrière'], ['left', 'Gauche'], ['right', 'Droite'], ['fire', 'Tir'], ['hb', 'Frein à main'], ['sp', 'Arme spéciale'], ['sw', 'Changer d’arme'], ['cam', 'Caméra'], ['back', 'Regarder derrière'], ['fix', 'Se rétablir']];
+const KB1_DEFAULT = JSON.parse(JSON.stringify(SCHEMES.kb1));
+const RESERVED_KEYS = ['Escape', 'KeyF', 'KeyM', 'Semicolon', 'KeyN', 'KeyB', 'KeyG', 'KeyP', 'Tab', 'F2', 'Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6'];
+let keyCapture = null;
+function applyKeys() {
+  Object.assign(SCHEMES.kb1, JSON.parse(JSON.stringify(KB1_DEFAULT)));
+  const k = settings.keys || {};
+  for (const [a] of REBIND) if (k[a]) SCHEMES.kb1[a] = Array.isArray(KB1_DEFAULT[a]) ? [k[a]] : k[a];
+  helpLine();
+}
+// the line of keys at the bottom of the screen follows the chosen keys
+function helpLine() {
+  const el = $('help'); if (!el) return; const s = SCHEMES.kb1, n = c => keyName(Array.isArray(c) ? c[0] : c);
+  const parts = [[s.up, s.left, s.down, s.right].map(n).join('') + ' conduire', n(s.fire) + ' tir', n(s.sp) + ' spéciale', n(s.sw) + ' changer d’arme', n(s.hb) + ' frein à main', n(s.cam) + ' caméra', n(s.fix) + ' se rétablir', 'M radio', 'N moment', 'B météo', 'Échap menu'];
+  el.innerHTML = parts.map(p => p.replace(/ /g, '&nbsp;')).join(' · ');
+}
+function renderRebind() {
+  const box = $('rebind'); if (!box) return;
+  box.replaceChildren(...REBIND.map(([a, lab]) => {
+    const row = document.createElement('div'); row.className = 'rbRow';
+    const l = document.createElement('span'); l.textContent = lab;
+    const b = document.createElement('button'); b.className = 'mbtn'; b.type = 'button';
+    const cur = SCHEMES.kb1[a]; b.textContent = keyCapture === a ? 'Appuie sur une touche…' : keyName(Array.isArray(cur) ? cur[0] : cur);
+    b.addEventListener('click', () => { keyCapture = keyCapture === a ? null : a; renderRebind(); });
+    row.append(l, b); return row;
+  }));
+  const r = document.createElement('button'); r.className = 'mbtn'; r.type = 'button'; r.textContent = 'Touches par défaut';
+  r.addEventListener('click', () => { settings.keys = {}; saveSettings(); keyCapture = null; applyKeys(); renderRebind(); renderCtlTable(); });
+  const m = document.createElement('p'); m.className = 'fine'; m.id = 'rebindMsg';
+  box.append(r, m);
+}
+addEventListener('keydown', e => {
+  if (!keyCapture) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  const a = keyCapture; keyCapture = null;
+  if (e.code === 'Escape') { renderRebind(); return; }
+  if (RESERVED_KEYS.includes(e.code)) { renderRebind(); $('rebindMsg').textContent = keyName(e.code) + ' est gardée par le jeu, choisis une autre touche.'; return; }
+  const k = settings.keys || (settings.keys = {}), s = SCHEMES.kb1, old = Array.isArray(s[a]) ? s[a][0] : s[a];
+  // a key already used by another action of keyboard 1: the two actions swap their keys
+  for (const [o] of REBIND) { const v = Array.isArray(s[o]) ? s[o] : [s[o]]; if (o !== a && v.includes(e.code)) k[o] = old; }
+  k[a] = e.code; saveSettings(); applyKeys(); renderRebind(); renderCtlTable();
+}, true);
+applyKeys();

@@ -193,6 +193,11 @@ function damage(c, d, by) {
   } else if (c.botIndex !== undefined) {
     c.wreck = 14;
     if (by && by.local) credit(by, c.chief ? 400 : 100, c.chief ? c.chief + ' est tombé !' : botLabel(c) + ' au tapis');
+    // (21 nov., audit UX) a Rapace the player has just hit, finished by the tram or a wall, is still the player's KO
+    else if (!by && c.lastHitBy && c.lastHitBy.alive && performance.now() - (c.lastHitT || 0) < 6000) {
+      const tram = performance.now() - (c.tramT || 0) < 500;
+      credit(c.lastHitBy, (c.chief ? 400 : 100) + (tram ? 100 : 0), (c.chief || botLabel(c)) + (tram ? ' : coincé sous le tram !' : ' : envoyé dans le décor'));
+    }
     else if (by && by.remotePeer && Net.isHost) Net.emit('bko', { by: by.remotePeer, i: c.botIndex });
   }
 }
