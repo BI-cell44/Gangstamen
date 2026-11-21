@@ -25,6 +25,8 @@ Trois sorties, construites depuis le même code (`sh build.sh`) :
 - Son synthétisé (cycle 5) : moteur selon régime et charge, pneus, pavés, chocs, Doppler des voitures proches, ambiance par lieu (Loire, goélands, cloches de Sainte-Anne, tram, foule).
 - 8 modèles (berline, 205, compacte, R5, Twingo, coupé sport, utilitaire, voiture de police), 10 peintures ; 6 caméras, regard arrière, mode photo (F2).
 
+Branche `ux-audit` (21 nov., à essayer avant fusion dans `ultra`) : préconisations de l’audit UX du 20 nov. Nouveaux fichiers `src/gx/goals.js` (première partie guidée, défis du jour) et `src/gx/style.js` (frôlements, sauts, police semée) ; retours de combat dans `src/game/combat.js` (aide à la visée `aimTarget`, losange et barre de dégâts `aimMarks`, arc de direction, bord rouge et flèches hors écran `feedbackHud` / `offscreenArrows`, KO de style, séries, ralenti `slowMo` dans `loop.js`) ; chefs des Rapaces `chiefCheck` dans `teams.js` ; bilan de fin et records dans `match-end.js` ; choix des touches du clavier 1 `applyKeys` / `renderRebind` dans `input.js`. Réglages ajoutés : `aim`, `motion`, `bigText`, `subs`, `keys`, `introSeen`, `played`, `guided`, `daily`, `huntRec`.
+
 ## 2. Architecture technique
 
 ### Technologies (décisions dans `DECISIONS_TECHNIQUES.md`)
@@ -121,6 +123,7 @@ Performances réelles, son (intro, radio, voix, cloche du tram), vibrations, res
 | Classique (travail) | https://claude.ai/artifact/8qmc5b2RMAPv71rtScT7bC | depuis `main` |
 | HD (travail) | https://claude.ai/artifact/BPok545VCEruvLU1Y8z9cf | depuis `main` |
 | **Ultra** (travail) | https://claude.ai/artifact/GYxFj8ntvQLZhiW64qBvu1 | depuis `ultra` |
+| Test de la branche `ux-audit` | https://claude.ai/artifact/E9Som2LKGG8ue3YjLCGbTp | depuis `ux-audit` (pas encore fusionnée dans `ultra`, attente de l’essai de l’utilisateur) |
 | HD (référence figée du 13 nov.) | https://claude.ai/artifact/JWH66Pm5HUyYNyY4W1cdua | **ne jamais écraser** |
 | Classique (référence figée du 13 nov.) | https://claude.ai/artifact/RMZCtkzA3UGBdQ6GfKuvZe | **ne jamais écraser** |
 
