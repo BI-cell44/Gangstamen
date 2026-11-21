@@ -114,6 +114,7 @@ body:has(#pause:not([hidden])) #guide, body:has(#results:not([hidden])) #guide, 
 .rbRow { display: flex; align-items: center; justify-content: space-between; gap: 10px; font: 15px system-ui, sans-serif; }
 .rbRow .mbtn { min-width: 110px; padding: 4px 10px; }
 #rebind > .mbtn, #rebind > .fine { grid-column: 1 / -1; justify-self: start; }
+.wi { width: 1.1em; height: 1.1em; vertical-align: -0.2em; }
 #ammo.cd, #tSpec.cd { opacity: .5; filter: grayscale(.6); }
 #help { transition: opacity .6s; }
 body.helpOff #help { opacity: 0; }
@@ -8847,10 +8848,18 @@ const gx = !HD ? null : (() => {
   }
   let furnitureBuilt = false;
   // the weapons line of a player: what he carries, the one fired (▶), the keys on a keyboard (not on a touch screen)
+  // (21 nov., audit UX) drawn icons instead of emojis (N₂O did not say « nitro », and emojis differ from one system to the next)
+  const svgI = (d, extra = '') => '<svg class="wi" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="' + d + '"/>' + extra + '</svg>';
+  const WICON = {
+    rockets: svgI('M12 1.5c3.2 2.3 5 6.4 5 10.5l-1.6 3.5H8.6L7 12c0-4.1 1.8-8.2 5-10.5zM12 7.2a2 2 0 100 4 2 2 0 000-4zM7 13.5l-3 4.5 4 .5zM17 13.5l3 4.5-4 .5zM9.6 16.5h4.8L13 22h-2z'),
+    mines: svgI('M12 7a6 6 0 110 12 6 6 0 010-12z', '<path stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M12 2.5v3M12 20.5v1.5M2.8 13h2.6M18.6 13h2.6M5.2 6.2l2 2M16.8 17.8l1.6 1.6M18.8 6.2l-2 2M7.2 17.8l-1.6 1.6"/>'),
+    nitro: svgI('M10 1.5h4v3h-4zM9 5h6l1.5 3.5V20a2.5 2.5 0 01-2.5 2.5h-4A2.5 2.5 0 017.5 20V8.5zM12.8 9l-3.3 5h2.2l-.9 4.5 3.7-5.6h-2.3z'),
+    shield: svgI('M12 1.8l8.2 3.1v6.2c0 5.2-3.5 9.4-8.2 11.1-4.7-1.7-8.2-5.9-8.2-11.1V4.9z'),
+  };
   function ammoText(L, keys) {
-    const a = L.ammo || {}, items = [['rockets', '🚀', a.rockets], ['mines', '💣', a.mines], ['nitro', 'N₂O', a.nitro]].filter(x => x[2] > 0);
+    const a = L.ammo || {}, items = [['rockets', WICON.rockets, a.rockets], ['mines', WICON.mines, a.mines], ['nitro', WICON.nitro, a.nitro]].filter(x => x[2] > 0);
     const sc = schemeOf(L.ctl), key = sc && sc.sp ? keyName(sc.sp[0]) : 'B', swk = sc && sc.sw ? keyName(sc.sw[0]) : 'RB';
-    const txt = items.map(([k, ic, n]) => (L.weapon === k ? '▶' : '') + ic + ' ' + n).join('   ') + (L.car.shield > 0 ? '   🛡 ' + Math.ceil(L.car.shield) : '') + (keys && items.length ? '   [' + key + ']' : '') + (keys && items.length > 1 ? ' [' + swk + ' ⇄]' : '');
+    const txt = items.map(([k, ic, n]) => (L.weapon === k ? '▶' : '') + ic + ' ' + n).join(' &nbsp; ') + (L.car.shield > 0 ? ' &nbsp; ' + WICON.shield + ' ' + Math.ceil(L.car.shield) : '') + (keys && items.length ? ' &nbsp; [' + key + ']' : '') + (keys && items.length > 1 ? ' [' + swk + ' ⇄]' : '');
     const cur = items.find(x => x[0] === L.weapon) || items[0];
     return { txt, items, lab: cur ? cur[1] + ' ' + cur[2] : 'SPÉ' };
   }
@@ -8859,26 +8868,26 @@ const gx = !HD ? null : (() => {
     if (locals.length > 1) { // (17 nov., user) split screen: each player's weapons under his score (before: not shown at all)
       el.hidden = true;
       for (const L of locals) { const h = L.hud; if (!h || !h.pw) continue; const touchP = L.slot === 0 && touchDev && (settings.tctl0 || 'touch') === 'touch', r = ammoText(L, !touchP);
-        h.pw.hidden = !r.txt; if (h.pw.textContent !== r.txt) h.pw.textContent = r.txt;
-        if (touchP) { const tb = $('tSpec'); if (tb && tb.textContent !== r.lab) tb.textContent = r.lab; } }
+        h.pw.hidden = !r.txt; if (h.pw.dataset.t !== r.txt) { h.pw.dataset.t = r.txt; h.pw.innerHTML = r.txt; }
+        if (touchP) { const tb = $('tSpec'); if (tb && tb.dataset.t !== r.lab) { tb.dataset.t = r.lab; tb.innerHTML = r.lab; } } }
       return;
     }
     const L = locals[0]; if (!L) { el.hidden = true; return; }
-    const a = L.ammo || {}, items = [['rockets', '🚀', a.rockets], ['mines', '💣', a.mines], ['nitro', 'N₂O', a.nitro]].filter(x => x[2] > 0);
+    const a = L.ammo || {}, items = [['rockets', WICON.rockets, a.rockets], ['mines', WICON.mines, a.mines], ['nitro', WICON.nitro, a.nitro]].filter(x => x[2] > 0);
     el.hidden = !items.length && !(L.car.shield > 0);
     const sc = schemeOf(L.ctl), key = sc && sc.sp ? keyName(sc.sp[0]) : 'B', swk = sc && sc.sw ? keyName(sc.sw[0]) : 'RB';
-    const txt = items.map(([k, ic, n]) => (L.weapon === k ? '▶' : '') + ic + ' ' + n).join('   ') + (L.car.shield > 0 ? '   🛡 ' + Math.ceil(L.car.shield) : '') + (items.length ? '   [' + key + ']' : '') + (items.length > 1 ? ' [' + swk + ' ⇄]' : '');
+    const txt = items.map(([k, ic, n]) => (L.weapon === k ? '▶' : '') + ic + ' ' + n).join(' &nbsp; ') + (L.car.shield > 0 ? ' &nbsp; ' + WICON.shield + ' ' + Math.ceil(L.car.shield) : '') + (items.length ? ' &nbsp; [' + key + ']' : '') + (items.length > 1 ? ' [' + swk + ' ⇄]' : '');
     if (isTouch) { // (17 nov., user) one pastille per weapon, touched to choose it; the chosen one lit
       const sig = items.map(([k, , n]) => k + n + (L.weapon === k ? '*' : '')).join() + '|' + (L.car.shield > 0 ? Math.ceil(L.car.shield) : '');
       if (el.dataset.sig !== sig) { el.dataset.sig = sig; el.classList.add('pills');
         el.innerHTML = items.map(([k, ic, n]) => '<button class="pill' + (L.weapon === k ? ' on' : '') + '" data-w="' + k + '" aria-label="Choisir ' + ({ rockets: 'les roquettes', mines: 'les mines', nitro: 'la nitro' })[k] + '">' + ic + ' ' + n + '</button>').join('')
-          + (L.car.shield > 0 ? '<span class="pill shield">🛡 ' + Math.ceil(L.car.shield) + '</span>' : ''); }
-    } else { el.classList.remove('pills'); delete el.dataset.sig; if (el.textContent !== txt) el.textContent = txt; }
+          + (L.car.shield > 0 ? '<span class="pill shield">' + WICON.shield + ' ' + Math.ceil(L.car.shield) + '</span>' : ''); }
+    } else { el.classList.remove('pills'); delete el.dataset.sig; if (el.dataset.t !== txt) { el.dataset.t = txt; el.innerHTML = txt; } }
     // (17 nov., user) on touch screens the special button shows the weapon it fires and what is left
     // (21 nov., audit UX) the weapon line and the special button grey out while the weapon reloads
     el.classList.toggle('cd', (L.specCd || 0) > 0); if ($('tSpec')) $('tSpec').classList.toggle('cd', (L.specCd || 0) > 0);
     const tb = $('tSpec'), cur = items.find(x => x[0] === L.weapon) || items[0], lab = cur ? cur[1] + ' ' + cur[2] : 'SPÉ';
-    if (isTouch && tb && tb.textContent !== lab) tb.textContent = lab;
+    if (isTouch && tb && tb.dataset.t !== lab) { tb.dataset.t = lab; tb.innerHTML = lab; }
   }
   // a touch on a weapon pastille selects it (pointerdown: the HUD must not wait for a click)
   $('ammo').addEventListener('pointerdown', e => { const b = e.target.closest && e.target.closest('.pill[data-w]'), L = locals[0]; if (!b || !L || !L.ammo || !(L.ammo[b.dataset.w] > 0)) return; e.preventDefault(); L.weapon = b.dataset.w; });
