@@ -120,6 +120,9 @@ body:has(#pause:not([hidden])) #guide, body:has(#results:not([hidden])) #guide, 
 #stylePop div { font: 700 17px/1.2 var(--data); color: #ffd84a; text-shadow: 2px 2px 0 #000; animation: popUp 2.2s ease-out forwards; }
 @keyframes popUp { 0% { opacity: 0; transform: scale(1.4); } 12% { opacity: 1; transform: scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
 body.touch #stylePop { top: 24%; }
+/* (21 nov.) « Taille des textes : grande » in the options */
+body.bigText #stats, body.bigText #ticker, body.bigText #guide, body.bigText #subs, body.bigText #stylePop, body.bigText #plate, body.bigText #objective, body.bigText #clock, body.bigText #dash { zoom: 1.22; }
+body.bigText #title .view, body.bigText #pause .card { font-size: 1.12em; }
 #help { transition: opacity .6s; }
 body.helpOff #help { opacity: 0; }
 #logo { display: none; } /* (21 nov., audit UX) the title is on the menu, no need for it over the game or behind the menus */
@@ -589,6 +592,7 @@ body.cine #logo, body.cine #credit { display: none; }
       <div class="row hdOnly" hidden><span class="lab">Météo</span><div class="seg" id="rainSeg"><button class="mbtn" data-v="0">Sec</button><button class="mbtn" data-v="0.6">Pluie</button><button class="mbtn" data-v="1">Orage</button><button class="mbtn" data-v="auto">Variable</button></div></div>
       <div class="row hdOnly" hidden><span class="lab">Ombres</span><div class="seg" id="shSeg"><button class="mbtn" data-v="0">Non</button><button class="mbtn" data-v="1">Auto</button><button class="mbtn" data-v="2">Toujours</button></div></div>
       <div class="row hdOnly" hidden><span class="lab">Distance de vue</span><div class="seg" id="distSeg"><button class="mbtn" data-v="0">Courte</button><button class="mbtn" data-v="1">Moyenne</button><button class="mbtn" data-v="2">Longue</button></div></div>
+      <div class="row"><span class="lab">Taille des textes</span><div class="seg" id="textSeg"><button class="mbtn" data-v="0">Normale</button><button class="mbtn" data-v="1">Grande</button></div></div>
       <div class="row"><span class="lab">Mouvements de caméra</span><div class="seg" id="motionSeg"><button class="mbtn" data-v="0">Réduits</button><button class="mbtn" data-v="1">Normaux</button></div></div>
       <div class="row"><span class="lab">Aide à la visée</span><div class="seg" id="aimSeg"><button class="mbtn" data-v="0">Aucune</button><button class="mbtn" data-v="1">Légère</button><button class="mbtn" data-v="2">Forte</button></div></div>
       <div class="row hdOnly" hidden><span class="lab">Circulation</span><div class="seg" id="trafSeg"><button class="mbtn" data-v="0">Aucune</button><button class="mbtn" data-v="1">Calme</button><button class="mbtn" data-v="2">Normale</button></div></div>

@@ -49,9 +49,10 @@ function aimTarget(c, range = 95, cone = AIM_CONE[aimLevel()]) {
   return best;
 }
 // the yellow diamond over each local player's assist target (one sprite per screen slot, hidden when there is none)
-const AIM_SPR = []; let _aimTex = null;
+const AIM_SPR = [], AIM_BAR = []; let _aimTex = null;
 function aimMarks() {
-  for (const s of AIM_SPR) s.visible = false;
+  for (const s of AIM_SPR) if (s) s.visible = false;
+  for (const b of AIM_BAR) if (b) b[0].visible = b[1].visible = false;
   if (!started) return;
   for (const L of locals) {
     const c = L.car; c.aimT = c.alive && !(gx && gx.blocking) ? aimTarget(c) : null; const t = c.aimT; if (!t) continue;
@@ -66,6 +67,14 @@ function aimMarks() {
     const fl = performance.now() - (c.hitMarkT || 0) < 130;
     s.scale.setScalar(fl ? 2.6 : 1.8); s.material.color.setRGB(1, fl ? 0.4 : 1, fl ? 0.35 : 1);
     s.visible = true; s.position.set(t.x, (t.mesh ? t.mesh.position.y : surfaceH(t.x, t.z)) + 2.9 + Math.sin(performance.now() / 160) * 0.12, t.z);
+    // (21 nov.) the target's damage under the diamond: the bar empties as the shots land
+    let bb = AIM_BAR[L.slot];
+    if (!bb) { const mk = (col, o) => { const m = new THREE.Sprite(new THREE.SpriteMaterial({ color: col, depthTest: false, transparent: true, opacity: o, fog: false })); m.renderOrder = 21; m.userData.hdLinear = true; scene.add(m); return m; };
+      bb = AIM_BAR[L.slot] = [mk(0x0d0a14, 0.8), mk(0xff4a3a, 1)]; }
+    const max = t.chief ? 180 : t.botIndex !== undefined ? 60 : t.npc === 'cop' ? 70 : 100, f = Math.max(0, Math.min(1, t.hp / max));
+    if (f < 0.999) { const y = s.position.y + 1.6;
+      bb[0].visible = bb[1].visible = true; bb[0].position.set(t.x, y, t.z); bb[0].scale.set(2.4, 0.44, 1);
+      bb[1].position.set(t.x, y, t.z); bb[1].scale.set(Math.max(0.02, 2.2 * f), 0.28, 1); bb[1].center.set(1.1 / Math.max(0.02, 2.2 * f), 0.5); }
   }
   feedbackHud();
 }

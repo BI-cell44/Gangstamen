@@ -158,7 +158,8 @@ function initOptions() {
   $('optRetro').checked = retro; $('optRetro').addEventListener('change', () => toggleRetro());
   const segOpt = (id, key, after) => { const bs = document.querySelectorAll('#' + id + ' button'), show = () => bs.forEach(b => b.classList.toggle('on', +b.dataset.v === +settings[key]));
     bs.forEach(b => b.addEventListener('click', () => { settings[key] = +b.dataset.v; saveSettings(); show(); if (after) after(); })); show(); };
-  segOpt('aimSeg', 'aim'); segOpt('motionSeg', 'motion');
+  segOpt('aimSeg', 'aim'); segOpt('motionSeg', 'motion'); segOpt('textSeg', 'bigText', () => document.body.classList.toggle('bigText', !!settings.bigText));
+  document.body.classList.toggle('bigText', !!settings.bigText);
   if (HD) {
     $('retroRow').hidden = true; $('hdRow').hidden = false;
     document.querySelectorAll('.hdOnly').forEach(r => { r.hidden = false; });
