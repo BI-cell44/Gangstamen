@@ -1893,11 +1893,26 @@ const hd = !HD ? null : (() => {
   }
   const VARIANTS = { house: 3, block: 2, industrial: 1, plain: 1, brick: 2, church: 1, stone: 2 };
   // every style in a few variants, for the upper floors and for the street level
-  function wallSet(styles) {
+  // (27 nov., D-20) lazy: a big town built in pieces gets plain stand-in textures at loading (1,2 s less in software
+  // rendering) and the drawn ones during the menu, a few a frame (facadeTick)
+  const facadeJobs = []; let facadeStand = null;
+  function wallSet(styles, lazy) {
     const upper = [], ground = [];
-    for (const st of styles) { const n = VARIANTS[st] || 1, u = [], g = []; for (let v = 0; v < n; v++) { u.push(wallMat(st, false, v)); g.push(wallMat(st, true, v)); } upper.push(u); ground.push(g); }
+    for (const st of styles) { const n = VARIANTS[st] || 1, u = [], g = []; for (let v = 0; v < n; v++) { u.push(lazy ? lazyWallMat(st, false, v) : wallMat(st, false, v)); g.push(lazy ? lazyWallMat(st, true, v) : wallMat(st, true, v)); } upper.push(u); ground.push(g); }
     return { upper, ground };
   }
+  function lazyWallMat(style, ground, variant) {
+    if (!facadeStand) {
+      const one = col => { const [c, g] = canvas(4, 4); g.fillStyle = col; g.fillRect(0, 0, 4, 4); const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; };
+      facadeStand = { map: one('#c9c0b0'), emissive: one('#000'), normal: one('#8080ff'), rough: one('rgb(0,200,0)') };
+    }
+    const S = facadeStand, m = new THREE.MeshStandardMaterial({ map: S.map, vertexColors: true, emissive: 0xffffff, emissiveMap: S.emissive, emissiveIntensity: 0, normalMap: S.normal, normalScale: new THREE.Vector2(0.9, 0.9),
+      roughness: 1, metalness: 1, roughnessMap: S.rough, metalnessMap: S.rough, envMapIntensity: 0.9 });
+    facadeJobs.push(() => { const t = facadeTextures(style, ground, variant); for (const k of ['map', 'emissive']) { t[k].encoding = THREE.sRGBEncoding; t[k].magFilter = THREE.LinearFilter; } m.needsUpdate = true; m.map = t.map; m.emissiveMap = t.emissive; m.normalMap = t.normal; m.roughnessMap = m.metalnessMap = t.rough; });
+    return m;
+  }
+  // the drawn façades, while the budget of the frame lasts (at least one)
+  function facadeTick() { if (!facadeJobs.length) return; const t0 = performance.now(); do facadeJobs.shift()(); while (facadeJobs.length && performance.now() - t0 < 8); }
   // ---------- real shop fronts (OpenStreetMap): one painted front per shop, in one atlas ----------
   const CHAINS = /cr[ée]dit|^cic$|caisse d|banque|lidl|intermarch|superdry|^pfg$|vival|poste/i; // national brands get a generic sign
   const FAMILY = {
@@ -2642,7 +2657,7 @@ const hd = !HD ? null : (() => {
     }
   }
   addEventListener('resize', resize);
-  return { QUAL, setQuality, setSafe, get safe() { return safe; }, perf, perfStats: stats, get quality() { return qi; }, render, frame, setTime, setTod, setRain, setDistance, amb, wetPatch, emit, smoke, spark, fire, flashAt, world, linearize, makeCar, fx, explode: explodeAt, muzzle, roadMat, waterMat, crownGeo, wallMat, wallSet, shopSet, townHall, groundMat, footMat, roofMat, shake, lin, linHex, get floatRT() { return floatRT; } };
+  return { QUAL, setQuality, setSafe, get safe() { return safe; }, perf, perfStats: stats, get quality() { return qi; }, render, frame, setTime, setTod, setRain, setDistance, amb, wetPatch, emit, smoke, spark, fire, flashAt, world, linearize, makeCar, fx, explode: explodeAt, muzzle, roadMat, waterMat, crownGeo, wallMat, wallSet, facadeTick, get facadesLeft() { return facadeJobs.length; }, shopSet, townHall, groundMat, footMat, roofMat, shake, lin, linHex, get floatRT() { return floatRT; } };
 })();
 // <<< HD MODULE
 
@@ -2781,7 +2796,7 @@ const WALL_TINTS = [
 const ROOF_TINTS = ['#4a5263', '#6c6964', '#7b8187', '#6b5b4b', '#58484a', '#6c6964', '#3f4655'];
 BOOT.mark('moteur et modules');
 const facadeTex = HD ? [] : FACADES.map(facade);
-const HDW = HD ? hd.wallSet(FACADES) : null; // HD: every style in a few variants, upper floors and street level
+const HDW = HD ? hd.wallSet(FACADES, cityStreams()) : null; // HD: every style in a few variants, upper floors and street level
 const wallMats = HD ? [].concat(...HDW.upper, ...HDW.ground) : facadeTex.map(([t, te]) => new THREE.MeshLambertMaterial({ map: t, vertexColors: true, emissive: 0xffffff, emissiveMap: te, emissiveIntensity: 0 }));
 const roofMat = HD ? hd.roofMat() : new THREE.MeshLambertMaterial({ vertexColors: true });
 BOOT.mark('textures de façades');
@@ -2969,7 +2984,8 @@ function buildCity() {
     const nVar = HD ? HDW.upper[style].length : 1, vr = (hash(bi + 17) * nVar) | 0;
     const bayW = Math.max(2.4, Math.min(4.6, HINTS.get(bi) || (style === 1 ? 3.4 + hash(bi + 23) * 0.8 : style === 0 || style === 4 ? 2.8 + hash(bi + 23) * 1.1 : style === STONE_STYLE ? 3.0 + hash(bi + 23) * 0.6 : 4)));
     let acc = hash(bi + 3) * 16;
-    const eaveC = shade(col(ROOF_TINTS[kind] || ROOF_TINTS[0]), 0.62);
+    const roofT = stoneStyle(b, bi, kind) ? '#454c5a' : ROOF_TINTS[kind] || ROOF_TINTS[0]; /* (27 nov., Nantes) slate over the tuffeau */
+    const eaveC = shade(col(roofT), 0.62);
     for (let i = 0; i < n; i++) {
       const j = (i + 1) % n;
       const ax = p[2 * i], az = p[2 * i + 1], bx = p[2 * j], bz = p[2 * j + 1];
@@ -3050,7 +3066,7 @@ function buildCity() {
       }
     }
     if (b.u && !b.o) { const [pts, tris] = triangulate(p), uc = col('#6a665f'); for (const [i0, i1, i2] of tris) { const A = [pts[i0].x, y0, pts[i0].y], B = [pts[i1].x, y0, pts[i1].y], C = [pts[i2].x, y0, pts[i2].y]; roofs.tri(A, B, C, [0, -1, 0], null, null, null, uc); roofs.tri(A, C, B, [0, -1, 0], null, null, null, uc); } } // underside
-    const rc = shade(col(ROOF_TINTS[kind] || ROOF_TINTS[0]), 0.85 + hash(bi + 11) * 0.3);
+    const rc = shade(col(roofT), 0.85 + hash(bi + 11) * 0.3);
     if (b.o) {
       b._roofY = h; // (16 nov.) the columns of the hall (gx/models.js) go up to here
       // An open hall (the Nefs): seen from the end the roof is a broken line, a row of gables side by side like a
@@ -3152,8 +3168,14 @@ function buildCity() {
 // camera comes into a tile still empty (a respawn far away). Each tile of town is its own set of meshes, hidden past the
 // fog like the tiles of world/tiles.js (which leaves them alone). Kinds of pieces: buildings (buildCity), streets
 // (buildGround). D-20.
+// (27 nov., D-20) is the town built in pieces? A town with a handmade part too, when its map is big (Nantes around
+// Chantenay); Chantenay alone stays whole. A function: the façades ask before CityStream exists
+function cityStreams() {
+  const ext = CITY && CITY.extent, bigMap = !!ext && (ext[1] - ext[0]) * (ext[3] - ext[2]) > 8e6;
+  return (!HANDMADE || bigMap) && W.buildings.length > 3000 && !window.__noStream;
+}
 const CityStream = (() => {
-  const on = !HANDMADE && W.buildings.length > 3000 && !window.__noStream, R0 = 650, info = { tiles: 0, boot: 0, built: 0, ms: 0, urgent: 0 };
+  const on = cityStreams(), R0 = 650, info = { tiles: 0, boot: 0, built: 0, ms: 0, urgent: 0 };
   const kinds = {}, chunks = new Map(), pend = [];
   let SZ = 0, cur = null;
   function centre() {
@@ -4745,7 +4767,7 @@ const Soundscape = (() => {
       place.crowd = Math.min(1, n / 14);
       let tr = 0, br = 0;
       for (const T of trams) {
-        if (T.sleep > 0) continue; const tz = (T.dir > 0 ? tramS : tramN)(T.x), d = Math.hypot(T.x - lx, tz - lz);
+        if (T.sleep > 0) continue; const hp = T.segs[0].position, d = Math.hypot(hp.x - lx, hp.z - lz); /* (27 nov.) the head, whatever the line */
         if (d > 120) continue; const k = 1 - d / 120;
         tr = Math.max(tr, k * Math.min(1, T.v / 8) * (0.4 + 0.6 * k));
         if (T._pv !== undefined && T._pv - T.v > 0.4 && T.v > 0.5 && T.v < 7) br = Math.max(br, k); // braking for the station
@@ -5292,8 +5314,20 @@ const KEY_NAMES = { Space: 'Espace', ShiftLeft: 'Maj g.', ShiftRight: 'Maj d.', 
   Delete: 'Suppr', Slash: ':', NumpadEnter: 'Entrée num.', ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→', NumpadDecimal: 'Num .', NumpadAdd: 'Num +', NumpadSubtract: 'Num −' };
 // (21 nov., C2.1) the names of the keys in English
 if (LANG === 'en') Object.assign(KEY_NAMES, { Space: 'Space', ShiftLeft: 'L Shift', ShiftRight: 'R Shift', ControlRight: 'R Ctrl', Enter: 'Enter', End: 'End', PageDown: 'PgDn', Delete: 'Del', NumpadEnter: 'Num Enter' });
+// (27 nov., user: « Avance avec W » on an AZERTY keyboard, in a browser without navigator.keyboard such as Firefox) the
+// letters actually typed are learnt from the key presses; until then a French browser (outside Switzerland and Canada)
+// is taken for AZERTY
+const keysSeen = new Map();
+const AZERTY_GUESS = /^fr(-(fr|be|lu|mc))?$/i.test(navigator.language || '') ? { KeyQ: 'A', KeyW: 'Z', KeyA: 'Q', KeyZ: 'W', KeyM: ',', Semicolon: 'M' } : {};
+addEventListener('keydown', e => {
+  if (!e.code || !e.key || e.key.length !== 1 || !/^(Key|Digit|Semicolon|Comma)/.test(e.code)) return;
+  const k = e.key.toUpperCase(); if (keysSeen.get(e.code) === k) return;
+  keysSeen.set(e.code, k); try { renderCtlTable(); helpLine(); renderRebind(); } catch (err) { }
+}, true);
 function keyName(code) {
   if (layoutMap && layoutMap.get(code)) return layoutMap.get(code).toUpperCase();
+  if (keysSeen.has(code)) return keysSeen.get(code);
+  if (!layoutMap && AZERTY_GUESS[code]) return AZERTY_GUESS[code];
   if (KEY_NAMES[code]) return KEY_NAMES[code];
   if (code.startsWith('Key')) return code.slice(3);
   if (code.startsWith('Digit')) return code.slice(5);
@@ -6540,10 +6574,22 @@ function axisPt(c, px, pz) { // a bus is a segment of circles along its length
   if (!c.long) return [c.x, c.z];
   const [fx, fz] = c.fwd, u = Math.max(-c.long, Math.min(c.long, (px - c.x) * fx + (pz - c.z) * fz)); return [c.x + fx * u, c.z + fz * u];
 }
+// (27 nov., user: « des collisions avec les autres voitures alors qu'on passe loin ») each car is a capsule: its axis
+// along its length and a 1 m radius (1,35 m for a bus), like the three circles against the walls; before, one 2 m circle
+// each, so two cars side by side 3,5 m apart (two lanes) touched. A car on a bridge and one under it don't touch.
+function carAxis(c) { const [fx, fz] = c.fwd, h = c.mesh && c.mesh.userData.hl ? Math.max(1, c.mesh.userData.hl - 1.0) : 1.25; return [c.x - fx * h, c.z - fz * h, c.x + fx * h, c.z + fz * h]; }
+function segClosest(p, q) { // the closest points of two segments [x0, z0, x1, z1]
+  const d1x = p[2] - p[0], d1z = p[3] - p[1], d2x = q[2] - q[0], d2z = q[3] - q[1], rx = p[0] - q[0], rz = p[1] - q[1];
+  const a = d1x * d1x + d1z * d1z, e = d2x * d2x + d2z * d2z, f = d2x * rx + d2z * rz, c = d1x * rx + d1z * rz, b = d1x * d2x + d1z * d2z, den = a * e - b * b;
+  let s = den > 1e-9 ? Math.max(0, Math.min(1, (b * f - c * e) / den)) : 0, t = e > 1e-9 ? (b * s + f) / e : 0;
+  if (t < 0) { t = 0; s = a > 1e-9 ? Math.max(0, Math.min(1, -c / a)) : 0; } else if (t > 1) { t = 1; s = a > 1e-9 ? Math.max(0, Math.min(1, (b - c) / a)) : 0; }
+  return [p[0] + d1x * s, p[1] + d1z * s, q[0] + d2x * t, q[1] + d2z * t];
+}
 function carVsCar(a, b) {
-  if ((a.long || b.long) && Math.abs(a.x - b.x) + Math.abs(a.z - b.z) > 30) return;
-  const [ax_, az_] = axisPt(a, b.x, b.z), [bx_, bz_] = axisPt(b, ax_, az_), [ax2, az2] = axisPt(a, bx_, bz_);
-  const dx = bx_ - ax2, dz = bz_ - az2, d = Math.hypot(dx, dz), min = R_CAR * 2 * (a.long || b.long ? 0.75 : 1);
+  if (Math.abs(a.x - b.x) + Math.abs(a.z - b.z) > (a.long || b.long ? 30 : 14)) return;
+  const ya = a.yb ?? a._ly, yb = b.yb ?? b._ly; if (ya != null && yb != null && Math.abs(ya - yb) > 2.5) return;
+  const [ax2, az2, bx_, bz_] = segClosest(carAxis(a), carAxis(b));
+  const dx = bx_ - ax2, dz = bz_ - az2, d = Math.hypot(dx, dz), min = (a.long ? 1.35 : 1.0) + (b.long ? 1.35 : 1.0);
   if (d >= min || d < 1e-4) return;
   const nx = dx / d, nz = dz / d;
   // a car simulated on another machine does not move here: only our side reacts
@@ -7223,7 +7269,7 @@ function rankLine() {
   set('#title .tag', CITY.tagline); set('#iTitle p', CITY.short);
   { const s = document.querySelector('#logo small'); if (s && CITY.short) s.textContent = CITY.short; }
   if (!HANDMADE && !CITY.camp) document.querySelectorAll('.handmade').forEach(e => e.remove()); // no campaign without its places (city.json « camp »)
-  set('#plate .quarter', (CITY.town ? CITY.town + ' · ' : '') + CITY.name);
+  set('#plate .quarter', (CITY.town && CITY.town !== CITY.name ? CITY.town + ' · ' : '') + CITY.name);
   set('#vMain > p', CITY.texts.solo); set('#vHunt > p', CITY.texts.hunt); set('#vCamp > p', CITY.texts.campaign);
 })();
 // =====================================================================================
@@ -8951,10 +8997,18 @@ const gx = !HD ? null : (() => {
   const GARAGE = { ...CITY.places.garage };
   const GARAGES = [GARAGE]; let curGarage = GARAGE;
   let garageOpen = false, garageCool = 0, garageSel = 0;
+  // (27 nov., loading) the box of each street, to look only at the streets near a garage (Compiègne: 27 garages among
+  // some 9 000 streets took half a second)
+  let garageRoadBB = null;
+  function roadsNear(x, z, r) {
+    if (!garageRoadBB) garageRoadBB = W.roads.map(rd => { let a = 1e9, b = -1e9, c = 1e9, d = -1e9; for (let i = 0; i < rd.p.length; i += 2) { a = Math.min(a, rd.p[i]); b = Math.max(b, rd.p[i]); c = Math.min(c, rd.p[i + 1]); d = Math.max(d, rd.p[i + 1]); } return [a, b, c, d]; });
+    return W.roads.filter((rd, k) => { const q = garageRoadBB[k]; return x > q[0] - r && x < q[1] + r && z > q[2] - r && z < q[3] + r; });
+  }
   function buildGarageAt(G) {
     // nearest point of the boulevard: the forecourt marker sits there, the workshop beside it
     let best = null, bd = 1e9;
-    for (const r of W.roads) { if (!r.d) continue; for (let i = 0; i < r.p.length; i += 2) { const d = Math.hypot(r.p[i] - G.x, r.p[i + 1] - G.z); if (d < bd) { bd = d; best = [r, i]; } } }
+    let pool = roadsNear(G.x, G.z, 150); if (!pool.some(r => r.d)) pool = W.roads;
+    for (const r of pool) { if (!r.d) continue; for (let i = 0; i < r.p.length; i += 2) { const d = Math.hypot(r.p[i] - G.x, r.p[i + 1] - G.z); if (d < bd) { bd = d; best = [r, i]; } } }
     if (G.rx == null) { G.rx = G.x; G.rz = G.z; } // (15 nov.) the real spot, kept: the workshop is placed by it
     const [r, i] = best, p = r.p, j = i + 2 < p.length ? i + 2 : i - 2;
     let ux = p[j] - p[i], uz = p[j + 1] - p[i + 1]; const l = Math.hypot(ux, uz) || 1; ux /= l; uz /= l; if (j < i) { ux = -ux; uz = -uz; }
@@ -8986,7 +9040,7 @@ const gx = !HD ? null : (() => {
   // street side with the roller shutter up; walls collide, the door opening stays free.
   function workshop(G, signGroup) {
     const WD = 7.4, DP = 11, cand = [];
-    for (const r of W.roads) {
+    for (const r of roadsNear(G.x, G.z, 72)) {
       if (!r.d || r.b) continue;
       for (let i = 0; i + 3 < r.p.length; i += 2) {
         const ax = r.p[i], az = r.p[i + 1], bx = r.p[i + 2], bz = r.p[i + 3], L = Math.hypot(bx - ax, bz - az); if (L < 1) continue;
@@ -9652,40 +9706,59 @@ const gx = !HD ? null : (() => {
         metal: new THREE.MeshStandardMaterial({ color: hd.lin(0x23262a), roughness: 0.45, metalness: 0.6 }),
         hedge: new THREE.MeshStandardMaterial({ color: hd.lin(0x3f6b2e), roughness: 1 }),
       };
-      const acc = new Map();
+      // (27 nov., D-20) the panels are known at once (collisions, bullets, the count of broken things); the meshes of a
+      // tile are made when a camera comes within NEAR of it (tick, from the menu on), the nearest first, 5 ms an image
       for (const [xi, zi, ai, kind, li] of D.panels) {
-        const x = xi / 10, z = zi / 10, a = ai / 1000, L = li / 10, ca = Math.cos(a), sa = Math.sin(a), y = surfaceH(x, z) - 0.05;
+        const x = xi / 10, z = zi / 10, a = ai / 1000, L = li / 10, ca = Math.cos(a), sa = Math.sin(a);
         if (nearHQ(x, z)) continue; // the police station's forecourt stays clear
         if (nearFerryRamp(x, z)) continue; // (16 nov., user) nor the tops of the ferry ramps
         const tk = Math.floor(x / TILE) + ',' + Math.floor(z / TILE);
-        let T = acc.get(tk); if (!T) acc.set(tk, T = { cx: (Math.floor(x / TILE) + 0.5) * TILE, cz: (Math.floor(z / TILE) + 0.5) * TILE, g: {} });
+        let t = tiles.get(tk); if (!t) tiles.set(tk, t = { cx: (Math.floor(x / TILE) + 0.5) * TILE, cz: (Math.floor(z / TILE) + 0.5) * TILE, meshes: {}, list: [], made: false });
         const pn = { x, z, a, L, kind, ca, sa, tile: tk, ranges: [], broken: false, t: 0, hk: 0.85 + ((xi * 7 + zi * 13) % 30) / 100 };
-        const byMat = {};
-        for (const [m, w, h, d, sx, sy, sz] of SHAPES[kind]) { (byMat[m] = byMat[m] || []).push([w * L, h * (kind === 2 ? pn.hk : 1), d, sx * L, sy * (kind === 2 ? pn.hk : 1), sz]); }
-        for (const m in byMat) {
-          const G_ = T.g[m] || (T.g[m] = { p: [], n: [] }), start = G_.p.length / 3;
-          for (const [w, h, d, sx, sy, sz] of byMat[m]) box(G_, kind === 0 && w < 0.2 ? 0.08 : kind === 1 && w < 0.2 ? 0.02 : kind === 3 && w < 0.5 ? 0.36 : w, h, d, sx, sy, sz, ca, sa, x, y, z);
-          pn.ranges.push([m, start, G_.p.length / 3 - start]);
-        }
-        panels.push(pn);
+        t.list.push(pn); panels.push(pn);
         const ck = Math.floor(x / CELL) * 10000 + Math.floor(z / CELL); if (!grid.has(ck)) grid.set(ck, []); grid.get(ck).push(pn);
       }
-      for (const [tk, T] of acc) {
-        const t = { cx: T.cx, cz: T.cz, meshes: {} };
-        for (const m in T.g) {
-          const geo = new THREE.BufferGeometry(), pos = new Float32Array(T.g[m].p);
-          geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(T.g[m].n), 3));
-          geo.computeBoundingSphere();
-          const mesh = new THREE.Mesh(geo, mats[m]); mesh.castShadow = m === 'hedge' || m === 'stone'; mesh.receiveShadow = true; mesh.userData.hdLinear = true; mesh.matrixAutoUpdate = false;
-          mesh.userData.orig = pos.slice(); scene.add(mesh); t.meshes[m] = mesh;
-        }
-        tiles.set(tk, t);
-      }
+      // without streaming (Chantenay, a small town), everything now, as before
+      if (!CityStream.on) for (const t of tiles.values()) makeTile(t);
       // a few reusable pieces for the breaks
       for (let i = 0; i < 36; i++) { const o = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.12, 0.08), mats.wood); o.visible = false; o.userData.hdLinear = true; o.castShadow = true; scene.add(o); debris.push({ o, t: 9, v: [0, 0, 0], w: [0, 0] }); }
     }
+    function makeTile(t) {
+      if (t.made) return; t.made = true;
+      const g = {};
+      for (const pn of t.list) {
+        const { x, z, ca, sa, L, kind } = pn, y = surfaceH(x, z) - 0.05, byMat = {};
+        for (const [m, w, h, d, sx, sy, sz] of SHAPES[kind]) { (byMat[m] = byMat[m] || []).push([w * L, h * (kind === 2 ? pn.hk : 1), d, sx * L, sy * (kind === 2 ? pn.hk : 1), sz]); }
+        for (const m in byMat) {
+          const G_ = g[m] || (g[m] = { p: [], n: [] }), start = G_.p.length / 3;
+          for (const [w, h, d, sx, sy, sz] of byMat[m]) box(G_, kind === 0 && w < 0.2 ? 0.08 : kind === 1 && w < 0.2 ? 0.02 : kind === 3 && w < 0.5 ? 0.36 : w, h, d, sx, sy, sz, ca, sa, x, y, z);
+          pn.ranges.push([m, start, G_.p.length / 3 - start]);
+        }
+      }
+      for (const m in g) {
+        const geo = new THREE.BufferGeometry(), pos = new Float32Array(g[m].p);
+        geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(g[m].n), 3));
+        geo.computeBoundingSphere();
+        const mesh = new THREE.Mesh(geo, mats[m]); mesh.castShadow = m === 'hedge' || m === 'stone'; mesh.receiveShadow = true; mesh.userData.hdLinear = true; mesh.matrixAutoUpdate = false;
+        mesh.userData.orig = pos.slice(); scene.add(mesh); t.meshes[m] = mesh;
+      }
+      for (const pn of t.list) if (pn.broken) setPanel(pn, true);
+      visT = 0;
+    }
+    // (27 nov., D-20) the tiles near a camera that are still without meshes: within 320 m at once, then within NEAR, 5 ms an image
+    const NEAR = 460;
+    function tick(dt, cams) {
+      if (!built || !cams || !cams.length) return;
+      const t0 = performance.now();
+      for (const t of tiles.values()) {
+        if (t.made) continue;
+        let d = 1e9; for (const c of cams) d = Math.min(d, Math.hypot(c.position.x - t.cx, c.position.z - t.cz));
+        if (d < 320 || (d < NEAR && performance.now() - t0 < 5)) makeTile(t);
+      }
+    }
     function setPanel(pn, hidden) {
       const t = tiles.get(pn.tile);
+      if (!t.made) return; // (27 nov.) made later, with this panel hidden
       for (const [m, start, count] of pn.ranges) {
         const mesh = t.meshes[m], a = mesh.geometry.attributes.position, arr = a.array, o = mesh.userData.orig;
         for (let i = start * 3; i < (start + count) * 3; i += 3) {
@@ -9771,7 +9844,7 @@ const gx = !HD ? null : (() => {
         for (const pn of list) { if (pn.broken) continue; const d = Math.hypot(pn.x - x, pn.z - z); if (d < r && (pn.kind !== 4 || d < r * 0.5)) { const ux = (pn.x - x) / (d || 1), uz = (pn.z - z) / (d || 1); breakPanel(pn, { speed: 14, vx: ux * 14, vz: uz * 14, local: !!(from && from.local), owner: from && from.owner }); } }
       }
     }
-    return { build, step, shoot, blast, get count() { return panels.length; }, get broken() { return panels.filter(p => p.broken).length; }, panels, tiles };
+    return { build, tick, step, shoot, blast, get count() { return panels.length; }, get broken() { return panels.filter(p => p.broken).length; }, panels, tiles };
   })();
   // =====================================================================================
   // (15 nov., user request) breakable traffic lights: a car that hits a pole fast enough knocks it over, shots and
@@ -10599,7 +10672,7 @@ const gx = !HD ? null : (() => {
   let pcEl = null, pcT = 0;
   function cardHTML(s, big) {
     const ph = PC[s.id];
-    const pic = ph ? '<img src="' + ph.src + '" alt="">' : '<div class="pcDraw"><span>' + s.name + '</span><small>' + (CITY.town ? CITY.town + ' · ' : '') + CITY.name + '</small></div>';
+    const pic = ph ? '<img src="' + ph.src + '" alt="">' : '<div class="pcDraw"><span>' + s.name + '</span><small>' + (CITY.town && CITY.town !== CITY.name ? CITY.town + ' · ' : '') + CITY.name + '</small></div>';
     return '<div class="pcPhoto">' + pic + '<b class="pcStamp">' + (CITY.town || CITY.name) + '</b></div><div class="pcBody"><h3>' + s.name + '</h3><p>' + s.text + '</p>'
       + (ph ? '<p class="pcCred">Photo : ' + ph.author + ' · ' + ph.license + (big && /wikimedia/.test(ph.url || '') ? ' · Wikimedia Commons' : '') + '</p>' : '') + '</div>';
   }
@@ -11274,7 +11347,7 @@ const gx = !HD ? null : (() => {
   // =====================================================================================
   function monuments() {
     for (const s of MOD.monuments || []) {
-      const f = { castle: monCastle, cathedral: monCathedral, column: monColumn, fountain: monFountain, portico: monPortico, dome: monDome }[s.kind];
+      const f = { castle: monCastle, cathedral: monCathedral, column: monColumn, fountain: monFountain, portico: monPortico, dome: monDome, belfry: monBelfry }[s.kind];
       if (f) { try { f(s); } catch (e) { console.warn('monument', s.name, e); } }
     }
   }
@@ -11436,6 +11509,22 @@ const gx = !HD ? null : (() => {
     monAdd(g, new THREE.CylinderGeometry(0.9, 1.1, 2.6, 10), stone, 0, H + 4 + R * 0.9 + 0.9, 0); monAdd(g, new THREE.ConeGeometry(1, 2.6, 10), zinc, 0, H + 4 + R * 0.9 + 3.5, 0);
     monAdd(g, new THREE.SphereGeometry(0.4, 8, 6), gold, 0, H + 4 + R * 0.9 + 5.1, 0);
     for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2; gridAdd([x + Math.cos(a) * R, z + Math.sin(a) * R, x + Math.cos(a + 0.63) * R, z + Math.sin(a + 0.63) * R], 3.5); }
+    monDone(g);
+  }
+
+  // ---- a belfry on a church: square stone tower with its clock, an open lantern, a lead dome and four trumpeting angels
+  // at the corners (Sainte-Croix: the bell of the old clock tower of the Bouffay, set on the church in 1860) ----
+  function monBelfry(s) {
+    const [x, z] = s.at, y = groundH(x, z) - 0.3, H = s.h || 26, R = s.r || 4, stone = monStone('#ddd3bf', 12, 1), lead = stdM(0x4a5058, 0.45, 0.6), gold = stdM(0xd8a43c, 0.3, 1), dark = stdM(0x15161a, 0.9);
+    const g = monGroup(); g.position.set(x, y, z); g.rotation.y = s.rot || 0;
+    monAdd(g, new THREE.BoxGeometry(R * 2, H, R * 2), stone, 0, H / 2, 0);
+    monAdd(g, new THREE.BoxGeometry(R * 2 + 0.8, 0.8, R * 2 + 0.8), stone, 0, H - 0.4, 0);
+    const cm = LM.clockM; if (cm) for (const [sx, sz, ry] of [[0, R + 0.03, 0], [0, -R - 0.03, Math.PI], [R + 0.03, 0, Math.PI / 2], [-R - 0.03, 0, -Math.PI / 2]]) monAdd(g, new THREE.CircleGeometry(R * 0.45, 24), cm, sx, H - 4, sz, ry);
+    monAdd(g, new THREE.CylinderGeometry(R * 0.7, R * 0.75, 4.5, 8), stone, 0, H + 2.25, 0);
+    for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2 + Math.PI / 8; monAdd(g, new THREE.BoxGeometry(0.9, 2.6, 0.1), dark, Math.cos(a) * R * 0.68, H + 2.3, Math.sin(a) * R * 0.68, -a + Math.PI / 2); }
+    monAdd(g, new THREE.SphereGeometry(R * 0.72, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), lead, 0, H + 4.5, 0);
+    monAdd(g, new THREE.CylinderGeometry(0.5, 0.6, 2, 8), lead, 0, H + 5.5 + R * 0.72, 0); monAdd(g, new THREE.SphereGeometry(0.35, 8, 6), gold, 0, H + 6.7 + R * 0.72, 0);
+    for (const [sx, sz] of [[-1, -1], [-1, 1], [1, -1], [1, 1]]) { const ax = sx * (R - 0.5), az = sz * (R - 0.5); monAdd(g, new THREE.CylinderGeometry(0.3, 0.4, 1.8, 8), gold, ax, H + 0.9, az); monAdd(g, new THREE.SphereGeometry(0.28, 8, 6), gold, ax, H + 2, az); const t = monAdd(g, new THREE.CylinderGeometry(0.05, 0.14, 1.2, 6), gold, ax + sx * 0.4, H + 2, az + sz * 0.4); t.rotation.z = -sx * 1.1; }
     monDone(g);
   }
   // =====================================================================================
@@ -12727,7 +12816,7 @@ function frame(now) {
   if (started && mode === 'online') netTick(dt, now);
   if (started && locals.length && (!(paused || Match.over) || mode === 'online')) Soundscape.tick(dt, locals[0]); else Soundscape.hush();
   PhotoMode.tick(dt); Profile.tick(dt);
-  { const cams = started && locals.length ? locals.map(L => L.cam) : Intro.lodCams(); CityStream.tick(dt, cams); Tiles.lod(dt, cams); }
+  { const cams = started && locals.length ? locals.map(L => L.cam) : Intro.lodCams(); CityStream.tick(dt, cams); Tiles.lod(dt, cams); if (gx && gx.Fences) gx.Fences.tick(dt, cams); if (HD && hd.facadeTick) hd.facadeTick(); }
   render(dt);
   PerfHud.end();
 }
@@ -12950,7 +13039,7 @@ const Share = (() => {
     const band = Math.round(h * 0.16); g.fillStyle = 'rgba(13,10,20,.78)'; g.fillRect(0, h - band, w, band);
     g.fillStyle = '#f3ead8'; g.font = 'bold ' + Math.round(band * 0.42) + 'px Georgia, serif'; g.textBaseline = 'middle';
     g.shadowColor = '#c2185b'; g.shadowOffsetX = 3; g.shadowOffsetY = 3; g.fillText('Gangstamen', w * 0.03, h - band * 0.62); g.shadowColor = 'transparent';
-    g.font = Math.round(band * 0.22) + 'px system-ui, sans-serif'; g.fillStyle = '#ffb347'; g.fillText(tr(line || (CITY.town ? CITY.town + ' · ' : '') + CITY.name + ' · ' + CITY.year), w * 0.03, h - band * 0.22);
+    g.font = Math.round(band * 0.22) + 'px system-ui, sans-serif'; g.fillStyle = '#ffb347'; g.fillText(tr(line || (CITY.town && CITY.town !== CITY.name ? CITY.town + ' · ' : '') + CITY.name + ' · ' + CITY.year), w * 0.03, h - band * 0.22);
     g.textAlign = 'right'; g.fillStyle = '#f3ead8'; g.fillText(URL_TXT, w * 0.97, h - band * 0.22);
     return cv;
   }
@@ -13170,9 +13259,23 @@ const edges = { barriers: 0 };
 
 // the tram line 1: two articulated trams, one each way, stopping at the real stations (Égalité, Du Chaffault, Gare Maritime)
 const TRAM_STOPS = W.tramStops || [104, 616, 1215];
+// (27 nov., Nantes) other tram lines along a polyline (modules.tramLines: [{ref, pts, stops}], lines 2 and 3 from the
+// cours des Cinquante-Otages to the Loire): a tram of such a line has T.line, and T.x is its distance along the line
+const TLINES = (MOD.tramLines || []).map(l => {
+  const P = l.pts, cum = [0]; for (let i = 1; i < P.length; i++) cum.push(cum[i - 1] + Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]));
+  const along = (x, z) => { let best = 0, bd = 1e9; for (let i = 0; i < P.length - 1; i++) { const ax = P[i][0], az = P[i][1], dx = P[i + 1][0] - ax, dz = P[i + 1][1] - az, L2 = dx * dx + dz * dz || 1e-6, t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / L2)), d = Math.hypot(ax + dx * t - x, az + dz * t - z); if (d < bd) { bd = d; best = cum[i] + t * Math.sqrt(L2); } } return best; };
+  return { ref: l.ref, P, cum, L: cum[cum.length - 1], stops: (l.stops || []).map(([x, z]) => along(x, z)) };
+});
+// the point at distance s along a line (straight on past its ends), moved off metres to the right of its direction
+function linePt(Ln, s, off) {
+  const P = Ln.P, c = Ln.cum, n = P.length; let i = 0;
+  if (s <= 0) i = 0; else if (s >= Ln.L) i = n - 2; else { let lo = 0, hi = n - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (c[m] <= s) lo = m; else hi = m; } i = lo; }
+  const ax = P[i][0], az = P[i][1], dx = P[i + 1][0] - ax, dz = P[i + 1][1] - az, L = Math.hypot(dx, dz) || 1, t = (s - c[i]) / L;
+  return [ax + dx * t - dz / L * (off || 0), az + dz * t + dx / L * (off || 0)];
+}
 const trams = [];
 function buildTrams() {
-  if (!TRAM) return;
+  if (!TRAM && !TLINES.length) return;
   const white = edgeMat(0xe9ecee, { r: 0.35, m: 0.1 }), glass = edgeMat(0x1c2630, { r: 0.1, m: 0.3 }), stripe = edgeMat(0x1a9a8a, { r: 0.4 }), grey = edgeMat(0x3a3d44, { r: 0.6 }), lightM = HD ? new THREE.MeshBasicMaterial({ color: new THREE.Color(6, 5.5, 4) }) : new THREE.MeshBasicMaterial({ color: 0xfff4d0 }), tailM = HD ? new THREE.MeshBasicMaterial({ color: new THREE.Color(6, 0.2, 0.1) }) : new THREE.MeshBasicMaterial({ color: 0xff2010 });
   const SEG = 9.4, NSEG = 4;
   // (Fable 5.2, user feedback: the tram was a stack of boxes.) The Nantes tram of 1996, in the spirit of the first French
@@ -13226,12 +13329,25 @@ function buildTrams() {
     for (const s of [-0.35, 0.35]) { bar(s, 3.68, -0.9, s, 4.95, 0.1); bar(s, 4.95, 0.1, s, 6.2, -0.75); }
     bar(-0.35, 4.95, 0.1, 0.35, 4.95, 0.1); bar(-0.75, 6.22, -0.75, 0.75, 6.22, -0.75);
   };
-  for (const dir of [1, -1]) {
+  const newTram = () => { const segs = []; for (let k = 0; k < NSEG; k++) { const s = section(k === 0 || k === NSEG - 1); if (k === NSEG - 1) s.userData.body.rotation.y = Math.PI; if (k === 1) pantograph(s); s.traverse(o => { o.userData.hdLinear = true; }); if (HD) hd.linearize(s); scene.add(s); segs.push(s); } return segs; };
+  if (TRAM) for (const dir of [1, -1]) {
     const segs = [];
     for (let k = 0; k < NSEG; k++) { const s = section(k === 0 || k === NSEG - 1); if (k === NSEG - 1) s.userData.body.rotation.y = Math.PI; if (k === 1) pantograph(s); s.traverse(o => { o.userData.hdLinear = true; }); if (HD) hd.linearize(s); scene.add(s); segs.push(s); }
     // catenary pantograph on the second section
     trams.push({ dir, x: dir > 0 ? EDGE.x0 - 60 : EDGE.x1 + 60, v: 9, segs, SEG, wait: 0, stopAt: null, hitCd: 0, bellCd: 0, sleep: dir > 0 ? 0 : 25 });
   }
+  // after the line 1, so its trams keep their places in the list (trams[0] and [1])
+  TLINES.forEach((Ln, li) => { for (const dir of [1, -1]) trams.push({ line: Ln, dir, x: dir > 0 ? -60 : Ln.L + 60, v: 9, segs: newTram(), SEG, wait: 0, stopAt: null, hitCd: 0, bellCd: 0, sleep: (dir > 0 ? 8 : 30) + li * 12 }); });
+  // (27 nov.) the poles and the wire of the other lines, beside their track
+  if (TLINES.length) {
+    const PS = []; for (const Ln of TLINES) for (let d = 0; d < Ln.L; d += 34) PS.push([Ln, d]);
+    const pm2 = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.1, 0.13, 7, 8).translate(0, 3.5, 0), grey, PS.length), m4b = new THREE.Matrix4(), v2 = new THREE.Vector3(), q2 = new THREE.Quaternion(), one2 = new THREE.Vector3(1, 1, 1);
+    PS.forEach(([Ln, d], i) => { const [x, z] = linePt(Ln, d, 4.2); m4b.compose(v2.set(x, surfaceH(x, z), z), q2, one2); pm2.setMatrixAt(i, m4b); });
+    pm2.castShadow = true; pm2.userData.hdLinear = true; scene.add(pm2);
+    const wv = []; for (const Ln of TLINES) for (const off of [1.5, -1.5]) for (let d = 0; d + 8 <= Ln.L; d += 8) for (const dd of [d, d + 8]) { const [x, z] = linePt(Ln, dd, off); wv.push(x, surfaceH(x, z) + 6.3, z); }
+    const wg2 = new THREE.BufferGeometry(); wg2.setAttribute('position', new THREE.Float32BufferAttribute(wv, 3)); scene.add(new THREE.LineSegments(wg2, new THREE.LineBasicMaterial({ color: 0x202024 })));
+  }
+  if (!TRAM) return;
   // overhead line poles between the tracks
   const poles = []; for (let x = EDGE.x0 - 30; x < EDGE.x1 + 30; x += 32) poles.push(x);
   const pm = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.1, 0.13, 7, 8).translate(0, 3.5, 0), grey, poles.length), arm = new THREE.InstancedMesh(new THREE.BoxGeometry(0.08, 0.08, 6).translate(0, 6.6, 0), grey, poles.length);
@@ -13255,9 +13371,48 @@ function applyTram(a) {
     T.x = Math.abs(dx) > 8 || (s[3] > 0) !== (T.sleep > 0) ? s[0] : T.x + dx * 0.3; T.v = s[1]; T.wait = s[2]; T.sleep = s[3];
   });
 }
+// a tram of another line: the same stops, speeds and sweep as the line 1, along its polyline (each way on its own side)
+function lineTramStep(T, dt) {
+  const Ln = T.line, off = T.dir > 0 ? 1.5 : -1.5;
+  const next = Ln.stops.filter(x => (x - T.x) * T.dir > 0).sort((a, b) => (a - T.x) * T.dir - (b - T.x) * T.dir)[0];
+  const toStop = next !== undefined ? (next - T.x) * T.dir : 1e9;
+  if (T.wait > 0) { T.wait -= dt; T.v = 0; if (T.wait <= 0) T.left = next; }
+  else {
+    const target = toStop < 60 && T.left !== next ? Math.max(1.2, Math.sqrt(2 * 0.9 * toStop)) : 11;
+    T.v += Math.max(-2.5 * dt, Math.min(1.1 * dt, target - T.v));
+    if (toStop < 0.8 && T.left !== next) { T.wait = 14; T.v = 0; }
+  }
+  T.x += T.v * T.dir * dt;
+  const out = T.dir > 0 ? T.x > Ln.L + 90 : T.x < -90;
+  if (out && netGuest()) return;
+  if (out) { T.x = T.dir > 0 ? -90 : Ln.L + 90; T.sleep = 20 + Math.random() * 25; T.left = null; return; }
+  let hx = 0, hz = 0, tx = 0, tz = 0;
+  for (let k = 0; k < T.segs.length; k++) {
+    const s = T.segs[k], sa = T.x - T.dir * (k * T.SEG), sb = sa - T.dir * T.SEG, [xa, za] = linePt(Ln, sa, off), [xb, zb] = linePt(Ln, sb, off);
+    if (k === 0) { hx = xa; hz = za; } if (k === T.segs.length - 1) { tx = xb; tz = zb; }
+    const ya = surfaceH(xa, za), yb = surfaceH(xb, zb); s.visible = true;
+    s.position.set((xa + xb) / 2, (ya + yb) / 2 + 0.05, (za + zb) / 2); s.rotation.order = 'YXZ'; s.rotation.y = Math.atan2(xa - xb, za - zb); s.rotation.x = -Math.atan2(ya - yb, Math.hypot(xa - xb, za - zb));
+    if (k === 0 && s.userData.tail) s.userData.tail.forEach(o => { o.visible = false; });
+    if (k === T.segs.length - 1 && s.userData.tail) s.userData.tail.forEach(o => { o.visible = true; });
+  }
+  T.hitCd -= dt; T.bellCd -= dt;
+  const cars = [...allPlayerCars(), ...rivals, ...(gx ? gx.cars() : [])], dx = hx - tx, dz = hz - tz, L2 = dx * dx + dz * dz || 1;
+  for (const c of cars) {
+    if (!c.alive || c.x < Math.min(hx, tx) - 4 || c.x > Math.max(hx, tx) + 4 || c.z < Math.min(hz, tz) - 4 || c.z > Math.max(hz, tz) + 4) continue;
+    const t = Math.max(0, Math.min(1, ((c.x - tx) * dx + (c.z - tz) * dz) / L2)), px = tx + dx * t, pz = tz + dz * t, d = Math.hypot(c.x - px, c.z - pz);
+    if (d > 3.2) continue;
+    if (t > 0.9 && T.v > 1 && T.bellCd <= 0) { T.bellCd = 2.5; if (c.local || Math.random() < 0.3) sfx.bell(); }
+    if (d < 2.4) {
+      const nx = (c.x - px) / (d || 1), nz = (c.z - pz) / (d || 1); c.x = px + nx * 3; c.z = pz + nz * 3; c.vx += nx * (5 + T.v * 0.4) + dx / Math.sqrt(L2) * T.v * 0.5; c.vz += nz * (5 + T.v * 0.4) + dz / Math.sqrt(L2) * T.v * 0.5;
+      T.hit = T.hit || new Set();
+      if (T.v > 2 && !T.hit.has(c) && !c.remote && !c.proxy) { T.hit.add(c); c.tramT = performance.now(); setTimeout(() => T.hit.delete(c), 4000); spawnFx(c.x, 1, c.z, 0.6, 0xffe28a, 0.2, 2, 2); damage(c, 10 + T.v * 1.2); if (c.local) { sfx.hit(); rumbleFor(c.owner, 0.8, 0.6, 250); flashFor(c.owner, 'Le tram !', 'Il ne s’arrête pas pour toi'); } }
+    }
+  }
+}
 function tramStep(dt) {
   for (const T of trams) {
     if (T.sleep > 0) { T.sleep -= dt; for (const s of T.segs) s.visible = false; continue; }
+    if (T.line) { lineTramStep(T, dt); continue; }
     const track = T.dir > 0 ? tramS : tramN;
     // stations: brake, wait, go
     const next = TRAM_STOPS.filter(x => (x - T.x) * T.dir > 0).sort((a, b) => (a - T.x) * T.dir - (b - T.x) * T.dir)[0];
