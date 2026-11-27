@@ -112,7 +112,7 @@ Cartes postales : photos libres de Wikimedia Commons, réduites (environ 640 px 
 | `data/cities/compiegne/postcards/cmp_gare.jpg` (carte postale « Gare de Compiègne », recadrée (haut de la photo)) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Compi%C3%A8gne_(60),_gare_SNCF,_fa%C3%A7ade_sur_la_place_de_la_gare_1.jpg ; auteur : P.poschadel (2013-04-07) | CC BY-SA 3.0 |
 | `data/cities/compiegne/postcards/cmp_jaux.jpg` (carte postale « Église Saint-Pierre de Jaux ») | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Jaux_(60),_%C3%A9glise_Saint-Pierre.jpg ; auteur : P.poschadel (2012-09-30) | CC BY-SA 3.0 |
 
-## Édition NaTran (27 nov., `BRAND=natran`, fichier `terrascan-natran.html`)
+## Édition NaTran (27 nov., `BRAND=natran`, fichier `terrascan.html`)
 
 | Fichier | Source | Licence |
 |---|---|---|
