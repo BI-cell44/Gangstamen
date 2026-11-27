@@ -698,7 +698,7 @@ body.portal a[href^="http"] { pointer-events: none; color: inherit; text-decorat
       <div class="optGroup"><h3>Image</h3>
         <div class="row hdOnly" hidden><span class="lab">Moment</span><div class="seg" id="todSeg"><button class="mbtn" data-v="day">Jour</button><button class="mbtn" data-v="sunset">Coucher</button><button class="mbtn" data-v="night">Nuit</button><button class="mbtn" data-v="cycle">Cycle</button></div></div>
         <div class="row hdOnly" hidden><span class="lab">Météo</span><div class="seg" id="rainSeg"><button class="mbtn" data-v="0">Sec</button><button class="mbtn" data-v="0.6">Pluie</button><button class="mbtn" data-v="1">Orage</button><button class="mbtn" data-v="auto">Variable</button></div></div>
-        <div class="row" id="hdRow" hidden><span class="lab">Qualité graphique</span><div class="seg" id="hdSeg"><button class="mbtn" data-q="0">Basse</button><button class="mbtn" data-q="1">Moyenne</button><button class="mbtn" data-q="2">Haute</button><button class="mbtn" data-q="3">Ultra</button></div></div>
+        <div class="row" id="hdRow" hidden><span class="lab">Qualité graphique</span><div class="seg" id="hdSeg"><button class="mbtn" data-q="0">Économie</button><button class="mbtn" data-q="1">Basse</button><button class="mbtn" data-q="2">Moyenne</button><button class="mbtn" data-q="3">Haute</button><button class="mbtn" data-q="4">Ultra</button></div></div>
         <div class="row hdOnly" hidden><label class="lab" for="optAutoQ">Qualité automatique (baisse sous 25 images par seconde)</label><input id="optAutoQ" type="checkbox"></div>
         <div class="row hdOnly" hidden><span class="lab">Ombres</span><div class="seg" id="shSeg"><button class="mbtn" data-v="0">Non</button><button class="mbtn" data-v="1">Auto</button><button class="mbtn" data-v="2">Toujours</button></div></div>
         <div class="row hdOnly" hidden><span class="lab">Distance de vue</span><div class="seg" id="distSeg"><button class="mbtn" data-v="0">Courte</button><button class="mbtn" data-v="1">Moyenne</button><button class="mbtn" data-v="2">Longue</button></div></div>
@@ -931,13 +931,16 @@ const hd = !HD ? null : (() => {
   let RT_TYPE = floatRT ? THREE.HalfFloatType : THREE.UnsignedByteType;
   // (17 nov.) safe levels when the picture stays black (frame.js, watchBlack): 1 no MSAA, 2 8-bit targets, 3 no post-processing
   let safe = 0;
+  // (27 nov., user: jerky on an office computer without a graphics card) « Économie »: half the pixels, drawn straight to
+  // the screen (no post-processing, as safe level 3), no shadows, the short view distance (world/day-night-pause.js)
   const QUAL = [
+    { name: 'Économie', scale: 0.5, dpr: 1, msaa: 0, shadow: 512, bloom: 0, parts: 0.35, eco: true },
     { name: 'Basse', scale: 0.6, dpr: 1, msaa: 0, shadow: 1024, bloom: 3, parts: 0.5 },
     { name: 'Moyenne', scale: 0.8, dpr: 1.25, msaa: 2, shadow: 2048, bloom: 4, parts: 0.75 },
     { name: 'Haute', scale: 1, dpr: 1.5, msaa: 4, shadow: 4096, bloom: 5, parts: 1 },
     { name: 'Ultra', scale: 1, dpr: 2, msaa: 4, shadow: 4096, bloom: 5, parts: 1 },
   ];
-  let q = QUAL[2], qi = 2, time = 0;
+  let q = QUAL[3], qi = 3, time = 0;
   const lin = h => new THREE.Color(h).convertSRGBToLinear();
   const linHex = h => lin(h).getHex();
 
@@ -1031,6 +1034,8 @@ const hd = !HD ? null : (() => {
   function pass(mat, target) { fsQuad.material = mat; renderer.setRenderTarget(target); renderer.render(fsScene, fsCam); }
   function setQuality(i) {
     qi = Math.max(0, Math.min(QUAL.length - 1, i | 0)); q = safe ? Object.assign({}, QUAL[qi], { msaa: 0 }) : QUAL[qi];
+    const direct = safe >= 3 || !!q.eco;
+    renderer.toneMapping = direct ? THREE.ACESFilmicToneMapping : THREE.NoToneMapping; renderer.outputEncoding = direct ? THREE.sRGBEncoding : THREE.LinearEncoding;
     sun.shadow.mapSize.set(q.shadow, q.shadow);
     if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; }
     resize();
@@ -1560,7 +1565,7 @@ const hd = !HD ? null : (() => {
     bk.n = bk.black = bk.good = 0; setQuality(qi);
   }
   function watchBlack() {
-    if (safe >= 3 || bk.good >= 3 || ++bk.n % 8) return;
+    if (safe >= 3 || q.eco || bk.good >= 3 || ++bk.n % 8) return;
     const gl = renderer.getContext(), px = new Uint8Array(4); let sum = 0;
     for (const [fx, fy] of [[0.5, 0.5], [0.25, 0.3], [0.75, 0.3], [0.3, 0.75], [0.7, 0.75]]) { gl.readPixels(Math.floor(gl.drawingBufferWidth * fx), Math.floor(gl.drawingBufferHeight * fy), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); sum += px[0] + px[1] + px[2]; }
     if (sum > 30) { bk.good++; bk.black = 0; return; }
@@ -1589,7 +1594,7 @@ const hd = !HD ? null : (() => {
       sun.position.copy(focus).add(SUN_OFF); sun.target.position.copy(focus); sun.target.updateMatrixWorld();
       const sc = v.h * pr * 0.5 * v.cam.projectionMatrix.elements[5];
       ptsSmoke.material.uniforms.uScale.value = sc; ptsGlow.material.uniforms.uScale.value = sc;
-      if (safe >= 3) { // no post-processing: straight to the screen, tone mapping by three.js
+      if (safe >= 3 || q.eco) { // no post-processing: straight to the screen, tone mapping by three.js
         renderer.setRenderTarget(null); const y = innerHeight - v.y - v.h;
         renderer.setViewport(v.x, y, v.w, v.h); renderer.setScissor(v.x, y, v.w, v.h); renderer.setScissorTest(views.length > 1);
         renderer.render(scene, v.cam); continue;
@@ -1597,7 +1602,7 @@ const hd = !HD ? null : (() => {
       renderer.setRenderTarget(sceneRT);
       renderer.render(scene, v.cam);
     }
-    if (safe >= 3) { renderer.setScissorTest(false); renderer.setViewport(0, 0, innerWidth, innerHeight); return; }
+    if (safe >= 3 || q.eco) { renderer.setScissorTest(false); renderer.setViewport(0, 0, innerWidth, innerHeight); return; }
     // bloom: bright pass, then a blurred mip chain
     brightMat.uniforms.t.value = sceneRT.texture; pass(brightMat, bB[0]);
     for (let i = 0; i < bA.length; i++) {
@@ -2627,7 +2632,7 @@ const hd = !HD ? null : (() => {
     pfN++; pfT += d;
     if (pfT > 5000) {
       const fps = pfN * 1000 / pfT; stats.fps = Math.round(fps); stats.ms = +(pfT / pfN).toFixed(1); pfN = 0; pfT = 0;
-      if (fps < 25 && qi > 0 && started && !paused && settings.autoQ !== false) { setQuality(qi - 1); feed('Qualité graphique réduite : ' + q.name); const b = document.querySelectorAll('#hdSeg button'); b.forEach(x => x.classList.toggle('on', +x.dataset.q === qi)); }
+      if (fps < 25 && qi > 0 && started && !paused && settings.autoQ !== false) { setQuality(qi - 1); applyPerf(); feed('Qualité graphique réduite : ' + q.name); const b = document.querySelectorAll('#hdSeg button'); b.forEach(x => x.classList.toggle('on', +x.dataset.q === qi)); }
       // (27 nov.) already in low quality: the shadows go, then the view distance comes in (the fog hides the rest, the
       // tiles past it are not drawn); for this game only, the options are not changed
       else if (fps < 25 && qi === 0 && started && !paused && settings.autoQ !== false) {
@@ -4772,7 +4777,7 @@ const SETTINGS_KEY = 'gangstamen.settings.v1' + (BRAND ? '.' + BRAND.id : ''); /
 const settings = Object.assign({
   ctl: ['kb1', 'kb2', 'kb3', 'kb4'], soloCtl: 'kb1+pad0', nPlayers: 2,
   music: 0.7, fx: 0.8, amb: 0.8, rumble: true, retro: true, nick: '',
-  hdq: isTouch ? 0 : 2, hdSafe: 0, tctl0: 'touch', autoQ: true, physics: 'arcade', tod: 'sunset', rain: '0', traffic: 2, rapN: 6, trafficNet: 1, aim: 2, motion: 1, bigText: 0, padLayout: 0, lang: 'auto', stats: true, clips: false, keys: {}, voices: true, subs: true, shadows: 1, dist: 2, intro: true, introSeen: false, played: false, guided: false, teams: false, team: [0, 1, 0, 1], netTeams: false, netTeam: -1, goal: 20, limit: 10, campDiff: 1, goalCtf: 3, goalHill: 60, placeFfa: 0, placeHill: 0, placeRap: 3, placeChant: 1, raceLaps: 1, // physics 'real' = realistic mode (cycle 4), chosen in the options
+  hdq: isTouch ? 1 : 3, hdSafe: 0, tctl0: 'touch', autoQ: true, physics: 'arcade', tod: 'sunset', rain: '0', traffic: 2, rapN: 6, trafficNet: 1, aim: 2, motion: 1, bigText: 0, padLayout: 0, lang: 'auto', stats: true, clips: false, keys: {}, voices: true, subs: true, shadows: 1, dist: 2, intro: true, introSeen: false, played: false, guided: false, teams: false, team: [0, 1, 0, 1], netTeams: false, netTeam: -1, goal: 20, limit: 10, campDiff: 1, goalCtf: 3, goalHill: 60, placeFfa: 0, placeHill: 0, placeRap: 3, placeChant: 1, raceLaps: 1, // physics 'real' = realistic mode (cycle 4), chosen in the options
 }, (() => { try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); } catch (e) { return {}; } })());
 // (17 nov., user) end of a game in the HD modes (split screen and online): captures, hill points or laps instead of KO
 const MODE_GOALS = {
@@ -4784,15 +4789,18 @@ function modeGoalSetting(k) { const g = MODE_GOALS[k]; return g ? +settings[g.ke
 function saveSettingsRaw() { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { } }
 function saveSettings() { saveSettingsRaw(); if (typeof Profile !== 'undefined') Profile.capture(); } // the progression also goes to the save slot (cycle 10)
 sfx.setVolume('music', settings.music); sfx.setVolume('fx', settings.fx); sfx.setVolume('amb', settings.amb ?? 0.8);
-// (27 nov., slow client computers) first visit: a modest graphics chip (integrated Intel, or few cores and little memory)
-// starts in low quality with a shorter view distance, instead of high; the player can raise it in the options
-if (HD && !settings.hwChecked) {
-  settings.hwChecked = 1;
+// (27 nov.) an « Économie » level now comes first (hd/00-module.js): a level saved before moves up one
+if (settings.qv !== 2) { let raw = {}; try { raw = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); } catch (e) { } if (raw.hdq != null) settings.hdq = (raw.hdq | 0) + 1; settings.qv = 2; saveSettingsRaw(); }
+// (27 nov., slow client computers) a modest graphics chip (integrated Intel or AMD, or few cores and little memory)
+// starts in « Économie », instead of high; a big map caps the others at medium; the player can raise it in the options.
+// Checked again once (hwChecked 2) for those who came before the « Économie » level.
+if (HD && (settings.hwChecked | 0) < 2) {
+  settings.hwChecked = 2;
   let gpu = ''; try { const gl = renderer.getContext(), e = gl.getExtension('WEBGL_debug_renderer_info'); gpu = e ? String(gl.getParameter(e.UNMASKED_RENDERER_WEBGL)) : ''; } catch (e) { }
-  const weak = /Intel|UHD|HD Graphics|Iris|Mali|Adreno|PowerVR|SwiftShader|llvmpipe|Basic Render/i.test(gpu) || (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 4;
+  const weak = /Intel|UHD|HD Graphics|Iris|Radeon\(TM\) Graphics|Radeon Graphics|Vega \d|Mali|Adreno|PowerVR|SwiftShader|llvmpipe|Basic Render/i.test(gpu) || (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 4;
   const big = CITY && CITY.extent && (CITY.extent[1] - CITY.extent[0]) * (CITY.extent[3] - CITY.extent[2]) > 8e6;
-  if (weak && !isTouch) { settings.hdq = 0; settings.dist = big ? 0 : 1; settings.shadows = 0; }
-  else if (big && !isTouch) { settings.hdq = Math.min(settings.hdq, 1); settings.dist = Math.min(settings.dist ?? 2, 1); }
+  if (weak && !isTouch) { settings.hdq = 0; settings.dist = 0; settings.shadows = 0; }
+  else if (big && !isTouch) { settings.hdq = Math.min(settings.hdq, 2); settings.dist = Math.min(settings.dist ?? 2, 1); }
   saveSettingsRaw();
 }
 if (HD) { view.classList.remove('retro'); $('scan').classList.add('off'); hd.setSafe(settings.hdSafe || 0); hd.setQuality(settings.hdq); }
@@ -6179,9 +6187,10 @@ function setNight(on) {
 // performance: shadows and view distance (lower automatically with 3-4 screens)
 function applyPerf() {
   const n = Math.max(1, locals.length);
-  sun.castShadow = HD ? (settings.shadows === 2 || (settings.shadows === 1 && n === 1)) : n === 1;
+  const eco = HD && hd.QUAL[hd.quality].eco; // (27 nov.) « Économie »: no shadows, the short view
+  sun.castShadow = HD ? !eco && (settings.shadows === 2 || (settings.shadows === 1 && n === 1)) : n === 1;
   if (!HD) return;
-  const k = [0.5, 0.75, 1][settings.dist ?? 2] * (n >= 3 ? 0.7 : n === 2 ? 0.85 : 1);
+  const k = [0.5, 0.75, 1][eco ? 0 : settings.dist ?? 2] * (n >= 3 ? 0.7 : n === 2 ? 0.85 : 1);
   hd.setDistance(k);
   for (const L of locals) { L.cam.far = 2200 * k * VIEW_K; L.cam.updateProjectionMatrix(); }
 }
@@ -7113,7 +7122,7 @@ function initOptions() {
     $('optSubs').checked = settings.subs !== false; $('optSubs').addEventListener('change', e => { settings.subs = e.target.checked; saveSettings(); });
     $('optVoices').checked = settings.voices !== false; $('optVoices').addEventListener('change', e => { settings.voices = e.target.checked; saveSettings(); try { if (!e.target.checked) speechSynthesis.cancel(); } catch (x) { } });
     const seg = document.querySelectorAll('#hdSeg button'), show = () => seg.forEach(b => b.classList.toggle('on', +b.dataset.q === hd.quality));
-    seg.forEach(b => b.addEventListener('click', () => { if (hd.safe) hd.setSafe(0); settings.hdSafe = 0; hd.setQuality(+b.dataset.q); settings.hdq = hd.quality; saveSettings(); show(); }));
+    seg.forEach(b => b.addEventListener('click', () => { if (hd.safe) hd.setSafe(0); settings.hdSafe = 0; hd.setQuality(+b.dataset.q); settings.hdq = hd.quality; saveSettings(); show(); applyPerf(); }));
     show();
     document.querySelector('#title h1').insertAdjacentHTML('beforeend', ' <span style="font-family:var(--data);font-size:.3em;vertical-align:top;color:var(--sunset);text-shadow:2px 2px 0 #000">' + (ULTRA ? 'ULTRA' : 'HD') + '</span>');
   }
@@ -9011,6 +9020,14 @@ const gx = !HD ? null : (() => {
     }
     return false;
   }
+  const garageLampAt = [], garageLampPool = []; let garageLampT = 0;
+  function garageLampsTick(dt) {
+    if (garageLampAt.length <= garageLampPool.length || (garageLampT -= dt) > 0) return; garageLampT = 0.4;
+    const cams = started && locals.length ? locals.map(L => L.cam) : [camera];
+    const d = p => { let m = 1e9; for (const c of cams) m = Math.min(m, Math.hypot(c.position.x - p.x, c.position.z - p.z)); return m; };
+    const near = garageLampAt.slice().sort((a, b) => d(a) - d(b));
+    garageLampPool.forEach((l, i) => l.position.copy(near[i]));
+  }
   function buildWorkshop(G, c, nx, nz, d0, WD, DP, floorY, signGroup) {
     const ux = c.ux, uz = c.uz, ox = c.x + nx * d0, oz = c.z + nz * d0; // door centre
     const g = new THREE.Group(), a = Math.atan2(nx, nz); g.position.set(ox, floorY, oz); g.rotation.y = a; // local +z = into the workshop
@@ -9031,7 +9048,10 @@ const gx = !HD ? null : (() => {
     box(1.8, 0.9, 0.7, M(0x7a4a2a), WD / 2 - 1.1, 0.45, 9.4); box(1.8, 1.0, 0.04, M(0xc9b48a), WD / 2 - 1.1, 1.8, DP - 0.15);
     const tyreM = M(0x141414, { roughness: 0.95 }); for (let k = 0; k < 3; k++) { const t = new THREE.Mesh(new THREE.TorusGeometry(0.33, 0.13, 8, 16).rotateX(Math.PI / 2), tyreM); t.position.set(-WD / 2 + 0.8, 0.14 + k * 0.26, 9.6); g.add(t); }
     const lamp = box(0.2, 0.06, 6, new THREE.MeshBasicMaterial({ color: new THREE.Color(3, 2.9, 2.6) }), 0, H - 0.1, DP / 2, false);
-    const L_ = new THREE.PointLight(0xfff1d8, 1.2, 14, 2); L_.position.set(0, H - 0.6, DP / 2); g.add(L_);
+    // (27 nov., user: jerky without a graphics card) a lamp per workshop made every lit pixel of the town count some fifty
+    // lights (54 workshops in Compiègne): two lamps in all, moved to the workshops nearest to a camera (garageLampsTick)
+    g.updateMatrixWorld(true); garageLampAt.push(g.localToWorld(new THREE.Vector3(0, H - 0.6, DP / 2)));
+    if (garageLampPool.length < 2) { const L_ = new THREE.PointLight(0xfff1d8, 1.2, 14, 2); L_.position.copy(garageLampAt[garageLampAt.length - 1]); scene.add(L_); garageLampPool.push(L_); }
     g.traverse(o => { o.userData.hdLinear = true; }); scene.add(g);
     // the sign goes over the door, facing the street
     if (signGroup) { signGroup.position.set(ox - nx * 0.35, floorY + 0.3 - 0.8, oz - nz * 0.35); signGroup.rotation.y = a + Math.PI; signGroup.children.forEach(o => { if (o.geometry && o.geometry.type === 'CylinderGeometry') o.visible = false; }); }
@@ -10044,6 +10064,7 @@ const gx = !HD ? null : (() => {
       const Pd = pads.find(p => p.gp); if (Pd && Pd.press[0]) dlgAdvance(); if (Pd && Pd.press[9]) dlgSkip();
     }
     if (garageOpen) garagePad();
+    garageLampsTick(dt);
   }
   function gameStep(dt) { // inside the world step
     const now = performance.now();
@@ -13469,6 +13490,6 @@ const paintNow = () => new Promise(r => { let done = false; const go = () => { i
   netInit();
   Intro.loaded(settings.intro !== false && !window.__noIntro); // loading screen → « appuie sur une touche » → cinematic → menu; the menu is never seen half-built
 })();
-window.__gm = { get paused() { return paused; }, endMatch, aimTarget, setRivalCount, togglePause, showView, Perf, Profile, Boards, Stats, Share, BOOT, get Match() { return Match; }, roadEdge, segHit, get started() { return started; }, renderer, scene, camera, PerfHud, Tiles, CityStream, W, BOOT, planarReal, planarArcade, VEHICLES, engineState, Soundscape, sfx, PhotoMode, updateCamera, CAM_MODES, G, nodeOk, groundH, Profile, makeCar, saveSettingsHook: () => saveSettings(), surfaceH, Intro, hd, gx, settings, trams, edges, tramS, tramWall, EDGE, cellOf, collideWalls, muzzleOf, shoot, damage, applyHit, locals: () => locals, rivals: () => rivals, Net, Match, step: s => step(s, performance.now()), start: (k, sub) => startGame(k || 'solo', sub), gpl: () => gamePlaces, pickups, aimTarget, shootTest: c => shoot(c, [...rivals, ...allPlayerCars()], 6, 95, 0.05, false), codes };
+window.__gm = { get paused() { return paused; }, endMatch, aimTarget, setRivalCount, togglePause, showView, Perf, Profile, Boards, Stats, Share, BOOT, get Match() { return Match; }, roadEdge, segHit, get started() { return started; }, renderer, scene, camera, PerfHud, Tiles, CityStream, sun, applyPerf, W, BOOT, planarReal, planarArcade, VEHICLES, engineState, Soundscape, sfx, PhotoMode, updateCamera, CAM_MODES, G, nodeOk, groundH, Profile, makeCar, saveSettingsHook: () => saveSettings(), surfaceH, Intro, hd, gx, settings, trams, edges, tramS, tramWall, EDGE, cellOf, collideWalls, muzzleOf, shoot, damage, applyHit, locals: () => locals, rivals: () => rivals, Net, Match, step: s => step(s, performance.now()), start: (k, sub) => startGame(k || 'solo', sub), gpl: () => gamePlaces, pickups, aimTarget, shootTest: c => shoot(c, [...rivals, ...allPlayerCars()], 6, 95, 0.05, false), codes };
 })();
 </script>
