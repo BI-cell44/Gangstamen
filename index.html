@@ -3,8 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Gangstamen</title>
-<meta http-equiv="refresh" content="0; url=gangstamen-ultra.html">
-<script>location.replace('gangstamen-ultra.html' + location.search + location.hash);</script>
+<script>{ const q = location.search.slice(1).split(/[&=]/)[0].toLowerCase(); /* des éditions à l’adresse discrète : ?mot */ const ED = { terrascan: 'terrascan-natran.html' }; location.replace(ED[q] || ('gangstamen-ultra.html' + location.search + location.hash)); }</script>
 </head>
 <body style="background:#0d0a14;color:#f3ead8;font-family:sans-serif;text-align:center;padding-top:30vh">
 <p>Chargement de <a href="gangstamen-ultra.html" style="color:#ff4fa0">Gangstamen</a>…</p>

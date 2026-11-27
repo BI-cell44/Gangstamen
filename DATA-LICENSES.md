@@ -10,6 +10,10 @@
 
 `gangstamen.html` embarque ces données : sa redistribution doit conserver les mentions ci-dessus (elles sont affichées dans le jeu).
 
+## Bibliothèque de code
+
+`tools/vendor/three-r128.min.js` : three.js r128 (© 2010-2021 Three.js Authors, licence MIT, mention en tête du fichier), intégrée aux builds portail et bureau (`tools/build_portal.sh`) ; les autres pages la chargent depuis cdnjs.
+
 ## Modèles 3D achetés ou téléchargés (CGTrader)
 
 Téléchargés par l'utilisateur avec son compte CGTrader (licence « Royalty Free »). Les fichiers d'origine ne sont **pas** dans le dépôt : seule une version allégée et transformée y figure (`data/models/*.json`, faite par `tools/assets/bake_model.js` : un seul maillage simplifié, couleurs par sommet, sans texture), intégrée au jeu.
@@ -61,3 +65,57 @@ Photos libres de Wikimedia Commons, réduites et recadrées pour le jeu (œuvres
 |---|---|---|
 | `data/music/rap_loop.mp3` (radio « Rap Nantes 44 » de l'Ultra : boucle de 8 mesures à 93 BPM, de 12,9 s à 33,5 s du morceau, mono 80 kbit/s, avec 0,25 s de marge avant et après pour boucler sans blanc) | « Vintage Boom bap Hip-Hop Music », Petrushkasound, Pixabay, https://pixabay.com/music/beats-vintage-boom-bap-hip-hop-music-424107/ | Pixabay Content License : usage gratuit, modification permise, attribution non obligatoire (crédit donné ici), pas de diffusion du morceau seul. |
 | `data/music/yo.mp3` (voix « Yo man » jouée toutes les 4 mesures sur « Rap Nantes 44 » : coupée à 0,86 s, fondu de sortie, mono 96 kbit/s) | Enregistrement fourni par l'utilisateur (propriétaire du projet), 18 nov. 2026 | Usage dans le jeu accordé par son auteur. |
+
+## Photographies des cartes postales du centre de Nantes (26 nov., ville « nantes » de la branche multivilles)
+
+| Fichier | Source | Licence |
+|---|---|---|
+| `data/cities/nantes/postcards/chateau.jpg` (carte postale « Château des ducs de Bretagne », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:NantesChateau_08.jpg ; auteur : Selbymay | CC BY-SA 4.0 |
+| `data/cities/nantes/postcards/cathedrale.jpg` (carte postale « Cathédrale Saint-Pierre-et-Saint-Paul », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Nantes_-_cathédrale_vue_du_château.jpg ; auteur : Eusebius | CC BY 3.0 |
+| `data/cities/nantes/postcards/placeRoyale.jpg` (carte postale « Place Royale », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Nantes_-_fontaine_de_la_Place_Royale.jpg ; auteur : Eusebius | CC BY 3.0 |
+| `data/cities/nantes/postcards/graslin.jpg` (carte postale « Théâtre Graslin », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Théâtre_Graslin_-_Place_Graslin,_Nantes.jpg ; auteur : Selbymay | CC BY-SA 3.0 |
+| `data/cities/nantes/postcards/pommeraye.jpg` (carte postale « Passage Pommeraye », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Nantes_-_Passage_Pommeraye_-_01.jpg ; auteur : François de Dijon | CC BY-SA 4.0 |
+| `data/cities/nantes/postcards/tourBretagne.jpg` (carte postale « Tour Bretagne », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Nantes_50_Otages.jpg ; auteur : Pymouss44 | CC BY-SA 3.0 |
+| `data/cities/nantes/postcards/bouffay.jpg` (carte postale « Le Bouffay », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Place_du_Bouffay.3.JPG ; auteur : Pj44300 | CC BY-SA 4.0 |
+| `data/cities/nantes/postcards/saintNicolas.jpg` (carte postale « Basilique Saint-Nicolas », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Nantes_-_Saint-Nicolas.jpg ; auteur : Eusebius | CC BY 3.0 |
+| `data/cities/nantes/postcards/sainteCroix.jpg` (carte postale « Église Sainte-Croix », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Nantes_-_Beffroi_Ste_Croix_01.jpg ; auteur : Selbymay | Public domain |
+| `data/cities/nantes/postcards/bourse.jpg` (carte postale « Palais de la Bourse », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Palais_de_la_Bourse_Nantes_01.jpg ; auteur : François de Dijon | CC BY-SA 4.0 |
+| `data/cities/nantes/postcards/jardinPlantes.jpg` (carte postale « Jardin des Plantes », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Jardin_des_plantes_de_Nantes_in_Winter_(December)_01.jpg ; auteur : John Samuel | CC BY-SA 4.0 |
+| `data/cities/nantes/postcards/museeArts.jpg` (carte postale « Musée des Beaux-Arts », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Musée_d'Arts_de_Nantes_-_Façade.jpg ; auteur : François de Dijon | CC BY-SA 4.0 |
+| `data/cities/nantes/postcards/colonne.jpg` (carte postale « Colonne Louis-XVI », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Nantes_-_Colonne_Louis-XVI_03.jpg ; auteur : Selbymay | CC BY-SA 3.0 |
+| `data/cities/nantes/postcards/talensac.jpg` (carte postale « Marché de Talensac », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Marché_de_Talensac_-_3.JPG ; auteur : Pj44300 | CC BY-SA 4.0 |
+| `data/cities/nantes/postcards/versailles.jpg` (carte postale « Île de Versailles », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Nantes_-_Île_de_Versailles_-_Jardin_japonais_12.jpg ; auteur : François de Dijon | CC BY-SA 4.0 |
+| `data/cities/nantes/postcards/tourLU.jpg` (carte postale « Tour LU », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Nantes-TourLU.jpg ; auteur : Selbymay | CC BY-SA 4.0 |
+| `data/cities/nantes/postcards/cigale.jpg` (carte postale « La Cigale », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Restaurant_La_Cigale_(devanture)_-_Nantes.jpg ; auteur : Selbymay | CC BY-SA 3.0 |
+| `data/cities/nantes/postcards/portePierre.jpg` (carte postale « Porte Saint-Pierre », recadrée 600 × 400) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Nantes_-_Porte_Saint-Pierre_01.jpg ; auteur : Selbymay | CC BY-SA 3.0 |
+
+## Compiègne (26 nov., ville « compiegne », branche `compiegne`)
+
+| Données | Source | Licence |
+|---|---|---|
+| Rues, emprises des bâtiments, parcs, arbres, commerces, mobilier (`data/cities/compiegne/world_raw.json`, `shops.json`, `furniture.json` ; extrait Geofabrik « picardie » téléchargé le 26 nov. 2026, 49,3853–49,4315 N, 2,7624–2,8785 E ; Pont-Neuf de 2011 retiré pour rester en 1996) | © contributeurs OpenStreetMap | ODbL 1.0 |
+| Hauteurs des bâtiments, relief | IGN, BD TOPO® et RGE ALTI® (Géoplateforme, data.geopf.fr) | Licence Ouverte 2.0 (Etalab) |
+| Limites des parcelles (`fences.json`, clôtures cassables) | IGN, Parcellaire Express (PCI) | Licence Ouverte 2.0 (Etalab) |
+| Photo aérienne (`data/cities/compiegne/ortho/`) | IGN, BD ORTHO® | Licence Ouverte 2.0 (Etalab), mention © IGN |
+
+Cartes postales : photos libres de Wikimedia Commons, réduites (environ 640 px de large) ; le crédit est aussi affiché sur chaque carte dans le jeu.
+
+| Fichier | Source | Licence |
+|---|---|---|
+| `data/cities/compiegne/postcards/cmp_chateau.jpg` (carte postale « Château de Compiègne ») | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Compiegne_Chateau_Parkseite.jpg ; auteur : Andreas Praefcke (2004) | CC BY 3.0 |
+| `data/cities/compiegne/postcards/cmp_parc.jpg` (carte postale « Parc du château et Beaux-Monts ») | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Compiegne_Parc.jpg ; auteur : Andreas Praefcke (2004) | CC BY 3.0 |
+| `data/cities/compiegne/postcards/cmp_hdv.jpg` (carte postale « Hôtel de ville et Picantins ») | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Compiegne_Hotel_de_Ville_2004.jpg ; auteur : Andreas Praefcke (2004) | CC BY 3.0 |
+| `data/cities/compiegne/postcards/cmp_stjacques.jpg` (carte postale « Église Saint-Jacques ») | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Compi%C3%A8gne_(60),_%C3%A9glise_Saint-Jacques,_vue_depuis_le_palais_2.jpg ; auteur : Pierre Poschadel (2018-05-06) | CC BY-SA 4.0 |
+| `data/cities/compiegne/postcards/cmp_stantoine.jpg` (carte postale « Église Saint-Antoine ») | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Compi%C3%A8gne_(60),_%C3%A9glise_Saint-Antoine,_vue_depuis_le_sud-ouest.jpg ; auteur : P.poschadel (2013-04-07) | CC BY-SA 3.0 |
+| `data/cities/compiegne/postcards/cmp_tour.jpg` (carte postale « Tour Jeanne-d’Arc ») | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Tour-Jeanne-d%27Arc.jpg ; auteur : Raisonnier (2012-03-28) | CC BY-SA 3.0 |
+| `data/cities/compiegne/postcards/cmp_pont.jpg` (carte postale « Pont Louis-XV ») | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Compi%C3%A8gne_(60),_pont_Solf%C3%A9rino_sur_l%27Oise_1.jpg ; auteur : P.poschadel (2013-04-07) | CC BY-SA 3.0 |
+| `data/cities/compiegne/postcards/cmp_gare.jpg` (carte postale « Gare de Compiègne », recadrée (haut de la photo)) | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Compi%C3%A8gne_(60),_gare_SNCF,_fa%C3%A7ade_sur_la_place_de_la_gare_1.jpg ; auteur : P.poschadel (2013-04-07) | CC BY-SA 3.0 |
+| `data/cities/compiegne/postcards/cmp_jaux.jpg` (carte postale « Église Saint-Pierre de Jaux ») | Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Jaux_(60),_%C3%A9glise_Saint-Pierre.jpg ; auteur : P.poschadel (2012-09-30) | CC BY-SA 3.0 |
+
+## Édition NaTran (27 nov., `BRAND=natran`, fichier `terrascan-natran.html`)
+
+| Fichier | Source | Licence |
+|---|---|---|
+| `data/brands/natran-logo-white.svg` (logo affiché sur le menu, les cartes, les bâtiments et le panneau du site) | Site de NaTran, https://www.natrangroupe.com/themes/custom/natran/img/logo-natran-white.svg | Marque et logo de NaTran : utilisés pour une édition faite à son intention, à la demande du propriétaire du projet ; pas de licence libre. |
+| Couleurs #214B4D et #FFC600 | relevées sur natrangroupe.com | — |
+| Emplacement du site (rue Ferdinand-de-Lesseps, rue Clément-Ader) | © contributeurs OpenStreetMap | ODbL 1.0 |
