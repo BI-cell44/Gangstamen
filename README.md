@@ -7,8 +7,7 @@ Combat de voitures façon fin des années 90, dans les **vraies rues de Chantena
 Télécharge un des fichiers ci-dessous et ouvre-le dans un navigateur récent (Chrome, Edge, Firefox, Safari) ; il faut une connexion internet au lancement (three.js est chargé depuis cdnjs).
 
 - **`gangstamen-ultra.html`** : la version la plus complète (campagne, courses, défis, cartes postales, garages, radio, météo, police, écran partagé et jeu en ligne).
-- **`gangstamen-hd.html`** : la version HD.
-- **`gangstamen.html`** : la version classique, au rendu rétro, plus légère.
+- **`gangstamen.html`** : la version classique, au rendu rétro, plus légère, proche du jeu d’origine (figée au 15 novembre 2026).
 
 Sur GitHub : ouvre le fichier, puis bouton « Download raw file ».
 
